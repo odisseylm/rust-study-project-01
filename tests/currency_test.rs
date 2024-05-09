@@ -105,7 +105,7 @@ fn currency_new_test() {
 }
 
 #[test]
-#[should_panic(expected = "called `Result::unwrap()` on an `Err` value: Fuck")]
+#[should_panic(expected = "called `Result::unwrap()` on an `Err` value: CurrencyFormatError")]
 fn currency_new_with_wrong() {
     Currency::new("uAH".to_string()).unwrap();
 }

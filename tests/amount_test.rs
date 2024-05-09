@@ -106,3 +106,55 @@ fn amount_mutability_test() {
     // assert_eq!(amount.to_string(), "10.050 JPY"); // not changed
     // assert_eq!(new_amount.to_string(), "10.050 BRL"); // not changed
 }
+
+
+#[test]
+fn from_string() {
+    let am = Amount::from_str(" \t \n 122.350  \tJPY ").unwrap();
+    assert_eq!(am.to_string(), "122.350 JPY");
+    assert_eq!(*am.value(), bd("122.350"));
+    assert_eq!(am.value_ref(), bd("122.350").to_ref());
+    assert_eq!(am.currency(), make_currency!("JPY"));
+}
+
+#[test]
+#[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseCurrencyError")]
+fn from_string_with_wrong_formed_currency() {
+    let am = Amount::from_str(" \t \n 122.350 USSD ").unwrap();
+    assert_eq!(am.to_string(), "122.350 JPY");
+    assert_eq!(*am.value(), bd("122.350"));
+    assert_eq!(am.value_ref(), bd("122.350").to_ref());
+    assert_eq!(am.currency(), make_currency!("JPY"));
+}
+
+#[test]
+#[should_panic(expected = "called `Result::unwrap()` on an `Err` value: NoCurrencyError")]
+fn from_string_without_currency() {
+    let am = Amount::from_str(" \t \n 122.350  ").unwrap();
+    assert_eq!(am.to_string(), "122.350 JPY");
+    assert_eq!(*am.value(), bd("122.350"));
+    assert_eq!(am.value_ref(), bd("122.350").to_ref());
+    assert_eq!(am.currency(), make_currency!("JPY"));
+}
+
+#[test]
+// #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
+#[should_panic(expected = "ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
+fn from_string_with_wrong_amount_value() {
+    let am = Amount::from_str(" \t \n 12_John_2.350 BRL ").unwrap();
+    assert_eq!(am.to_string(), "122.350 JPY");
+    assert_eq!(*am.value(), bd("122.350"));
+    assert_eq!(am.value_ref(), bd("122.350").to_ref());
+    assert_eq!(am.currency(), make_currency!("JPY"));
+}
+
+#[test]
+// #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
+#[should_panic(expected = "ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
+fn from_string_with_wrong_non_ascii_amount_value() {
+    let am = Amount::from_str(" \t \n Чебуран BRL ").unwrap();
+    assert_eq!(am.to_string(), "122.350 JPY");
+    assert_eq!(*am.value(), bd("122.350"));
+    assert_eq!(am.value_ref(), bd("122.350").to_ref());
+    assert_eq!(am.currency(), make_currency!("JPY"));
+}

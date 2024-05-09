@@ -2,7 +2,7 @@
 pub mod currency;
 
 // like export with shorter name
-pub use currency::{ Currency, make_currency, make_currency_b };
+pub use currency::{ Currency, CurrencyFormatError, make_currency, make_currency_b };
 pub use amount::{ Amount, amount };
 
 

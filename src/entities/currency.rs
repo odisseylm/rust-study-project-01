@@ -2,22 +2,33 @@
 
 use core::fmt;
 use std::char;
+use std::str::FromStr;
 
 
-#[derive(Debug, Copy, Clone)]
-// #[derive(core::fmt::Display)]
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum CurrencyFormatError { // TODO: use something rust-standard (probably with stack-trace support)
+    CurrencyFormatError,
+}
+
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Currency([u8;3]);
 
+
 impl Currency {
-    pub fn new(currency_code: String) -> Result<Self, Fuck> {
+    pub fn from_str(currency_code: & str) -> Result<Self, CurrencyFormatError> {
         let is_valid = if currency_code.len() != 3 { false }
                      else { is_valid_currency_ascii(currency_code.as_bytes()) };
 
-        if !is_valid { Err(Fuck{}) }
+        if !is_valid { Err(CurrencyFormatError::CurrencyFormatError) }
         else {
             let as_bytes = currency_code.as_bytes();
             Ok(Self([as_bytes[0], as_bytes[1], as_bytes[2]]))
         }
+    }
+
+    pub fn new(currency_code: String) -> Result<Self, CurrencyFormatError> {
+        Currency::from_str(currency_code.as_str())
     }
 
     pub fn code_as_ascii_bytes(&self) -> [u8;3] {
@@ -42,12 +53,20 @@ impl fmt::Display for Currency {
     }
 }
 
-#[derive(Debug)]
-pub struct Fuck {} // TODO: use something rust-standard
 
-impl fmt::Display for Fuck {
+impl fmt::Display for CurrencyFormatError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Fuck")
+        write!(f, "{:?}", self)   // write!(f, self)
+    }
+}
+
+
+impl FromStr for Currency {
+    type Err = CurrencyFormatError;
+
+    #[inline]
+    fn from_str(s: &str) -> Result<Currency, Self::Err> {
+        Currency::from_str(s)
     }
 }
 

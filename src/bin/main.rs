@@ -9,7 +9,7 @@
 // use crate::currency::{as_printable, as_printable2, Currency, Fuck, PrintableResult };
 
 use project01::entities::{Currency, currency};
-use project01::entities::currency::{ Fuck, USD };
+use project01::entities::currency::{ CurrencyFormatError, USD };
 use project01::util::{as_printable, as_printable_ptr};
 use project01::util::result::PrintableResult;
 
@@ -32,14 +32,14 @@ fn main() {
     println!("{} (as code_as_string)", USD.code_as_string());
 
     // let cur2 = Currency::new(['u' as u8, 'S' as u8, 'D' as u8]);
-    let cur2: Result<Currency, Fuck> = Currency::new("uSD".to_string());
+    let cur2: Result<Currency, CurrencyFormatError> = Currency::new("uSD".to_string());
     //println!("{}", cur2);
     println!("{} (as PrintableResult)", PrintableResult(&cur2));
     println!("{} (as_printable)", as_printable(&cur2));
     println!("{} (as_printable2)", as_printable_ptr(&cur2));
 
     // let cur2 = Currency::new(['u' as u8, 'S' as u8, 'D' as u8]);
-    let cur2: Result<Currency, Fuck> = Currency::new("BRL".to_string());
+    let cur2: Result<Currency, CurrencyFormatError> = Currency::new("BRL".to_string());
     //println!("{}", cur2);
     println!("{} (as PrintableResult)", PrintableResult(&cur2));
     println!("{} (as_printable)", as_printable(&cur2));
@@ -57,13 +57,13 @@ fn main() {
 
 #[allow(dead_code)]
 fn use_dead_code() {
-    let usd_code_as_bytes = currency::USD.code_as_ascii_bytes();
+    let usd_code_as_bytes = USD.code_as_ascii_bytes();
     println!("{}", usd_code_as_bytes[0]);
 
     let usd_code_as_string = currency::EUR.code_as_string();
     println!("{}", usd_code_as_string);
 
-    let usd = currency::Currency::new("USD".to_string());
+    let usd = Currency::new("USD".to_string());
     println!("{}", usd.unwrap());
 
     let brl = currency::make_currency("BRL");
