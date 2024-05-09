@@ -67,13 +67,13 @@ pub fn amount(amount: BigDecimal, currency: Currency) -> Amount { Amount::new(am
 
 fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
     let s = s.trim();
-    let last_space_bytes_offset: usize = s.rfind(|ch: char|{ ch.is_ascii_whitespace() }).unwrap_or(usize::MAX);
+    let last_space_bytes_offset: Option<usize> = s.rfind(|ch: char|{ ch.is_ascii_whitespace() });
 
-    if last_space_bytes_offset == usize::MAX {
+    if last_space_bytes_offset.is_none() {
         return Err(ParseAmountError::NoCurrencyError)
     }
 
-    let amount_and_cur = s.split_at(last_space_bytes_offset);
+    let amount_and_cur = s.split_at(last_space_bytes_offset.unwrap());
     let str_amount = amount_and_cur.0.trim_end();
     let str_cur = amount_and_cur.1.trim_start();
 
