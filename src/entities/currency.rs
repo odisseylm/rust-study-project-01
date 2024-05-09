@@ -109,16 +109,11 @@ pub fn as_printable2<'a, T: fmt::Display, E: fmt::Display>(r: &'a Result<T, E>) 
 
 // #[allow(unused_variables)]
 const fn const_panic_wrong_currency(_currency: & 'static str) -> ! {
-    // TODO: print 'currency' in some way
-    // const MSG: &str = const_format::concatcp!!(2u8, "+", 2u8, '=', 2u8 + 2);
-    // const MSG: &str = const_format::concatcp!!("Invalid currency [", c1, c2, c3, "].");
-    // panic!("Invalid currency {currency}", currency = _currency);
-    // concat!(1, 2, 3, "abc")
-    // panic!(concat!("Invalid currency (It should be 3 UPPERCASE english letters).", _currency)); // not compiled
+    // It would be nice to print 'currency' in some way => Seems it is impossible in const/inline functions, Use macro for it.
     panic!("Invalid currency (It should be 3 UPPERCASE english letters).")
 }
 const fn const_panic_wrong_currency_bytes(_currency: & 'static [u8]) -> ! {
-    // TODO: print 'currency' in some way
+    // It would be nice to print 'currency' in some way => Seems it is impossible in const/inline functions, Use macro for it.
     panic!("Invalid currency (It should be 3 UPPERCASE english letters).")
 }
 
@@ -250,23 +245,21 @@ macro_rules! do_thing {
         println!("{}", $metavar)
     };
 }
-// do_thing!(print 3);  => println!("{}", 3);
-
 /// Creates currency.
 /// in case of wrong input a panic will be thrown.
 ///
 /// # Examples
 /// ```
-/// use project01::make_currency;
-/// use project01::entities::currency::make_currency;
+/// use project01::make_currency; // macro
+/// use project01::entities::currency::make_currency; // required inline function
 ///
 /// let result = make_currency!("PLN");
 /// assert_eq!(result.code_as_string(), "PLN");
 /// assert_eq!(result.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
-/// use project01::make_currency;
-/// use project01::entities::currency::make_currency;
+/// use project01::make_currency; // macro
+/// use project01::entities::currency::make_currency; // required inline function
 ///
 /// make_currency!("pln"); // lowercase
 /// ```
@@ -282,7 +275,8 @@ macro_rules! make_currency {
                 && (bytes[2] as char).is_ascii_alphabetic() && (bytes[2] as char).is_ascii_uppercase()
             }
         };
-        assert!(is_valid, "Invalid currency (It should be 3 UPPERCASE english letters).");
+        assert!(is_valid, concat!("Invalid currency \"", $cur, "\" (It should be 3 UPPERCASE english letters)."));
+
         // We cannot create struct directly there because it has private field.
         // Currency([bytes[0], bytes[1], bytes[2]])
         make_currency($cur)
@@ -291,6 +285,8 @@ macro_rules! make_currency {
     //     validate_currency_b!($cur); make_currency_b($cur)
     // }};
 }
+
+// do_thing!(print 3);  => println!("{}", 3);
 #[macro_export] // hm... like kotlin inline dependent functions, this validate_currency should be also published.
 macro_rules! validate_currency {
     ($cur:literal) => {
@@ -496,7 +492,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Invalid currency (It should be 3 UPPERCASE english letters).")]
+    #[should_panic(expected = "Invalid currency \"uAH\" (It should be 3 UPPERCASE english letters).")]
     fn currency_new_macro_with_wrong() {
         make_currency!("uAH");
     }
@@ -531,10 +527,10 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Invalid currency (It should be 3 UPPERCASE english letters).")]
+    #[should_panic(expected = "Invalid currency \"US\" (It should be 3 UPPERCASE english letters).")]
     fn macro_impossible_make_wrong_const_literal_currency_for_wrong_length() {
         make_currency!("US");
-        make_currency!("USDD");
+        // make_currency!("USDD");
     }
 
     #[test]
