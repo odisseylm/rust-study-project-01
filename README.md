@@ -10,3 +10,7 @@
    - https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
 
 
+# Tests
+
+ - Run tests: `cargo test`
+ - Run tests with output: `cargo test -- --nocapture`

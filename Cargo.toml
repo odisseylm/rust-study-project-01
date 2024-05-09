@@ -12,6 +12,21 @@ edition = "2021"
 static_assertions = "1.1.0"
 const_format = "0.2.32"
 
+# unused manifest key: tests
+#[test]
+[tests]
+
+
+[dev-dependencies]
+#mockall = "0.12.1"
+#test-case = "3.3.1"
+#test-case = "2.2.2"
+test-case = "*"
+
+
+# hm... unused manifest key: benches
+[benches]
+
 
 [workspace]
 members = [
