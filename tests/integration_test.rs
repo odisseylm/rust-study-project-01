@@ -1,10 +1,7 @@
+// #![feature(macro_rules)]
 
 use project01::{ add678, make_currency };
 use project01::entities::currency::make_currency;
-
-// TODO: remove its usage in macro, because we need to publish these internals
-use project01::{ validate_currency };
-use project01::entities::currency::is_validate_currency_code_literal;
 
 mod common;
 
@@ -12,7 +9,7 @@ mod common;
 
 
 #[test]
-fn it_adds_two() {
+fn make_currency_fn() {
     common::setup();
     add678(1, 2);
     //add456()
@@ -23,7 +20,7 @@ fn it_adds_two() {
 }
 
 #[test]
-fn macro_test() {
+fn make_currency_macro() {
     common::setup();
     add678(1, 2);
     //add456()

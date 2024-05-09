@@ -1,4 +1,6 @@
 
+// #![macro_use]
+
 // mod entities;
 
 use core::fmt;
@@ -257,9 +259,6 @@ macro_rules! do_thing {
 /// ```
 /// use project01::make_currency;
 /// use project01::entities::currency::make_currency;
-/// // T O D O: remove its usage in macro, because we need to publish these internals
-/// use project01::{ validate_currency };
-/// use project01::entities::currency::is_validate_currency_code_literal;
 ///
 /// let result = make_currency!("PLN");
 /// assert_eq!(result.code_as_string(), "PLN");
@@ -268,16 +267,25 @@ macro_rules! do_thing {
 /// ```rust,should_panic
 /// use project01::make_currency;
 /// use project01::entities::currency::make_currency;
-/// // T O D O: remove its usage in macro, because we need to publish these internals
-/// use project01::{ validate_currency };
-/// use project01::entities::currency::is_validate_currency_code_literal;
 ///
 /// make_currency!("pln"); // lowercase
 /// ```
 #[macro_export]
 macro_rules! make_currency {
     ($cur:literal) => {{
-        validate_currency!($cur); make_currency($cur)
+        let bytes = $cur.as_bytes();
+        let is_valid = {
+            if $cur.len() != 3 || bytes.len() != 3 { false }
+            else {
+                   (bytes[0] as char).is_ascii_alphabetic() && (bytes[0] as char).is_ascii_uppercase()
+                && (bytes[1] as char).is_ascii_alphabetic() && (bytes[1] as char).is_ascii_uppercase()
+                && (bytes[2] as char).is_ascii_alphabetic() && (bytes[2] as char).is_ascii_uppercase()
+            }
+        };
+        assert!(is_valid, "Invalid currency (It should be 3 UPPERCASE english letters).");
+        // We cannot create struct directly there because it has private field.
+        // Currency([bytes[0], bytes[1], bytes[2]])
+        make_currency($cur)
     }};
     // ($cur:b-literal) => {{ // T O D O: how distinguish byte-literal
     //     validate_currency_b!($cur); make_currency_b($cur)
