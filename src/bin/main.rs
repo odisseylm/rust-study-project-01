@@ -9,7 +9,9 @@
 // use crate::currency::{as_printable, as_printable2, Currency, Fuck, PrintableResult };
 
 use project01::entities::{Currency, currency};
-use project01::entities::currency::{as_printable, as_printable2, Fuck, PrintableResult, USD};
+use project01::entities::currency::{ Fuck, USD };
+use project01::util::{as_printable, as_printable_ptr};
+use project01::util::result::PrintableResult;
 
 pub fn factorial(n: u128) -> u128 {
     match n {
@@ -34,14 +36,14 @@ fn main() {
     //println!("{}", cur2);
     println!("{} (as PrintableResult)", PrintableResult(&cur2));
     println!("{} (as_printable)", as_printable(&cur2));
-    println!("{} (as_printable2)", as_printable2(&cur2));
+    println!("{} (as_printable2)", as_printable_ptr(&cur2));
 
     // let cur2 = Currency::new(['u' as u8, 'S' as u8, 'D' as u8]);
     let cur2: Result<Currency, Fuck> = Currency::new("BRL".to_string());
     //println!("{}", cur2);
     println!("{} (as PrintableResult)", PrintableResult(&cur2));
     println!("{} (as_printable)", as_printable(&cur2));
-    println!("{} (as_printable2)", as_printable2(&cur2));
+    println!("{} (as_printable2)", as_printable_ptr(&cur2));
     // let currency1: Currency = currency_from_string(&usd_str).expect("Fuck happened.");
     // println!("{}", currency1.to_string());
     //

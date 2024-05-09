@@ -11,6 +11,7 @@ edition = "2021"
 [dependencies]
 static_assertions = "1.1.0"
 const_format = "0.2.32"
+bigdecimal = "0.4.3"
 
 # unused manifest key: tests
 #[test]

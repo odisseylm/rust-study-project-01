@@ -4,7 +4,7 @@ use core::fmt;
 use std::char;
 
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 // #[derive(core::fmt::Display)]
 pub struct Currency([u8;3]);
 
@@ -52,41 +52,6 @@ impl fmt::Display for Fuck {
 }
 
 
-// !!! Impossible in rust !!!
-// Error: only traits defined in the current crate can be implemented for types defined outside of the crate
-//
-// impl fmt::Display for Result<Currency, Fuck> {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{}{}{}", self.0[0] as char, self.0[1] as char, self.0[2] as char)
-//     }
-// }
-
-
-pub struct PrintableResult<'a, T: fmt::Display, E: fmt::Display>(pub &'a Result<T, E>);
-
-#[inline]
-// fn as_printable<'a, T: fmt::Display, E: fmt::Display>(r: &'a Result<T, E>) -> PrintableResult<'a, T, E> {
-pub fn as_printable<T: fmt::Display, E: fmt::Display>(r: &Result<T, E>) -> PrintableResult<T, E> {
-    return PrintableResult(r);
-}
-
-impl<'a, T: fmt::Display, E: fmt::Display> fmt::Display for PrintableResult<'a, T, E> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.0 {
-            Ok(ok)   => { write!(f, "{}", ok)  }
-            Err(err) => { write!(f, "{}", err) }
-        }
-    }
-}
-
-#[inline]
-pub fn as_printable2<'a, T: fmt::Display, E: fmt::Display>(r: &'a Result<T, E>) -> & 'a dyn fmt::Display {
-    return match r {
-        Ok(ok)   => { ok  }
-        Err(err) => { err }
-    }
-}
-
 
 const fn const_panic_wrong_currency(_currency: & 'static str) -> ! {
     // It would be nice to print 'currency' in some way,
@@ -107,13 +72,9 @@ const fn is_valid_cur_char(ch: char) -> bool {
 const fn is_valid_cur_byte(ch: u8) -> bool { is_valid_cur_char(ch as char) }
 
 // hm... like kotlin inline dependent functions, this validate_currency should be also published.
-pub const fn is_valid_currency_ascii(cur: &[u8]) -> bool {
+const fn is_valid_currency_ascii(cur: &[u8]) -> bool {
     if cur.len() != 3 { false }
-    else {
-        is_valid_cur_byte(cur[0])
-            && is_valid_cur_byte(cur[1])
-            && is_valid_cur_byte(cur[2])
-    }
+    else { is_valid_cur_byte(cur[0]) && is_valid_cur_byte(cur[1]) && is_valid_cur_byte(cur[2]) }
 }
 
 
@@ -122,13 +83,17 @@ pub const fn is_valid_currency_ascii(cur: &[u8]) -> bool {
 ///
 /// # Examples
 /// ```
-/// use project01::entities::make_currency;
-/// let result = make_currency("PLN");
-/// assert_eq!(result.code_as_string(), "PLN");
-/// assert_eq!(result.code_as_ascii_bytes(), *b"PLN");
+/// use project01::entities::{ Currency, make_currency };
+/// const PLN: Currency = make_currency("PLN");
+/// assert_eq!(PLN.code_as_string(), "PLN");
+/// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
-/// use project01::entities::make_currency;
+/// use project01::entities::{ Currency, make_currency };
+///
+/// // lowercase - error, in case of 'const' there will be compilation error.
+/// // The best approach!!! (but not for tests)
+/// // const PLN: Currency = make_currency("pln");
 /// make_currency("pln"); // lowercase
 /// ```
 ///
@@ -147,13 +112,16 @@ pub const fn make_currency(currency_code: & 'static str) -> Currency {
 ///
 /// # Examples
 /// ```
-/// use project01::entities::make_currency_b;
-/// let result = make_currency_b(b"PLN");
-/// assert_eq!(result.code_as_string(), "PLN");
-/// assert_eq!(result.code_as_ascii_bytes(), *b"PLN");
+/// use project01::entities::{ Currency, make_currency_b };
+/// const PLN: Currency = make_currency_b(b"PLN");
+/// assert_eq!(PLN.code_as_string(), "PLN");
+/// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
-/// use project01::entities::make_currency_b;
+/// use project01::entities::{ Currency, make_currency_b };
+/// // lowercase - error, in case of 'const' there will be compilation error.
+/// // The best approach!!! (but not for tests)
+/// // const PLN: Currency = make_currency_b(b"pln");
 /// make_currency_b(b"pln"); // lowercase
 /// ```
 ///
@@ -170,17 +138,22 @@ pub const fn make_currency_b(cur: & 'static [u8;3]) -> Currency {
 ///
 /// # Examples
 /// ```
+/// use project01::entities::Currency;
 /// use project01::make_currency; // macro
 /// use project01::entities::currency::make_currency; // required inline function
 ///
-/// let result = make_currency!("PLN");
-/// assert_eq!(result.code_as_string(), "PLN");
-/// assert_eq!(result.code_as_ascii_bytes(), *b"PLN");
+/// const PLN: Currency = make_currency!("PLN");
+/// assert_eq!(PLN.code_as_string(), "PLN");
+/// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
+/// use project01::entities::Currency;
 /// use project01::make_currency; // macro
 /// use project01::entities::currency::make_currency; // required inline function
 ///
+/// // lowercase - error, in case of 'const' there will be compilation error.
+/// // The best approach!!! (but not for tests)
+/// // const PLN: Currency = make_currency!("pln");
 /// make_currency!("pln"); // lowercase
 /// ```
 ///
@@ -208,22 +181,8 @@ macro_rules! make_currency {
 }
 
 
-#[macro_export] // hm... like kotlin inline dependent functions, this validate_currency should be also published.
-macro_rules! validate_currency {
-    ($cur:literal) => {
-        // assert!(is_validate_currency_code_literal($cur), "Invalid currency (It should be 3 UPPERCASE english letters).");
-        // full path to avoid manual import later.
-        assert!(is_validate_currency_code_literal($cur), "Invalid currency (It should be 3 UPPERCASE english letters).");
-    }
-    // ($cur:expr) => {
-    //     assert!(is_validate_currency_code_as_ascii_bytes($cur), "Invalid currency (It should be 3 UPPERCASE english letters).");
-    // }
-}
-
-
 // #[macro_export] // for auto import of unique macros name
 // macro_rules! make_currency_macro_temp { ($cur:literal) => { make_currency($cur) } }
-
 
 
 #[macro_export]
@@ -256,16 +215,19 @@ pub const EUR: Currency = make_currency("EUR");
 
 
 
+// Tests for private methods/behavior
+// Other test are located in ${project}/tests/currency_test.rs
+//
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn make_currency2_test() {
-        let aaa = b"UAH";
-        Currency(*aaa);
-        Currency(*aaa);
-        Currency(*aaa);
+        let ascii = b"UAH";
+        Currency(*ascii);
+        Currency(*ascii);
+        Currency(*ascii);
     }
 
     #[test]

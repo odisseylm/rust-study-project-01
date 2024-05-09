@@ -16,11 +16,11 @@
  - Run tests with output: `cargo test -- --nocapture`
 
 
-docs test, see https://medium.com/@AlexanderObregon/testing-in-rust-unit-tests-integration-tests-and-documentation-tests-ae7c10bbb4a6
+Docs test
+ - https://medium.com/@AlexanderObregon/testing-in-rust-unit-tests-integration-tests-and-documentation-tests-ae7c10bbb4a6
 
-TODO:
-should public functions be tested in internal or integration tests ??
-https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch11-03-test-organization.html
+Should public functions be tested in internal or integration tests ??
+ - https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch11-03-test-organization.html
 
 
 
