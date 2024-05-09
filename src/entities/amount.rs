@@ -25,8 +25,7 @@ impl Amount {
     }
 
     pub fn with_str_amount_unchecked(amount: &str, currency: Currency) -> Self {
-        let bd: Result<BigDecimal, ParseBigDecimalError> = BigDecimal::from_str(amount);
-        return bd.map(|am| Amount { value: am, currency } ).unwrap();
+        Amount::with_str_amount(amount, currency).unwrap()
     }
 
     #[inline]
@@ -68,16 +67,7 @@ pub fn amount(amount: BigDecimal, currency: Currency) -> Amount { Amount::new(am
 
 fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
     let s = s.trim();
-    let chars_ind: CharIndices = s.char_indices();
-
-    let mut last_space_bytes_offset: usize = usize::MAX;
-
-    chars_ind.for_each(|it|{
-        let byte_index: usize = it.0;
-        let ch: char = it.1;
-
-        if ch.is_ascii_whitespace() { last_space_bytes_offset = byte_index }
-    });
+    let last_space_bytes_offset: usize = s.rfind(|ch: char|{ ch.is_ascii_whitespace() }).unwrap_or(usize::MAX);
 
     if last_space_bytes_offset == usize::MAX {
         return Err(ParseAmountError::NoCurrencyError)
@@ -110,7 +100,5 @@ impl FromStr for Amount {
     type Err = ParseAmountError;
 
     #[inline]
-    fn from_str(s: &str) -> Result<Amount, Self::Err> {
-        parse_amount(s)
-    }
+    fn from_str(s: &str) -> Result<Amount, Self::Err> { parse_amount(s) }
 }
