@@ -110,7 +110,13 @@ const fn const_panic_wrong_currency(_currency: & 'static str) -> ! {
     // TODO: print 'currency' in some way
     // const MSG: &str = const_format::concatcp!!(2u8, "+", 2u8, '=', 2u8 + 2);
     // const MSG: &str = const_format::concatcp!!("Invalid currency [", c1, c2, c3, "].");
-    //panic!("Invalid currency {currency}", currency = _currency);
+    // panic!("Invalid currency {currency}", currency = _currency);
+    // concat!(1, 2, 3, "abc")
+    // panic!(concat!("Invalid currency (It should be 3 UPPERCASE english letters).", _currency)); // not compiled
+    panic!("Invalid currency (It should be 3 UPPERCASE english letters).")
+}
+const fn const_panic_wrong_currency_bytes(_currency: & 'static [u8]) -> ! {
+    // TODO: print 'currency' in some way
     panic!("Invalid currency (It should be 3 UPPERCASE english letters).")
 }
 
@@ -127,7 +133,8 @@ fn is_validate_currency_code_string(cur: &String) -> bool {
     return is_validate_currency_code_as_ascii_bytes(bytes);
 }
 
-const fn is_validate_currency_code_literal(cur: & 'static str) -> bool {
+// hm... like kotlin inline dependent functions, this validate_currency should be also published.
+pub const fn is_validate_currency_code_literal(cur: & 'static str) -> bool {
     if cur.len() != 3 { return false; }
     let bytes = cur.as_bytes();
     return is_validate_currency_code_as_ascii_bytes(bytes);
@@ -138,7 +145,9 @@ const fn is_validate_currency_code_literal(cur: & 'static str) -> bool {
     //     && is_valid_currency_char_byte(bytes[2]);
     // return valid
 }
-const fn is_validate_currency_code_as_ascii_bytes(cur: &[u8]) -> bool {
+
+// hm... like kotlin inline dependent functions, this validate_currency should be also published.
+pub const fn is_validate_currency_code_as_ascii_bytes(cur: &[u8]) -> bool {
     if cur.len() != 3 { return false; }
     let bytes = cur; //.as_bytes();
     if bytes.len() != 3 { return false; }
@@ -162,12 +171,176 @@ const fn validate_currency_code(cur: & 'static str) {
 }
 */
 
+/// Creates currency.
+/// in case of wrong input a panic will be thrown.
+///
+/// # Examples
+/// ```
+/// use project01::entities::make_currency;
+/// let result = make_currency("PLN");
+/// assert_eq!(result.code_as_string(), "PLN");
+/// assert_eq!(result.code_as_ascii_bytes(), *b"PLN");
+/// ```
+/// ```rust,should_panic
+/// use project01::entities::make_currency;
+/// make_currency("pln"); // lowercase
+/// ```
 pub const fn make_currency(cur: & 'static str) -> Currency {
     //validate_currency_code(cur);
     let is_valid = is_validate_currency_code_literal(cur);
     if !is_valid { const_panic_wrong_currency(cur) }
     let bytes = cur.as_bytes();
     return Currency([bytes[0], bytes[1], bytes[2]]);
+}
+
+/// Creates currency.
+/// in case of wrong input a panic will be thrown.
+///
+/// # Examples
+/// ```
+/// use project01::entities::make_currency_b;
+/// let result = make_currency_b(b"PLN");
+/// assert_eq!(result.code_as_string(), "PLN");
+/// assert_eq!(result.code_as_ascii_bytes(), *b"PLN");
+/// ```
+/// ```rust,should_panic
+/// use project01::entities::make_currency_b;
+/// make_currency_b(b"pln"); // lowercase
+/// ```
+pub const fn make_currency_b(cur: & 'static [u8;3]) -> Currency { // TODO: rename
+    //validate_currency_code(cur);
+    let is_valid = is_validate_currency_code_as_ascii_bytes(cur);
+    if !is_valid { const_panic_wrong_currency_bytes(cur) }
+    return Currency([cur[0], cur[1], cur[2]]);
+}
+
+
+#[allow(unused_macros)]
+macro_rules! say_hello {
+    () => (
+        println!("### Hello, world!");
+    );
+}
+#[allow(unused_macros)]
+macro_rules! create_function {
+    ($func_name:ident) => (
+        fn $func_name() {
+            println!("You called {:?}()", stringify!($func_name));
+        }
+    );
+}
+
+#[allow(unused_macros)]
+macro_rules! assert_equal_len {
+    ($a:expr, $b:expr, $func:ident, $op:tt) => {
+        assert!($a.len() == $b.len(),
+                "{:?}: dimension mismatch: {:?} {:?} {:?}",
+                stringify!($func),
+                ($a.len(),),
+                stringify!($op),
+                ($b.len(),));
+    };
+}
+
+#[allow(unused_macros)]
+macro_rules! do_thing {
+    (print $metavar:literal) => {
+        println!("{}", $metavar)
+    };
+}
+// do_thing!(print 3);  => println!("{}", 3);
+
+/// Creates currency.
+/// in case of wrong input a panic will be thrown.
+///
+/// # Examples
+/// ```
+/// use project01::make_currency;
+/// use project01::entities::currency::make_currency;
+/// // T O D O: remove its usage in macro, because we need to publish these internals
+/// use project01::{ validate_currency };
+/// use project01::entities::currency::is_validate_currency_code_literal;
+///
+/// let result = make_currency!("PLN");
+/// assert_eq!(result.code_as_string(), "PLN");
+/// assert_eq!(result.code_as_ascii_bytes(), *b"PLN");
+/// ```
+/// ```rust,should_panic
+/// use project01::make_currency;
+/// use project01::entities::currency::make_currency;
+/// // T O D O: remove its usage in macro, because we need to publish these internals
+/// use project01::{ validate_currency };
+/// use project01::entities::currency::is_validate_currency_code_literal;
+///
+/// make_currency!("pln"); // lowercase
+/// ```
+#[macro_export]
+macro_rules! make_currency {
+    ($cur:literal) => {{
+        validate_currency!($cur); make_currency($cur)
+    }};
+    // ($cur:b-literal) => {{ // T O D O: how distinguish byte-literal
+    //     validate_currency_b!($cur); make_currency_b($cur)
+    // }};
+}
+#[macro_export] // hm... like kotlin inline dependent functions, this validate_currency should be also published.
+macro_rules! validate_currency {
+    ($cur:literal) => {
+        // assert!(is_validate_currency_code_literal($cur), "Invalid currency (It should be 3 UPPERCASE english letters).");
+        // full path to avoid manual import later.
+        assert!(is_validate_currency_code_literal($cur), "Invalid currency (It should be 3 UPPERCASE english letters).");
+    }
+    // ($cur:expr) => {
+    //     assert!(is_validate_currency_code_as_ascii_bytes($cur), "Invalid currency (It should be 3 UPPERCASE english letters).");
+    // }
+}
+// #[macro_export]
+// macro_rules! make_currency_macro_temp {
+//     ($cur:literal) => { make_currency($cur) }
+// }
+
+#[macro_export] // hm... like kotlin inline dependent functions, this validate_currency should be also published.
+macro_rules! validate_currency_b {
+    ($cur:literal) => {
+        assert!(is_validate_currency_code_as_ascii_bytes($cur), "Invalid currency (It should be 3 UPPERCASE english letters).");
+    }
+}
+#[macro_export]
+macro_rules! make_currency_b {
+    ($cur:literal) => {{ validate_currency_b!($cur); make_currency_b($cur) }};
+}
+
+#[allow(unused_macros)]
+macro_rules! foo {
+    (_ bool) => {
+        println!("got bool");
+    };
+    (_ Result<i32>) => {
+        println!("got Result<i32>");
+    };
+    (_ $tp:ty) => {
+        println!("fallback to type: {}", stringify!($tp));
+    };
+    // ($($tp:tt)*) => {
+    //     foo!(_ $($tp)*);
+    // };
+}
+
+#[allow(unused_macros)]
+macro_rules! foo2 {
+    ($tp:ty) => {
+        foo!(_ $tp);
+    };
+    (_ bool) => {
+        println!("got bool");
+    };
+    (_ Result<i32>) => {
+        println!("got Result<i32>");
+    };
+    (_ $tp:ty) => {
+        println!("fallback to type: {}", stringify!($tp));
+    };
+
 }
 
 // const fn currency_from_chars(c1: char, c2: char, c3: char) -> Currency {
@@ -193,6 +366,60 @@ pub const EUR: Currency = make_currency("EUR");
 mod tests {
     use super::*;
 
+    #[test]
+    #[ignore]
+    fn test_temp() {
+        // say_hello!();
+        // create_function!(rrr);
+        // rrr();
+
+        // fn local_fn() { println!("### local_fn") }
+        // assert_equal_len!("a", "aa", local_fn, +);
+        // assert_equal_len!("a", "a", local_fn, +);
+
+        // foo!(true bool);
+        foo!(_ bool);
+        foo2!(_ bool);
+        //foo!(bool);
+        foo2!(bool);
+
+        let cur: Currency = make_currency!("USD");
+        assert_eq!(cur.code_as_string(), "USD");
+
+        // let cur: Currency = make_currency2!("US");
+        // assert_eq!(cur.code_as_string(), "US");
+
+        // const CUR43: Currency = make_currency!("usd"); // fails at compile time  - very-very GOOD
+        // assert_eq!(CUR43.code_as_string(), "USD");
+
+        // const CUR43: Currency = make_currency!("US");  // fails at compile time  - very-very GOOD
+        // assert_eq!(CUR43.code_as_string(), "USD");
+
+        let cur43: Currency = make_currency!("usd"); // Does NOT fail at compile time (only at runtime) - BAD!!! Why??
+        assert_eq!(cur43.code_as_string(), "USD");
+
+        //const CUR44: Currency = make_currency2!("US");
+        //assert_eq!(CUR44.code_as_string(), "US");
+
+        // const CUR44: Currency = make_currency3!("US");
+        // assert_eq!(CUR44.code_as_string(), "US");
+
+        let cur45_4: Currency = make_currency!("usd");
+        assert_eq!(cur45_4.code_as_string(), "US");
+
+        // noinspection RsConstNaming
+        // const cur45_2: Currency = make_currency("US"); // fails at compile time - vey good
+        // assert_eq!(cur45_2.code_as_string(), "US");
+
+        let not_direct_literal = "US";
+        let cur45_0: Currency = make_currency(not_direct_literal);
+        // let cur45: Currency = make_currency3!(not_direct_literal);
+        assert_eq!(cur45_0.code_as_string(), "US");
+
+        let cur46: Currency = make_currency!("US");
+        assert_eq!(cur46.code_as_string(), "US");
+    }
+
     // ??? Does not work !!!
     //#[setup]
     // pub fn setup() {
@@ -202,6 +429,42 @@ mod tests {
 
     #[test]
     fn make_currency_test() {
+        const UAH: Currency = make_currency("UAH");
+        assert_eq!(UAH.code_as_string(), "UAH");
+        assert_eq!(UAH.code_as_ascii_bytes(), *b"UAH");
+        assert_eq!(UAH.code_as_ascii_bytes(), ['U' as u8, 'A' as u8, 'H' as u8]);
+
+        let jpy = make_currency("JPY");
+        assert_eq!(jpy.code_as_string(), "JPY");
+        assert_eq!(jpy.code_as_ascii_bytes(), *b"JPY");
+        assert_eq!(jpy.code_as_ascii_bytes(), ['J' as u8, 'P' as u8, 'Y' as u8]);
+    }
+
+    #[test]
+    fn make_currency_b_test() {
+        const UAH: Currency = make_currency_b(b"UAH");
+        assert_eq!(UAH.code_as_string(), "UAH");
+        assert_eq!(UAH.code_as_ascii_bytes(), *b"UAH");
+        assert_eq!(UAH.code_as_ascii_bytes(), ['U' as u8, 'A' as u8, 'H' as u8]);
+
+        //const UAH2: Currency = make_currency!(b"UAH");
+        const UAH2: Currency = make_currency_b!(b"UAH");
+        assert_eq!(UAH2.code_as_string(), "UAH");
+        assert_eq!(UAH2.code_as_ascii_bytes(), *b"UAH");
+        assert_eq!(UAH2.code_as_ascii_bytes(), ['U' as u8, 'A' as u8, 'H' as u8]);
+
+        let jpy = make_currency_b(b"JPY");
+        assert_eq!(jpy.code_as_string(), "JPY");
+        assert_eq!(jpy.code_as_ascii_bytes(), *b"JPY");
+    }
+
+    #[test]
+    fn make_currency2_test() {
+        let aaa = b"UAH";
+        Currency(*aaa);
+        Currency(*aaa);
+        Currency(*aaa);
+
         const UAH: Currency = make_currency("UAH");
         assert_eq!(UAH.code_as_string(), "UAH");
         assert_eq!(UAH.code_as_ascii_bytes(), ['U' as u8, 'A' as u8, 'H' as u8]);
@@ -225,9 +488,15 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Invalid currency (It should be 3 UPPERCASE english letters).")]
+    fn currency_new_macro_with_wrong() {
+        make_currency!("uAH");
+    }
+
+    #[test]
     fn currency_new_with_wrong_02() {
         let cur = Currency::new("uAH".to_string());
-        assert!(cur.is_err())
+        assert!(cur.is_err());
     }
 
     #[test]
@@ -239,10 +508,25 @@ mod tests {
     }
 
     #[test]
+    #[should_panic] // just example without message
+    fn macro_impossible_make_wrong_const_literal_currency_for_non_alpha() {
+        // As expected, due to 'const' var qualifier we have compilation error
+        //const cur1: Currency = make_currency("1US");
+        make_currency!("1US");
+    }
+
+    #[test]
     #[should_panic(expected = "Invalid currency (It should be 3 UPPERCASE english letters).")]
     fn impossible_make_wrong_const_literal_currency_for_wrong_length() {
         make_currency("US");
         make_currency("USDD");
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid currency (It should be 3 UPPERCASE english letters).")]
+    fn macro_impossible_make_wrong_const_literal_currency_for_wrong_length() {
+        make_currency!("US");
+        make_currency!("USDD");
     }
 
     #[test]
