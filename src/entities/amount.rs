@@ -18,10 +18,6 @@ impl Display for Amount {
 
 
 impl Amount {
-    // fn new_risky(amount: & 'static str, currency: Currency) -> Self {
-    //     let bd: BigDecimal = BigDecimal::from_str(amount).unwrap();
-    //     return Amount { value: bd, currency };
-    // }
 
     pub fn with_str_amount(amount: &str, currency: Currency) -> Result<Self, ParseBigDecimalError> {
         let bd: Result<BigDecimal, ParseBigDecimalError> = BigDecimal::from_str(amount);
@@ -32,16 +28,6 @@ impl Amount {
         let bd: Result<BigDecimal, ParseBigDecimalError> = BigDecimal::from_str(amount);
         return bd.map(|am| Amount { value: am, currency } ).unwrap();
     }
-
-    // pub fn with_string_amount(amount: &String, currency: Currency) -> Result<Self, ParseBigDecimalError> {
-    //     let bd: Result<BigDecimal, ParseBigDecimalError> = BigDecimal::from_str(&amount);
-    //     return bd.map(|am| Amount { value: am, currency } );
-    // }
-    //
-    // pub fn with_string_amount2(amount: String, currency: Currency) -> Result<Self, ParseBigDecimalError> {
-    //     let bd: Result<BigDecimal, ParseBigDecimalError> = BigDecimal::from_str(&amount);
-    //     return bd.map(|am| Amount { value: am, currency } );
-    // }
 
     #[inline]
     pub fn new(amount: BigDecimal, currency: Currency) -> Amount {
