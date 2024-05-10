@@ -6,12 +6,13 @@ mod adder;
 // by full path
 // use crate::entities::currency::{ Currency, make_currency };
 // by shorter path
-use crate::entities::{ Currency, make_currency };
-use crate::entities::currency;
+// use crate::entities::{ Currency, make_currency };
+// use crate::entities::currency;
 
 pub fn add678(v1: i32, v2: i32) -> i32 { v1 + v2 }
 
 
+/*
 #[allow(dead_code)]
 fn just_usage() {
     let usd_code_as_bytes = currency::USD.code_as_ascii_bytes();
@@ -21,7 +22,7 @@ fn just_usage() {
     println!("{}", usd_code_as_string);
 
     let usd = Currency::new("USD".to_string());
-    println!("{}", usd.unwrap());
+    println!("{}", usd.u n w r a p());
 
     let brl = make_currency("BRL");
     println!("{}", brl);
@@ -29,6 +30,7 @@ fn just_usage() {
     let added = adder::add852(1, 2);
     println!("{}", added);
 }
+*/
 
 
 //mod adder;

@@ -1,8 +1,9 @@
 // #![feature(macro_rules)]
 
-use project01::{make_currency, make_currency_b};
+use project01::{ make_currency, make_currency_b };
 use project01::entities::{Currency, make_currency_b};
 use project01::entities::currency::{EUR, make_currency, USD};
+use common::TestResultUnwrap;
 
 mod common;
 
@@ -99,7 +100,7 @@ fn make_currency2_test() {
 
 #[test]
 fn currency_new_test() {
-    let uah = Currency::new("UAH".to_string()).unwrap();
+    let uah = Currency::new("UAH".to_string()).test_unwrap();
     assert_eq!(uah.code_as_string(), "UAH");
     assert_eq!(uah.code_as_ascii_bytes(), ['U' as u8, 'A' as u8, 'H' as u8]);
 }
@@ -107,7 +108,7 @@ fn currency_new_test() {
 #[test]
 #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: CurrencyFormatError")]
 fn currency_new_with_wrong() {
-    Currency::new("uAH".to_string()).unwrap();
+    Currency::new("uAH".to_string()).test_unwrap();
 }
 
 #[test]

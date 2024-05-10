@@ -5,12 +5,14 @@ use project01::entities::{Amount, amount};
 use project01::entities::currency::{ EUR, USD, make_currency };
 use project01::make_currency;
 
+use common::TestResultUnwrap;
+
 
 mod common;
 
 
 // private for testing
-fn bd(v: &str) -> BigDecimal { BigDecimal::from_str(v).unwrap() }
+fn bd(v: &str) -> BigDecimal { BigDecimal::from_str(v).test_unwrap() }
 
 
 #[test]
@@ -21,13 +23,13 @@ fn amount_create() {
     let amount1 = amount(bd("124.456"), EUR);
     assert_eq!(amount1.to_string(), "124.456 EUR");
 
-    assert_eq!(Amount::with_str_amount("10.050", USD).unwrap().to_string(), "10.050 USD");
+    assert_eq!(Amount::with_str_amount("10.050", USD).test_unwrap().to_string(), "10.050 USD");
 
     let amount_string: String = "10.0501".to_string();
-    assert_eq!(Amount::with_str_amount(amount_string.as_str(), USD).unwrap().to_string(), "10.0501 USD");
+    assert_eq!(Amount::with_str_amount(amount_string.as_str(), USD).test_unwrap().to_string(), "10.0501 USD");
 
-    // assert_eq!(Amount::with_str_amount("10.050", USD).unwrap().to_string(), "10.050 USD");
-    // assert_eq!(Amount::with_string_amount2("10.0501".to_string(), USD).unwrap().to_string(), "10.0501 USD");
+    // assert_eq!(Amount::with_str_amount("10.050", USD).test_unwrap().to_string(), "10.050 USD");
+    // assert_eq!(Amount::with_string_amount2("10.0501".to_string(), USD).test_unwrap().to_string(), "10.0501 USD");
 }
 
 
@@ -35,7 +37,7 @@ fn amount_create() {
 fn amount_base_test() {
     let am = Amount::with_str_amount("10.050", USD);
 
-    let amount = am.unwrap();
+    let amount = am.test_unwrap();
     assert_eq!(amount.to_string(), "10.050 USD");
 
     // assert_eq!(amount.value.to_string(), "10.050");
@@ -83,7 +85,7 @@ fn amount_should_be_immutable() {
 fn amount_mutability_test() {
     let am = Amount::with_str_amount("10.050", make_currency!("JPY"));
 
-    let mut amount = am.unwrap();
+    let mut amount = am.test_unwrap();
     assert_eq!(amount.to_string(), "10.050 JPY");
 
     // amount.currency() = EUR; // compilation error 'invalid left-hand side of assignment' - OK
@@ -110,7 +112,7 @@ fn amount_mutability_test() {
 
 #[test]
 fn from_string() {
-    let am = Amount::from_str(" \t \n 122.350  \tJPY ").unwrap();
+    let am = Amount::from_str(" \t \n 122.350  \tJPY ").test_unwrap();
     assert_eq!(am.to_string(), "122.350 JPY");
     assert_eq!(*am.value(), bd("122.350"));
     assert_eq!(am.value_ref(), bd("122.350").to_ref());
@@ -120,7 +122,7 @@ fn from_string() {
 #[test]
 #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseCurrencyError")]
 fn from_string_with_wrong_formed_currency() {
-    let am = Amount::from_str(" \t \n 122.350 USSD ").unwrap();
+    let am = Amount::from_str(" \t \n 122.350 USSD ").test_unwrap();
     assert_eq!(am.to_string(), "122.350 JPY");
     assert_eq!(*am.value(), bd("122.350"));
     assert_eq!(am.value_ref(), bd("122.350").to_ref());
@@ -130,7 +132,7 @@ fn from_string_with_wrong_formed_currency() {
 #[test]
 #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: NoCurrencyError")]
 fn from_string_without_currency() {
-    let am = Amount::from_str(" \t \n 122.350  ").unwrap();
+    let am = Amount::from_str(" \t \n 122.350  ").test_unwrap();
     assert_eq!(am.to_string(), "122.350 JPY");
     assert_eq!(*am.value(), bd("122.350"));
     assert_eq!(am.value_ref(), bd("122.350").to_ref());
@@ -141,7 +143,7 @@ fn from_string_without_currency() {
 // #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
 #[should_panic(expected = "ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
 fn from_string_with_wrong_amount_value() {
-    let am = Amount::from_str(" \t \n 12_John_2.350 BRL ").unwrap();
+    let am = Amount::from_str(" \t \n 12_John_2.350 BRL ").test_unwrap();
     assert_eq!(am.to_string(), "122.350 JPY");
     assert_eq!(*am.value(), bd("122.350"));
     assert_eq!(am.value_ref(), bd("122.350").to_ref());
@@ -152,7 +154,7 @@ fn from_string_with_wrong_amount_value() {
 // #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
 #[should_panic(expected = "ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
 fn from_string_with_wrong_non_ascii_amount_value() {
-    let am = Amount::from_str(" \t \n Чебуран BRL ").unwrap();
+    let am = Amount::from_str(" \t \n Чебуран BRL ").test_unwrap();
     assert_eq!(am.to_string(), "122.350 JPY");
     assert_eq!(*am.value(), bd("122.350"));
     assert_eq!(am.value_ref(), bd("122.350").to_ref());

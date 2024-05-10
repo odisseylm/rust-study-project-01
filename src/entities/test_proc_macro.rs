@@ -6,7 +6,7 @@ extern crate proc_macro;
 
 // #[proc_macro]
 // pub fn make_answer(_item: TokenStream) -> TokenStream {
-//     "fn answer() -> u32 { 42 }".parse().unwrap()
+//     "fn answer() -> u32 { 42 }".parse().test_unwrap()
 // }
 
 

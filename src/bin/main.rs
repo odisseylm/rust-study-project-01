@@ -8,7 +8,7 @@
 // use currency::USD;
 // use crate::currency::{as_printable, as_printable2, Currency, Fuck, PrintableResult };
 
-use project01::entities::{Currency, currency};
+use project01::entities::{ Currency };
 use project01::entities::currency::{ CurrencyFormatError, USD };
 use project01::util::{as_printable, as_printable_ptr};
 use project01::util::result::PrintableResult;
@@ -55,6 +55,7 @@ fn main() {
 }
 
 
+/*
 #[allow(dead_code)]
 fn use_dead_code() {
     let usd_code_as_bytes = USD.code_as_ascii_bytes();
@@ -64,8 +65,9 @@ fn use_dead_code() {
     println!("{}", usd_code_as_string);
 
     let usd = Currency::new("USD".to_string());
-    println!("{}", usd.unwrap());
+    println!("{}", usd.u n w r a p());
 
     let brl = currency::make_currency("BRL");
     println!("{}", brl);
 }
+*/

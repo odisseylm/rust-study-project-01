@@ -36,8 +36,8 @@ impl Currency {
     }
 
     pub fn code_as_string(&self) -> String {
-        // a bit overcomplicated...
-        //String::from_utf8(Vec::from(self.0)).unwrap()
+        // a bit overcomplicated and needs risky unwrap...
+        //String::from_utf8(Vec::from(self.0))
 
         let mut s: String = String::with_capacity(3);
         s.push(self.0[0] as char);

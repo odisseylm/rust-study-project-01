@@ -1,7 +1,8 @@
+use std::str::{ FromStr };
 use std::fmt::{ Display, Formatter };
 use bigdecimal::{ BigDecimal, BigDecimalRef, ParseBigDecimalError };
-use crate::entities::{Currency, CurrencyFormatError};
-use std::str::{ FromStr };
+use crate::entities::{ Currency, CurrencyFormatError };
+use crate::util::UncheckedResultUnwrap;
 
 
 #[derive(Debug)]
@@ -25,7 +26,7 @@ impl Amount {
     }
 
     pub fn with_str_amount_unchecked(amount: &str, currency: Currency) -> Self {
-        Amount::with_str_amount(amount, currency).unwrap()
+        Amount::with_str_amount(amount, currency).unchecked_unwrap()
     }
 
     #[inline]
