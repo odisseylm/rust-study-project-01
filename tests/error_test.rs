@@ -1,11 +1,26 @@
-use assertables::{ assert_ge, assert_ge_as_result };
-
-use project01::util::{enable_backtrace, MyError333, MyError334};
-#[allow(unused_imports)]
-use project01::util::{ error_fn_105, error_fn_205, error_fn_305, error_fn_405, error_fn_505, error_fn_605, error_fn_705 };
-use project01::util::Entity1;
 
 mod common;
+mod errors;
+
+
+use std::fmt::write;
+use assertables::{ assert_ge, assert_ge_as_result };
+use assertables::{ assert_starts_with, assert_starts_with_as_result };
+use assertables::{ assert_contains, assert_contains_as_result };
+
+use project01::util::{ enable_backtrace, TestOptionUnwrap, TestResultUnwrap };
+
+use crate::errors::{  MyError333, MyError334 };
+use errors::{ extract_json_5, error_fn_5 };
+use errors::{ fn_serde_json_wrapped_by_anyhow_using_question_op_05  };
+use errors::{ fn_wrap_by_my_error_using_map_err_and_question_op_05  };
+use errors::{ fn_wrap_by_my_error_using_map_err_and_with_context_05 };
+use errors::{ fn_wrap_by_my_error_using_map_err_05 };
+use errors::{ fn_wrap_by_my_error_using_map_err_and_anyhow_macro_05 };
+use errors::{ fn_wrap_by_anyhow_error_using_map_err_and_anyhow_macro_05 };
+use errors::{ fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn_05 };
+use errors::Entity1;
+
 
 // #[derive(Deserialize)]
 // struct ClusterMap {
@@ -26,7 +41,7 @@ fn test_result_stack_trace() {
 
     enable_backtrace();
 
-    let v_r: Result<Entity1, serde_json::error::Error> = project01::util::extract_json_5();
+    let v_r: Result<Entity1, serde_json::error::Error> = extract_json_5();
     println!("v1 result: {:?}", v_r);
 
     match v_r {
@@ -45,7 +60,7 @@ fn test_result_stack_trace() {
 #[test]
 fn test_result_stack_trace333() {
     enable_backtrace();
-    let v_r: Result<Entity1, MyError333> = project01::util::error_fn_5();
+    let v_r: Result<Entity1, MyError333> = error_fn_5();
     println!("v1 result: {:?}", v_r);
 }
 
@@ -54,14 +69,12 @@ fn test_result_stack_trace333() {
 #[test]
 fn test_print_error_and_stacktrace_01() {
     enable_backtrace();
-    let r = error_fn_105();
-    println!("{r:?}");
-}
 
-#[test]
-fn test_print_error_and_stacktrace_02() {
-    enable_backtrace();
-    if let Err(err) = error_fn_105() {
+    let r = fn_serde_json_wrapped_by_anyhow_using_question_op_05();
+    println!("{r:?}");
+
+    println!("\n--------------------------------------------------------------------\n");
+    if let Err(err) = fn_serde_json_wrapped_by_anyhow_using_question_op_05() {
         println!("{err:?}");
     }
 }
@@ -69,7 +82,7 @@ fn test_print_error_and_stacktrace_02() {
 #[test]
 fn test_find_my_error_in_error_chain_01() {
     enable_backtrace();
-    let r = error_fn_505();
+    let r = fn_wrap_by_my_error_using_map_err_and_anyhow_macro_05();
     match r {
         Ok(_) => { assert!(false, "Error is expected.") }
         Err(err) => {
@@ -115,7 +128,7 @@ fn test_impl<Ok: core::fmt::Debug>(fun: fn()->Result<Ok,anyhow::Error>, test_ste
     let r = fun();
 
     println!("{r:?}");
-    if let Err(err) = error_fn_105() {
+    if let Err(err) = fun() {
         println!("{err:?}");
     }
 
@@ -179,39 +192,66 @@ fn test_impl<Ok: core::fmt::Debug>(fun: fn()->Result<Ok,anyhow::Error>, test_ste
 
 
 #[test]
-fn test_fn_error_fn_105() {
-    test_impl(error_fn_105, ASSERT_CHAIN_COUNT_EQ_1_ASSERTION | FIND_SERDE_ERROR_ASSERTION);
+fn test_fn_serde_json_wrapped_by_anyhow_using_question_op() {
+    test_impl(fn_serde_json_wrapped_by_anyhow_using_question_op_05, ASSERT_CHAIN_COUNT_EQ_1_ASSERTION | FIND_SERDE_ERROR_ASSERTION);
 }
 
 #[test]
-fn test_fn_error_fn_205() {
-    test_impl(error_fn_205, ASSERT_CHAIN_COUNT_EQ_2_ASSERTION | FIND_MY_ERROR_ASSERTION);
+fn test_fn_wrap_by_my_error_using_map_err_and_question_op() {
+    test_impl(fn_wrap_by_my_error_using_map_err_and_question_op_05, ASSERT_CHAIN_COUNT_EQ_2_ASSERTION | FIND_MY_ERROR_ASSERTION);
 }
 
 #[test]
-fn test_fn_error_fn_305() {
-    test_impl(error_fn_305, ASSERT_CHAIN_COUNT_EQ_2_ASSERTION | FIND_MY_ERROR_ASSERTION);
+fn test_fn_wrap_by_my_error_using_map_err_and_with_context() {
+    test_impl(fn_wrap_by_my_error_using_map_err_and_with_context_05, ASSERT_CHAIN_COUNT_EQ_2_ASSERTION | FIND_MY_ERROR_ASSERTION);
 }
 
 #[test]
-fn test_fn_error_fn_405() {
+fn test_fn_wrap_by_my_error_using_map_err() {
     // no chain
     // even no my error!!
     // it just created standard error with MyError.to_string() as message
-    test_impl(error_fn_405, ASSERT_CHAIN_COUNT_EQ_1_ASSERTION);
+    test_impl(fn_wrap_by_my_error_using_map_err_05, ASSERT_CHAIN_COUNT_EQ_1_ASSERTION);
 }
 
 #[test]
-fn test_fn_error_fn_505() {
-    test_impl(error_fn_505, ASSERT_CHAIN_COUNT_EQ_1_ASSERTION | FIND_MY_ERROR_ASSERTION);
+fn test_fn_wrap_by_my_error_using_map_err_and_anyhow_macro() {
+    test_impl(fn_wrap_by_my_error_using_map_err_and_anyhow_macro_05, ASSERT_CHAIN_COUNT_EQ_1_ASSERTION | FIND_MY_ERROR_ASSERTION);
 }
 
 #[test]
-fn test_fn_error_fn_605() {
-    test_impl(error_fn_605, ASSERT_CHAIN_COUNT_EQ_1_ASSERTION | FIND_SERDE_ERROR_ASSERTION);
+fn test_fn_wrap_by_anyhow_error_using_map_err_and_anyhow_macro() {
+    test_impl(fn_wrap_by_anyhow_error_using_map_err_and_anyhow_macro_05, ASSERT_CHAIN_COUNT_EQ_1_ASSERTION | FIND_SERDE_ERROR_ASSERTION);
 }
 
 #[test]
-fn test_fn_error_fn_705() {
-    test_impl(error_fn_705, ASSERT_CHAIN_COUNT_EQ_2_ASSERTION | FIND_MY_ERROR_ASSERTION);
+fn test_fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn() {
+    test_impl(fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn_05, ASSERT_CHAIN_COUNT_EQ_2_ASSERTION | FIND_MY_ERROR_ASSERTION);
+}
+
+
+#[test]
+fn test_result_error_stacktrace() {
+    enable_backtrace();
+
+    let r = fn_wrap_by_my_error_using_map_err_and_with_context_05();
+    let err = r.err().test_unwrap();
+    println!("err: {err:?}");
+
+    let mut output = String::new();
+    write(&mut output, format_args!("{err:?}")).test_unwrap();
+
+    assert_starts_with!(output, "Failed to read/parse json from web.");
+    assert_contains!(output, "Stack backtrace:");
+
+    assert_contains!(output, "2: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context\n             at ./tests/errors/mod.rs:");
+    assert_contains!(output, "3: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_01\n             at ./tests/errors/mod.rs:");
+    assert_contains!(output, "4: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_02\n             at ./tests/errors/mod.rs:");
+    assert_contains!(output, "5: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_03\n             at ./tests/errors/mod.rs:");
+    assert_contains!(output, "6: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_04\n             at ./tests/errors/mod.rs:");
+    assert_contains!(output, "7: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_05\n             at ./tests/errors/mod.rs:");
+
+    assert_contains!(output, "8: error_test::test_result_error_stacktrace\n             at ./tests/error_test.rs:");
+    // it is risky/dependant
+    assert_contains!(output, "9: error_test::test_result_error_stacktrace::{{closure}}\n             at ./tests/error_test.rs");
 }
