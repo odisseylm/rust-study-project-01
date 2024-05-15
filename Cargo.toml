@@ -8,10 +8,43 @@ edition = "2021"
 #[lib]
 #proc-macro = true
 
+[features]
+# Defines a feature named `webp` that does not enable any other features.
+#webp = []
+#error_generic_member_access = []
+
 [dependencies]
 static_assertions = "1.1.0"
 const_format = "0.2.32"
 bigdecimal = "0.4.3"
+
+serde = { version = "1.0.201", features = ["derive", "std", "rc", "serde_derive"] }
+#serde = "1.0.201"
+serde_json = "1.0.117"
+#serde_json5 = "0.1.0"
+#serde_as = "0.0.1"
+serde_with = "3.8.1"
+serde_with_macros = "3.8.1"
+
+anyhow = { version = "1.0.83", features = ["backtrace"] }
+#anyhow = { version = "1.0.83"} # , features = ["backtrace"] } // it means third-party "backtrace"
+#thiserror = "1.0.60"
+#thiserror = "<=1.0.30"
+#thiserror = "*"
+thiserror = "1.0.60"
+#snafu = "0.8.2"
+indoc = "2.0.5"
+
+## !!! Out dated !!!
+## !!! backtrace = "0.3.71"
+
+strum = "0.26"
+strum_macros = "0.26"
+
+# # Seems it does not work.
+# color-backtrace = "0.6.1"
+# ctor = "0.2.8"
+
 
 # unused manifest key: tests
 #[test]
@@ -23,6 +56,23 @@ bigdecimal = "0.4.3"
 #test-case = "3.3.1"
 #test-case = "2.2.2"
 test-case = "*"
+assertables = "7.0.1"
+
+#assert-str = "0.1.0"
+assert-text = "0.2.9"
+assert_eq_all = "0.1.1"
+assert_fn = "1.0.7"
+#assert_json = "0.1.0" // requires 'thiserror v1.0.60 (*)'
+#assert-call = "0.1.1"
+assert_no_alloc = "1.1.2"
+assert_approx_eq = "1.1.0"
+assert_that = "0.1.2"
+assert_panic_free = "1.0.2"
+assert_matches = "1.5.0"
+
+# # Seems it does not work.
+# color-backtrace = "0.6.1"
+# ctor = "0.2.8"
 
 
 # hm... unused manifest key: benches

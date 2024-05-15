@@ -1,5 +1,14 @@
 use std::fmt::Debug;
 
+
+// Actually this code is designed for unit test only,
+// but in that case due to strange rust project tests build approach
+// it causes showing 'unused code'.
+// For that reason I've decided NOW to put it in prod code
+// (probably later I'll move them back to 'tests' source directory and suppress
+// and will add #[allow(dead_code)])
+
+
 /// This trait and its impl was added to minimize uncontrolled usage of panic-risky unwrap.
 /// Please
 ///  * use test_unwrap() in tests.
@@ -25,38 +34,5 @@ impl<Ok> TestOptionUnwrap<Ok> for Option<Ok> {
     #[inline]
     fn test_unwrap(self) -> Ok {
         self.unwrap() // allowed
-    }
-}
-
-
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_unwrap_for_result_ok() {
-        let result: Result<i32, &str> = Ok(123);
-        assert_eq!(result.test_unwrap(), 123);
-    }
-
-    #[test]
-    #[should_panic(expected = "Oops! Error 456.")]
-    fn test_unwrap_for_result_error() {
-        let result: Result<i32, &str> = Err("Oops! Error 456.");
-        result.test_unwrap();
-    }
-
-    #[test]
-    fn test_unwrap_for_option_ok() {
-        assert_eq!(Some(123).test_unwrap(), 123);
-    }
-
-    #[test]
-    #[should_panic(expected = "called `Option::unwrap()` on a `None` value")]
-    fn test_unwrap_for_option_none() {
-        let option: Option<i32> = None;
-        option.test_unwrap();
     }
 }

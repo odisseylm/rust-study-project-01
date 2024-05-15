@@ -5,8 +5,10 @@ use std::char;
 use std::str::FromStr;
 
 
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub enum CurrencyFormatError { // TODO: use something rust-standard (probably with stack-trace support)
+// #[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, thiserror::Error)]
+pub enum CurrencyFormatError {
+    #[error("Currency format error")]
     CurrencyFormatError,
 }
 
@@ -50,13 +52,6 @@ impl Currency {
 impl fmt::Display for Currency {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}{}", self.0[0] as char, self.0[1] as char, self.0[2] as char)
-    }
-}
-
-
-impl fmt::Display for CurrencyFormatError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)   // write!(f, self)
     }
 }
 
@@ -200,9 +195,6 @@ macro_rules! make_currency {
 }
 
 
-// #[macro_export] // for auto import of unique macros name
-// macro_rules! make_currency_macro_temp { ($cur:literal) => { make_currency($cur) } }
-
 
 #[macro_export]
 macro_rules! make_currency_b {
@@ -223,7 +215,6 @@ macro_rules! make_currency_b {
         // Currency([bytes[0], bytes[1], bytes[2]])
         make_currency_b($cur)
     }};
-
 }
 
 

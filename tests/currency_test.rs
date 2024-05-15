@@ -1,11 +1,10 @@
-// #![feature(macro_rules)]
+mod common;
 
 use project01::{ make_currency, make_currency_b };
-use project01::entities::{Currency, make_currency_b};
-use project01::entities::currency::{EUR, make_currency, USD};
+use project01::entities::{ Currency, make_currency_b };
+use project01::entities::currency::{ EUR, USD, make_currency };
 use common::TestResultUnwrap;
 
-mod common;
 
 
 #[test]

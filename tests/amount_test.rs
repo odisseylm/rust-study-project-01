@@ -1,14 +1,18 @@
+mod common;
 
+use std::fmt::write;
 use std::str::FromStr;
 use bigdecimal::BigDecimal;
+
 use project01::entities::{Amount, amount};
 use project01::entities::currency::{ EUR, USD, make_currency };
 use project01::make_currency;
 
-use common::TestResultUnwrap;
+use common::{ TestOptionUnwrap, TestResultUnwrap };
 
-
-mod common;
+use assertables::{ assert_contains, assert_contains_as_result };
+use assertables::{ assert_starts_with, assert_starts_with_as_result };
+use project01::util::enable_backtrace;
 
 
 // private for testing
@@ -122,41 +126,53 @@ fn from_string() {
 #[test]
 #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseCurrencyError")]
 fn from_string_with_wrong_formed_currency() {
-    let am = Amount::from_str(" \t \n 122.350 USSD ").test_unwrap();
-    assert_eq!(am.to_string(), "122.350 JPY");
-    assert_eq!(*am.value(), bd("122.350"));
-    assert_eq!(am.value_ref(), bd("122.350").to_ref());
-    assert_eq!(am.currency(), make_currency!("JPY"));
+    Amount::from_str(" \t \n 122.350 USSD ").test_unwrap();
 }
 
 #[test]
 #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: NoCurrencyError")]
 fn from_string_without_currency() {
-    let am = Amount::from_str(" \t \n 122.350  ").test_unwrap();
-    assert_eq!(am.to_string(), "122.350 JPY");
-    assert_eq!(*am.value(), bd("122.350"));
-    assert_eq!(am.value_ref(), bd("122.350").to_ref());
-    assert_eq!(am.currency(), make_currency!("JPY"));
+    Amount::from_str(" \t \n 122.350  ").test_unwrap();
 }
 
 #[test]
 // #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
 #[should_panic(expected = "ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
 fn from_string_with_wrong_amount_value() {
-    let am = Amount::from_str(" \t \n 12_John_2.350 BRL ").test_unwrap();
-    assert_eq!(am.to_string(), "122.350 JPY");
-    assert_eq!(*am.value(), bd("122.350"));
-    assert_eq!(am.value_ref(), bd("122.350").to_ref());
-    assert_eq!(am.currency(), make_currency!("JPY"));
+    Amount::from_str(" \t \n 12_John_2.350 BRL ").test_unwrap();
 }
 
 #[test]
 // #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
 #[should_panic(expected = "ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
 fn from_string_with_wrong_non_ascii_amount_value() {
-    let am = Amount::from_str(" \t \n Чебуран BRL ").test_unwrap();
-    assert_eq!(am.to_string(), "122.350 JPY");
-    assert_eq!(*am.value(), bd("122.350"));
-    assert_eq!(am.value_ref(), bd("122.350").to_ref());
-    assert_eq!(am.currency(), make_currency!("JPY"));
+    Amount::from_str(" \t \n Чебуран BRL ").test_unwrap();
+}
+
+fn fn_test_parse_amount_01() -> Result<Amount, anyhow::Error> {
+    Amount::from_str(" \t \n Чебуран BRL ").map_err(anyhow::Error::msg)
+}
+fn fn_test_parse_amount_02() -> Result<Amount, anyhow::Error> { fn_test_parse_amount_01() }
+fn fn_test_parse_amount_03() -> Result<Amount, anyhow::Error> { fn_test_parse_amount_02() }
+
+#[test]
+fn from_string_with_wrong_non_ascii_amount_value_with_stacktrace_in_result() {
+    enable_backtrace();
+
+    let am = fn_test_parse_amount_03();
+    let err = am.err().test_unwrap();
+    println!("err: {err:?}");
+
+    let mut output = String::new();
+    write(&mut output, format_args!("{err:?}")).test_unwrap();
+
+    assert_starts_with!(output, "Parse amount value error");
+    assert_contains!(output, "Stack backtrace:");
+
+    assert_contains!(output, "amount_test::fn_test_parse_amount_01\n             at ./tests/amount_test.rs:");
+    assert_contains!(output, "amount_test::fn_test_parse_amount_02\n             at ./tests/amount_test.rs:");
+    assert_contains!(output, "amount_test::fn_test_parse_amount_03\n             at ./tests/amount_test.rs:");
+    assert_contains!(output, "amount_test::from_string_with_wrong_non_ascii_amount_value_with_stacktrace_in_result\n             at ./tests/amount_test.rs:");
+    // it is risky/dependant
+    // assert_contains!(output, "amount_test::from_string_with_wrong_non_ascii_amount_value_with_stacktrace_in_result::{{closure}}\n             at ./tests/amount_test.rs:");
 }

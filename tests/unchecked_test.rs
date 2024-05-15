@@ -1,3 +1,4 @@
+mod common;
 
 use project01::util::{ UncheckedOptionUnwrap, UncheckedResultUnwrap };
 

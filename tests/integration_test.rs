@@ -1,11 +1,11 @@
 // #![feature(macro_rules)]
+mod common;
 
 use project01::{ add678, make_currency };
 use project01::entities::currency::make_currency;
 
-mod common;
-
 // https://doc.rust-lang.org/book/ch11-03-test-organization.html
+
 
 
 #[test]

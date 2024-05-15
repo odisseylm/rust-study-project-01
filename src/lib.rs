@@ -1,3 +1,11 @@
+// #![feature(error_generic_member_access)]
+// #![feature(trait_alias)]
+// #![feature(type_alias_impl_trait)]
+// #![feature(lazy_cell)]
+// #![feature(lint_reasons)]
+// #![feature(error_generic_member_access)]
+// #![feature(provide_any)]
+// #![feature(let_chains)]
 
 pub mod entities;
 pub mod util;
@@ -38,4 +46,17 @@ fn just_usage() {
 // Define this in a crate called `adder`.
 // pub fn add(a: i32, b: i32) -> i32 {
 //     a + b
+// }
+
+
+// #[cfg(test)]
+// mod tests {
+//     use ctor::ctor;
+//
+//     // Seems it does not work.
+//     #[ctor]
+//     fn init_color_backtrace() {
+//         println!("### init_color_backtrace");
+//         color_backtrace::install();
+//     }
 // }

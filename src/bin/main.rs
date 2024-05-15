@@ -1,17 +1,13 @@
-// use crate::currency::{Currency, currency_from_bytes, currency_from_string, currency_from_str};
+// #![cfg(feature = "error_generic_member_access")]
 
-// extern crate core;
-
-// mod main;
-// mod currency;
-// mod const_examples;
-// use currency::USD;
-// use crate::currency::{as_printable, as_printable2, Currency, Fuck, PrintableResult };
-
+use std::fmt;
+use std::fmt::write;
+use std::io::Write;
 use project01::entities::{ Currency };
 use project01::entities::currency::{ CurrencyFormatError, USD };
-use project01::util::{as_printable, as_printable_ptr};
+use project01::util::{ as_printable, as_printable_ptr };
 use project01::util::result::PrintableResult;
+use project01::util::UncheckedResultUnwrap;
 
 pub fn factorial(n: u128) -> u128 {
     match n {
@@ -52,6 +48,17 @@ fn main() {
     //
     // let currency: Currency = currency_from_str("EUR").expect("Fuck happened.");
     // println!("{}", currency.to_string());
+
+
+    let mut output = String::new();
+    if let Err(fmt::Error) = write(&mut output, format_args!("Hello {}!", "world\n")) {
+        println!("An error occurred");
+        panic!("An error occurred");
+    }
+
+    let buf: &[u8] = output.as_str().as_bytes();
+    std::io::stdout().write(buf).unchecked_unwrap();
+    std::io::stdout().flush().unchecked_unwrap();
 }
 
 

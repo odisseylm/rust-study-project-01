@@ -75,10 +75,10 @@ fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
     let (str_amount, str_cur) = s.split_at(last_space_bytes_offset);
 
     let currency = Currency::from_str(str_cur.trim_start())
-        .map_err(|er|{ ParseAmountError::ParseCurrencyError(er) }) ?;
+        .map_err(|er|{ ParseAmountError::ParseCurrencyError { source: er } }) ?;
 
     let amount = BigDecimal::from_str(str_amount.trim_end())
-        .map_err(|er|{ ParseAmountError::ParseAmountError(er) }) ?;
+        .map_err(|er|{ ParseAmountError::ParseAmountError { source: er } }) ?;
 
     Ok(Amount::new(amount, currency))
 
@@ -110,11 +110,29 @@ fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
 
 
 
+/*
 #[derive(Debug, PartialEq, Clone)]
 pub enum ParseAmountError {
     NoCurrencyError,
     ParseCurrencyError(CurrencyFormatError),
     ParseAmountError(ParseBigDecimalError),
+}
+*/
+
+#[derive(Debug, thiserror::Error)]
+pub enum ParseAmountError {
+    #[error("No currency in amount error")]
+    NoCurrencyError,
+    #[error("Currency format error")]
+    ParseCurrencyError {
+        #[source]
+        source: CurrencyFormatError
+    },
+    #[error("Parse amount value error")]
+    ParseAmountError {
+        #[source]
+        source: ParseBigDecimalError
+    },
 }
 
 impl FromStr for Amount {
