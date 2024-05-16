@@ -45,6 +45,8 @@ strum_macros = "0.26"
 # color-backtrace = "0.6.1"
 # ctor = "0.2.8"
 
+derivative = "2.2.0"
+
 
 # unused manifest key: tests
 #[test]

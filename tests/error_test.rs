@@ -3,6 +3,7 @@ mod common;
 mod errors;
 
 
+use std::error::Error;
 use std::fmt::write;
 use assertables::{ assert_ge, assert_ge_as_result };
 use assertables::{ assert_starts_with, assert_starts_with_as_result };
@@ -10,7 +11,7 @@ use assertables::{ assert_contains, assert_contains_as_result };
 
 use project01::util::{ enable_backtrace, TestOptionUnwrap, TestResultUnwrap };
 
-use crate::errors::{  MyError333, MyError334 };
+use crate::errors::{fn_as_box_error_with_question_op_05, MyError333, MyError334};
 use errors::{ extract_json_5, error_fn_5 };
 use errors::{ fn_serde_json_wrapped_by_anyhow_using_question_op_05  };
 use errors::{ fn_wrap_by_my_error_using_map_err_and_question_op_05  };
@@ -254,4 +255,33 @@ fn test_result_error_stacktrace() {
     assert_contains!(output, "8: error_test::test_result_error_stacktrace\n             at ./tests/error_test.rs:");
     // it is risky/dependant
     assert_contains!(output, "9: error_test::test_result_error_stacktrace::{{closure}}\n             at ./tests/error_test.rs");
+}
+
+
+#[test]
+fn test_result_as_box_error_with_question_op_05() {
+    enable_backtrace();
+
+    let r = fn_as_box_error_with_question_op_05();
+    println!("{:?}", r);
+
+    match r {
+        Ok(_) => { assert!(false, "Error is expected") }
+        Err(err) => {
+            let err_ref = err.as_ref();
+            if let Some(my_error) = err_ref.downcast_ref::<MyError334>() {
+                println!("### my error: {}", my_error);
+                println!("### my error: {:?}", my_error);
+
+                // let err_src = my_error.source();
+                if let Some(err_src) = my_error.source() {
+                    // println!("### my error src: {}", err_src);
+                    println!("### my error src: {:?}", err_src);
+                }
+            }
+            else {
+                assert!(false, "MyError334 is not found.")
+            }
+        }
+    }
 }

@@ -102,6 +102,9 @@ impl BacktraceInfo {
     pub fn backtrace_status(&self) -> &std::backtrace::BacktraceStatus {
         &self.backtrace_status
     }
+    pub fn backtrace(&self) -> &std::backtrace::Backtrace {
+        &self.backtrace
+    }
 }
 
 

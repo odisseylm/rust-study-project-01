@@ -114,6 +114,7 @@ pub enum MyError333 {
 
 
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum MyError333 {
     JsonError {
@@ -264,3 +265,18 @@ pub fn fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn_02() -> Result<Entity1
 pub fn fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn_03() -> Result<Entity1, anyhow::Error> { fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn_02() }
 pub fn fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn_04() -> Result<Entity1, anyhow::Error> { fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn_03() }
 pub fn fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn_05() -> Result<Entity1, anyhow::Error> { fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn_04() }
+
+
+
+fn fn_as_box_error_with_question_op() -> Result<Entity1, Box<dyn std::error::Error>> {
+    let str = r#"{ "intField_666": 123, "stringField": "str123" }"#;
+    // let r: serde_json::error::Result<Entity1> = serde_json::from_str(str);
+    let r: Result<Entity1, serde_json::Error> = serde_json::from_str(str);
+    let v = r.map_err(|json_err|{ MyError334::JsonError2 { source: json_err} }) ?;
+    Ok(v)
+}
+pub fn fn_as_box_error_with_question_op_01() -> Result<Entity1, Box<dyn std::error::Error>> { fn_as_box_error_with_question_op() }
+pub fn fn_as_box_error_with_question_op_02() -> Result<Entity1, Box<dyn std::error::Error>> { fn_as_box_error_with_question_op_01() }
+pub fn fn_as_box_error_with_question_op_03() -> Result<Entity1, Box<dyn std::error::Error>> { fn_as_box_error_with_question_op_02() }
+pub fn fn_as_box_error_with_question_op_04() -> Result<Entity1, Box<dyn std::error::Error>> { fn_as_box_error_with_question_op_03() }
+pub fn fn_as_box_error_with_question_op_05() -> Result<Entity1, Box<dyn std::error::Error>> { fn_as_box_error_with_question_op_04() }

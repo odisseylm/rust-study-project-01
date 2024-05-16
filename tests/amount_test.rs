@@ -4,7 +4,7 @@ use std::fmt::write;
 use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
-use project01::entities::{Amount, amount};
+use project01::entities::{Amount, amount, ParseAmountError };
 use project01::entities::currency::{ EUR, USD, make_currency };
 use project01::make_currency;
 
@@ -156,7 +156,7 @@ fn fn_test_parse_amount_02() -> Result<Amount, anyhow::Error> { fn_test_parse_am
 fn fn_test_parse_amount_03() -> Result<Amount, anyhow::Error> { fn_test_parse_amount_02() }
 
 #[test]
-fn from_string_with_wrong_non_ascii_amount_value_with_stacktrace_in_result() {
+fn test_anyhow_stacktrace() {
     enable_backtrace();
 
     let am = fn_test_parse_amount_03();
@@ -172,7 +172,111 @@ fn from_string_with_wrong_non_ascii_amount_value_with_stacktrace_in_result() {
     assert_contains!(output, "amount_test::fn_test_parse_amount_01\n             at ./tests/amount_test.rs:");
     assert_contains!(output, "amount_test::fn_test_parse_amount_02\n             at ./tests/amount_test.rs:");
     assert_contains!(output, "amount_test::fn_test_parse_amount_03\n             at ./tests/amount_test.rs:");
-    assert_contains!(output, "amount_test::from_string_with_wrong_non_ascii_amount_value_with_stacktrace_in_result\n             at ./tests/amount_test.rs:");
+    assert_contains!(output, "amount_test::test_anyhow_stacktrace\n             at ./tests/amount_test.rs:");
     // it is risky/dependant
-    // assert_contains!(output, "amount_test::from_string_with_wrong_non_ascii_amount_value_with_stacktrace_in_result::{{closure}}\n             at ./tests/amount_test.rs:");
+    // assert_contains!(output, "amount_test::test_anyhow_stacktrace::{{closure}}\n             at ./tests/amount_test.rs:");
+}
+
+
+fn fn_test_parse_amount_101() -> Result<Amount, ParseAmountError> {
+    Amount::from_str(" \t \n Чебуран BRL ")
+}
+fn fn_test_parse_amount_102() -> Result<Amount, ParseAmountError> { fn_test_parse_amount_101() }
+fn fn_test_parse_amount_103() -> Result<Amount, ParseAmountError> { fn_test_parse_amount_102() }
+
+
+
+#[test]
+fn test_my_stacktrace() {
+    enable_backtrace();
+
+    let am = fn_test_parse_amount_103();
+    let err = am.err().test_unwrap();
+    println!("err: {err:?}");
+
+    let mut output = String::new();
+    write(&mut output, format_args!("{err:?}")).test_unwrap();
+
+    assert_starts_with!(output, "ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
+    assert_contains!(output, "backtrace:");
+
+    assert_contains!(output, "amount_test::fn_test_parse_amount_101\n             at ./tests/amount_test.rs:");
+    assert_contains!(output, "amount_test::fn_test_parse_amount_102\n             at ./tests/amount_test.rs:");
+    assert_contains!(output, "amount_test::fn_test_parse_amount_103\n             at ./tests/amount_test.rs:");
+    assert_contains!(output, "amount_test::test_my_stacktrace\n             at ./tests/amount_test.rs:");
+    // it is risky/dependant
+    // assert_contains!(output, "amount_test::test_my_stacktrace::{{closure}}\n             at ./tests/amount_test.rs:");
+
+    println!("\n--------------------------------------------------------\n");
+    println!("err: {err}");
+    let backtrace = match err {
+        ParseAmountError::NoCurrencyError { backtrace } => { backtrace }
+        ParseAmountError::ParseCurrencyError { source:_, backtrace } => {backtrace}
+        ParseAmountError::ParseAmountError { source:_, backtrace } => { backtrace}
+    };
+    println!("my stacktrace: {}", backtrace);
+
+    println!("\n----------------------------------------------\n");
+    println!("my stacktrace as Debug");
+    println!("my stacktrace backtrace_status: {:?}", backtrace.backtrace_status());
+    println!("my stacktrace backtrace: {}", backtrace.backtrace());
+
+    println!("\n----------------------------------------------\n");
+    println!("my stacktrace as Display");
+    println!("my stacktrace backtrace_status: {:?}", backtrace.backtrace_status());
+    println!("my stacktrace backtrace: {:?}", backtrace.backtrace());
+}
+
+
+
+
+
+fn fn_test_parse_amount_201() -> Result<Amount, Box<dyn std::error::Error>> {
+    let amount = Amount::from_str(" \t \n Чебуран BRL ") ?;
+    Ok(amount)
+}
+fn fn_test_parse_amount_202() -> Result<Amount, Box<dyn std::error::Error>> { fn_test_parse_amount_201() }
+fn fn_test_parse_amount_203() -> Result<Amount, Box<dyn std::error::Error>> { fn_test_parse_amount_202() }
+
+
+
+#[test]
+fn test_std_error() {
+    enable_backtrace();
+
+    let am = fn_test_parse_amount_203();
+    let err = am.err().test_unwrap();
+    println!("err: {err:?}");
+
+    let mut output = String::new();
+    write(&mut output, format_args!("{err:?}")).test_unwrap();
+
+    assert_starts_with!(output, "ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
+    assert_contains!(output, "backtrace:");
+
+    assert_contains!(output, "amount_test::fn_test_parse_amount_201\n             at ./tests/amount_test.rs:");
+    assert_contains!(output, "amount_test::fn_test_parse_amount_202\n             at ./tests/amount_test.rs:");
+    assert_contains!(output, "amount_test::fn_test_parse_amount_203\n             at ./tests/amount_test.rs:");
+    assert_contains!(output, "amount_test::test_std_error\n             at ./tests/amount_test.rs:");
+    // it is risky/dependant
+    // assert_contains!(output, "amount_test::test_std_error::{{closure}}\n             at ./tests/amount_test.rs:");
+
+    // println!("\n--------------------------------------------------------\n");
+    // println!("err: {err}");
+    // let backtrace = match err {
+    //     ParseAmountError::NoCurrencyError { backtrace } => { backtrace }
+    //     ParseAmountError::ParseCurrencyError { source, backtrace } => {backtrace}
+    //     ParseAmountError::ParseAmountError { source, backtrace } => { backtrace}
+    // };
+    // println!("my stacktrace: {}", backtrace);
+    //
+    // println!("\n----------------------------------------------\n");
+    // println!("my stacktrace as Debug");
+    // println!("my stacktrace backtrace_status: {:?}", backtrace.backtrace_status());
+    // println!("my stacktrace backtrace: {}", backtrace.backtrace());
+    //
+    // println!("\n----------------------------------------------\n");
+    // println!("my stacktrace as Display");
+    // println!("my stacktrace backtrace_status: {:?}", backtrace.backtrace_status());
+    // println!("my stacktrace backtrace: {:?}", backtrace.backtrace());
 }

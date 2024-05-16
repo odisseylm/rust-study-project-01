@@ -2,7 +2,7 @@ use std::str::{ FromStr };
 use std::fmt::{ Display, Formatter };
 use bigdecimal::{ BigDecimal, BigDecimalRef, ParseBigDecimalError };
 use crate::entities::{ Currency, CurrencyFormatError };
-use crate::util::UncheckedResultUnwrap;
+use crate::util::{BacktraceInfo, UncheckedResultUnwrap};
 
 
 #[derive(Debug)]
@@ -70,15 +70,15 @@ fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
     let s = s.trim();
 
     let last_space_bytes_offset = s.rfind(|ch: char|{ ch.is_ascii_whitespace() })
-        .ok_or( ParseAmountError::NoCurrencyError ) ?;
+        .ok_or( ParseAmountError::NoCurrencyError { backtrace: BacktraceInfo::new() } ) ?;
 
     let (str_amount, str_cur) = s.split_at(last_space_bytes_offset);
 
     let currency = Currency::from_str(str_cur.trim_start())
-        .map_err(|er|{ ParseAmountError::ParseCurrencyError { source: er } }) ?;
+        .map_err(|er|{ ParseAmountError::ParseCurrencyError { source: er,  backtrace: BacktraceInfo::new() } }) ?;
 
     let amount = BigDecimal::from_str(str_amount.trim_end())
-        .map_err(|er|{ ParseAmountError::ParseAmountError { source: er } }) ?;
+        .map_err(|er|{ ParseAmountError::ParseAmountError { source: er,  backtrace: BacktraceInfo::new() } }) ?;
 
     Ok(Amount::new(amount, currency))
 
@@ -122,16 +122,18 @@ pub enum ParseAmountError {
 #[derive(Debug, thiserror::Error)]
 pub enum ParseAmountError {
     #[error("No currency in amount error")]
-    NoCurrencyError,
+    NoCurrencyError { backtrace: BacktraceInfo },
     #[error("Currency format error")]
     ParseCurrencyError {
         #[source]
-        source: CurrencyFormatError
+        source: CurrencyFormatError,
+        backtrace: BacktraceInfo,
     },
     #[error("Parse amount value error")]
     ParseAmountError {
         #[source]
-        source: ParseBigDecimalError
+        source: ParseBigDecimalError,
+        backtrace: BacktraceInfo,
     },
 }
 
