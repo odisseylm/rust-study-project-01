@@ -2,12 +2,36 @@
 
 use core::fmt;
 use std::char;
+use std::fmt::Formatter;
 use std::str::FromStr;
+use crate::util::BacktraceInfo;
 
 
 // #[derive(Debug, PartialEq, Copy, Clone)]
 #[derive(Debug, thiserror::Error)]
-pub enum CurrencyFormatError {
+pub struct CurrencyFormatError {
+    kind: CurrencyFormatErrorKind,
+    backtrace: BacktraceInfo,
+}
+
+impl CurrencyFormatError {
+    pub fn kind(&self) -> &CurrencyFormatErrorKind { &self.kind }
+    pub fn backtrace(&self) -> &BacktraceInfo { &self.backtrace }
+    pub fn backtrace_copy(&self) -> BacktraceInfo { self.backtrace.clone() }
+}
+
+impl fmt::Display for CurrencyFormatError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "CurrencyFormatError  {}", self.kind)
+    }
+}
+
+
+// #[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, thiserror::Error)]
+pub enum CurrencyFormatErrorKind {
+    #[error("no currency (blank string)")]
+    NoCurrency,
     #[error("Currency format error")]
     CurrencyFormatError,
 }
@@ -19,10 +43,14 @@ pub struct Currency([u8;3]);
 
 impl Currency {
     pub fn from_str(currency_code: & str) -> Result<Self, CurrencyFormatError> {
+        if currency_code.is_empty() {
+            return Err(CurrencyFormatError { kind: CurrencyFormatErrorKind::NoCurrency, backtrace: BacktraceInfo::new() })
+        }
+
         let is_valid = if currency_code.len() != 3 { false }
                      else { is_valid_currency_ascii(currency_code.as_bytes()) };
 
-        if !is_valid { Err(CurrencyFormatError::CurrencyFormatError) }
+        if !is_valid { Err(CurrencyFormatError { kind: CurrencyFormatErrorKind::CurrencyFormatError, backtrace: BacktraceInfo::new() }) }
         else {
             let as_bytes = currency_code.as_bytes();
             Ok(Self([as_bytes[0], as_bytes[1], as_bytes[2]]))

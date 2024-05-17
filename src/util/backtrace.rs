@@ -82,8 +82,12 @@ pub fn print_current_stack_trace() {
 }
 
 
-
 pub struct BacktraceInfo {
+    //inner: std::rc::Rc<Inner>,
+    inner: std::sync::Arc<Inner>,
+}
+
+struct Inner {
     backtrace_status: std::backtrace::BacktraceStatus,
     backtrace: std::backtrace::Backtrace,
 }
@@ -92,18 +96,38 @@ pub struct BacktraceInfo {
 impl BacktraceInfo {
     pub fn new() -> Self {
         BacktraceInfo {
-            backtrace_status: std::backtrace::BacktraceStatus::Captured,
-            backtrace: std::backtrace::Backtrace::capture(),
+            inner:
+                // std::rc::Rc::new(
+                std::sync::Arc::new(
+                    Inner {
+                    backtrace_status: std::backtrace::BacktraceStatus::Captured,
+                    backtrace: std::backtrace::Backtrace::capture(),
+                })
         }
+    }
+    pub fn new_or_1(backtrace: Option<BacktraceInfo>) -> Self {
+        match backtrace {
+            None => { BacktraceInfo::new() }
+            Some(backtrace) => { BacktraceInfo { inner: backtrace.inner } }
+        }
+    }
+    pub fn new_or_2(backtrace: &BacktraceInfo) -> Self {
+        BacktraceInfo { inner: backtrace.inner.clone() }
+    }
+
+    pub fn clone(&self) -> Self {
+        // BacktraceInfo{ inner: self.inner.clone() }
+        BacktraceInfo{ inner: std::sync::Arc::clone(&self.inner) }
+        // BacktraceInfo{ inner: std::rc::Rc::clone(&self.inner) }
     }
 
     // We cannot return enum copy there since this enum is 'non_exhaustive'
     // and does not support 'copy/clone'.
     pub fn backtrace_status(&self) -> &std::backtrace::BacktraceStatus {
-        &self.backtrace_status
+        &self.inner.backtrace_status
     }
     pub fn backtrace(&self) -> &std::backtrace::Backtrace {
-        &self.backtrace
+        &self.inner.backtrace
     }
 }
 
@@ -112,10 +136,10 @@ impl std::fmt::Debug for BacktraceInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use std::backtrace::*;
 
-        match self.backtrace_status {
+        match self.inner.backtrace_status {
             BacktraceStatus::Unsupported => { write!(f, "Backtrace unsupported") }
             BacktraceStatus::Disabled    => { write!(f, "Backtrace disabled")    }
-            BacktraceStatus::Captured    => { write!(f, "\n{}", self.backtrace)  }
+            BacktraceStatus::Captured    => { write!(f, "\n{}", self.inner.backtrace)  }
             _ => { write!(f, "Unknown backtrace status.") }
         }
     }

@@ -70,15 +70,23 @@ fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
     let s = s.trim();
 
     let last_space_bytes_offset = s.rfind(|ch: char|{ ch.is_ascii_whitespace() })
-        .ok_or( ParseAmountError::NoCurrencyError { backtrace: BacktraceInfo::new() } ) ?;
+        .ok_or(  ParseAmountError { kind: ParseAmountErrorKind::NoCurrencyError(), backtrace: BacktraceInfo::new() } ) ?;
 
     let (str_amount, str_cur) = s.split_at(last_space_bytes_offset);
 
     let currency = Currency::from_str(str_cur.trim_start())
-        .map_err(|er|{ ParseAmountError::ParseCurrencyError { source: er,  backtrace: BacktraceInfo::new() } }) ?;
+        .map_err(|er| {
+            ParseAmountError {
+                backtrace: er.backtrace().clone(),
+                kind: ParseAmountErrorKind::ParseCurrencyError { source: er },
+            }
+        }) ?;
 
     let amount = BigDecimal::from_str(str_amount.trim_end())
-        .map_err(|er|{ ParseAmountError::ParseAmountError { source: er,  backtrace: BacktraceInfo::new() } }) ?;
+        .map_err(|er| ParseAmountError {
+            kind: ParseAmountErrorKind::ParseAmountError { source: er },
+            backtrace: BacktraceInfo::new(),
+        }) ?;
 
     Ok(Amount::new(amount, currency))
 
@@ -120,21 +128,49 @@ pub enum ParseAmountError {
 */
 
 #[derive(Debug, thiserror::Error)]
-pub enum ParseAmountError {
+pub enum ParseAmountErrorKind { // TODO: try to do as nested one
     #[error("No currency in amount error")]
-    NoCurrencyError { backtrace: BacktraceInfo },
+    NoCurrencyError(),
     #[error("Currency format error")]
     ParseCurrencyError {
         #[source]
         source: CurrencyFormatError,
-        backtrace: BacktraceInfo,
     },
     #[error("Parse amount value error")]
     ParseAmountError {
         #[source]
         source: ParseBigDecimalError,
-        backtrace: BacktraceInfo,
     },
+}
+
+#[derive(Debug, thiserror::Error)]
+pub struct ParseAmountError {
+    pub kind: ParseAmountErrorKind,
+    pub backtrace: BacktraceInfo,
+    // enum ErrorKind {
+    //     ONE,
+    // }
+}
+
+
+// From the RFC
+// struct RectangleTidy {
+//     dimensions: {
+//         width: u64,
+//         height: u64,
+//     },
+//     color: {
+//         red: u8,
+//         green: u8,
+//         blue: u8,
+//     },
+// }
+
+
+impl Display for ParseAmountError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.kind)
+    }
 }
 
 impl FromStr for Amount {
