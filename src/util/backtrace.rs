@@ -81,10 +81,17 @@ pub fn print_current_stack_trace() {
     // println!("{:?}", stacktrace);
 }
 
+// It is unsafe in multithreaded
+// type BSRc<T> = std::rc::Rc<T>;
+
+// It has bad performance if we really do not use backtrace or backtrace is ot used in case of 'recovering' (not failing the whole task/application).
+// TODO: how to avoid it? Probably move? Is moving thread-safe?
+//
+type BSRc<T> = std::sync::Arc<T>;
+
 
 pub struct BacktraceInfo {
-    //inner: std::rc::Rc<Inner>,
-    inner: std::sync::Arc<Inner>,
+    inner: BSRc<Inner>,
 }
 
 struct Inner {
@@ -97,8 +104,7 @@ impl BacktraceInfo {
     pub fn new() -> Self {
         BacktraceInfo {
             inner:
-                // std::rc::Rc::new(
-                std::sync::Arc::new(
+                BSRc::new(
                     Inner {
                     backtrace_status: std::backtrace::BacktraceStatus::Captured,
                     backtrace: std::backtrace::Backtrace::capture(),
@@ -116,9 +122,7 @@ impl BacktraceInfo {
     }
 
     pub fn clone(&self) -> Self {
-        // BacktraceInfo{ inner: self.inner.clone() }
-        BacktraceInfo{ inner: std::sync::Arc::clone(&self.inner) }
-        // BacktraceInfo{ inner: std::rc::Rc::clone(&self.inner) }
+        BacktraceInfo{ inner: BSRc::clone(&self.inner) }
     }
 
     // We cannot return enum copy there since this enum is 'non_exhaustive'
