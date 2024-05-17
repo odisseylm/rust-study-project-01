@@ -17,7 +17,7 @@ pub struct CurrencyFormatError {
 impl CurrencyFormatError {
     pub fn kind(&self) -> &CurrencyFormatErrorKind { &self.kind }
     pub fn backtrace(&self) -> &BacktraceInfo { &self.backtrace }
-    pub fn backtrace_copy(&self) -> BacktraceInfo { self.backtrace.clone() }
+    // pub fn backtrace_copy(&self) -> BacktraceInfo { self.backtrace.clone() }
 }
 
 impl fmt::Display for CurrencyFormatError {

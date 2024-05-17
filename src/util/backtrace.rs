@@ -84,18 +84,20 @@ pub fn print_current_stack_trace() {
 // It is unsafe in multithreaded
 // type BSRc<T> = std::rc::Rc<T>;
 
-// It has bad performance if we really do not use backtrace or backtrace is ot used in case of 'recovering' (not failing the whole task/application).
-// TODO: how to avoid it? Probably move? Is moving thread-safe?
+// ??? It has bad performance if we really do not use backtrace or backtrace is ot used in case of 'recovering' (not failing the whole task/application).
+// In my tests Arc enough fast (in the same thread) and we surely can use it for version when we capture backtrace.
+//
+// T O D O: how to avoid it? Probably move? Is moving thread-safe?
 //
 type BSRc<T> = std::sync::Arc<T>;
 
 
 pub struct BacktraceInfo {
+    // TODO: do not use Arc/Rc if no real stacktrace
     inner: BSRc<Inner>,
 }
 
 struct Inner {
-    backtrace_status: std::backtrace::BacktraceStatus,
     backtrace: std::backtrace::Backtrace,
 }
 
@@ -106,11 +108,24 @@ impl BacktraceInfo {
             inner:
                 BSRc::new(
                     Inner {
-                    backtrace_status: std::backtrace::BacktraceStatus::Captured,
                     backtrace: std::backtrace::Backtrace::capture(),
                 })
         }
     }
+
+    #[inline]
+    pub fn empty() -> Self { Self::disabled() }
+
+    pub fn disabled() -> Self {
+        BacktraceInfo {
+            inner:
+            BSRc::new(
+                Inner {
+                    backtrace: std::backtrace::Backtrace::disabled(),
+                })
+        }
+    }
+
     pub fn new_or_1(backtrace: Option<BacktraceInfo>) -> Self {
         match backtrace {
             None => { BacktraceInfo::new() }
@@ -121,18 +136,19 @@ impl BacktraceInfo {
         BacktraceInfo { inner: backtrace.inner.clone() }
     }
 
+    // TODO: Do not use it manually. Use something like: self.inherit(), self.inherit_or_capture()/self.new_or()
     pub fn clone(&self) -> Self {
         BacktraceInfo{ inner: BSRc::clone(&self.inner) }
     }
 
     // We cannot return enum copy there since this enum is 'non_exhaustive'
     // and does not support 'copy/clone'.
-    pub fn backtrace_status(&self) -> &std::backtrace::BacktraceStatus {
-        &self.inner.backtrace_status
+    #[inline]
+    pub fn backtrace_status(&self) -> std::backtrace::BacktraceStatus {
+        self.inner.backtrace.status()
     }
-    pub fn backtrace(&self) -> &std::backtrace::Backtrace {
-        &self.inner.backtrace
-    }
+
+    pub fn backtrace(&self) -> &std::backtrace::Backtrace { &self.inner.backtrace }
 }
 
 
@@ -140,7 +156,7 @@ impl std::fmt::Debug for BacktraceInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use std::backtrace::*;
 
-        match self.inner.backtrace_status {
+        match self.backtrace_status() {
             BacktraceStatus::Unsupported => { write!(f, "Backtrace unsupported") }
             BacktraceStatus::Disabled    => { write!(f, "Backtrace disabled")    }
             BacktraceStatus::Captured    => { write!(f, "\n{}", self.inner.backtrace)  }
