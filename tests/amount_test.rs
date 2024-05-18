@@ -47,12 +47,12 @@ fn amount_base_test() {
     // assert_eq!(amount.value.to_string(), "10.050");
     // assert_eq!(amount.value.to_string(), "10.050");
 
-    assert_eq!(amount.value().to_string(), "10.050");
-    assert_eq!(amount.value().to_string(), "10.050");
+    assert_eq!(amount.value_ref().to_string(), "10.050");
+    assert_eq!(amount.value_ref().to_string(), "10.050");
 
     // repeatable calls, to test borrowing/moving
-    assert_eq!(amount.value_ref().to_string(), "10.050");
-    assert_eq!(amount.value_ref().to_string(), "10.050");
+    assert_eq!(amount.value_bd_ref().to_string(), "10.050");
+    assert_eq!(amount.value_bd_ref().to_string(), "10.050");
 
     assert_eq!(amount.currency().to_string(), "USD");
 }
@@ -73,7 +73,7 @@ fn amount_should_be_immutable() {
     // amount.value_ref() = bd("22.022").to_ref(); // compilation error 'invalid left-hand side of assignment' - OK
     // assert_eq!(amount.to_string(), "10.050 EUR"); // not changed
 
-    amount.value().inverse();
+    amount.value_ref().inverse();
     assert_eq!(amount.to_string(), "10.050 EUR"); // not changed
 
     amount.with_value(bd("22.22"));
@@ -101,7 +101,7 @@ fn amount_mutability_test() {
     // amount.value_ref() = bd("22.022").to_ref(); // compilation error 'invalid left-hand side of assignment' - OK
     // assert_eq!(amount.to_string(), "10.050 JPY"); // not changed
 
-    amount.value().inverse();
+    amount.value_ref().inverse();
     assert_eq!(amount.to_string(), "10.050 JPY"); // not changed
 
     let new_amount = amount.with_value(bd("22.22"));
@@ -118,8 +118,8 @@ fn amount_mutability_test() {
 fn from_string() {
     let am = Amount::from_str(" \t \n 122.350  \tJPY ").test_unwrap();
     assert_eq!(am.to_string(), "122.350 JPY");
-    assert_eq!(*am.value(), bd("122.350"));
-    assert_eq!(am.value_ref(), bd("122.350").to_ref());
+    assert_eq!(*am.value_ref(), bd("122.350"));
+    assert_eq!(am.value_bd_ref(), bd("122.350").to_ref());
     assert_eq!(am.currency(), make_currency!("JPY"));
 }
 
@@ -128,7 +128,8 @@ fn from_string() {
 // #[should_panic(expected = "`Err` value: ParseAmountError { kind: ParseCurrencyError { source: CurrencyFormatError { kind: CurrencyFormatError")]
 // #[should_panic(expected = "`Err` value: ParseAmountError { kind: ParseCurrencyError, source: CurrencyFormatError(CurrencyFormatError { kind: CurrencyFormatError")]
 // #[should_panic(expected = "`Err` value: ParseAmountError { kind: ParseCurrencyError, source: CurrencyFormatError { kind: CurrencyFormatError")]
-#[should_panic(expected = "`Err` value: ParseAmountError { kind: IncorrectCurrency, source: CurrencyFormatError { kind: CurrencyFormatError")]
+// #[should_panic(expected = "`Err` value: ParseAmountError { kind: IncorrectCurrency, source: CurrencyFormatError { kind: CurrencyFormatError")]
+#[should_panic(expected = "`Err` value: ParseAmountError { kind: IncorrectCurrency, source: CurrencyFormatError { kind: IncorrectCurrencyFormat")]
 fn from_string_with_wrong_formed_currency() {
     enable_backtrace();
     Amount::from_str(" \t \n 122.350 USSD ").test_unwrap();
