@@ -3,19 +3,85 @@
 // C like enum
 // #[repr(u8)]
 // #[repr(u32)] // long C type
-// #[repr(core::ffi::c_int)] // long C type TODO: not compiled
-// #[repr(core::ffi::c_int)] // long C type TODO: not compiled
+// #[repr(core::ffi::c_int)]  //  int C type: not compiled
+// #[repr(core::ffi::c_long)] // long C type: not compiled
 #[repr(C)] // it is working
-#[repr(C)] // long C type TODO: not compiled
 #[allow(dead_code)]
 enum CEnum01 {
     Val1 = 1,
     Val2 = 2,
 }
 
+#[test]
+fn print_c_enum() {
+    print!("CEnum01::Val1: ");  print_bytes(&CEnum01::Val1);
+    print!("CEnum01::Val2: ");  print_bytes(&CEnum01::Val2);
+}
+
+
+#[repr(u8)] // it is working
+#[allow(dead_code)]
+enum OneByteEnum01 {
+    Val1 = 1,
+    Val2 = 2,
+}
+
+#[test]
+fn print_one_byte_enum01() {
+    print!("OneByteEnum01::Val1: ");  print_bytes(&OneByteEnum01::Val1);
+    print!("OneByteEnum01::Val2: ");  print_bytes(&OneByteEnum01::Val2);
+}
+
 
 #[allow(dead_code)]
+enum FourthEx{
+    A(u64),
+    B(String)
+}
 
+#[test]
+fn print_enum_with_string() {
+    print_bytes(&FourthEx::A(4)); // [0] * 8 + [4]+[0]*7 + [0]*8
+    print_bytes(&FourthEx::B(String::from("Dev-otion"))); // [something]*8 + [9]+[0]*7 + [9]+[0]*7
+    // 24 - size of string
+    print_bytes_count(&FourthEx::B(String::from("Dev-otion"))); // [something]*8 + [9]+[0]*7 + [9]+[0]*7
+}
+
+#[test]
+fn print_size_of_string() {
+    println!("{}", core::mem::size_of_val("abcdef abcdef abcdef abcdef abcdef abcdef"));
+    println!("{}", core::mem::size_of::<String>());
+    println!("{}", core::mem::size_of_val(&"abcdef abcdef abcdef abcdef abcdef abcdef".to_string()));
+    println!("{}", core::mem::size_of_val(&"abcdef abcdef abcdef abcdef abcdef abcdef abcdef abcdef abcdef abcdef abcdef".to_string()));
+}
+
+
+// use std::mem;
+// use std::slice;
+
+fn print_bytes<T>(input: &T) {
+    let size = std::mem::size_of::<T>();
+    let bytes = unsafe {
+        std::slice::from_raw_parts(
+            input as *const T as *const u8,
+            size
+        )
+    };
+    println!("{:?}", bytes);
+}
+fn print_bytes_count<T>(input: &T) {
+    let size = std::mem::size_of::<T>();
+    let bytes = unsafe {
+        std::slice::from_raw_parts(
+            input as *const T as *const u8,
+            size
+        )
+    };
+    println!("{:?}", bytes.len());
+}
+
+
+#[allow(dead_code)]
 struct Abcdef {
     f1: core::ffi::c_int,
     f2: core::ffi::c_long,
@@ -36,7 +102,19 @@ enum CEnum2 {
     } = 1,
 }
 
-fn aa() {
+
+#[test]
+fn print_strange_enum() {
+    print!("CEnum2::Struct: ");  print_bytes(&CEnum2::Struct { a: 0x02, b: 0x0304, c: 0x05060708 });
+    print!("CEnum2::Unit  : ");  print_bytes(&CEnum2::Unit);
+    print!("CEnum2::IntVal: ");  print_bytes(&CEnum2::IntVal(0x0304));
+    print!("CEnum2::Tuple : ");  print_bytes(&CEnum2::Tuple(0x0304));
+}
+
+
+
+#[test]
+fn convert_c_enum_to_int() {
     // let v: u32 = unsafe { CEnum01::Val1 }::;
     let _v1: u32 = CEnum01::Val1 as u32;
     // let _v2: u8 = CEnum2::Unit as u8;
@@ -73,7 +151,12 @@ fn test_ggfgfg() {
     println!("size of CEnum2::IntVal: {} bytes", core::mem::size_of_val(&CEnum2::IntVal));
     println!("size of CEnum2::Tuple: {} bytes", core::mem::size_of_val(&CEnum2::Tuple));
 
-    // println!("size of CEnum2::Struct: {} bytes", core::mem::size_of_val(CEnum2::Struct));
+    // println!("size of CEnum2: {} bytes", core::mem::size_of::<CEnum2::Unit>());
+    // println!("size of CEnum2: {} bytes", core::mem::size_of::<CEnum2::Tuple>());
+    // println!("size of CEnum2: {} bytes", core::mem::size_of::<CEnum2::IntVal>());
+    // println!("size of CEnum2: {} bytes", core::mem::size_of::<CEnum2::Struct>());
+
+    println!("size of CEnum2::Struct: {} bytes", core::mem::size_of_val(&CEnum2::Struct{ a:0, b: 0, c: 0}));
     // println!("size of CEnum2::Struct: {} bytes", core::mem::size_of_val(CEnum2::Struct));
     // let s = CEnum2::Struct;
     // println!("size of CEnum2::Struct: {} bytes", core::mem::size_of_val(&s));
@@ -140,3 +223,28 @@ enum Bar {
 println!("{}", size_of::<Foo>());
 println!("{}", size_of::<Bar>());
 */
+
+
+#[allow(dead_code)]
+enum NumberEnum1 {
+    One(i64),
+    Two(i64),
+    Three(i64),
+    Four(i64)
+}
+
+
+// ++++++++++++++++++++ Cool !!! +++++++++++++++++++++++++
+impl NumberEnum1 {
+    fn access_n(&self) -> &i64 {
+        use NumberEnum1::*;
+        match self {
+            One(n) | Two(n) | Three(n) | Four(n) => { n }
+        }
+    }
+}
+
+#[test]
+fn test_access_n() {
+    println!("{}", NumberEnum1::One(44).access_n())
+}
