@@ -125,7 +125,9 @@ fn from_string() {
 
 #[test]
 // #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseCurrencyError")]
-#[should_panic(expected = "`Err` value: ParseAmountError { kind: ParseCurrencyError { source: CurrencyFormatError { kind: CurrencyFormatError")]
+// #[should_panic(expected = "`Err` value: ParseAmountError { kind: ParseCurrencyError { source: CurrencyFormatError { kind: CurrencyFormatError")]
+// #[should_panic(expected = "`Err` value: ParseAmountError { kind: ParseCurrencyError, source: CurrencyFormatError(CurrencyFormatError { kind: CurrencyFormatError")]
+#[should_panic(expected = "`Err` value: ParseAmountError { kind: ParseCurrencyError, source: CurrencyFormatError { kind: CurrencyFormatError")]
 fn from_string_with_wrong_formed_currency() {
     enable_backtrace();
     Amount::from_str(" \t \n 122.350 USSD ").test_unwrap();
@@ -201,7 +203,9 @@ fn test_my_stacktrace() {
     write(&mut output, format_args!("{err:?}")).test_unwrap();
 
     // assert_starts_with!(output, "ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
-    assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit }) }");
+    // assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit }) }");
+    // assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError, source: ParseBigDecimalError(ParseBigInt(ParseBigIntError { kind: InvalidDigit }))");
+    assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError, source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
     assert_contains!(output, "backtrace:");
 
     assert_contains!(output, "amount_test::fn_test_parse_amount_101\n             at ./tests/amount_test.rs:");
@@ -257,7 +261,9 @@ fn test_std_error() {
     write(&mut output, format_args!("{err:?}")).test_unwrap();
 
     // assert_starts_with!(output, "ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
-    assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit }) }");
+    // assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit }) }");
+    // assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError, source: ParseBigDecimalError(ParseBigInt(ParseBigIntError { kind: InvalidDigit }))");
+    assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError, source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
     assert_contains!(output, "backtrace:");
 
     assert_contains!(output, "amount_test::fn_test_parse_amount_201\n             at ./tests/amount_test.rs:");

@@ -73,7 +73,6 @@ fn keep_only_last_file_path_part3<'a>(path: &str) -> &str {
 
 
 use std::cmp::PartialEq;
-use crate::util::backtrace::NewBacktracePolicy::Capture;
 
 pub fn print_current_stack_trace() {
     let stacktrace = std::backtrace::Backtrace::capture();
@@ -140,14 +139,15 @@ pub struct BacktraceInfo {
     inner: Option<BSRc<std::backtrace::Backtrace>>,
 }
 
-pub trait BacktraceRefProvider {
-    fn provide(&self) -> &BacktraceInfo;
-}
+// pub trait BacktraceRefProvider {
+//     fn provide_backtrace(&self) -> &BacktraceInfo;
+// }
 pub trait BacktraceCopyProvider {
-    fn provide(&self) -> BacktraceInfo;
+    // Using 'provide' name causes warning 'unstable_name_collision'
+    fn provide_backtrace(&self) -> BacktraceInfo;
 }
 pub trait BacktraceBorrowedProvider { // or better Moved???
-    fn provide(&self) -> BacktraceInfo;
+    fn provide_backtrace(&self) -> BacktraceInfo;
 }
 
 
@@ -183,7 +183,7 @@ impl BacktraceInfo {
     }
 
     pub fn inherit_with_policy<BP: BacktraceCopyProvider>(source: &BP, backtrace_policy: InheritBacktracePolicy) -> Self {
-        Self::reuse(source.provide(), backtrace_policy)
+        Self::reuse(source.provide_backtrace(), backtrace_policy)
     }
 
     #[inline]
@@ -192,7 +192,7 @@ impl BacktraceInfo {
     }
 
     pub fn borrow_with_policy<BP: BacktraceBorrowedProvider>(source: &BP, backtrace_policy: InheritBacktracePolicy) -> Self {
-        Self::reuse(source.provide(), backtrace_policy)
+        Self::reuse(source.provide_backtrace(), backtrace_policy)
     }
 
     fn reuse(source_bt: BacktraceInfo, backtrace_policy: InheritBacktracePolicy) -> Self {

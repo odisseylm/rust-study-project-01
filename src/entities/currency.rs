@@ -32,7 +32,7 @@ impl CurrencyFormatError {
 
 
 impl BacktraceCopyProvider for CurrencyFormatError {
-    fn provide(&self) -> BacktraceInfo { self.backtrace.clone() }
+    fn provide_backtrace(&self) -> BacktraceInfo { self.backtrace.clone() }
 }
 
 

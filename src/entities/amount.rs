@@ -3,6 +3,7 @@ use std::fmt::{ Display, Formatter };
 use bigdecimal::{ BigDecimal, BigDecimalRef, ParseBigDecimalError };
 use crate::entities::{ Currency, CurrencyFormatError };
 use crate::util::{BacktraceInfo, UncheckedResultUnwrap};
+use crate::util::backtrace::BacktraceCopyProvider;
 
 
 #[derive(Debug)]
@@ -67,24 +68,27 @@ pub fn amount(amount: BigDecimal, currency: Currency) -> Amount { Amount::new(am
 
 
 fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
+    use ErrorSource::*;
+
     let s = s.trim();
 
     let last_space_bytes_offset = s.rfind(|ch: char|{ ch.is_ascii_whitespace() })
-        .ok_or(  ParseAmountError { kind: ParseAmountErrorKind::NoCurrencyError(), backtrace: BacktraceInfo::new() } ) ?;
+        .ok_or( ParseAmountError::new(ParseAmountErrorKind::NoCurrencyError)) ?;
 
     let (str_amount, str_cur) = s.split_at(last_space_bytes_offset);
 
     let currency = Currency::from_str(str_cur.trim_start())
         .map_err(|er| {
-            ParseAmountError {
-                backtrace: BacktraceInfo::inherit_from(&er),
-                kind: ParseAmountErrorKind::ParseCurrencyError { source: er },
-            }
+            ParseAmountError::with_source(
+                ParseAmountErrorKind::ParseCurrencyError,
+                CurrencyFormatError(er),
+            )
         }) ?;
 
     let amount = BigDecimal::from_str(str_amount.trim_end())
         .map_err(|er| ParseAmountError {
-            kind: ParseAmountErrorKind::ParseAmountError { source: er },
+            kind: ParseAmountErrorKind::ParseAmountError,
+            source: ParseBigDecimalError(er),
             backtrace: BacktraceInfo::new(),
         }) ?;
 
@@ -130,26 +134,64 @@ pub enum ParseAmountError {
 #[derive(Debug, thiserror::Error)]
 pub enum ParseAmountErrorKind { // TODO: try to do as nested one
     #[error("No currency in amount error")]
-    NoCurrencyError(),
+    NoCurrencyError,
     #[error("Currency format error")]
-    ParseCurrencyError {
-        #[source]
-        source: CurrencyFormatError,
-    },
+    ParseCurrencyError,
     #[error("Parse amount value error")]
-    ParseAmountError {
-        #[source]
-        source: ParseBigDecimalError,
-    },
+    ParseAmountError,
 }
 
 #[derive(Debug, thiserror::Error)]
 pub struct ParseAmountError {
     pub kind: ParseAmountErrorKind,
+    #[source]
+    pub source: ErrorSource,
     pub backtrace: BacktraceInfo,
+
     // enum ErrorKind {
     //     ONE,
     // }
+}
+
+
+impl ParseAmountError {
+    pub fn new(kind: ParseAmountErrorKind) -> ParseAmountError {
+        ParseAmountError { kind, source: ErrorSource::NoSource, backtrace: BacktraceInfo::new() }
+    }
+    pub fn with_source(kind: ParseAmountErrorKind, source: ErrorSource) -> ParseAmountError {
+        ParseAmountError { kind, backtrace: BacktraceInfo::inherit_from(&source), source }
+    }
+}
+
+#[derive(thiserror::Error)]
+pub enum ErrorSource {
+    #[error("No source")]
+    NoSource,
+    #[error("Currency format error")]
+    CurrencyFormatError(CurrencyFormatError),
+    #[error("Decimal format error")]
+    ParseBigDecimalError(ParseBigDecimalError),
+}
+
+impl BacktraceCopyProvider for ErrorSource {
+    fn provide_backtrace(&self) -> BacktraceInfo {
+        match self {
+            ErrorSource::NoSource => { BacktraceInfo::empty() }
+            ErrorSource::ParseBigDecimalError(_)  => { BacktraceInfo::empty() }
+            ErrorSource::CurrencyFormatError(src) => { src.provide_backtrace() }
+        }
+    }
+}
+
+impl core::fmt::Debug for ErrorSource {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        use ErrorSource::*;
+        match self {
+            NoSource                      => { write!(f, "No source") }
+            CurrencyFormatError(ref src)  => { write!(f, "{:?}", src) }
+            ParseBigDecimalError(ref src) => { write!(f, "{:?}", src) }
+        }
+    }
 }
 
 
