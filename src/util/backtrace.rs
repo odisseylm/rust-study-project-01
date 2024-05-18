@@ -113,11 +113,7 @@ fn std_backtrace_status_to_inner_not_captured(b: &std::backtrace::Backtrace) -> 
 
 pub struct BacktraceInfo {
     not_captured: Option<NotCapturedInner>,
-    inner: Option<BSRc<Inner>>,
-}
-
-struct Inner {
-    backtrace: std::backtrace::Backtrace,
+    inner: Option<BSRc<std::backtrace::Backtrace>>,
 }
 
 
@@ -137,11 +133,7 @@ impl BacktraceInfo {
 
         BacktraceInfo {
             not_captured: not_captured_status,
-            inner: Some(
-                BSRc::new(
-                    Inner {
-                    backtrace: bt,
-                }))
+            inner: Some(BSRc::new(bt)),
         }
     }
 
@@ -151,11 +143,7 @@ impl BacktraceInfo {
 
         BacktraceInfo {
             not_captured: not_captured_status,
-            inner: Some(
-                BSRc::new(
-                    Inner {
-                    backtrace: bt,
-                }))
+            inner: Some(BSRc::new(bt)),
         }
     }
 
@@ -192,8 +180,8 @@ impl BacktraceInfo {
                 NotCapturedInner::Unknown     => { std::backtrace::BacktraceStatus::Unsupported }
             }
         }
-        else if let Some(ref ptr_inner) = self.inner {
-            ptr_inner.backtrace.status()
+        else if let Some(ref ptr_backtrace) = self.inner {
+            ptr_backtrace.status()
         }
         else {
             std::backtrace::BacktraceStatus::Unsupported
@@ -211,7 +199,7 @@ impl BacktraceInfo {
         }
 
         else if let Some(ref ptr_backtrace) = self.inner {
-            return &ptr_backtrace.backtrace
+            return &ptr_backtrace
         }
 
         // bad approach..., but cheap
@@ -229,7 +217,7 @@ impl std::fmt::Debug for BacktraceInfo {
             BacktraceStatus::Disabled    => { write!(f, "Backtrace disabled")    }
             BacktraceStatus::Captured    => {
                 match self.inner {
-                    Some(ref inner) => { write!(f, "\n{}", inner.backtrace) }
+                    Some(ref backtrace) => { write!(f, "\n{}", backtrace) }
                     None => { write!(f, "Unknown backtrace.") }
                 }
             }
