@@ -72,6 +72,8 @@ fn keep_only_last_file_path_part3<'a>(path: &str) -> &str {
 */
 
 
+use std::cmp::PartialEq;
+
 pub fn print_current_stack_trace() {
     let stacktrace = std::backtrace::Backtrace::capture();
 
@@ -91,10 +93,27 @@ pub fn print_current_stack_trace() {
 //
 type BSRc<T> = std::sync::Arc<T>;
 
+#[derive(Debug, PartialEq, Copy, Clone)]
+enum NotCapturedInner {
+    Unknown,
+    Disabled,
+    Unsupported,
+}
+
+fn std_backtrace_status_to_inner_not_captured(b: &std::backtrace::Backtrace) -> Option<NotCapturedInner> {
+    use std::backtrace::BacktraceStatus;
+    match b.status() {
+        BacktraceStatus::Captured    => { None }
+        BacktraceStatus::Unsupported => { Some(NotCapturedInner::Unsupported) }
+        BacktraceStatus::Disabled    => { Some(NotCapturedInner::Disabled)    }
+        _ => { Some(NotCapturedInner::Unknown) }
+    }
+}
+
 
 pub struct BacktraceInfo {
-    // TODO: do not use Arc/Rc if no real stacktrace
-    inner: BSRc<Inner>,
+    not_captured: Option<NotCapturedInner>,
+    inner: Option<BSRc<Inner>>,
 }
 
 struct Inner {
@@ -102,14 +121,41 @@ struct Inner {
 }
 
 
+static DISABLED_BACKTRACE: std::backtrace::Backtrace = std::backtrace::Backtrace::disabled();
+// static BACKTRACE_STATUS_DISABLED: std::backtrace::BacktraceStatus = std::backtrace::BacktraceStatus::Disabled;
+// static BACKTRACE_STATUS_CAPTURED: std::backtrace::BacktraceStatus = std::backtrace::BacktraceStatus::Captured;
+// static BACKTRACE_STATUS_UNSUPPORTED: std::backtrace::BacktraceStatus = std::backtrace::BacktraceStatus::Unsupported;
+
+
 impl BacktraceInfo {
-    pub fn new() -> Self {
+    #[inline]
+    pub fn new() -> Self { Self::capture() }
+
+    pub fn capture() -> Self {
+        let bt = std::backtrace::Backtrace::capture();
+        let not_captured_status: Option<NotCapturedInner> = std_backtrace_status_to_inner_not_captured(&bt);
+
         BacktraceInfo {
-            inner:
+            not_captured: not_captured_status,
+            inner: Some(
                 BSRc::new(
                     Inner {
-                    backtrace: std::backtrace::Backtrace::capture(),
-                })
+                    backtrace: bt,
+                }))
+        }
+    }
+
+    pub fn force_capture() -> Self {
+        let bt = std::backtrace::Backtrace::force_capture();
+        let not_captured_status: Option<NotCapturedInner> = std_backtrace_status_to_inner_not_captured(&bt);
+
+        BacktraceInfo {
+            not_captured: not_captured_status,
+            inner: Some(
+                BSRc::new(
+                    Inner {
+                    backtrace: bt,
+                }))
         }
     }
 
@@ -118,37 +164,59 @@ impl BacktraceInfo {
 
     pub fn disabled() -> Self {
         BacktraceInfo {
-            inner:
-            BSRc::new(
-                Inner {
-                    backtrace: std::backtrace::Backtrace::disabled(),
-                })
+            not_captured: Some(NotCapturedInner::Disabled),
+            inner: None,
         }
-    }
-
-    pub fn new_or_1(backtrace: Option<BacktraceInfo>) -> Self {
-        match backtrace {
-            None => { BacktraceInfo::new() }
-            Some(backtrace) => { BacktraceInfo { inner: backtrace.inner } }
-        }
-    }
-    pub fn new_or_2(backtrace: &BacktraceInfo) -> Self {
-        BacktraceInfo { inner: backtrace.inner.clone() }
     }
 
     // TODO: Do not use it manually. Use something like: self.inherit(), self.inherit_or_capture()/self.new_or()
     pub fn clone(&self) -> Self {
-        BacktraceInfo{ inner: BSRc::clone(&self.inner) }
+        if let Some(not_captured) = self.not_captured {
+            BacktraceInfo { not_captured: Some(not_captured), inner: None }
+        }
+        else if let Some(ref inner) = self.inner {
+            BacktraceInfo{ not_captured: None, inner: Some(BSRc::clone(inner)) }
+        }
+        else {
+            BacktraceInfo { not_captured: Some(NotCapturedInner::Unknown), inner: None }
+        }
     }
 
     // We cannot return enum copy there since this enum is 'non_exhaustive'
     // and does not support 'copy/clone'.
-    #[inline]
     pub fn backtrace_status(&self) -> std::backtrace::BacktraceStatus {
-        self.inner.backtrace.status()
+        if let Some(not_captured) = self.not_captured {
+            match not_captured {
+                NotCapturedInner::Disabled    => { std::backtrace::BacktraceStatus::Disabled    }
+                NotCapturedInner::Unsupported => { std::backtrace::BacktraceStatus::Unsupported }
+                NotCapturedInner::Unknown     => { std::backtrace::BacktraceStatus::Unsupported }
+            }
+        }
+        else if let Some(ref ptr_inner) = self.inner {
+            ptr_inner.backtrace.status()
+        }
+        else {
+            std::backtrace::BacktraceStatus::Unsupported
+        }
     }
 
-    pub fn backtrace(&self) -> &std::backtrace::Backtrace { &self.inner.backtrace }
+    pub fn backtrace(&self) -> &std::backtrace::Backtrace {
+        if let Some(not_captured) = self.not_captured {
+            return match not_captured {
+                NotCapturedInner::Disabled =>    { &DISABLED_BACKTRACE }
+                // bad approach..., but cheap
+                NotCapturedInner::Unknown =>     { &DISABLED_BACKTRACE }
+                NotCapturedInner::Unsupported => { &DISABLED_BACKTRACE }
+            }
+        }
+
+        else if let Some(ref ptr_backtrace) = self.inner {
+            return &ptr_backtrace.backtrace
+        }
+
+        // bad approach..., but cheap
+        return &DISABLED_BACKTRACE;
+    }
 }
 
 
@@ -159,8 +227,13 @@ impl std::fmt::Debug for BacktraceInfo {
         match self.backtrace_status() {
             BacktraceStatus::Unsupported => { write!(f, "Backtrace unsupported") }
             BacktraceStatus::Disabled    => { write!(f, "Backtrace disabled")    }
-            BacktraceStatus::Captured    => { write!(f, "\n{}", self.inner.backtrace)  }
-            _ => { write!(f, "Unknown backtrace status.") }
+            BacktraceStatus::Captured    => {
+                match self.inner {
+                    Some(ref inner) => { write!(f, "\n{}", inner.backtrace) }
+                    None => { write!(f, "Unknown backtrace.") }
+                }
+            }
+            _ => { write!(f, "Unknown backtrace.") }
         }
     }
 }
