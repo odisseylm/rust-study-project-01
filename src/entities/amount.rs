@@ -77,7 +77,7 @@ fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
     let currency = Currency::from_str(str_cur.trim_start())
         .map_err(|er| {
             ParseAmountError {
-                backtrace: er.backtrace().clone(),
+                backtrace: BacktraceInfo::inherit_from(&er),
                 kind: ParseAmountErrorKind::ParseCurrencyError { source: er },
             }
         }) ?;

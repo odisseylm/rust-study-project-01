@@ -4,6 +4,7 @@ use core::fmt;
 use std::char;
 use std::fmt::Formatter;
 use std::str::FromStr;
+use crate::util::backtrace::BacktraceCopyProvider;
 use crate::util::BacktraceInfo;
 
 
@@ -15,10 +16,25 @@ pub struct CurrencyFormatError {
 }
 
 impl CurrencyFormatError {
+    pub fn new(kind: CurrencyFormatErrorKind) -> CurrencyFormatError {
+        CurrencyFormatError { kind, backtrace: BacktraceInfo::new() }
+    }
+    // pub fn with_backtrace(kind: CurrencyFormatErrorKind, backtrace_policy: NewBacktracePolicy) -> CurrencyFormatError {
+    //     CurrencyFormatError { kind, backtrace: BacktraceInfo::new(backtrace_policy) }
+    // }
+    // pub fn without_backtrace(kind: CurrencyFormatErrorKind) -> CurrencyFormatError {
+    //     CurrencyFormatError { kind, backtrace: BacktraceInfo::empty() }
+    // }
     pub fn kind(&self) -> &CurrencyFormatErrorKind { &self.kind }
     pub fn backtrace(&self) -> &BacktraceInfo { &self.backtrace }
     // pub fn backtrace_copy(&self) -> BacktraceInfo { self.backtrace.clone() }
 }
+
+
+impl BacktraceCopyProvider for CurrencyFormatError {
+    fn provide(&self) -> BacktraceInfo { self.backtrace.clone() }
+}
+
 
 impl fmt::Display for CurrencyFormatError {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -29,6 +45,7 @@ impl fmt::Display for CurrencyFormatError {
 
 // #[derive(Debug, PartialEq, Copy, Clone)]
 #[derive(Debug, thiserror::Error)]
+#[derive(Copy, Clone)]
 pub enum CurrencyFormatErrorKind {
     #[error("no currency (blank string)")]
     NoCurrency,
@@ -44,13 +61,13 @@ pub struct Currency([u8;3]);
 impl Currency {
     pub fn from_str(currency_code: & str) -> Result<Self, CurrencyFormatError> {
         if currency_code.is_empty() {
-            return Err(CurrencyFormatError { kind: CurrencyFormatErrorKind::NoCurrency, backtrace: BacktraceInfo::new() })
+            return Err(CurrencyFormatError::new(CurrencyFormatErrorKind::NoCurrency))
         }
 
         let is_valid = if currency_code.len() != 3 { false }
                      else { is_valid_currency_ascii(currency_code.as_bytes()) };
 
-        if !is_valid { Err(CurrencyFormatError { kind: CurrencyFormatErrorKind::CurrencyFormatError, backtrace: BacktraceInfo::new() }) }
+        if !is_valid { Err(CurrencyFormatError::new(CurrencyFormatErrorKind::CurrencyFormatError)) }
         else {
             let as_bytes = currency_code.as_bytes();
             Ok(Self([as_bytes[0], as_bytes[1], as_bytes[2]]))

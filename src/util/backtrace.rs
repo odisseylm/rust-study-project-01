@@ -73,6 +73,7 @@ fn keep_only_last_file_path_part3<'a>(path: &str) -> &str {
 
 
 use std::cmp::PartialEq;
+use crate::util::backtrace::NewBacktracePolicy::Capture;
 
 pub fn print_current_stack_trace() {
     let stacktrace = std::backtrace::Backtrace::capture();
@@ -111,10 +112,50 @@ fn std_backtrace_status_to_inner_not_captured(b: &std::backtrace::Backtrace) -> 
 }
 
 
+pub enum NewBacktracePolicy {
+    Default,
+    NoBacktrace,
+    Capture,
+    ForceCapture,
+}
+
+// should be used together with other/source/from Error
+pub enum InheritBacktracePolicy {
+    Default,
+    Inherit,
+    InheritOrCapture,
+    InheritOrForceCapture,
+}
+// should be used together with other/source/from Error
+// pub enum BorrowBacktracePolicy {
+//     Default,
+//     Borrow,
+//     BorrowOrCapture,
+//     BorrowOrForceCapture,
+// }
+
+
 pub struct BacktraceInfo {
     not_captured: Option<NotCapturedInner>,
     inner: Option<BSRc<std::backtrace::Backtrace>>,
 }
+
+pub trait BacktraceRefProvider {
+    fn provide(&self) -> &BacktraceInfo;
+}
+pub trait BacktraceCopyProvider {
+    fn provide(&self) -> BacktraceInfo;
+}
+pub trait BacktraceBorrowedProvider { // or better Moved???
+    fn provide(&self) -> BacktraceInfo;
+}
+
+
+// impl std::error::Error for Error {
+//     fn provide<'a>(&'a self, request: &mut std::error::Request<'a>) {
+//         request.provide_ref::<MyBacktrace>(&self.backtrace);
+//     }
+// }
 
 
 static DISABLED_BACKTRACE: std::backtrace::Backtrace = std::backtrace::Backtrace::disabled();
@@ -125,7 +166,45 @@ static DISABLED_BACKTRACE: std::backtrace::Backtrace = std::backtrace::Backtrace
 
 impl BacktraceInfo {
     #[inline]
-    pub fn new() -> Self { Self::capture() }
+    pub fn new() -> Self { Self::new_by_policy(NewBacktracePolicy::Default) }
+
+    pub fn new_by_policy(backtrace_policy: NewBacktracePolicy) -> Self {
+        use NewBacktracePolicy::*;
+        match backtrace_policy {
+            Default | Capture => { Self::capture() }
+            NoBacktrace       => { Self::empty() }
+            ForceCapture      => { Self::force_capture() }
+        }
+    }
+
+    #[inline]
+    pub fn inherit_from<BP: BacktraceCopyProvider>(source: &BP) -> Self {
+        Self::inherit_with_policy(source, InheritBacktracePolicy::Default)
+    }
+
+    pub fn inherit_with_policy<BP: BacktraceCopyProvider>(source: &BP, backtrace_policy: InheritBacktracePolicy) -> Self {
+        Self::reuse(source.provide(), backtrace_policy)
+    }
+
+    #[inline]
+    pub fn borrow_from<BP: BacktraceBorrowedProvider>(source: &BP) -> Self {
+        Self::borrow_with_policy(source, InheritBacktracePolicy::Default)
+    }
+
+    pub fn borrow_with_policy<BP: BacktraceBorrowedProvider>(source: &BP, backtrace_policy: InheritBacktracePolicy) -> Self {
+        Self::reuse(source.provide(), backtrace_policy)
+    }
+
+    fn reuse(source_bt: BacktraceInfo, backtrace_policy: InheritBacktracePolicy) -> Self {
+        use InheritBacktracePolicy::*;
+        match backtrace_policy {
+            Inherit                     => { source_bt }
+            Default | InheritOrCapture  => { if source_bt.is_captured() { source_bt } else { Self::capture() } }
+            InheritOrForceCapture       => { if source_bt.is_captured() { source_bt } else { Self::force_capture() } }
+        }
+    }
+
+    pub fn is_captured(&self) -> bool { self.not_captured.is_some() || self.inner.is_none() }
 
     pub fn capture() -> Self {
         let bt = std::backtrace::Backtrace::capture();

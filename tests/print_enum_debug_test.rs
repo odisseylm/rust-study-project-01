@@ -1,3 +1,4 @@
+use project01::util::backtrace::NewBacktracePolicy;
 use project01::util::BacktraceInfo;
 
 
@@ -47,5 +48,5 @@ fn test_print_enum_with_scrum_dependency() {
     println!("{}", Suit2::Heart(1));
     println!("{}", Suit2::Diamond);
     // println!("{}", Suit2::Club(BacktraceInfo::new()));
-    println!("{}", Suit2::Club { sat:BacktraceInfo::new() });
+    println!("{}", Suit2::Club { sat:BacktraceInfo::new_by_policy(NewBacktracePolicy::Capture) });
 }

@@ -1,6 +1,6 @@
 use anyhow::{anyhow, Context};
 use project01::util::{BacktraceInfo, ToAnyHowErrorFn};
-
+use project01::util::backtrace::NewBacktracePolicy;
 
 
 #[derive(Debug)]
@@ -155,7 +155,7 @@ fn error_fn() -> Result<Entity1, MyError333> {
 
     r.map_err(|json_err|{ MyError333::JsonError {
         serde_error: json_err,
-        backtrace: BacktraceInfo::new(),
+        backtrace: BacktraceInfo::new_by_policy(NewBacktracePolicy::Capture),
     } })
 }
 pub fn error_fn_1() -> Result<Entity1, MyError333> { error_fn() }
