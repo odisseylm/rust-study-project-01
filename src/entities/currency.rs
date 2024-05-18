@@ -142,13 +142,13 @@ const fn is_valid_currency_ascii(cur: &[u8]) -> bool {
 ///
 /// # Examples
 /// ```
-/// use project01::entities::{ Currency, make_currency };
+/// use project01::entities::currency::{ Currency, make_currency };
 /// const PLN: Currency = make_currency("PLN");
 /// assert_eq!(PLN.code_as_string(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
-/// use project01::entities::{ Currency, make_currency };
+/// use project01::entities::currency::{ Currency, make_currency };
 ///
 /// // lowercase - error, in case of 'const' there will be compilation error.
 /// // The best approach!!! (but not for tests)
@@ -171,13 +171,13 @@ pub const fn make_currency(currency_code: & 'static str) -> Currency {
 ///
 /// # Examples
 /// ```
-/// use project01::entities::{ Currency, make_currency_b };
+/// use project01::entities::currency::{ Currency, make_currency_b };
 /// const PLN: Currency = make_currency_b(b"PLN");
 /// assert_eq!(PLN.code_as_string(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
-/// use project01::entities::{ Currency, make_currency_b };
+/// use project01::entities::currency::{ Currency, make_currency_b };
 /// // lowercase - error, in case of 'const' there will be compilation error.
 /// // The best approach!!! (but not for tests)
 /// // const PLN: Currency = make_currency_b(b"pln");
@@ -197,7 +197,7 @@ pub const fn make_currency_b(cur: & 'static [u8;3]) -> Currency {
 ///
 /// # Examples
 /// ```
-/// use project01::entities::Currency;
+/// use project01::entities::currency::Currency;
 /// use project01::make_currency; // macro
 /// use project01::entities::currency::make_currency; // required inline function
 ///
@@ -206,7 +206,7 @@ pub const fn make_currency_b(cur: & 'static [u8;3]) -> Currency {
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
-/// use project01::entities::Currency;
+/// use project01::entities::currency::Currency;
 /// use project01::make_currency; // macro
 /// use project01::entities::currency::make_currency; // required inline function
 ///

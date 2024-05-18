@@ -1,13 +1,14 @@
 
 pub mod currency;
 
-// like export with shorter name
-pub use currency::{ Currency, CurrencyFormatError, make_currency, make_currency_b };
-pub use amount::{ Amount, amount, ParseAmountError };
+// like export with shorter path
+// pub use currency::{ Currency, CurrencyFormatError, make_currency, make_currency_b };
+// pub use amount::{ Amount, amount, ParseAmountError };
 
 
 pub mod const_examples;
-mod macro_samples;
-mod amount;
-mod test_proc_macro;
+pub mod amount;
 
+
+mod macro_samples;
+mod test_proc_macro;

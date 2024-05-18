@@ -3,8 +3,7 @@
 use std::fmt;
 use std::fmt::write;
 use std::io::Write;
-use project01::entities::{ Currency };
-use project01::entities::currency::{ CurrencyFormatError, USD };
+use project01::entities::currency::{ Currency, CurrencyFormatError, USD };
 use project01::util::{ as_printable, as_printable_ptr };
 use project01::util::result::PrintableResult;
 use project01::util::UncheckedResultUnwrap;

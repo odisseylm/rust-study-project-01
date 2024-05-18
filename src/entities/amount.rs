@@ -1,9 +1,8 @@
 use std::str::{ FromStr };
 use std::fmt::{ Display, Formatter };
 use bigdecimal::{ BigDecimal, BigDecimalRef, ParseBigDecimalError };
-use crate::entities::{ Currency, CurrencyFormatError };
-use crate::util::{BacktraceInfo, UncheckedResultUnwrap};
-use crate::util::backtrace::BacktraceCopyProvider;
+use crate::entities::currency::Currency;
+use crate::util::UncheckedResultUnwrap;
 
 
 #[derive(Debug)]
@@ -67,34 +66,37 @@ impl Amount {
 pub fn amount(amount: BigDecimal, currency: Currency) -> Amount { Amount::new(amount, currency) }
 
 
-fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
-    // use ErrorSource::*;
+fn parse_amount(s: &str) -> Result<Amount, parse_amount::ParseAmountError> {
+    // use parse_amount::ErrorSource::*;
+    use parse_amount::{ ParseAmountError, ErrorKind };
 
     let s = s.trim();
 
     let last_space_bytes_offset = s.rfind(|ch: char|{ ch.is_ascii_whitespace() })
-        .ok_or( ParseAmountError::new(ParseAmountErrorKind::NoCurrencyError)) ?;
+        .ok_or( ParseAmountError::new(ErrorKind::NoCurrency)) ?;
 
     let (str_amount, str_cur) = s.split_at(last_space_bytes_offset);
 
     let currency = Currency::from_str(str_cur.trim_start())
         // .map_err(|er| {
         //     // ParseAmountError::with_source(
-        //     //     ParseAmountErrorKind::ParseCurrencyError,
+        //     //     ErrorKind::IncorrectCurrency,
         //     //     CurrencyFormatError(er),
         //     // )
-        //     ParseAmountError::with_from(ParseAmountErrorKind::ParseCurrencyError, er)
+        //     // or
+        //     ParseAmountError::with_from(ErrorKind::IncorrectCurrency, er)
         // })
         ?;
 
     let amount = BigDecimal::from_str(str_amount.trim_end())
         // .map_err(|er|
         //     // ParseAmountError {
-        //     //     kind: ParseAmountErrorKind::ParseAmountError,
+        //     //     kind: ErrorKind::IncorrectAmount,
         //     //     source: ParseBigDecimalError(er),
         //     //     backtrace: BacktraceInfo::new(),
         //     // }
-        //     ParseAmountError::with_from(ParseAmountErrorKind::ParseAmountError, er)
+        //     // or
+        //     ParseAmountError::with_from(ErrorKind::IncorrectAmount, er)
         // )
         ?;
 
@@ -127,7 +129,7 @@ fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
 }
 
 impl FromStr for Amount {
-    type Err = ParseAmountError;
+    type Err = parse_amount::ParseAmountError;
 
     #[inline]
     fn from_str(s: &str) -> Result<Amount, Self::Err> { parse_amount(s) }
@@ -138,106 +140,120 @@ impl FromStr for Amount {
 //                                        Error
 // -------------------------------------------------------------------------------------------------
 
-#[derive(Debug, thiserror::Error)]
-pub enum ParseAmountErrorKind { // TODO: try to do as nested one
-    #[error("No currency in amount error")]
-    NoCurrencyError,
-    #[error("Currency format error")]
-    ParseCurrencyError,
-    #[error("Parse amount value error")]
-    ParseAmountError,
-}
 
-#[derive(Debug, thiserror::Error)]
-pub struct ParseAmountError {
-    pub kind: ParseAmountErrorKind,
-    #[source]
-    pub source: ErrorSource,
-    pub backtrace: BacktraceInfo,
+// rust does not support nested structs/types/so on.
+// As workaround, I decided to use sub-namespace.
+//
+pub mod parse_amount {
+    //use crate::entities::amount::ParseAmountErrorKind;
+    //pub type ErrorKind = ParseAmountErrorKind;
 
-    // enum ErrorKind {
-    //     ONE,
-    // }
-}
+    use std::fmt::{Display, Formatter};
+    use bigdecimal::ParseBigDecimalError;
+    use crate::util::backtrace::BacktraceCopyProvider;
+    use crate::util::BacktraceInfo;
+    use crate::entities::currency::CurrencyFormatError;
+    // use std::io::Error;
 
-
-impl ParseAmountError {
-    pub fn new(kind: ParseAmountErrorKind) -> ParseAmountError {
-        ParseAmountError { kind, source: ErrorSource::NoSource, backtrace: BacktraceInfo::new() }
+    #[derive(Debug, thiserror::Error)]
+    pub enum ErrorKind {
+        #[error("No currency in amount")]
+        NoCurrency,
+        #[error("Incorrect currency format")]
+        IncorrectCurrency,
+        #[error("Incorrect amount format")]
+        IncorrectAmount,
     }
-    pub fn with_source(kind: ParseAmountErrorKind, source: ErrorSource) -> ParseAmountError {
-        ParseAmountError { kind, backtrace: BacktraceInfo::inherit_from(&source), source }
+
+    #[derive(Debug, thiserror::Error)]
+    pub struct ParseAmountError {
+        pub kind: ErrorKind,
+        #[source]
+        // #[from]
+        pub source: ErrorSource,
+        pub backtrace: BacktraceInfo,
     }
-    pub fn with_from<ES: Into<ErrorSource>>(kind: ParseAmountErrorKind, source: ES) -> ParseAmountError {
-        let src = source.into();
-        ParseAmountError { kind, backtrace: BacktraceInfo::inherit_from(&src), source: src }
-    }
-}
 
-impl From<CurrencyFormatError> for ParseAmountError {
-    fn from(error: CurrencyFormatError) -> Self { ParseAmountError::with_from(ParseAmountErrorKind::ParseCurrencyError, error) }
-}
-impl From<ParseBigDecimalError> for ParseAmountError {
-    fn from(error: ParseBigDecimalError) -> Self { ParseAmountError::with_from(ParseAmountErrorKind::ParseAmountError, error) }
-}
+    impl ParseAmountError {
 
-#[derive(thiserror::Error)]
-pub enum ErrorSource {
-    #[error("No source")]
-    NoSource,
-    #[error("Currency format error")]
-    CurrencyFormatError(CurrencyFormatError),
-    #[error("Decimal format error")]
-    ParseBigDecimalError(ParseBigDecimalError),
-}
+        // error[E0658]: inherent associated types are unstable
+        // see issue #8995 <https://github.com/rust-lang/rust/issues/8995> for more information
+        //
+        // type ErrorKind = ParseAmountErrorKind;
 
-impl Into<ErrorSource> for CurrencyFormatError {
-    fn into(self) -> ErrorSource { ErrorSource::CurrencyFormatError(self) }
-}
-impl Into<ErrorSource> for ParseBigDecimalError {
-    fn into(self) -> ErrorSource { ErrorSource::ParseBigDecimalError(self) }
-}
-
-
-impl BacktraceCopyProvider for ErrorSource {
-    fn provide_backtrace(&self) -> BacktraceInfo {
-        match self {
-            ErrorSource::NoSource => { BacktraceInfo::empty() }
-            ErrorSource::ParseBigDecimalError(_)  => { BacktraceInfo::empty() }
-            ErrorSource::CurrencyFormatError(src) => { src.provide_backtrace() }
+        // It can be generated by macro
+        pub fn new(kind: ErrorKind) -> ParseAmountError {
+            ParseAmountError { kind, source: ErrorSource::NoSource, backtrace: BacktraceInfo::new() }
+        }
+        // It can be generated by macro
+        pub fn with_source(kind: ErrorKind, source: ErrorSource) -> ParseAmountError {
+            ParseAmountError { kind, backtrace: BacktraceInfo::inherit_from(&source), source }
+        }
+        // It can be generated by macro
+        pub fn with_from<ES: Into<ErrorSource>>(kind: ErrorKind, source: ES) -> ParseAmountError {
+            let src = source.into();
+            ParseAmountError { kind, backtrace: BacktraceInfo::inherit_from(&src), source: src }
         }
     }
-}
 
-impl core::fmt::Debug for ErrorSource {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        use ErrorSource::*;
-        match self {
-            NoSource                      => { write!(f, "No source") }
-            CurrencyFormatError(ref src)  => { write!(f, "{:?}", src) }
-            ParseBigDecimalError(ref src) => { write!(f, "{:?}", src) }
+    // It can be generated by macro
+    impl From<CurrencyFormatError> for ParseAmountError {
+        fn from(error: CurrencyFormatError) -> Self { ParseAmountError::with_from(ErrorKind::IncorrectCurrency, error) }
+    }
+    // It can be generated by macro
+    impl From<ParseBigDecimalError> for ParseAmountError {
+        fn from(error: ParseBigDecimalError) -> Self { ParseAmountError::with_from(ErrorKind::IncorrectAmount, error) }
+    }
+
+    // It can be generated by macro
+    #[derive(thiserror::Error)]
+    pub enum ErrorSource {
+        #[error("No source")]
+        NoSource,
+        #[error("Currency format error")]
+        CurrencyFormatError(CurrencyFormatError),
+        #[error("Decimal format error")]
+        ParseBigDecimalError(ParseBigDecimalError),
+    }
+
+    // It can be generated by macro
+    impl Into<ErrorSource> for CurrencyFormatError {
+        fn into(self) -> ErrorSource { ErrorSource::CurrencyFormatError(self) }
+    }
+    // It can be generated by macro
+    impl Into<ErrorSource> for ParseBigDecimalError {
+        fn into(self) -> ErrorSource { ErrorSource::ParseBigDecimalError(self) }
+    }
+
+    // It can be generated by macro
+    impl BacktraceCopyProvider for ErrorSource {
+        fn provide_backtrace(&self) -> BacktraceInfo {
+            match self {
+                ErrorSource::NoSource => { BacktraceInfo::empty() }
+                ErrorSource::ParseBigDecimalError(_)  => { BacktraceInfo::empty() }
+                ErrorSource::CurrencyFormatError(src) => { src.provide_backtrace() }
+            }
         }
     }
-}
 
-
-// From the RFC
-// struct RectangleTidy {
-//     dimensions: {
-//         width: u64,
-//         height: u64,
-//     },
-//     color: {
-//         red: u8,
-//         green: u8,
-//         blue: u8,
-//     },
-// }
-
-
-impl Display for ParseAmountError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.kind)
+    // It can be generated by macro
+    impl core::fmt::Debug for ErrorSource {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            use ErrorSource::*;
+            match self {
+                NoSource                      => { write!(f, "No source") }
+                CurrencyFormatError(ref src)  => { write!(f, "{:?}", src) }
+                ParseBigDecimalError(ref src) => { write!(f, "{:?}", src) }
+            }
+        }
     }
-}
 
+
+    // It can be generated by macro
+    impl Display for ParseAmountError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.kind)
+        }
+    }
+
+}

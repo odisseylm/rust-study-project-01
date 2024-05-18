@@ -1,8 +1,8 @@
 mod common;
 
 use project01::{ make_currency, make_currency_b };
-use project01::entities::{ Currency, make_currency_b };
-use project01::entities::currency::{ EUR, USD, make_currency };
+use project01::entities::currency::{ Currency, make_currency_b, make_currency };
+use project01::entities::currency::{ EUR, USD, };
 use common::TestResultUnwrap;
 
 
