@@ -68,7 +68,7 @@ pub fn amount(amount: BigDecimal, currency: Currency) -> Amount { Amount::new(am
 
 
 fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
-    use ErrorSource::*;
+    // use ErrorSource::*;
 
     let s = s.trim();
 
@@ -78,19 +78,25 @@ fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
     let (str_amount, str_cur) = s.split_at(last_space_bytes_offset);
 
     let currency = Currency::from_str(str_cur.trim_start())
-        .map_err(|er| {
-            ParseAmountError::with_source(
-                ParseAmountErrorKind::ParseCurrencyError,
-                CurrencyFormatError(er),
-            )
-        }) ?;
+        // .map_err(|er| {
+        //     // ParseAmountError::with_source(
+        //     //     ParseAmountErrorKind::ParseCurrencyError,
+        //     //     CurrencyFormatError(er),
+        //     // )
+        //     ParseAmountError::with_from(ParseAmountErrorKind::ParseCurrencyError, er)
+        // })
+        ?;
 
     let amount = BigDecimal::from_str(str_amount.trim_end())
-        .map_err(|er| ParseAmountError {
-            kind: ParseAmountErrorKind::ParseAmountError,
-            source: ParseBigDecimalError(er),
-            backtrace: BacktraceInfo::new(),
-        }) ?;
+        // .map_err(|er|
+        //     // ParseAmountError {
+        //     //     kind: ParseAmountErrorKind::ParseAmountError,
+        //     //     source: ParseBigDecimalError(er),
+        //     //     backtrace: BacktraceInfo::new(),
+        //     // }
+        //     ParseAmountError::with_from(ParseAmountErrorKind::ParseAmountError, er)
+        // )
+        ?;
 
     Ok(Amount::new(amount, currency))
 
@@ -120,16 +126,17 @@ fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
     */
 }
 
+impl FromStr for Amount {
+    type Err = ParseAmountError;
 
-
-/*
-#[derive(Debug, PartialEq, Clone)]
-pub enum ParseAmountError {
-    NoCurrencyError,
-    ParseCurrencyError(CurrencyFormatError),
-    ParseAmountError(ParseBigDecimalError),
+    #[inline]
+    fn from_str(s: &str) -> Result<Amount, Self::Err> { parse_amount(s) }
 }
-*/
+
+
+// -------------------------------------------------------------------------------------------------
+//                                        Error
+// -------------------------------------------------------------------------------------------------
 
 #[derive(Debug, thiserror::Error)]
 pub enum ParseAmountErrorKind { // TODO: try to do as nested one
@@ -161,6 +168,17 @@ impl ParseAmountError {
     pub fn with_source(kind: ParseAmountErrorKind, source: ErrorSource) -> ParseAmountError {
         ParseAmountError { kind, backtrace: BacktraceInfo::inherit_from(&source), source }
     }
+    pub fn with_from<ES: Into<ErrorSource>>(kind: ParseAmountErrorKind, source: ES) -> ParseAmountError {
+        let src = source.into();
+        ParseAmountError { kind, backtrace: BacktraceInfo::inherit_from(&src), source: src }
+    }
+}
+
+impl From<CurrencyFormatError> for ParseAmountError {
+    fn from(error: CurrencyFormatError) -> Self { ParseAmountError::with_from(ParseAmountErrorKind::ParseCurrencyError, error) }
+}
+impl From<ParseBigDecimalError> for ParseAmountError {
+    fn from(error: ParseBigDecimalError) -> Self { ParseAmountError::with_from(ParseAmountErrorKind::ParseAmountError, error) }
 }
 
 #[derive(thiserror::Error)]
@@ -172,6 +190,14 @@ pub enum ErrorSource {
     #[error("Decimal format error")]
     ParseBigDecimalError(ParseBigDecimalError),
 }
+
+impl Into<ErrorSource> for CurrencyFormatError {
+    fn into(self) -> ErrorSource { ErrorSource::CurrencyFormatError(self) }
+}
+impl Into<ErrorSource> for ParseBigDecimalError {
+    fn into(self) -> ErrorSource { ErrorSource::ParseBigDecimalError(self) }
+}
+
 
 impl BacktraceCopyProvider for ErrorSource {
     fn provide_backtrace(&self) -> BacktraceInfo {
@@ -215,9 +241,3 @@ impl Display for ParseAmountError {
     }
 }
 
-impl FromStr for Amount {
-    type Err = ParseAmountError;
-
-    #[inline]
-    fn from_str(s: &str) -> Result<Amount, Self::Err> { parse_amount(s) }
-}

@@ -204,7 +204,7 @@ impl BacktraceInfo {
         }
     }
 
-    pub fn is_captured(&self) -> bool { self.not_captured.is_some() || self.inner.is_none() }
+    pub fn is_captured(&self) -> bool { self.not_captured.is_none() && self.inner.is_some() }
 
     pub fn capture() -> Self {
         let bt = std::backtrace::Backtrace::capture();
