@@ -14,6 +14,11 @@ edition = "2021"
 #error_generic_member_access = []
 
 [dependencies]
+#other01 = "0.1.0"
+#other01-impl = { version = "0.1.0", path = "other01" }
+other01 = { version = "0.1.0", path = "other01" }
+#project01-other01 = { version = "0.1.0", path = "other01" }
+
 static_assertions = "1.1.0"
 const_format = "0.2.32"
 bigdecimal = "0.4.3"
