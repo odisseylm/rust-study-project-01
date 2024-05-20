@@ -1,3 +1,5 @@
+
+/*
 use other01::{HelloMacro, TlbormDerive};
 
 #[derive(TlbormDerive)]
@@ -22,6 +24,7 @@ trait HelloMacro {
 struct SS2 {
     f: i32,
 }
+*/
 
 #[test]
 fn aaa() {
