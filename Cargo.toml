@@ -57,6 +57,17 @@ derivative = "2.2.0"
 #[test]
 [tests]
 
+#autotests = false
+#
+#[[test]]
+#name = "test_token_trees"
+#path = "tests/test_token_trees.rs"
+#
+#[[test]]
+#name = "test_parse_buffer"
+#path = "tests/test_parse_buffer.rs"
+
+
 
 [dev-dependencies]
 #mockall = "0.12.1"
@@ -84,6 +95,27 @@ assert_matches = "1.5.0"
 
 # hm... unused manifest key: benches
 [benches]
+
+#autobenches = false
+#
+#[[bench]]
+#name = "rust"
+#path = "benches/rust.rs"
+#harness = false
+#required-features = [
+#    "full",
+#    "parsing",
+#]
+#
+#[[bench]]
+#name = "file"
+#path = "benches/file.rs"
+#required-features = [
+#    "full",
+#    "parsing",
+#]
+
+
 
 
 [workspace]

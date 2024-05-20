@@ -1,10 +1,4 @@
 
-
-
-
-// pub struct Other01Struct {}
-
-
 /*
 pub fn add456(left: usize, right: usize) -> usize {
     left + right
@@ -24,21 +18,21 @@ mod tests {
 
 
 
-extern crate proc_macro;
-extern crate syn;
-extern crate quote;
+// extern crate proc_macro;
+//extern crate syn;
+// extern crate quote;
 
-use proc_macro::TokenStream;
+// use proc_macro::{TokenStream};
 
 #[proc_macro_derive(TlbormDerive22, attributes(tlborm_helper22))]
-pub fn tlborm_derive22(_item: TokenStream) -> TokenStream {
-    TokenStream::new()
+pub fn tlborm_derive22(_item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    proc_macro::TokenStream::new()
 }
 
 
 #[proc_macro_derive(TlbormDerive, attributes(tlborm_helper))]
-pub fn tlborm_derive(_item: TokenStream) -> TokenStream {
-    TokenStream::new()
+pub fn tlborm_derive(_item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    proc_macro::TokenStream::new()
 }
 
 /*
@@ -72,14 +66,14 @@ fn impl_hello_world(ast: &syn::DeriveInput) -> quote::Tokens {
 
 
 // use proc_macro::TokenStream;
-use quote::{quote, ToTokens};
-use quote::quote_spanned;
-use syn::{Attribute, DeriveInput, Ident, Type, TypePath, Variant};
+use quote::quote;
+// use quote::{quote, ToTokens};
+// use syn::{Attribute, DeriveInput, Ident, Meta, Type, TypePath, Variant};
 // use syn::token::Paren;
 // use syn;
 
 #[proc_macro_derive(HelloMacro)]
-pub fn hello_macro_derive(input: TokenStream) -> TokenStream {
+pub fn hello_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Construct a representation of Rust code as a syntax tree
     // that we can manipulate
     let ast = syn::parse(input).unwrap();
@@ -102,7 +96,7 @@ fn impl_hello_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
 
 
 #[proc_macro_derive(MyStaticStructError, attributes(StaticStructErrorType))]
-pub fn my_static_struct_error_macro_derive(input: TokenStream) -> TokenStream {
+pub fn my_static_struct_error_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Construct a representation of Rust code as a syntax tree
     // that we can manipulate
     // let ast: proc_macro2::TokenStream = syn::parse(input).unwrap();
@@ -124,10 +118,10 @@ pub fn my_static_struct_error_macro_derive(input: TokenStream) -> TokenStream {
     impl_my_static_struct_error(&ast)
 }
 
-fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> TokenStream {
+fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
     let name = &ast.ident;
 
-    // TODO: how to write it short
+    // T O D O: how to write it short
     let source_field_exists: bool = if let syn::Data::Struct(ref data) = ast.data {
         if let syn::Fields::Named(ref fields) = data.fields {
             fields.named.iter().any(|el| el.ident
@@ -219,12 +213,12 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> TokenStream {
     };
 
     let err_impl = if source_field_exists { err_impl_with_source } else { err_impl_without_source };
-    let err_impl_ts: TokenStream = err_impl.into();
-    let backtrace_provider_ts: TokenStream = err_backtrace_provider_impl.into();
-    let err_display_ts: TokenStream = err_display_impl.into();
+    let err_impl_ts: proc_macro::TokenStream = err_impl.into();
+    let backtrace_provider_ts: proc_macro::TokenStream = err_backtrace_provider_impl.into();
+    let err_display_ts: proc_macro::TokenStream = err_display_impl.into();
 
-    // TODO: probably it can be written a bit easier
-    let mut all = TokenStream::new(); // proc_macro::TokenStream
+    // T O D O: probably it can be written a bit easier
+    let mut all = proc_macro::TokenStream::new(); // proc_macro::TokenStream
 
     all.extend(err_impl_ts.into_iter());
     all.extend(backtrace_provider_ts.into_iter());
@@ -236,7 +230,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> TokenStream {
 
 
 #[proc_macro_derive(MyStaticStructErrorSource, attributes(struct_error_type, from_error_kind))]
-pub fn my_static_struct_error_source_macro_derive(input: TokenStream) -> TokenStream {
+pub fn my_static_struct_error_source_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let ast = syn::parse(input).unwrap();
     impl_my_static_struct_error_source(&ast)
 }
@@ -250,16 +244,39 @@ pub fn my_static_struct_error_source_macro_derive(input: TokenStream) -> TokenSt
 //     #[helper] field: ()
 // }
 
-fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> TokenStream {
-    let name = ast.ident.to_string();
+fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
+    let _name = ast.ident.to_string();
 
-    let attrs33: &Vec<syn::Attribute> = &ast.attrs;
+    let struct_error_type_attr: Option<&syn::Attribute> = find_attr(&ast.attrs, "struct_error_type");
+    let struct_error_type: Option<String> = struct_error_type_attr.and_then(|attr|{
+        let attr22: &syn::Attribute = attr;
+        attr_list_as_string(attr22)
+    });
+    let struct_error_type: String = struct_error_type
+        .expect("struct_error_type should have format: struct_error_type(MyErrorStructName)");
+
+    /*
+    let to_find_attr = "struct_error_type";
     match attrs33.first() {
         None => {}
         Some(ref attr) => {
             // panic!("attr 4545: {:?}", attr);
+
+            // let meta: &Meta = &attr.meta;
+            let meta = &attr.meta;
+            let path = meta.path();
+            let segments= &path.segments;
+
+            let path22 = segments.iter().map(|ee| ee.ident.to_string() ).collect::<String>();
+
+            if (path22 == to_find_attr) {
+                panic!("path 4545 FOUND: {:?}", path22);
+            }
+
+            panic!("path 4545: {:?}", path22);
         }
     }
+    */
 
     /*
     let name = &ast.ident;
@@ -435,20 +452,24 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> TokenStream {
     */
 
     let enum_variants = get_error_source_enum_variants(ast);
-    // panic!("### enum_variants: {:?}", enum_variants);
-    let enum_variants_wo_no_source = enum_variants.variants.iter().filter(|el|{ el.name != "NoSource" });
+    // let enum_variants_wo_no_source: Vec<&ErrorSourceEnumVariant<'_>> = enum_variants.variants.iter().filter(|el|{ el.name != "NoSource" }).collect::<Vec<_>>();
+    let enum_variants_wo_no_source: Vec<&ErrorSourceEnumVariant> = enum_variants.variants.iter().filter(|el|{ el.name != "NoSource" }).collect::<Vec<_>>();
 
-    let enums_xxx: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.clone().map(|el|{
-        // let var_name = syn::Ident::new(&el.name, ast.ident.span()); // TODO: why do I use ast.ident.span() there ??? https://stackoverflow.com/questions/62370461/how-can-i-concatenate-a-string-to-an-ident-in-a-macro-derive
-        let var_name = el.name; // TODO: why do I use ast.ident.span() there ??? https://stackoverflow.com/questions/62370461/how-can-i-concatenate-a-string-to-an-ident-in-a-macro-derive
-        // TODO: use `src.provide_backtrace()`
+    // let temp: &ErrorSourceEnumVariant = enum_variants_wo_no_source.get(0).unwrap();
+    // find_enum_variant_attr(temp.variant, "from_error_kind");
+
+    // panic!("### &ErrorSourceEnumVariant: temp: {:?}", temp);
+
+    let err_src_bt_provider_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|el|{
+        let var_name = el.name;
+        // TODO: make it configurable, by default we should use `src.provide_backtrace()`
         quote! (
-            ErrorSource:: #var_name (_)  => { BacktraceInfo::empty() }
+            // ErrorSource:: #var_name (_)  => { BacktraceInfo::empty() }
+            ErrorSource:: #var_name (src)  => { src.provide_backtrace() }
         )
     }).collect::<Vec<_>>();
 
-    let enums_xxx22: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.clone().map(|el|{
-        // let var_name = syn::Ident::new(&el.name, ast.ident.span());
+    let err_src_debug_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|el|{
         let var_name = el.name;
         quote! (
             #var_name(ref src)  => { write!(f, "{:?}", src) }
@@ -464,7 +485,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> TokenStream {
                 use crate::util::BacktraceInfo;
                 match self {
                     ErrorSource::NoSource => { BacktraceInfo::empty() }
-                    #(#enums_xxx)*
+                    #(#err_src_bt_provider_impl_match_branches)*
                     // ErrorSource::ParseBigDecimalError(_)  => { BacktraceInfo::empty()  }
                     // ErrorSource::CurrencyFormatError(src) => { src.provide_backtrace() }
                 }
@@ -478,40 +499,66 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> TokenStream {
                 use ErrorSource::*;
                 match self {
                     NoSource                      => { write!(f, "No source") }
-                    #(#enums_xxx22)*
+                    #(#err_src_debug_impl_match_branches)*
                 }
             }
         }
     };
 
-    // let enums_xxx3: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.clone().map(|el|{
-    //     let err_struct_name = ; // syn::Ident::new(&el.name, ast.ident.span());
-    //     let var_name = syn::Ident::new(&el.name, ast.ident.span());
-    //     let var_name = syn::Ident::new(&el.name, ast.ident.span());
-    //     quote! (
-    //         impl From< #err_struct_name > for ParseAmountError {
-    //             fn from(error: CurrencyFormatError) -> Self { ParseAmountError::with_from(ErrorKind::IncorrectCurrency, error) }
-    //         }
-    //     )
-    // }).collect::<Vec<_>>();
+    let from_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|el|{
+        let variant_enum_name: &proc_macro2::Ident = el.name;
 
-    let into_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.clone().map(|ref el|{ // TODO: to avoid clone().
-        // let err_struct_name = ; // syn::Ident::new(&el.name, ast.ident.span());
-        //panic!("### 65656 01");
+        // TODO: just skip generating from from_error_kind is missed
+        // TODO: or even do it configurable ??? What should be by default: error or skip?
+        let from_error_kind_attr = find_enum_variant_attr(el.variant, "from_error_kind")
+            .unwrap_or_else(|| panic!("from_error_kind attribute is expected for {}", variant_enum_name));
+        let error_kind = attr_list_as_string(from_error_kind_attr)
+            .unwrap_or_else(|| panic!("from_error_kind attribute value is expected for {}", variant_enum_name));
+
+        // panic!("error_kind: {}", error_kind);
+        let from_err_type_name = el.first_arg_type
+            .unwrap_or_else(|| panic!("first argument as type is expected for {}", variant_enum_name));
+
+        // let err_struct_name = syn::Ident::new(&el.name, ast.ident.span());
+        // let err_struct_name = syn::Ident::new(struct_error_type.as_str(), ast.ident.span());
+        // let err_struct_name = syn::Type::Path(syn::TypePath { qself: None, path: syn::Path {  } }); //::new(struct_error_type.as_str(), ast.ident.span());
+
+        let err_struct_name: syn::Type = syn::parse_str(struct_error_type.as_str())
+            .unwrap_or_else(|_| panic!("{:?} has incorect syntax for type.", struct_error_type));
+
+        // panic!("$$$ err_struct_name: {:?}", err_struct_name);
+
+        // let from_err_type_name = syn::Ident::new(from_err_type_name);
+        let from_err_type_name = from_err_type_name;
+        let err_struct_kind_name = syn::Ident::new(error_kind.as_str(), ast.ident.span());
+
+        // panic!("$$$ trt09540954095704");
+
         // let var_name = syn::Ident::new(&el.name, ast.ident.span());
-        let var_name: &Ident = el.name;
-        // panic!("### 65656 02");
+        let var_name = el.name;
+        //panic!("$$$ trt09540954095704");
 
-        // TODO: gather Type instead of manual recreating it !!!
-        // let var_arg_type = syn::Type::Path(TypePath { qself: None, path: Path { leading_colon: None,  }  });// Ident::new(&el.first_arg_type.clone().unwrap(), ast.ident.span()); // TODO: remove clone
-        // let var_arg_type: Option<&Type> = el.first_arg_type.as_ref();
-        let var_arg_type: &Type = el.first_arg_type.unwrap();
-        // panic!("### 65656 03");
-        // panic!("### 65656 var_name: {:?}, var_arg_type: {:?}", var_name, var_arg_type);
+        quote! (
+
+            // impl From<CurrencyFormatError> for ParseAmountError {
+            //     fn from(error: CurrencyFormatError) -> Self { ParseAmountError::with_from(ErrorKind::IncorrectCurrency, error) }
+            // }
+
+            impl From< #from_err_type_name > for #err_struct_name {
+                fn from(error: #from_err_type_name ) -> Self { #err_struct_name::with_from(ErrorKind:: #err_struct_kind_name, error) }
+            }
+        )
+    }).collect::<Vec<_>>();
+
+    let into_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|ref el|{ // T O D O: to avoid clone().
+        let var_name: &syn::Ident = el.name;
+        let var_arg_type: &syn::Type = el.first_arg_type.expect("first_arg_type is expected 001");
+
         quote! (
             // impl Into<ErrorSource> for CurrencyFormatError {
             //     fn into(self) -> ErrorSource { ErrorSource::CurrencyFormatError22(self) }
             // }
+
             #[allow(unused_imports)]
             #[allow(unused_qualifications)]
             impl Into<ErrorSource> for #var_arg_type {
@@ -521,24 +568,20 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> TokenStream {
     }).collect::<Vec<_>>();
 
 
+    let err_impl_ts: proc_macro::TokenStream = err_src_impl.into();
 
-    // quote! {
-    //     fn aa() {}
-    // }
-    // .into()
-
-    // err_src_impl.into()
-
-    let err_impl_ts: TokenStream = err_src_impl.into();
-    // let into_impl_ts: TokenStream = into_impl.into();
-
-    // TODO: probably it can be written a bit easier
-    let mut all = TokenStream::new(); // proc_macro::TokenStream
+    // T O D O: probably it can be written a bit easier
+    let mut all = proc_macro::TokenStream::new(); // proc_macro::TokenStream
 
     all.extend(err_impl_ts.into_iter());
-    // all.extend(into_impl_ts.into_iter());
-    into_impl.iter().for_each(|rrr|{
-        let as_ts: TokenStream = rrr.to_token_stream().into();
+    into_impl.iter().for_each(|into_expr|{
+        use quote::ToTokens;
+        let as_ts: proc_macro::TokenStream = into_expr.to_token_stream().into();
+        all.extend(as_ts);
+    });
+    from_impl.iter().for_each(|from_expr|{
+        use quote::ToTokens;
+        let as_ts: proc_macro::TokenStream = from_expr.to_token_stream().into();
         all.extend(as_ts);
     });
 
@@ -548,31 +591,28 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> TokenStream {
 
 #[derive(Debug)]
 struct ErrorSourceEnumVariant<'a> {
-    name: & 'a Ident,
-    first_arg_type: Option<& 'a Type>,
+    variant: & 'a syn::Variant,
+    name: & 'a syn::Ident,
+    first_arg_type: Option<& 'a syn::Type>,
 }
 #[derive(Debug)]
 struct ErrorSourceEnum<'a> {
-    name: & 'a Ident,
+    name: & 'a syn::Ident,
     variants: Vec<ErrorSourceEnumVariant<'a>>,
 }
 
 fn get_error_source_enum_variants<'a>(ast: & 'a syn::DeriveInput) -> ErrorSourceEnum<'a> {
-    let enum_name: &Ident = &ast.ident;
+    let enum_name: &syn::Ident = &ast.ident;
 
     let mut variants: Vec<ErrorSourceEnumVariant<'a>> = Vec::new();
 
-    let mut i = 0;
-
     if let syn::Data::Enum(ref data_enum) = ast.data {
 
-        // let enum_idents: Vec<String> = data_enum.variants.iter().map(|el|
-        //     el.ident.to_string()
-        // ).collect::<Vec<String>>();
-
         data_enum.variants.iter().for_each(|el| {
-            let variant_name: &Ident = &el.ident;
+            let enum_el: &syn::Variant = el;
+            let variant_name: &syn::Ident = &el.ident;
 
+            /*
             if let syn::Fields::Named(ref fields) = el.fields {
                 fields.named.iter().map(|el| el.ident
                     .as_ref()
@@ -582,12 +622,13 @@ fn get_error_source_enum_variants<'a>(ast: & 'a syn::DeriveInput) -> ErrorSource
                     .unwrap_or(false)
                 ).collect::<Vec<_>>();
             };
+            */
 
             if let syn::Fields::Unnamed(ref fields) = el.fields {
 
                 let _aa = fields.unnamed.iter().for_each(|el| {
 
-                    variants.push(ErrorSourceEnumVariant { name: variant_name, first_arg_type: Some(&el.ty) });
+                    variants.push(ErrorSourceEnumVariant { variant: enum_el, name: variant_name, first_arg_type: Some(&el.ty) });
 
                     // if let Type::Path(ref type_path) = el.ty {
                     //     let enum_variant_name = &variant_name;
@@ -610,7 +651,7 @@ fn get_error_source_enum_variants<'a>(ast: & 'a syn::DeriveInput) -> ErrorSource
                 if variant_name != "NoSource" {
                     panic!("### Unexpected enum variant Unit in enum {}.{} (only 'NoSource' Unit variant is expected).", enum_name, variant_name);
                 }
-                variants.push(ErrorSourceEnumVariant { name: variant_name, first_arg_type: None });
+                variants.push(ErrorSourceEnumVariant { variant: enum_el, name: variant_name, first_arg_type: None });
             };
         })
     }
@@ -623,6 +664,52 @@ fn get_error_source_enum_variants<'a>(ast: & 'a syn::DeriveInput) -> ErrorSource
         variants,
     } //<'a>
 }
+
+
+fn find_attr<'a>(attrs: & 'a Vec<syn::Attribute>, attr_name: &str) -> Option<& 'a syn::Attribute> {
+    attrs.iter().find(|ref attr|{
+        // T O D O: simplify
+        let meta = &attr.meta;
+        let path = meta.path();
+        let segments= &path.segments;
+
+        let path22 = segments.iter().map(|ee| ee.ident.to_string() ).collect::<String>();
+        path22 == attr_name
+    })
+}
+
+fn attr_list_as_token_tee_2_vector(attr: &syn::Attribute) -> Option<Vec<proc_macro2::TokenTree>> {
+    match &attr.meta {
+        syn::Meta::List(ref meta_list) => {
+            use quote::ToTokens;
+
+            let tokens: &proc_macro2::TokenStream = &meta_list.tokens;
+            let as_token_tee_2_vector: Vec<proc_macro2::TokenTree> = tokens.to_token_stream().into_iter().map(|t|{t}).collect::<Vec<_>>();
+            Some(as_token_tee_2_vector)
+        }
+        _ => None
+    }
+}
+fn attr_list_as_string(attr: &syn::Attribute) -> Option<String> {
+    match &attr.meta {
+        syn::Meta::List(ref meta_list) => {
+            use quote::ToTokens;
+
+            let tokens: &proc_macro2::TokenStream = &meta_list.tokens;
+            let as_token_tee_2_vector: String = tokens.to_token_stream().into_iter().map(|t|{t.to_string()}).collect::<String>();
+            Some(as_token_tee_2_vector)
+        }
+        _ => None
+    }
+}
+
+fn find_enum_variant_attr<'a>(variant: & 'a syn::Variant, attr_name: & str) -> Option<& 'a syn::Attribute> {
+    // let attr = find_attr(&variant.attrs, attr_name);
+    // panic!("### 76767 attr {}: {:?}", attr_name, attr);
+    // panic!("### 76767 attr {}: {:?}", attr_name, attr_list_as_string(attr.unwrap()).unwrap());
+    find_attr(&variant.attrs, attr_name)
+}
+
 
 /*
 #[derive(Debug)]
@@ -712,7 +799,7 @@ fn get_error_source_enum_variants(ast: &syn::DeriveInput) -> ErrorSourceEnum {
 //
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // use super::*;
 
     #[test]
     fn test_of_error_source() {
