@@ -16,9 +16,10 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
     let source_field_exists: bool = if let syn::Data::Struct(ref data) = ast.data {
         if let syn::Fields::Named(ref fields) = data.fields {
-            fields.named.iter().any(|el| el.ident
+            fields.named.iter().any(|f|
+                f.ident
                 .as_ref()
-                .map(|ident_name| ident_name.to_string() == "source")
+                .map(|ident_name| ident_name == "source")
                 .unwrap_or(false)
             )
         }
@@ -127,12 +128,12 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     let enum_variants = get_error_source_enum_variants(ast);
     let enum_variants_wo_no_source: Vec<&ErrorSourceEnumVariant> = enum_variants
         .variants.iter()
-        .filter(|el|{ el.name != "NoSource" })
+        .filter(|vr|{ vr.name != "NoSource" })
         .collect::<Vec<_>>();
 
-    let err_src_bt_provider_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|el|{
-        let var_name = el.name;
-        let no_source_backtrace = find_enum_variant_attr(el.variant, "no_source_backtrace").is_some();
+    let err_src_bt_provider_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|vr|{
+        let var_name = vr.name;
+        let no_source_backtrace = find_enum_variant_attr(vr.variant, "no_source_backtrace").is_some();
 
         if no_source_backtrace {
             quote!(  ErrorSource:: #var_name (_)  => { BacktraceInfo::empty() }     )
@@ -141,8 +142,8 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         }
     }).collect::<Vec<_>>();
 
-    let err_src_debug_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|el|{
-        let var_name = el.name;
+    let err_src_debug_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|vr|{
+        let var_name = vr.name;
         quote! (
             #var_name(ref src)  => { write!(f, "{}", src) }
         )
@@ -177,10 +178,10 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         }
     };
 
-    let from_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|el|{
-        let variant_enum_name: &proc_macro2::Ident = el.name;
+    let from_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|vr|{
+        let variant_enum_name: &proc_macro2::Ident = vr.name;
 
-        let from_error_kind_attr = find_enum_variant_attr(el.variant, "from_error_kind");
+        let from_error_kind_attr = find_enum_variant_attr(vr.variant, "from_error_kind");
         if from_error_kind_attr.is_none() {
             return quote!()
         }
@@ -195,7 +196,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             // since September 2022 we can use such better syntax
             .expect(&format!("from_error_kind attribute value is expected for {}", variant_enum_name));
 
-        let from_err_type_name = el.first_arg_type
+        let from_err_type_name = vr.first_arg_type
             .expect(&format!("first argument as type is expected for {}", variant_enum_name));
 
         let err_struct_name: syn::Type = syn::parse_str(struct_error_type.as_str())
@@ -266,21 +267,21 @@ fn get_error_source_enum_variants<'a>(ast: & 'a syn::DeriveInput) -> ErrorSource
 
     if let syn::Data::Enum(ref data_enum) = ast.data {
 
-        data_enum.variants.iter().for_each(|el| {
-            let enum_el: &syn::Variant = el;
-            let variant_name: &syn::Ident = &el.ident;
+        data_enum.variants.iter().for_each(|vr| {
+            let enum_el: &syn::Variant = vr;
+            let variant_name: &syn::Ident = &vr.ident;
 
-            if let syn::Fields::Unnamed(ref fields) = el.fields {
-                fields.unnamed.iter().for_each(|el| {
+            if let syn::Fields::Unnamed(ref fields) = vr.fields {
+                fields.unnamed.iter().for_each(|f| {
                     variants.push(ErrorSourceEnumVariant {
                         variant: enum_el,
                         name: variant_name,
-                        first_arg_type: Some(&el.ty),
+                        first_arg_type: Some(&f.ty),
                     });
                 });
             };
 
-            if let syn::Fields::Unit = el.fields {
+            if let syn::Fields::Unit = vr.fields {
                 assert_eq!(variant_name, "NoSource",
                     "Unexpected enum variant Unit in enum {}.{} (only 'NoSource' Unit variant is expected).", enum_name, variant_name);
                 variants.push(ErrorSourceEnumVariant { variant: enum_el, name: variant_name, first_arg_type: None });
@@ -337,31 +338,6 @@ fn find_enum_variant_attr<'a>(variant: & 'a syn::Variant, attr_name: & str) -> O
     find_attr(&variant.attrs, attr_name)
 }
 
-/*
-#[inline]
-fn add_pr_ts(mut ts: proc_macro::TokenStream, other_ts: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    ts.extend(other_ts.into_iter());
-    return ts;
-}
-
-#[inline]
-fn add_pr2_ts(mut ts: proc_macro::TokenStream, other_ts: proc_macro2::TokenStream) -> proc_macro::TokenStream {
-    use quote::ToTokens;
-    let as_ts: proc_macro::TokenStream = other_ts.to_token_stream().into();
-    ts.extend(as_ts);
-    return ts;
-}
-
-#[inline]
-fn add_pr2_tss(mut ts: proc_macro::TokenStream, other_ts: Vec<proc_macro2::TokenStream>) -> proc_macro::TokenStream {
-    other_ts.iter().for_each(|ts_part|{
-        use quote::ToTokens;
-        let as_ts: proc_macro::TokenStream = ts_part.to_token_stream().into();
-        ts.extend(as_ts);
-    });
-    return ts;
-}
-*/
 
 trait AddPMTokenStream {
     fn add_ts(& mut self, other_ts: proc_macro::TokenStream);
