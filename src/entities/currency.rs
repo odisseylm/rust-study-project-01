@@ -253,16 +253,16 @@ pub mod parse_currency {
     #[derive(other01::MyStaticStructError)]
     pub struct CurrencyFormatError {
         pub kind: ErrorKind,
-        #[source]
-        pub source: ErrorSource,
+        // #[source]
+        // pub source: ErrorSource,
         pub backtrace: BacktraceInfo,
     }
 
-    #[derive(thiserror::Error)]
-    pub enum ErrorSource {
-        #[error("No source")]
-        NoSource,
-    }
+    // #[derive(thiserror::Error)]
+    // pub enum ErrorSource {
+    //     #[error("No source")]
+    //     NoSource,
+    // }
 
     /*
     impl CurrencyFormatError {
