@@ -1,4 +1,4 @@
 /target
 /target/**
-other01/target/**
+static_error_macro/target/**
 /.idea/**

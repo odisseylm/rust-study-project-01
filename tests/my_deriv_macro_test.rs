@@ -1,6 +1,6 @@
 
 /*
-use other01::{HelloMacro, TlbormDerive};
+use static_error_macro::{HelloMacro, TlbormDerive};
 
 #[derive(TlbormDerive)]
 struct Foo {

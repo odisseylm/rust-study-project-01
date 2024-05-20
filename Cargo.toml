@@ -14,10 +14,10 @@ edition = "2021"
 #error_generic_member_access = []
 
 [dependencies]
-#other01 = "0.1.0"
-#other01-impl = { version = "0.1.0", path = "other01" }
-other01 = { version = "0.1.0", path = "other01" }
-#project01-other01 = { version = "0.1.0", path = "other01" }
+#static_error_macro = "0.1.0"
+#static_error_macro-impl = { version = "0.1.0", path = "static_error_macro" }
+static_error_macro = { version = "0.1.0", path = "static_error_macro" }
+#project01-static_error_macro = { version = "0.1.0", path = "static_error_macro" }
 
 static_assertions = "1.1.0"
 const_format = "0.2.32"
@@ -120,5 +120,5 @@ assert_matches = "1.5.0"
 
 [workspace]
 members = [
-    "other01",
+    "static_error_macro",
 ]

@@ -486,15 +486,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 
 [[package]]
-name = "other01"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.65",
-]
-
-[[package]]
 name = "powerfmt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -556,12 +547,12 @@ dependencies = [
  "const_format",
  "derivative",
  "indoc",
- "other01",
  "serde",
  "serde_json",
  "serde_with",
  "serde_with_macros",
  "static_assertions",
+ "static_error_macro",
  "strum",
  "strum_macros",
  "test-case",
@@ -690,6 +681,15 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "static_error_macro"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.65",
+]
 
 [[package]]
 name = "strsim"
