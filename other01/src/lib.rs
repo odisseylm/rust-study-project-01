@@ -74,7 +74,7 @@ fn impl_hello_world(ast: &syn::DeriveInput) -> quote::Tokens {
 // use proc_macro::TokenStream;
 use quote::{quote, ToTokens};
 use quote::quote_spanned;
-use syn::{Ident, Type, TypePath, Variant};
+use syn::{Attribute, DeriveInput, Ident, Type, TypePath, Variant};
 // use syn::token::Paren;
 // use syn;
 
@@ -101,11 +101,24 @@ fn impl_hello_macro(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
 }
 
 
-#[proc_macro_derive(MyStaticStructError)]
+#[proc_macro_derive(MyStaticStructError, attributes(StaticStructErrorType))]
 pub fn my_static_struct_error_macro_derive(input: TokenStream) -> TokenStream {
     // Construct a representation of Rust code as a syntax tree
     // that we can manipulate
-    let ast = syn::parse(input).unwrap();
+    // let ast: proc_macro2::TokenStream = syn::parse(input).unwrap();
+    let ast: syn::DeriveInput = syn::parse(input).unwrap();
+
+    let attrs33: &Vec<syn::Attribute> = &ast.attrs;
+    match attrs33.first() {
+        None => {}
+        Some(ref attr) => {
+            panic!("attr: {:?}", attr);
+        }
+    }
+    // attrs.
+
+    //
+    // let power = attributes_search(&ast.attrs, "power").expect("missing power attribute");
 
     // Build the trait implementation
     impl_my_static_struct_error(&ast)
@@ -222,14 +235,31 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> TokenStream {
 
 
 
-#[proc_macro_derive(MyStaticStructErrorSource)]
+#[proc_macro_derive(MyStaticStructErrorSource, attributes(struct_error_type, from_error_kind))]
 pub fn my_static_struct_error_source_macro_derive(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
     impl_my_static_struct_error_source(&ast)
 }
 
+// #[derive(MyStaticStructErrorSource)]
+// struct Struct {
+//     #[StaticStructErrorType] field: ()
+// }
+// #[derive(HelperAttr)]
+// struct Struct {
+//     #[helper] field: ()
+// }
+
 fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> TokenStream {
     let name = ast.ident.to_string();
+
+    let attrs33: &Vec<syn::Attribute> = &ast.attrs;
+    match attrs33.first() {
+        None => {}
+        Some(ref attr) => {
+            // panic!("attr 4545: {:?}", attr);
+        }
+    }
 
     /*
     let name = &ast.ident;
