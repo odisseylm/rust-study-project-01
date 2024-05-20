@@ -1,15 +1,46 @@
 
-
-#[derive(Debug)]
+// #[derive(Debug)] // T O D O: fix/uncomment
 pub struct ErrorSourceEnumVariant<'a> {
     pub variant: & 'a syn::Variant,
     pub name: & 'a syn::Ident,
     pub first_arg_type: Option<& 'a syn::Type>,
 }
-#[derive(Debug)]
+#[derive(Debug)] // T O D O: fix/uncomment
 pub struct ErrorSourceEnum<'a> {
     pub name: & 'a syn::Ident,
     pub variants: Vec<ErrorSourceEnumVariant<'a>>,
+}
+
+impl core::fmt::Debug for ErrorSourceEnumVariant<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        use syn::Type;
+
+        let as_str = match self.first_arg_type {
+            None => { "No"}
+            Some(ref t) => {
+                match t {
+                    Type::Array(_)       => { "array"       }
+                    Type::BareFn(_)      => { "BareFn"      }
+                    Type::Group(_)       => { "Group"       }
+                    Type::ImplTrait(_)   => { "ImplTrait"   }
+                    Type::Infer(_)       => { "Infer"       }
+                    Type::Macro(_)       => { "Macro"       }
+                    Type::Never(_)       => { "Never"       }
+                    Type::Paren(_)       => { "Paren"       }
+                    Type::Path(_)        => { "Path"        }
+                    Type::Ptr(_)         => { "Ptr"         }
+                    Type::Reference(_)   => { "Reference"   }
+                    Type::Slice(_)       => { "Slice"       }
+                    Type::TraitObject(_) => { "TraitObject" }
+                    Type::Tuple(_)       => { "Tuple"       }
+                    Type::Verbatim(_)    => { "Verbatim"    }
+                    _                    => { "_"           }
+                }
+            }
+        };
+
+        write!(f, "ErrorSourceEnumVariant {{ name: {}, type: {} }}", self.name, as_str)
+    }
 }
 
 
