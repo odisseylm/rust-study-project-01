@@ -12,6 +12,7 @@ mod util {
 
         impl BacktraceInfo {
             pub fn new() -> Self { Self::capture() }
+            pub fn copy_from(_backtrace: std::backtrace::Backtrace) -> Self { Self::capture() }
             pub fn new_by_policy(backtrace_policy: NewBacktracePolicy) -> Self {
                 use NewBacktracePolicy::*;
                 match backtrace_policy {
@@ -133,7 +134,7 @@ pub mod parse_currency {
 
 pub mod parse_amount {
     use bigdecimal::ParseBigDecimalError;
-    use crate::util::backtrace::BacktraceInfo;
+    use crate::util::backtrace::{ BacktraceCopyProvider, BacktraceInfo };
     // use crate::entities::currency::parse_currency::CurrencyFormatError;
     use crate::parse_currency::CurrencyFormatError;
 
@@ -193,6 +194,36 @@ pub mod parse_amount {
         #[error("Some2FromInt")]
         #[no_source_backtrace]
         Some2FromInt(i32),
+
+        #[error("SomeAnyHowError")]
+        SomeAnyHowError(anyhow::Error),
+
+        #[error("SomeStdError")]
+        StdErrorError(Box<dyn std::error::Error>),
+    }
+
+    impl BacktraceCopyProvider for anyhow::Error {
+        fn provide_backtrace(&self) -> BacktraceInfo {
+            // let sys_bt_ref: &std::backtrace::Backtrace = self.backtrace();
+            // let mut bt_copy: std::backtrace::Backtrace = std::backtrace::Backtrace::disabled();
+            // sys_bt_ref.clone_into(& mut bt_copy);
+            // BacktraceInfo::copy_from(bt_copy);
+
+            // TODO: iml reusing `anyhow` backtrace
+            BacktraceInfo::empty()
+        }
+    }
+
+    impl BacktraceCopyProvider for Box<dyn std::error::Error> {
+        fn provide_backtrace(&self) -> BacktraceInfo {
+            // TODO: add support of it after appearing std::error::Error.provide() in stable build.
+            // let sys_bt_ref: &std::backtrace::Backtrace = self.provide();
+            // let mut bt_copy: std::backtrace::Backtrace = std::backtrace::Backtrace::disabled();
+            // sys_bt_ref.clone_into(& mut bt_copy);
+            // BacktraceInfo::copy_from(bt_copy);
+
+            BacktraceInfo::empty()
+        }
     }
 
     /*
