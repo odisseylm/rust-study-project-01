@@ -1,6 +1,10 @@
 mod macro_util;
 mod error_source;
 
+
+use std::collections::{ HashMap, HashSet };
+use itertools::*;
+
 use quote::quote;
 use crate::macro_util::*;
 use crate::error_source::*;
@@ -136,6 +140,15 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         .filter(|vr|{ vr.name != "NoSource" })
         .collect::<Vec<_>>();
 
+    let grouped_err_enum_variants_by_arg_type: HashMap<String, Vec<&ErrorSourceEnumVariant>> = enum_variants_wo_no_source.iter()
+        .filter_map(|&vr| vr.first_arg_type.map(|first_arg_type| (type_to_string(first_arg_type), vr) ))
+        .into_group_map();
+
+    let duplicated_err_enum_src_types: HashSet<String> = grouped_err_enum_variants_by_arg_type.iter()
+        .filter(|(_, enums_vec)| enums_vec.len() > 1)
+        .map(|src_type_and_vars| src_type_and_vars.0.to_string())
+        .collect();
+
     let err_src_bt_provider_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|vr|{
         let var_name = vr.name;
         let no_source_backtrace = find_enum_variant_attr(vr.variant, "no_source_backtrace").is_some();
@@ -211,7 +224,24 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         let err_struct_kind_name: syn::Ident = syn::parse_str(error_kind.as_str())
             .expect(&format!("error kind {} should be identifier.", error_kind));
 
-        quote! (
+        let from_err_type_name_string = type_to_string(from_err_type_name);
+        let all_enum_vars_for_this_from_err_type: &Vec<&ErrorSourceEnumVariant<'_>> = grouped_err_enum_variants_by_arg_type
+            .get(&from_err_type_name_string)
+            .expect(&format!("Internal error: Enum variants for type {} are not found.", from_err_type_name_string));
+
+        if all_enum_vars_for_this_from_err_type.len() > 1 {
+            let all_other_enums = all_enum_vars_for_this_from_err_type.iter()
+                .filter(|enum_vr| enum_vr.name != variant_enum_name )
+                .map(|enum_var| enum_var.name.to_string() )
+                .collect::<Vec<String>>();
+            let all_other_enums_as_str = all_other_enums.join(", ");
+
+            panic!("Enum [{}] uses arg/source type [{}] which is also used in other enums [{}]. \
+                    It is impossible to implement From/Into for duplicates.",
+                   variant_enum_name, from_err_type_name_string, all_other_enums_as_str);
+        }
+
+        quote! {
             // impl From<CurrencyFormatError> for ParseAmountError {
             //     fn from(error: CurrencyFormatError) -> Self { ParseAmountError::with_from(ErrorKind::IncorrectCurrency, error) }
             // }
@@ -219,15 +249,21 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             impl From< #from_err_type_name > for #err_struct_name {
                 fn from(error: #from_err_type_name ) -> Self { #err_struct_name::with_from(ErrorKind:: #err_struct_kind_name, error) }
             }
-        )
+        }
     }).collect::<Vec<_>>();
 
-    let into_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|ref el| {
+    let into_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().filter_map(|ref el| {
         let var_name: &syn::Ident = el.name;
         let var_arg_type: &syn::Type = el.first_arg_type
             .expect(&format!("first_arg_type is expected for {}.", var_name));
 
-        quote! (
+        let arg_type_as_string = type_to_string(var_arg_type);
+        if duplicated_err_enum_src_types.contains(&arg_type_as_string) {
+            // T O D O: log.info()
+            return None;
+        }
+
+        Some( quote! {
             // impl Into<ErrorSource> for CurrencyFormatError {
             //     fn into(self) -> ErrorSource { ErrorSource::CurrencyFormatError22(self) }
             // }
@@ -237,7 +273,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             impl Into<ErrorSource> for #var_arg_type {
                 fn into(self) -> ErrorSource { ErrorSource:: #var_name (self) }
             }
-        )
+        })
     }).collect::<Vec<_>>();
 
 

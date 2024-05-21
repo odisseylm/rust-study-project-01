@@ -44,6 +44,34 @@ pub fn find_enum_variant_attr<'a>(variant: & 'a syn::Variant, attr_name: & str) 
 }
 
 
+pub fn type_path_to_string(path: &syn::TypePath) -> String {
+    path.path.segments.iter().map(|s| s.ident.to_string() ).collect::<String>()
+}
+
+pub fn type_to_string(t: &syn::Type) -> String {
+    use syn::Type;
+    match t {
+        Type::Array(_)       => { unimplemented!() }
+        Type::BareFn(_)      => { unimplemented!()}
+        Type::Group(_)       => { unimplemented!() }
+        Type::ImplTrait(_)   => { unimplemented!() }
+        Type::Infer(_)       => { unimplemented!() }
+        Type::Macro(_)       => { unimplemented!() }
+        Type::Never(_)       => { unimplemented!() }
+        Type::Paren(_)       => { unimplemented!() }
+        Type::Path(path)     => { type_path_to_string(&path) }
+        Type::Ptr(_)         => { unimplemented!() }
+        Type::Reference(_)   => { unimplemented!() }
+        Type::Slice(_)       => { unimplemented!() }
+        Type::TraitObject(_) => { unimplemented!() }
+        Type::Tuple(_)       => { unimplemented!() }
+        Type::Verbatim(_)    => { unimplemented!() }
+        _                    => { unimplemented!() }
+    }
+}
+
+
+
 pub trait AddPMTokenStream {
     fn add_ts(& mut self, other_ts: proc_macro::TokenStream);
 }

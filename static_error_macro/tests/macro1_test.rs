@@ -177,6 +177,22 @@ pub mod parse_amount {
         #[from_error_kind(IncorrectAmount)]
         #[no_source_backtrace]
         ParseBigDecimalError(ParseBigDecimalError),
+
+        // With duplicated types
+        #[error("Some1FromString")]
+        #[no_source_backtrace]
+        // #[from_error_kind(IncorrectAmount)] // temp. to test proper 'duplicates' error
+        Some1FromString(String),
+        #[error("Some2FromString")]
+        #[no_source_backtrace]
+        // #[from_error_kind(IncorrectAmount)] // temp. to test proper 'duplicates' error
+        Some2FromString(String),
+        #[error("Some1FromInt")]
+        #[no_source_backtrace]
+        Some1FromInt(i32),
+        #[error("Some2FromInt")]
+        #[no_source_backtrace]
+        Some2FromInt(i32),
     }
 
     /*
