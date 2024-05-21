@@ -21,7 +21,7 @@ pub fn my_static_struct_error_macro_derive(input: proc_macro::TokenStream) -> pr
 }
 
 fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
-    let name = &ast.ident;
+    let error_type_name = &ast.ident;
 
     let source_field_exists: bool = if let syn::Data::Struct(ref data) = ast.data {
         if let syn::Fields::Named(ref fields) = data.fields {
@@ -40,7 +40,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
-        impl #name {
+        impl #error_type_name {
 
             pub fn new(kind: ErrorKind) -> Self {
                 use crate::util::backtrace::NewBacktracePolicy;
@@ -60,7 +60,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
-        impl #name {
+        impl #error_type_name {
             pub fn new(kind: ErrorKind) -> Self {
                 use crate::util::backtrace::NewBacktracePolicy;
                 use crate::util::BacktraceInfo;
@@ -90,7 +90,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
-        impl crate::util::backtrace::BacktraceCopyProvider for #name {
+        impl crate::util::backtrace::BacktraceCopyProvider for #error_type_name {
             fn provide_backtrace(&self) -> crate::util::BacktraceInfo { self.backtrace.clone() }
         }
     };
@@ -99,9 +99,9 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
-        impl core::fmt::Display for #name {
+        impl core::fmt::Display for #error_type_name {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, "#name  {}", self.kind)
+                write!(f, concat!(stringify!(#error_type_name), " {{ {} }}"), self.kind)
             }
         }
     };
@@ -163,7 +163,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     let err_src_debug_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|vr|{
         let var_name = vr.name;
         quote! (
-            #var_name(ref src)  => { write!(f, "{}", src) }
+            #var_name(ref src)  => { write!(f, "{:?}", src) }
         )
     }).collect::<Vec<_>>();
 

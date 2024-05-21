@@ -139,6 +139,28 @@ pub struct BacktraceInfo {
     inner: Option<BSRc<std::backtrace::Backtrace>>,
 }
 
+pub enum BacktraceKind<'a> {
+    System(& 'a std::backtrace::Backtrace),
+    AsString(& 'a String),
+    NoAnyBacktrace,
+}
+
+impl core::fmt::Display for BacktraceKind<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            BacktraceKind::System(std_bt)   => { write!(f, "{}", std_bt)   }
+            BacktraceKind::AsString(str_bt) => { write!(f, "{}", str_bt)   }
+            BacktraceKind::NoAnyBacktrace   => { write!(f, "No backtrace") }
+        }
+    }
+}
+impl core::fmt::Debug for BacktraceKind<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self)
+    }
+}
+
+
 // pub trait BacktraceRefProvider {
 //     fn provide_backtrace(&self) -> &BacktraceInfo;
 // }
@@ -158,7 +180,7 @@ pub trait BacktraceBorrowedProvider { // or better Moved???
 // }
 
 
-static DISABLED_BACKTRACE: std::backtrace::Backtrace = std::backtrace::Backtrace::disabled();
+// static DISABLED_BACKTRACE: std::backtrace::Backtrace = std::backtrace::Backtrace::disabled();
 // static BACKTRACE_STATUS_DISABLED: std::backtrace::BacktraceStatus = std::backtrace::BacktraceStatus::Disabled;
 // static BACKTRACE_STATUS_CAPTURED: std::backtrace::BacktraceStatus = std::backtrace::BacktraceStatus::Captured;
 // static BACKTRACE_STATUS_UNSUPPORTED: std::backtrace::BacktraceStatus = std::backtrace::BacktraceStatus::Unsupported;
@@ -267,7 +289,19 @@ impl BacktraceInfo {
         }
     }
 
-    pub fn backtrace(&self) -> &std::backtrace::Backtrace {
+    pub fn backtrace(&self) -> BacktraceKind {
+        if !self.is_captured() { BacktraceKind::NoAnyBacktrace } // small optimization, probably unneeded
+        else if let Some(ref ptr_backtrace) = self.inner {
+            BacktraceKind::System(ptr_backtrace)
+        }
+        else { BacktraceKind::NoAnyBacktrace }
+    }
+    pub fn std_backtrace(&self) -> Option<&std::backtrace::Backtrace> {
+        if let BacktraceKind::System(ref std_bt) = self.backtrace() {
+            Some(std_bt)
+        } else { None }
+
+        /*
         if let Some(not_captured) = self.not_captured {
             return match not_captured {
                 NotCapturedInner::Disabled =>    { &DISABLED_BACKTRACE }
@@ -283,6 +317,7 @@ impl BacktraceInfo {
 
         // bad approach..., but cheap
         return &DISABLED_BACKTRACE;
+        */
     }
 }
 

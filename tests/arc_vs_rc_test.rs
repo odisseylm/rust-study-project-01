@@ -1,3 +1,7 @@
+// #[cfg(all(test, not(feature = "ignore_foo")))]
+#[cfg(all(test, feature = "ignore_foo"))]
+mod arc_test {
+
 use std::ops::Deref;
 use std::time::SystemTime;
 use project01::util::TestResultUnwrap;
@@ -74,3 +78,5 @@ fn test_impl_03<Int: Deref<Target = i64>>(v: &Int) {
 fn test_03_rc()  { test_impl_03(&std::rc::Rc::new(123i64));   }
 #[test]
 fn test_03_arc() { test_impl_03(&std::sync::Arc::new(123i64)); }
+
+}

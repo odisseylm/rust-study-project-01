@@ -174,7 +174,7 @@ fn test_anyhow_stacktrace() {
     let mut output = String::new();
     write(&mut output, format_args!("{err:?}")).test_unwrap();
 
-    assert_starts_with!(output, "Incorrect amount format");
+    assert_starts_with!(output, "ParseAmountError { Incorrect amount format }");
     assert_contains!(output, "Stack backtrace:");
 
     assert_contains!(output, "amount_test::fn_test_parse_amount_01\n             at ./tests/amount_test.rs:");
@@ -233,14 +233,14 @@ fn test_my_stacktrace() {
     println!("my stacktrace as Debug");
     println!("my stacktrace backtrace_status: {:?}", backtrace.backtrace_status());
     println!("my stacktrace backtrace: {}", backtrace.backtrace());
+    println!("my stacktrace backtrace: {}", backtrace.std_backtrace().test_unwrap());
 
     println!("\n----------------------------------------------\n");
     println!("my stacktrace as Display");
     println!("my stacktrace backtrace_status: {:?}", backtrace.backtrace_status());
     println!("my stacktrace backtrace: {:?}", backtrace.backtrace());
+    println!("my stacktrace backtrace: {:?}", backtrace.std_backtrace().test_unwrap());
 }
-
-
 
 
 

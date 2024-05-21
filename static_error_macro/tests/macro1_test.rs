@@ -204,9 +204,9 @@ pub mod parse_amount {
 
     impl BacktraceCopyProvider for anyhow::Error {
         fn provide_backtrace(&self) -> BacktraceInfo {
-            // let sys_bt_ref: &std::backtrace::Backtrace = self.backtrace();
+            // let std_bt_ref: &std::backtrace::Backtrace = self.backtrace();
             // let mut bt_copy: std::backtrace::Backtrace = std::backtrace::Backtrace::disabled();
-            // sys_bt_ref.clone_into(& mut bt_copy);
+            // std_bt_ref.clone_into(& mut bt_copy);
             // BacktraceInfo::copy_from(bt_copy);
 
             // TODO: iml reusing `anyhow` backtrace
@@ -217,9 +217,9 @@ pub mod parse_amount {
     impl BacktraceCopyProvider for Box<dyn std::error::Error> {
         fn provide_backtrace(&self) -> BacktraceInfo {
             // TODO: add support of it after appearing std::error::Error.provide() in stable build.
-            // let sys_bt_ref: &std::backtrace::Backtrace = self.provide();
+            // let std_bt_ref: &std::backtrace::Backtrace = self.provide();
             // let mut bt_copy: std::backtrace::Backtrace = std::backtrace::Backtrace::disabled();
-            // sys_bt_ref.clone_into(& mut bt_copy);
+            // std_bt_ref.clone_into(& mut bt_copy);
             // BacktraceInfo::copy_from(bt_copy);
 
             BacktraceInfo::empty()
