@@ -9,7 +9,7 @@ use assertables::{ assert_ge, assert_ge_as_result };
 use assertables::{ assert_starts_with, assert_starts_with_as_result };
 use assertables::{ assert_contains, assert_contains_as_result };
 
-use project01::util::{ enable_backtrace, TestOptionUnwrap, TestResultUnwrap };
+use project01::util::{BacktraceInfo, enable_backtrace, TestOptionUnwrap, TestResultUnwrap};
 
 use crate::errors::{fn_as_box_error_with_question_op_05, MyError333, MyError334};
 use errors::{ extract_json_5, error_fn_5 };
@@ -34,6 +34,25 @@ use errors::Entity1;
 fn test_print_current_stack_trace() {
     enable_backtrace();
     project01::util::backtrace::print_current_stack_trace();
+}
+
+#[test]
+fn test_str_backtrace() {
+
+    let str_bt = "
+       5: error_test::errors::fn_wrap_by_my_error_using_map_err_and_anyhow_macro
+             at ./tests/errors/mod.rs:234:5
+       6: error_test::errors::fn_wrap_by_my_error_using_map_err_and_anyhow_macro_01
+             at ./tests/errors/mod.rs:236:100
+       ";
+
+    let bt = BacktraceInfo::from_str(str_bt);
+
+    println!("str backtrace status: {:?}", bt.backtrace_status());
+    println!("\n--------------------------------------------------\n");
+    println!("str backtrace: {}", bt);
+    println!("\n--------------------------------------------------\n");
+    println!("str backtrace: {:?}", bt);
 }
 
 

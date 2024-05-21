@@ -136,8 +136,26 @@ pub enum InheritBacktracePolicy {
 
 pub struct BacktraceInfo {
     not_captured: Option<NotCapturedInner>,
-    inner: Option<BSRc<std::backtrace::Backtrace>>,
+    inner: Option<BSRc<Inner>>,
 }
+
+struct Inner {
+    std_backtrace: Option<std::backtrace::Backtrace>,
+    str_backtrace: Option<String>,
+}
+
+impl core::fmt::Display for Inner {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        if let Some(ref std_bt) = self.std_backtrace {
+            write!(f, "{}", std_bt) }
+        else if let Some(ref str_bt) = self.str_backtrace {
+            write!(f, "{}", str_bt) }
+        else {
+            write!(f, "No backtrace")
+        }
+    }
+}
+
 
 pub enum BacktraceKind<'a> {
     System(& 'a std::backtrace::Backtrace),
@@ -190,6 +208,20 @@ impl BacktraceInfo {
     #[inline]
     pub fn new() -> Self { Self::new_by_policy(NewBacktracePolicy::Default) }
 
+    pub fn from_str(str: &str) -> Self { Self::from_string(str.to_string()) }
+
+    pub fn from_string(string: String) -> Self {
+        let str_bt = string;
+        let not_captured_status: Option<NotCapturedInner> =
+            if !is_str_backtrace_captured(&str_bt) { Some(NotCapturedInner::Unknown) }
+            else { None };
+
+        BacktraceInfo {
+            not_captured: not_captured_status,
+            inner: Some(BSRc::new(Inner { std_backtrace: None, str_backtrace: Some(str_bt) })),
+        }
+    }
+
     pub fn new_by_policy(backtrace_policy: NewBacktracePolicy) -> Self {
         use NewBacktracePolicy::*;
         match backtrace_policy {
@@ -229,22 +261,22 @@ impl BacktraceInfo {
     pub fn is_captured(&self) -> bool { self.not_captured.is_none() && self.inner.is_some() }
 
     pub fn capture() -> Self {
-        let bt = std::backtrace::Backtrace::capture();
-        let not_captured_status: Option<NotCapturedInner> = std_backtrace_status_to_inner_not_captured(&bt);
+        let std_bt = std::backtrace::Backtrace::capture();
+        let not_captured_status: Option<NotCapturedInner> = std_backtrace_status_to_inner_not_captured(&std_bt);
 
         BacktraceInfo {
             not_captured: not_captured_status,
-            inner: Some(BSRc::new(bt)),
+            inner: Some(BSRc::new(Inner { std_backtrace: Some(std_bt), str_backtrace: None })),
         }
     }
 
     pub fn force_capture() -> Self {
-        let bt = std::backtrace::Backtrace::force_capture();
-        let not_captured_status: Option<NotCapturedInner> = std_backtrace_status_to_inner_not_captured(&bt);
+        let std_bt = std::backtrace::Backtrace::force_capture();
+        let not_captured_status: Option<NotCapturedInner> = std_backtrace_status_to_inner_not_captured(&std_bt);
 
         BacktraceInfo {
             not_captured: not_captured_status,
-            inner: Some(BSRc::new(bt)),
+            inner: Some(BSRc::new(Inner { std_backtrace: Some(std_bt), str_backtrace: None })),
         }
     }
 
@@ -282,7 +314,14 @@ impl BacktraceInfo {
             }
         }
         else if let Some(ref ptr_backtrace) = self.inner {
-            ptr_backtrace.status()
+            let std_bt_status = ptr_backtrace.std_backtrace.as_ref().map(|std_bt| std_bt.status());
+
+            let str_bt_status = ptr_backtrace.str_backtrace.as_ref()
+                    .map(|str_bt|
+                        if is_str_backtrace_captured(str_bt) { std::backtrace::BacktraceStatus::Captured }
+                        else { std::backtrace::BacktraceStatus::Disabled } );
+
+            std_bt_status.or(str_bt_status).unwrap_or(std::backtrace::BacktraceStatus::Disabled)
         }
         else {
             std::backtrace::BacktraceStatus::Unsupported
@@ -292,7 +331,9 @@ impl BacktraceInfo {
     pub fn backtrace(&self) -> BacktraceKind {
         if !self.is_captured() { BacktraceKind::NoAnyBacktrace } // small optimization, probably unneeded
         else if let Some(ref ptr_backtrace) = self.inner {
-            BacktraceKind::System(ptr_backtrace)
+            let std_bt = ptr_backtrace.std_backtrace.as_ref().map(|std_bt| BacktraceKind::System(std_bt));
+            let str_bt = ptr_backtrace.str_backtrace.as_ref().map(|str_bt| BacktraceKind::AsString(str_bt) );
+            std_bt.or(str_bt).unwrap_or(BacktraceKind::NoAnyBacktrace)
         }
         else { BacktraceKind::NoAnyBacktrace }
     }
@@ -322,6 +363,10 @@ impl BacktraceInfo {
 }
 
 
+fn is_str_backtrace_captured(str_backtrace: &str) -> bool {
+    str_backtrace.contains('\n')
+}
+
 impl std::fmt::Debug for BacktraceInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use std::backtrace::*;
@@ -331,7 +376,7 @@ impl std::fmt::Debug for BacktraceInfo {
             BacktraceStatus::Disabled    => { write!(f, "Backtrace disabled")    }
             BacktraceStatus::Captured    => {
                 match self.inner {
-                    Some(ref backtrace) => { write!(f, "\n{}", backtrace) }
+                    Some(ref inner) => { write!(f, "\n{}", inner) }
                     None => { write!(f, "Unknown backtrace.") }
                 }
             }
