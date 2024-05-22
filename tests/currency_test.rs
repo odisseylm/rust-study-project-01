@@ -1,6 +1,7 @@
 mod common;
 
-use project01::{ make_currency, make_currency_b };
+use std::str::FromStr;
+use project01::{make_currency, make_currency_b };
 use project01::entities::currency::{ Currency, make_currency_b, make_currency };
 use project01::entities::currency::{ EUR, USD, };
 use common::TestResultUnwrap;
@@ -209,4 +210,10 @@ fn use_public_constants() {
     assert_eq!(EUR.code_as_ascii_bytes()[0], 'E' as u8);
     assert_eq!(EUR.code_as_ascii_bytes()[1], 'U' as u8);
     assert_eq!(EUR.code_as_ascii_bytes()[2], 'R' as u8);
+}
+
+#[test]
+fn test_currency_eq() {
+    assert_eq!(Currency::from_str("USD").test_unwrap(), Currency::from_str("USD").test_unwrap());
+    assert_ne!(Currency::from_str("USD").test_unwrap(), Currency::from_str("EUR").test_unwrap());
 }

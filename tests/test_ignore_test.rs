@@ -1,4 +1,7 @@
 
+// ++
+// #[cfg_attr(not(feature = "expensive_tests"), ignore)]
+
 
 // #[cfg(all(test, feature = "performance_tests"))]
 mod arc_test {

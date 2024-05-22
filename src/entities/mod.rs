@@ -12,3 +12,10 @@ pub mod amount;
 
 mod macro_samples;
 mod test_proc_macro;
+mod amount_parse_old;
+pub mod parse_amount;
+pub mod amount_ops;
+
+
+// pub use crate::parse_amount::{ ParseAmountError as amount::parse_amount::ParseAmountError };
+// pub use parse_amount::{ ParseAmountError as amount222 };

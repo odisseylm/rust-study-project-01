@@ -4,7 +4,8 @@ use std::fmt::write;
 use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
-use project01::entities::amount::{Amount, amount, parse_amount::ParseAmountError };
+use project01::entities::amount::{ Amount, amount };
+use project01::entities::amount::parse_amount::{ ParseAmountError };
 use project01::entities::currency::{ EUR, USD, make_currency };
 use project01::make_currency;
 

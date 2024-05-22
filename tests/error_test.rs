@@ -274,9 +274,9 @@ fn test_result_error_stacktrace_of_anyhow() {
         assert_contains!(output, "6: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_04\n             at ./tests/errors/mod.rs:");
         assert_contains!(output, "7: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_05\n             at ./tests/errors/mod.rs:");
 
-        assert_contains!(output, "8: error_test::test_result_error_stacktrace\n             at ./tests/error_test.rs:");
+        assert_contains!(output, "8: error_test::test_result_error_stacktrace_of_anyhow\n             at ./tests/error_test.rs:");
         // it is risky/dependant
-        assert_contains!(output, "9: error_test::test_result_error_stacktrace::{{closure}}\n             at ./tests/error_test.rs");
+        assert_contains!(output, "9: error_test::test_result_error_stacktrace_of_anyhow::{{closure}}\n             at ./tests/error_test.rs");
     }
 }
 

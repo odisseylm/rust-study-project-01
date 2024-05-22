@@ -1,13 +1,18 @@
 // #![macro_use]
 
-use core::fmt;
 use std::char;
 use std::str::FromStr;
 
 
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Currency([u8;3]);
+
+impl core::fmt::Debug for Currency {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Currency {{ {} }}", self)
+    }
+}
 
 
 pub type CurrencyFormatError = parse_currency::CurrencyFormatError;
@@ -34,8 +39,8 @@ impl Currency {
     }
 }
 
-impl fmt::Display for Currency {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl core::fmt::Display for Currency {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}{}{}", self.0[0] as char, self.0[1] as char, self.0[2] as char)
     }
 }
