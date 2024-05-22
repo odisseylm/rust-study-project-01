@@ -290,7 +290,8 @@ impl BacktraceInfo {
         }
     }
 
-    // TODO: Do not use it manually. Use something like: self.inherit(), self.inherit_or_capture()/self.new_or()
+    // T O D O: Do not use it manually. Use something like: self.inherit(), self.inherit_or_capture()/self.new_or()
+    // #[deprecated(note = "mainly for internal or automatic usage when container is cloned.")]
     pub fn clone(&self) -> Self {
         if let Some(not_captured) = self.not_captured {
             BacktraceInfo { not_captured: Some(not_captured), inner: None }
