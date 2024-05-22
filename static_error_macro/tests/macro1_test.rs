@@ -5,13 +5,26 @@ mod util {
     pub use backtrace::BacktraceInfo;
 
     pub mod backtrace {
-        #[derive(Debug, Copy, Clone)]
+        #[derive(Clone)]
         pub struct BacktraceInfo {
-            backtrace: &'static str,
+            backtrace: String,
+        }
+
+        impl std::fmt::Display for BacktraceInfo {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(f, "\n{}", self.backtrace)
+            }
+        }
+        impl std::fmt::Debug for BacktraceInfo {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(f, "\n{}", self.backtrace)
+            }
         }
 
         impl BacktraceInfo {
             pub fn new() -> Self { Self::capture() }
+            pub fn from_str(str: &str) -> Self { Self::from_string(str.to_string()) }
+            pub fn from_string(string: String) -> Self { BacktraceInfo { backtrace: string } }
             pub fn copy_from(_backtrace: std::backtrace::Backtrace) -> Self { Self::capture() }
             pub fn new_by_policy(backtrace_policy: NewBacktracePolicy) -> Self {
                 use NewBacktracePolicy::*;
@@ -21,9 +34,9 @@ mod util {
                     ForceCapture      => { Self::force_capture() }
                 }
             }
-            pub fn capture() -> Self { BacktraceInfo { backtrace: "capture" } }
-            pub fn force_capture() -> Self { BacktraceInfo { backtrace: "force_capture" } }
-            pub fn empty() -> Self { BacktraceInfo { backtrace: "empty" } }
+            pub fn capture() -> Self { BacktraceInfo { backtrace: "capture".to_string() } }
+            pub fn force_capture() -> Self { BacktraceInfo { backtrace: "force_capture".to_string() } }
+            pub fn empty() -> Self { BacktraceInfo { backtrace: "empty".to_string() } }
             pub fn inherit_from<BP: BacktraceCopyProvider>(source: &BP) -> Self {
                 Self::inherit_with_policy(source, InheritBacktracePolicy::Default)
             }
@@ -39,12 +52,6 @@ mod util {
                 }
             }
             fn is_captured(&self) -> bool { self.backtrace != "empty" && self.backtrace != "disabled" }
-        }
-
-        impl core::fmt::Display for BacktraceInfo {
-            fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-                write!(f, "{:?}", self)
-            }
         }
 
         pub enum NewBacktracePolicy {
@@ -204,25 +211,13 @@ pub mod parse_amount {
 
     impl BacktraceCopyProvider for anyhow::Error {
         fn provide_backtrace(&self) -> BacktraceInfo {
-            // let std_bt_ref: &std::backtrace::Backtrace = self.backtrace();
-            // let mut bt_copy: std::backtrace::Backtrace = std::backtrace::Backtrace::disabled();
-            // std_bt_ref.clone_into(& mut bt_copy);
-            // BacktraceInfo::copy_from(bt_copy);
-
-            // TODO: iml reusing `anyhow` backtrace
-            BacktraceInfo::empty()
+            BacktraceInfo::from_string(self.backtrace().to_string())
         }
     }
 
     impl BacktraceCopyProvider for Box<dyn std::error::Error> {
         fn provide_backtrace(&self) -> BacktraceInfo {
-            // TODO: add support of it after appearing std::error::Error.provide() in stable build.
-            // let std_bt_ref: &std::backtrace::Backtrace = self.provide();
-            // let mut bt_copy: std::backtrace::Backtrace = std::backtrace::Backtrace::disabled();
-            // std_bt_ref.clone_into(& mut bt_copy);
-            // BacktraceInfo::copy_from(bt_copy);
-
-            BacktraceInfo::empty()
+            BacktraceInfo::from_str("dyn std::error::Error backtrace")
         }
     }
 
@@ -364,7 +359,7 @@ fn test_currency_format_error_other() {
     println!("anyhow_kind: {:?}", anyhow_kind.type_id());
 
     let std_err_src: Option<&dyn Error> = err.source();
-    // TODO: add support of it after appearing std::error::Error.provide() in stable build.
+    // T O D O: add support of it after appearing std::error::Error.provide() in stable build.
     assert!(std_err_src.is_none());
 
     let std_err: &dyn Error = err.as_dyn_error();
@@ -479,4 +474,33 @@ fn test_amount_format_error_src() {
         ErrorSource::CurrencyFormatError(_) => { }
         _ => { assert!(false, "Unexpected amount error source type.") }
     }
+}
+
+fn fn_anyhow_01() -> Result<i32, anyhow::Error> {
+    std::fs::read_to_string("not-existent-file.txt").map(|_| 123) ?;
+    Ok(124)
+}
+fn fn_anyhow_02() -> Result<i32, anyhow::Error> { fn_anyhow_01() }
+
+#[test]
+fn test_amount_format_error_src_from_anyhow() {
+    use parse_amount::*;
+    use std::fmt::Write;
+
+    let err_res = fn_anyhow_02();
+    let res = err_res.map_err(|anyhow_err| ParseAmountError::with_source(ErrorKind::IncorrectAmount, ErrorSource::SomeAnyHowError(anyhow_err)));
+
+    let amount_err = res.err().unwrap();
+
+    println!("amount_err from anyhow: {:?}", amount_err);
+    println!("\n-------------------------------------------\n");
+
+    let mut amount_err_as_str_with_backtrace = String::new();
+    write!(amount_err_as_str_with_backtrace, "{:?}", amount_err).unwrap();
+
+    println!("{}", amount_err_as_str_with_backtrace);
+
+    assert!(amount_err_as_str_with_backtrace.contains("fn_anyhow_01"));
+    assert!(amount_err_as_str_with_backtrace.contains("fn_anyhow_02"));
+
 }

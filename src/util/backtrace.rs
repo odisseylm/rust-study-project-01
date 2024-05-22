@@ -392,6 +392,34 @@ impl std::fmt::Display for BacktraceInfo {
     }
 }
 
+// -------------------------------------------------------------------------------------------------
+//                           BacktraceProvider for standard types
+// -------------------------------------------------------------------------------------------------
+
+impl BacktraceCopyProvider for anyhow::Error {
+    fn provide_backtrace(&self) -> BacktraceInfo {
+        BacktraceInfo::from_string(self.backtrace().to_string())
+    }
+}
+
+impl BacktraceCopyProvider for Box<dyn std::error::Error> {
+    fn provide_backtrace(&self) -> BacktraceInfo {
+        // TODO: add support of it after appearing std::error::Error.provide() in stable build.
+        BacktraceInfo::empty()
+    }
+}
+
+impl BacktraceCopyProvider for String {
+    fn provide_backtrace(&self) -> BacktraceInfo {
+        BacktraceInfo::empty()
+    }
+}
+
+
+
+// -------------------------------------------------------------------------------------------------
+//                               Enable/disable backtrace
+// -------------------------------------------------------------------------------------------------
 
 pub fn enable_backtrace() {
     let to_enable_value = "1"; // or "full" ??
