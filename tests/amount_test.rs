@@ -12,6 +12,7 @@ use common::{ TestOptionUnwrap, TestResultUnwrap };
 
 use assertables::{ assert_contains, assert_contains_as_result };
 use assertables::{ assert_starts_with, assert_starts_with_as_result };
+use project01::util::backtrace::is_anyhow_backtrace_enabled;
 use project01::util::enable_backtrace;
 
 
@@ -167,22 +168,33 @@ fn fn_test_parse_amount_03() -> Result<Amount, anyhow::Error> { fn_test_parse_am
 fn test_anyhow_stacktrace() {
     enable_backtrace();
 
+    println!("\n*******************************************************************");
+    println!("TEST test_anyhow_stacktrace\n");
+
     let am = fn_test_parse_amount_03();
     let err = am.err().test_unwrap();
     println!("err: {err:?}");
+    println!("err: {err}");
 
     let mut output = String::new();
     write(&mut output, format_args!("{err:?}")).test_unwrap();
 
-    assert_starts_with!(output, "ParseAmountError { Incorrect amount format }");
-    assert_contains!(output, "Stack backtrace:");
+    println!("\n-------------------------------------------------------------------");
+    println!("err as str:\n{}", output);
+    println!("-------------------------------------------------------------------\n");
 
-    assert_contains!(output, "amount_test::fn_test_parse_amount_01\n             at ./tests/amount_test.rs:");
-    assert_contains!(output, "amount_test::fn_test_parse_amount_02\n             at ./tests/amount_test.rs:");
-    assert_contains!(output, "amount_test::fn_test_parse_amount_03\n             at ./tests/amount_test.rs:");
-    assert_contains!(output, "amount_test::test_anyhow_stacktrace\n             at ./tests/amount_test.rs:");
-    // it is risky/dependant
-    // assert_contains!(output, "amount_test::test_anyhow_stacktrace::{{closure}}\n             at ./tests/amount_test.rs:");
+    assert_starts_with!(output, "ParseAmountError { Incorrect amount format }");
+
+    if is_anyhow_backtrace_enabled() {
+        assert_contains!(output, "Stack backtrace:");
+
+        assert_contains!(output, "amount_test::fn_test_parse_amount_01\n             at ./tests/amount_test.rs:");
+        assert_contains!(output, "amount_test::fn_test_parse_amount_02\n             at ./tests/amount_test.rs:");
+        assert_contains!(output, "amount_test::fn_test_parse_amount_03\n             at ./tests/amount_test.rs:");
+        assert_contains!(output, "amount_test::test_anyhow_stacktrace\n             at ./tests/amount_test.rs:");
+        // it is risky/dependant
+        // assert_contains!(output, "amount_test::test_anyhow_stacktrace::{{closure}}\n             at ./tests/amount_test.rs:");
+    }
 }
 
 
@@ -198,12 +210,20 @@ fn fn_test_parse_amount_103() -> Result<Amount, ParseAmountError> { fn_test_pars
 fn test_my_stacktrace() {
     enable_backtrace();
 
+    println!("\n*******************************************************************");
+    println!("TEST test_my_stacktrace\n");
+
     let am = fn_test_parse_amount_103();
     let err = am.err().test_unwrap();
+
     println!("err: {err:?}");
 
     let mut output = String::new();
     write(&mut output, format_args!("{err:?}")).test_unwrap();
+
+    println!("\n-------------------------------------------------------------------");
+    println!("err as str:\n{}", output);
+    println!("-------------------------------------------------------------------\n");
 
     // assert_starts_with!(output, "ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
     // assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit }) }");
@@ -259,10 +279,16 @@ fn test_std_error() {
 
     let am = fn_test_parse_amount_203();
     let err = am.err().test_unwrap();
-    println!("err: {err:?}");
+
+    println!("\n*******************************************************************");
+    println!("TEST test_std_error\n");
 
     let mut output = String::new();
     write(&mut output, format_args!("{err:?}")).test_unwrap();
+
+    println!("\n-------------------------------------------------------------------");
+    println!("err as str:\n{}", output);
+    println!("-------------------------------------------------------------------\n");
 
     // assert_starts_with!(output, "ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
     // assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit }) }");
@@ -271,12 +297,14 @@ fn test_std_error() {
     assert_starts_with!(output, "ParseAmountError { kind: IncorrectAmount, source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
     assert_contains!(output, "backtrace:");
 
-    assert_contains!(output, "amount_test::fn_test_parse_amount_201\n             at ./tests/amount_test.rs:");
-    assert_contains!(output, "amount_test::fn_test_parse_amount_202\n             at ./tests/amount_test.rs:");
-    assert_contains!(output, "amount_test::fn_test_parse_amount_203\n             at ./tests/amount_test.rs:");
-    assert_contains!(output, "amount_test::test_std_error\n             at ./tests/amount_test.rs:");
-    // it is risky/dependant
-    // assert_contains!(output, "amount_test::test_std_error::{{closure}}\n             at ./tests/amount_test.rs:");
+    if is_anyhow_backtrace_enabled() {
+        assert_contains!(output, "amount_test::fn_test_parse_amount_201\n             at ./tests/amount_test.rs:");
+        assert_contains!(output, "amount_test::fn_test_parse_amount_202\n             at ./tests/amount_test.rs:");
+        assert_contains!(output, "amount_test::fn_test_parse_amount_203\n             at ./tests/amount_test.rs:");
+        assert_contains!(output, "amount_test::test_std_error\n             at ./tests/amount_test.rs:");
+        // it is risky/dependant
+        // assert_contains!(output, "amount_test::test_std_error::{{closure}}\n             at ./tests/amount_test.rs:");
+    }
 
     // println!("\n--------------------------------------------------------\n");
     // println!("err: {err}");

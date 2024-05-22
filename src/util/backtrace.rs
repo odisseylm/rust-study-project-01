@@ -225,9 +225,10 @@ impl BacktraceInfo {
     pub fn new_by_policy(backtrace_policy: NewBacktracePolicy) -> Self {
         use NewBacktracePolicy::*;
         match backtrace_policy {
-            Default | Capture => { Self::capture() }
-            NoBacktrace       => { Self::empty() }
-            ForceCapture      => { Self::force_capture() }
+            Default       => { Self::capture_by_default() }
+            Capture       => { Self::capture() }
+            NoBacktrace   => { Self::empty() }
+            ForceCapture  => { Self::force_capture() }
         }
     }
 
@@ -253,12 +254,15 @@ impl BacktraceInfo {
         use InheritBacktracePolicy::*;
         match backtrace_policy {
             Inherit                     => { source_bt }
-            Default | InheritOrCapture  => { if source_bt.is_captured() { source_bt } else { Self::capture() } }
-            InheritOrForceCapture       => { if source_bt.is_captured() { source_bt } else { Self::force_capture() } }
+            Default | InheritOrCapture  => { if source_bt.is_captured() { source_bt } else { Self::new_by_policy(NewBacktracePolicy::Default)      } }
+            InheritOrForceCapture       => { if source_bt.is_captured() { source_bt } else { Self::new_by_policy(NewBacktracePolicy::ForceCapture) } }
         }
     }
 
     pub fn is_captured(&self) -> bool { self.not_captured.is_none() && self.inner.is_some() }
+
+    // T O D O: probably it is behavior should be configured
+    fn capture_by_default() -> Self { Self::force_capture() }
 
     pub fn capture() -> Self {
         let std_bt = std::backtrace::Backtrace::capture();
@@ -422,11 +426,64 @@ impl BacktraceCopyProvider for String {
 //                               Enable/disable backtrace
 // -------------------------------------------------------------------------------------------------
 
+// T O D O: seems it do NOT work at all or are not stable
 pub fn enable_backtrace() {
-    let to_enable_value = "1"; // or "full" ??
-    std::env::set_var("RUST_BACKTRACE", to_enable_value);
+    is_anyhow_backtrace_enabled(); // to init as early as possible, TODO: make it auto-initialized
+
+    let to_enable_value = "full"; // or "1" or "full" ??
+    let rust_backtrace_cur_value: String = std::env::var("RUST_BACKTRACE").unwrap_or("".to_string());
+
+    if rust_backtrace_cur_value != to_enable_value {
+        std::env::set_var("RUST_BACKTRACE", to_enable_value);
+    }
 }
 
+// T O D O: seems it do NOT work at all or are not stable
 pub fn disable_backtrace() {
-    std::env::set_var("RUST_BACKTRACE", "0");
+    is_anyhow_backtrace_enabled(); // to init as early as possible,
+
+    // std::env::set_var("RUST_BACKTRACE", "0");
+    std::env::remove_var("RUST_BACKTRACE");
+}
+
+// static INITIAL_RUST_BACKTRACE_ENABLED: Lazy<bool> = Lazy::new(|| std::env::var("RUST_BACKTRACE").map(|v| v == "1" || v == "false").unwrap_or(false));
+// static INITIAL_RUST_BACKTRACE_ENABLED: Lazy<bool> = Lazy::new(|| std::env::var("RUST_BACKTRACE").map(|v| v == "1" || v == "false").unwrap_or(false));
+// static INITIAL_RUST_BACKTRACE_ENABLED: bool = std::env::var("RUST_BACKTRACE").map(|v| v == "1" || v == "false").unwrap_or(false);
+
+
+// static INITIAL_RUST_BACKTRACE_ENABLED: once_cell::sync::Lazy<bool> = once_cell::sync::Lazy::new(||
+//     {println!("### FUCK Lazy");
+//     std::env::var("RUST_BACKTRACE").map(|v| v == "1" || v == "false").unwrap_or(false)});
+
+// static INITIAL_RUST_BACKTRACE_ENABLED: once_cell::sync::Lazy<bool> = once_cell::sync::Lazy::new(|| is_anyhow_backtrace_enabled_impl());
+static INITIAL_RUST_BACKTRACE_ENABLED: once_cell::sync::Lazy<bool> = once_cell::sync::Lazy::new(|| {
+    println!("### Initializing of INITIAL_RUST_BACKTRACE_ENABLED!!!"); // T O D O: remove after test stabilization
+    is_anyhow_backtrace_enabled_impl()
+});
+
+
+// use lazy_static::lazy_static;
+// lazy_static! {
+//     static ref INITIAL_RUST_BACKTRACE_ENABLED: bool = std::env::var("RUST_BACKTRACE").map(|v| v == "1" || v == "false").unwrap_or(false);
+// }
+
+
+pub fn is_anyhow_backtrace_enabled() -> bool {
+    *INITIAL_RUST_BACKTRACE_ENABLED
+}
+
+
+fn is_anyhow_backtrace_enabled_impl() -> bool {
+    use std::fmt::Write;
+
+    let res: Result<i32, & 'static str> = Err("test error");
+    let anyhow_res: Result<i32, anyhow::Error> = res.map_err(anyhow::Error::msg);
+
+    let mut str_buf = String::new();
+    let write_res = write!(str_buf, "{:?}", anyhow_res);
+
+    let is_backtrace_present = if write_res.is_ok() {
+        str_buf.contains("Stack backtrace") || str_buf.contains("is_anyhow_backtrace_enabled") }
+        else { false };
+    is_backtrace_present
 }

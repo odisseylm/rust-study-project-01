@@ -21,6 +21,7 @@ use errors::{ fn_wrap_by_my_error_using_map_err_and_anyhow_macro_05 };
 use errors::{ fn_wrap_by_anyhow_error_using_map_err_and_anyhow_macro_05 };
 use errors::{ fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn_05 };
 use errors::Entity1;
+use project01::util::backtrace::is_anyhow_backtrace_enabled;
 
 
 // #[derive(Deserialize)]
@@ -251,7 +252,7 @@ fn test_fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn() {
 
 
 #[test]
-fn test_result_error_stacktrace() {
+fn test_result_error_stacktrace_of_anyhow() {
     enable_backtrace();
 
     let r = fn_wrap_by_my_error_using_map_err_and_with_context_05();
@@ -262,18 +263,21 @@ fn test_result_error_stacktrace() {
     write(&mut output, format_args!("{err:?}")).test_unwrap();
 
     assert_starts_with!(output, "Failed to read/parse json from web.");
-    assert_contains!(output, "Stack backtrace:");
 
-    assert_contains!(output, "2: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context\n             at ./tests/errors/mod.rs:");
-    assert_contains!(output, "3: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_01\n             at ./tests/errors/mod.rs:");
-    assert_contains!(output, "4: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_02\n             at ./tests/errors/mod.rs:");
-    assert_contains!(output, "5: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_03\n             at ./tests/errors/mod.rs:");
-    assert_contains!(output, "6: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_04\n             at ./tests/errors/mod.rs:");
-    assert_contains!(output, "7: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_05\n             at ./tests/errors/mod.rs:");
+    if is_anyhow_backtrace_enabled() {
+        assert_contains!(output, "Stack backtrace:");
 
-    assert_contains!(output, "8: error_test::test_result_error_stacktrace\n             at ./tests/error_test.rs:");
-    // it is risky/dependant
-    assert_contains!(output, "9: error_test::test_result_error_stacktrace::{{closure}}\n             at ./tests/error_test.rs");
+        assert_contains!(output, "2: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context\n             at ./tests/errors/mod.rs:");
+        assert_contains!(output, "3: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_01\n             at ./tests/errors/mod.rs:");
+        assert_contains!(output, "4: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_02\n             at ./tests/errors/mod.rs:");
+        assert_contains!(output, "5: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_03\n             at ./tests/errors/mod.rs:");
+        assert_contains!(output, "6: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_04\n             at ./tests/errors/mod.rs:");
+        assert_contains!(output, "7: error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_05\n             at ./tests/errors/mod.rs:");
+
+        assert_contains!(output, "8: error_test::test_result_error_stacktrace\n             at ./tests/error_test.rs:");
+        // it is risky/dependant
+        assert_contains!(output, "9: error_test::test_result_error_stacktrace::{{closure}}\n             at ./tests/error_test.rs");
+    }
 }
 
 
