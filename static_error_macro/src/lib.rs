@@ -192,19 +192,26 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     let err_src_bt_provider_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|vr|{
         let var_name = vr.name;
         let no_source_backtrace = find_enum_variant_attr(vr.variant, "no_source_backtrace").is_some();
+        let is_arg_present = vr.first_arg_type.is_some();
 
-        if no_source_backtrace {
+        if !is_arg_present {
+            quote!(  ErrorSource:: #var_name  => { BacktraceInfo::empty() }     )
+        } else if no_source_backtrace {
             quote!(  ErrorSource:: #var_name (_)  => { BacktraceInfo::empty() }     )
         } else {
-            quote!(  ErrorSource:: #var_name (src)  => { src.provide_backtrace() }  )
+            quote!(  ErrorSource:: #var_name (ref src)  => { src.provide_backtrace() }  )
         }
     }).collect::<Vec<_>>();
 
     let err_src_debug_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|vr|{
         let var_name = vr.name;
-        quote! (
-            #var_name(ref src)  => { write!(f, "{:?}", src) }
-        )
+        let is_arg_present = vr.first_arg_type.is_some();
+
+        if is_arg_present {
+            quote!(  #var_name(ref src)  => { write!(f, "{:?}", src) }  )
+        } else {
+            quote!(  #var_name  => { write!(f, stringify!(#var_name)) }  )
+        }
     }).collect::<Vec<_>>();
 
     let err_src_impl = quote! {
@@ -218,7 +225,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
                     ErrorSource::NoSource => { BacktraceInfo::empty() }
                     #(#err_src_bt_provider_impl_match_branches)*
                     // ErrorSource::ParseBigDecimalError(_)  => { BacktraceInfo::empty()  }
-                    // ErrorSource::CurrencyFormatError(src) => { src.provide_backtrace() }
+                    // ErrorSource::CurrencyFormatError(ref src) => { src.provide_backtrace() }
                 }
             }
         }
@@ -294,6 +301,11 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
 
     let into_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().filter_map(|ref el| {
         let var_name: &syn::Ident = el.name;
+
+        if el.first_arg_type.is_none() {
+            return None;
+        }
+
         let var_arg_type: &syn::Type = el.first_arg_type
             .expect(&format!("first_arg_type is expected for {}.", var_name));
 
@@ -348,26 +360,47 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         }
     };
 
+    let types_without_std_err: Vec<&str> = vec!("char",
+                                     "i8", "i16", "i32", "i64", "i128",
+                                     "u8", "u16", "u32", "u64", "u128",
+                                     "f32", "f64",
+                                     "String", "&str", "& 'static str",
+    );
 
     let std_error_err_src_impl = if do_not_generate_std_error { quote!() }
     else {
         let fn_source_items_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|ref el| {
             let var_name: &syn::Ident = el.name;
             let is_src_arg_present: bool = el.first_arg_type.is_some();
+            let no_std_err_for_arg = el.first_arg_type
+                .map(|arg_type| type_to_string(arg_type))
+                .map(|arg_type_as_str| types_without_std_err.contains(&arg_type_as_str.as_str()))
+                .unwrap_or(false);
 
-            if is_src_arg_present {
-                quote! { ErrorSource:: #var_name (src) => { Some(src) } }
+            if !is_src_arg_present {
+                quote! { ErrorSource:: #var_name => { None }  }
+            }
+            else if no_std_err_for_arg {
+                quote! { ErrorSource:: #var_name (_) => { None } }
             } else {
-                quote! { ErrorSource:: #var_name (src) => { None }  }
+                quote! { ErrorSource:: #var_name (ref src) => { Some(src) } }
             }
         }).collect::<Vec<_>>();
 
         let fn_description_items_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|ref el| {
             let var_name: &syn::Ident = el.name;
             let is_src_arg_present: bool = el.first_arg_type.is_some();
+            let no_std_err_for_arg = el.first_arg_type
+                .map(|arg_type| type_to_string(arg_type))
+                .map(|arg_type_as_str| types_without_std_err.contains(&arg_type_as_str.as_str()))
+                .unwrap_or(false);
 
             if is_src_arg_present {
-                quote! { ErrorSource:: #var_name (src)  => { src.description() } }
+                if no_std_err_for_arg {
+                    quote! { ErrorSource:: #var_name (_)  => { "" } }
+                } else {
+                    quote! { ErrorSource:: #var_name (ref src)  => { src.description() } }
+                }
             } else {
                 quote! { ErrorSource:: #var_name => { "" } }
             }
@@ -381,8 +414,9 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
                     match self {
                         ErrorSource::NoSource => { None }
                         #(#fn_source_items_impl)*
-                        // ErrorSource::CurrencyFormatError(src) => { Some(src) }
-                        // ErrorSource::ParseBigDecimalError(src) => { Some(src) }
+                        // ErrorSource::CurrencyFormatError(ref src)  => { Some(src) }
+                        // ErrorSource::ParseBigDecimalError(ref src) => { Some(src) }
+                        _ => { None }
                     }
                 }
 

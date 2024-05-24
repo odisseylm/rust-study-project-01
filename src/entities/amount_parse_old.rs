@@ -144,6 +144,11 @@ pub mod parse_amount_old {
         #[from_error_kind(IncorrectAmount)]
         #[no_source_backtrace]
         ParseBigDecimalError(ParseBigDecimalError),
+
+        // just for test
+        SomeInt(i32),
+
+        SomeWithoutArg,
     }
 
     /*
@@ -255,8 +260,8 @@ pub mod parse_amount_old {
         fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
             match self {
                 ErrorSource::NoSource => { None }
-                ErrorSource::CurrencyFormatError(src) =>  { Some(src) }
-                ErrorSource::ParseBigDecimalError(src) => { Some(src) }
+                ErrorSource::CurrencyFormatError(ref? src) =>  { Some(src) }
+                ErrorSource::ParseBigDecimalError(ref? src) => { Some(src) }
             }
         }
 
@@ -264,8 +269,8 @@ pub mod parse_amount_old {
         fn description(&self) -> &str {
             match self {
                 ErrorSource::NoSource => { "" }
-                ErrorSource::CurrencyFormatError(src) =>  { src.description() }
-                ErrorSource::ParseBigDecimalError(src) => { src.description() }
+                ErrorSource::CurrencyFormatError(ref src) =>  { src.description() }
+                ErrorSource::ParseBigDecimalError(ref src) => { src.description() }
             }
         }
 

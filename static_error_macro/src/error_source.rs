@@ -78,9 +78,6 @@ pub fn get_error_source_enum_variants<'a>(ast: & 'a syn::DeriveInput) -> ErrorSo
             };
 
             if let syn::Fields::Unit = vr.fields {
-                assert_eq!(variant_name, "NoSource",
-                    "Unexpected enum variant Unit in enum {}.{} (only 'NoSource' Unit variant is expected).", enum_name, variant_name);
-
                 variants.push(ErrorSourceEnumVariant { variant: enum_el, name: variant_name, first_arg_type: None });
             };
         })

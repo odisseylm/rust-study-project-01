@@ -441,9 +441,25 @@ impl<'a> BacktraceCopyProvider for Option<& 'a dyn std::error::Error> {
 }
 
 impl BacktraceCopyProvider for String {
-    fn provide_backtrace(&self) -> BacktraceInfo {
-        BacktraceInfo::empty()
-    }
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+impl BacktraceCopyProvider for &String {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+impl BacktraceCopyProvider for &str {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+
+impl BacktraceCopyProvider for i32 {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+
+impl BacktraceCopyProvider for &i32 {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
     fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
 }
 
