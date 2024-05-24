@@ -335,7 +335,7 @@ fn assert_no_stack_trace(str: &str) {
 #[test]
 // #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: NoCurrencyError")]
 // #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseAmountError { kind: NoCurrencyError")]
-#[should_panic(expected = "`Err` value: ParseAmountError { kind: NoCurrency, source: No source")]
+#[should_panic(expected = "`Err` value: ParseAmountError { kind: NoCurrency, source: NoSource")]
 fn from_string_without_currency() {
     Amount::from_str(" \t \n 122.350  ").test_unwrap();
 }

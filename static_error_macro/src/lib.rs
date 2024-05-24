@@ -174,13 +174,12 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     let struct_error_type: String = struct_error_type
         .expect("struct_error_type should have format: struct_error_type(MyErrorStructName)");
 
-    let enum_variants = get_error_source_enum_variants(ast);
-    let enum_variants_wo_no_source: Vec<&ErrorSourceEnumVariant> = enum_variants
+    let error_source_enum = get_error_source_enum_variants(ast);
+    let enum_variants: Vec<&ErrorSourceEnumVariant> = error_source_enum
         .variants.iter()
-        .filter(|vr|{ vr.name != "NoSource" })
         .collect::<Vec<_>>();
 
-    let grouped_err_enum_variants_by_arg_type: HashMap<String, Vec<&ErrorSourceEnumVariant>> = enum_variants_wo_no_source.iter()
+    let grouped_err_enum_variants_by_arg_type: HashMap<String, Vec<&ErrorSourceEnumVariant>> = enum_variants.iter()
         .filter_map(|&vr| vr.first_arg_type.map(|first_arg_type| (type_to_string(first_arg_type), vr) ))
         .into_group_map();
 
@@ -189,7 +188,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         .map(|src_type_and_vars| src_type_and_vars.0.to_string())
         .collect();
 
-    let err_src_bt_provider_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|vr|{
+    let err_src_bt_provider_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let var_name = vr.name;
         let no_source_backtrace = find_enum_variant_attr(vr.variant, "no_source_backtrace").is_some();
         let is_arg_present = vr.first_arg_type.is_some();
@@ -203,7 +202,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         }
     }).collect::<Vec<_>>();
 
-    let err_src_debug_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|vr|{
+    let err_src_debug_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let var_name = vr.name;
         let is_arg_present = vr.first_arg_type.is_some();
 
@@ -222,8 +221,8 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             fn provide_backtrace(&self) -> crate::util::BacktraceInfo {
                 use crate::util::BacktraceInfo;
                 match self {
-                    ErrorSource::NoSource => { BacktraceInfo::empty() }
                     #(#err_src_bt_provider_impl_match_branches)*
+                    // ErrorSource::NoSource => { BacktraceInfo::empty() }
                     // ErrorSource::ParseBigDecimalError(_)  => { BacktraceInfo::empty()  }
                     // ErrorSource::CurrencyFormatError(ref src) => { src.provide_backtrace() }
                 }
@@ -236,14 +235,15 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 use ErrorSource::*;
                 match self {
-                    NoSource => { write!(f, "No source") }
                     #(#err_src_debug_impl_match_branches)*
+                    // NoSource => { write!(f, "No source") }
+                    // ...
                 }
             }
         }
     };
 
-    let from_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|vr|{
+    let from_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let variant_enum_name: &proc_macro2::Ident = vr.name;
 
         let from_error_kind_attr = find_enum_variant_attr(vr.variant, "from_error_kind");
@@ -299,7 +299,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         }
     }).collect::<Vec<_>>();
 
-    let into_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().filter_map(|ref el| {
+    let into_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().filter_map(|ref el| {
         let var_name: &syn::Ident = el.name;
 
         if el.first_arg_type.is_none() {
@@ -330,7 +330,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
 
     let display_err_src_impl = if do_not_generate_display { quote!() }
     else {
-        let display_err_src_items_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|ref el| {
+        let display_err_src_items_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|ref el| {
             let var_name: &syn::Ident = el.name;
             let is_src_arg_present: bool = el.first_arg_type.is_some();
 
@@ -347,8 +347,8 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             impl core::fmt::Display for ErrorSource {
                 fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                     match self {
-                        ErrorSource::NoSource                => { write!(f, "NoSource") }
                         #(#display_err_src_items_impl)*
+                        // ErrorSource::NoSource                => { write!(f, "NoSource") }
                         // // ErrorSource::CurrencyFormatError(_)  => { write!(f, "CurrencyFormatError")  }
                         // // ErrorSource::ParseBigDecimalError(_) => { write!(f, "ParseBigDecimalError") }
                         // ErrorSource::CurrencyFormatError(src)  => { write!(f, "{}", src) }
@@ -369,7 +369,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
 
     let std_error_err_src_impl = if do_not_generate_std_error { quote!() }
     else {
-        let fn_source_items_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|ref el| {
+        let fn_source_items_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|ref el| {
             let var_name: &syn::Ident = el.name;
             let is_src_arg_present: bool = el.first_arg_type.is_some();
             let no_std_err_for_arg = el.first_arg_type
@@ -379,15 +379,14 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
 
             if !is_src_arg_present {
                 quote! { ErrorSource:: #var_name => { None }  }
-            }
-            else if no_std_err_for_arg {
+            } else if no_std_err_for_arg {
                 quote! { ErrorSource:: #var_name (_) => { None } }
             } else {
                 quote! { ErrorSource:: #var_name (ref src) => { Some(src) } }
             }
         }).collect::<Vec<_>>();
 
-        let fn_description_items_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|ref el| {
+        let fn_description_items_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|ref el| {
             let var_name: &syn::Ident = el.name;
             let is_src_arg_present: bool = el.first_arg_type.is_some();
             let no_std_err_for_arg = el.first_arg_type
@@ -412,8 +411,8 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             impl std::error::Error for ErrorSource {
                 fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
                     match self {
-                        ErrorSource::NoSource => { None }
                         #(#fn_source_items_impl)*
+                        // ErrorSource::NoSource => { None }
                         // ErrorSource::CurrencyFormatError(ref src)  => { Some(src) }
                         // ErrorSource::ParseBigDecimalError(ref src) => { Some(src) }
                         _ => { None }
@@ -423,8 +422,8 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
                 #[allow(deprecated)]
                 fn description(&self) -> &str {
                     match self {
-                        ErrorSource::NoSource => { "" }
                         #(#fn_description_items_impl)*
+                        // ErrorSource::NoSource => { "" }
                         // ErrorSource::CurrencyFormatError(src)  => { src.description() }
                         // ErrorSource::ParseBigDecimalError(src) => { src.description() }
                     }
