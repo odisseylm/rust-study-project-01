@@ -154,7 +154,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
 
 
-#[proc_macro_derive(MyStaticStructErrorSource, attributes(struct_error_type, from_error_kind, no_source_backtrace))]
+#[proc_macro_derive(MyStaticStructErrorSource, attributes(struct_error_type, from_error_kind, no_source_backtrace, do_not_generate_display))]
 pub fn my_static_struct_error_source_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let ast = syn::parse(input)
         .expect("No input source for derive macro MyStaticStructErrorSource.");
@@ -163,6 +163,9 @@ pub fn my_static_struct_error_source_macro_derive(input: proc_macro::TokenStream
 
 fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
     let _name = ast.ident.to_string();
+
+    // let do_not_generate_debug = find_attr(&ast.attrs, "do_not_generate_debug").is_some();
+    let do_not_generate_display = find_attr(&ast.attrs, "do_not_generate_display").is_some();
 
     let struct_error_type_attr: Option<&syn::Attribute> = find_attr(&ast.attrs, "struct_error_type");
     let struct_error_type: Option<String> = struct_error_type_attr
@@ -312,6 +315,38 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         })
     }).collect::<Vec<_>>();
 
+    let display_err_src_impl = if do_not_generate_display { quote!() }
+    else {
+        let display_err_src_items_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|ref el| {
+            let var_name: &syn::Ident = el.name;
+            let is_src_arg_present: bool = el.first_arg_type.is_some();
+
+            if is_src_arg_present {
+                quote! { ErrorSource:: #var_name (ref src)  => { write!(f, "{}", src) } }
+            } else {
+                quote! { ErrorSource:: #var_name  => { write!(f, stringify!(#var_name))  }  }
+            }
+        }).collect::<Vec<_>>();
+
+        quote! {
+            #[allow(unused_imports)]
+            #[allow(unused_qualifications)]
+            impl core::fmt::Display for ErrorSource {
+                fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                    match self {
+                        ErrorSource::NoSource                => { write!(f, "NoSource") }
+                        #(#display_err_src_items_impl)*
+                        // // ErrorSource::CurrencyFormatError(_)  => { write!(f, "CurrencyFormatError")  }
+                        // // ErrorSource::ParseBigDecimalError(_) => { write!(f, "ParseBigDecimalError") }
+                        // ErrorSource::CurrencyFormatError(src)  => { write!(f, "{}", src) }
+                        // ErrorSource::ParseBigDecimalError(src) => { write!(f, "{}", src) }
+                    }
+                }
+            }
+
+        }
+    };
+
 
     let err_impl_ts: proc_macro::TokenStream = err_src_impl.into();
 
@@ -320,6 +355,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     all.add_ts(err_impl_ts);
     all.add_pm2_tss(into_impl);
     all.add_pm2_tss(from_impl);
+    all.add_pm2_ts(display_err_src_impl);
     all
 }
 

@@ -100,19 +100,6 @@ pub enum ErrorSource {
     ParseBigDecimalError(ParseBigDecimalError),
 }
 
-impl core::fmt::Display for ErrorSource { // TODO: generate it by macro
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            // ErrorSource::NoSource                => { write!(f, "NoSource 666") }
-            ErrorSource::NoSource                => { write!(f, "NoSource") }
-            // TODO: use where no source or if marked #[use_name_as_display]
-            // ErrorSource::CurrencyFormatError(_)  => { write!(f, "CurrencyFormatError 666")  }
-            // ErrorSource::ParseBigDecimalError(_) => { write!(f, "ParseBigDecimalError 666") }
-            ErrorSource::CurrencyFormatError(src)  => { write!(f, "{}", src) }
-            ErrorSource::ParseBigDecimalError(src) => { write!(f, "{}", src) }
-        }
-    }
-}
 
 impl std::error::Error for ErrorSource {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {

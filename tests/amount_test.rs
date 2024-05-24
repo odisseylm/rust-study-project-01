@@ -145,14 +145,14 @@ fn from_string_with_wrong_formed_currency_02() {
     if let Err(ref err) = res {
 
         println!("--------------------------------------------------------------------------------");
-        println!("err: {}", err);
+        println!("err (display): {}", err);
         println!("--------------------------------------------------------------------------------");
-        println!("err: {:?}", err);
+        println!("err (debug)  : {:?}", err);
 
         println!("--------------------------------------------------------------------------------");
-        println!("err.source: {}", err.source);
+        println!("err.source (display): {}", err.source);
         println!("--------------------------------------------------------------------------------");
-        println!("err.source: {:?}", err.source);
+        println!("err.source (debug)  : {:?}", err.source);
     }
 }
 
@@ -163,14 +163,14 @@ fn from_string_with_wrong_formed_currency_do_not_print_stack_trace_twice() {
     if let Err(ref err) = res {
 
         println!("--------------------------------------------------------------------------------");
-        println!("err: {}", err);
+        println!("err (display): {}", err);
         println!("--------------------------------------------------------------------------------");
-        println!("err: {:?}", err);
+        println!("err (debug)  : {:?}", err);
 
         println!("--------------------------------------------------------------------------------");
-        println!("err.source: {}", err.source);
+        println!("err.source (display): {}", err.source);
         println!("--------------------------------------------------------------------------------");
-        println!("err.source: {:?}", err.source);
+        println!("err.source (debug)  : {:?}", err.source);
 
         // assert_display_stack_trace_is_only_one(&err);
         assert_debug_stack_trace_is_only_one(&err);
@@ -181,14 +181,14 @@ fn from_string_with_wrong_formed_currency_do_not_print_stack_trace_twice() {
         if let parse_amount::ErrorSource::CurrencyFormatError(ref err) = err.source {
 
             println!("--------------------------------------------------------------------------------");
-            println!("err: {}", err);
+            println!("err (display): {}", err);
             println!("--------------------------------------------------------------------------------");
-            println!("err: {:?}", err);
+            println!("err (debug)  : {:?}", err);
 
             // println!("--------------------------------------------------------------------------------");
-            // println!("err.source: {}", err.source);
+            // println!("err.source (display): {}", err.source);
             // println!("--------------------------------------------------------------------------------");
-            // println!("err.source: {:?}", err.source);
+            // println!("err.source (debug)  : {:?}", err.source);
 
             // assert_display_stack_trace_is_only_one(&err);
             assert_display_no_stack_trace(&err);
@@ -209,14 +209,14 @@ fn from_string_with_wrong_amount_value_do_not_print_stack_trace_twice() {
     if let Err(ref err) = res {
 
         println!("--------------------------------------------------------------------------------");
-        println!("err: {}", err);
+        println!("err (display): {}", err);
         println!("--------------------------------------------------------------------------------");
-        println!("err: {:?}", err);
+        println!("err (debug)  : {:?}", err);
 
         println!("--------------------------------------------------------------------------------");
-        println!("err.source: {}", err.source);
+        println!("err.source (display): {}", err.source);
         println!("--------------------------------------------------------------------------------");
-        println!("err.source: {:?}", err.source);
+        println!("err.source (debug)  : {:?}", err.source);
 
         // assert_display_stack_trace_is_only_one(&err);
         assert_display_no_stack_trace(&err);
@@ -229,14 +229,14 @@ fn from_string_with_wrong_amount_value_do_not_print_stack_trace_twice() {
         if let parse_amount::ErrorSource::ParseBigDecimalError(ref err) = err.source {
 
             println!("--------------------------------------------------------------------------------");
-            println!("err: {}", err);
+            println!("err (display): {}", err);
             println!("--------------------------------------------------------------------------------");
-            println!("err: {:?}", err);
+            println!("err (debug)  : {:?}", err);
 
             // println!("--------------------------------------------------------------------------------");
-            // println!("err.source: {}", err.source);
+            // println!("err.source (display): {}", err.source);
             // println!("--------------------------------------------------------------------------------");
-            // println!("err.source: {:?}", err.source);
+            // println!("err.source (debug)  : {:?}", err.source);
 
             // if it fails in the future we will need to verify other 'print' backtrace cases
             assert_display_no_stack_trace(&err);
@@ -285,6 +285,23 @@ fn assert_stack_trace_is_only_one(str: &str) {
     });
 
     assert!(second_index.is_some(), "No any backtrace is found in [{}]", str);
+}
+
+
+#[test]
+fn aa() {
+    enable_backtrace();
+    let res = Amount::from_str(" \t \n John_350 USD ");
+    if let Err(ref err) = res {
+
+        println!("err.source (display): {}", err.source);
+        println!("err.source (debug)  : {:?}", err.source);
+
+        if let parse_amount::ErrorSource::ParseBigDecimalError(ref bd_err) = err.source {
+            println!("err.source (display): {}", bd_err);
+            println!("err.source (debug)  : {:?}", bd_err);
+        }
+    }
 }
 
 

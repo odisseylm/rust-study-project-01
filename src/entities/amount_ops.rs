@@ -136,7 +136,10 @@ pub mod ops {
     #[derive(static_error_macro::MyStaticStructErrorSource)]
     #[struct_error_type(AmountOpsError)]
     pub enum ErrorSource {
-        #[error("No source")]
+        // #[error("No source")]
         NoSource,
+        // Actually there should be BigDecimal errors...
+        // but it !panics! in case of dividing by zero,
+        // and seems to do not use other errors ?!
     }
 }
