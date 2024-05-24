@@ -154,7 +154,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
 
 
-#[proc_macro_derive(MyStaticStructErrorSource, attributes(struct_error_type, from_error_kind, no_source_backtrace, do_not_generate_display))]
+#[proc_macro_derive(MyStaticStructErrorSource, attributes(struct_error_type, from_error_kind, no_source_backtrace, do_not_generate_display, do_not_generate_std_error))]
 pub fn my_static_struct_error_source_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let ast = syn::parse(input)
         .expect("No input source for derive macro MyStaticStructErrorSource.");
@@ -166,6 +166,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
 
     // let do_not_generate_debug = find_attr(&ast.attrs, "do_not_generate_debug").is_some();
     let do_not_generate_display = find_attr(&ast.attrs, "do_not_generate_display").is_some();
+    let do_not_generate_std_error = find_attr(&ast.attrs, "do_not_generate_std_error").is_some();
 
     let struct_error_type_attr: Option<&syn::Attribute> = find_attr(&ast.attrs, "struct_error_type");
     let struct_error_type: Option<String> = struct_error_type_attr
@@ -348,6 +349,59 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     };
 
 
+    let std_error_err_src_impl = if do_not_generate_std_error { quote!() }
+    else {
+        let fn_source_items_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|ref el| {
+            let var_name: &syn::Ident = el.name;
+            let is_src_arg_present: bool = el.first_arg_type.is_some();
+
+            if is_src_arg_present {
+                quote! { ErrorSource:: #var_name (src) => { Some(src) } }
+            } else {
+                quote! { ErrorSource:: #var_name (src) => { None }  }
+            }
+        }).collect::<Vec<_>>();
+
+        let fn_description_items_impl: Vec<proc_macro2::TokenStream> = enum_variants_wo_no_source.iter().map(|ref el| {
+            let var_name: &syn::Ident = el.name;
+            let is_src_arg_present: bool = el.first_arg_type.is_some();
+
+            if is_src_arg_present {
+                quote! { ErrorSource:: #var_name (src)  => { src.description() } }
+            } else {
+                quote! { ErrorSource:: #var_name => { "" } }
+            }
+        }).collect::<Vec<_>>();
+
+        quote! {
+            #[allow(unused_imports)]
+            #[allow(unused_qualifications)]
+            impl std::error::Error for ErrorSource {
+                fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+                    match self {
+                        ErrorSource::NoSource => { None }
+                        #(#fn_source_items_impl)*
+                        // ErrorSource::CurrencyFormatError(src) => { Some(src) }
+                        // ErrorSource::ParseBigDecimalError(src) => { Some(src) }
+                    }
+                }
+
+                #[allow(deprecated)]
+                fn description(&self) -> &str {
+                    match self {
+                        ErrorSource::NoSource => { "" }
+                        #(#fn_description_items_impl)*
+                        // ErrorSource::CurrencyFormatError(src)  => { src.description() }
+                        // ErrorSource::ParseBigDecimalError(src) => { src.description() }
+                    }
+                }
+
+                // fn provide<'a>(&'a self, request: &mut Request<'a>) { ... }
+            }
+
+        }
+    };
+
     let err_impl_ts: proc_macro::TokenStream = err_src_impl.into();
 
     // T O D O: probably it can be concatenated in standard way.
@@ -356,6 +410,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     all.add_pm2_tss(into_impl);
     all.add_pm2_tss(from_impl);
     all.add_pm2_ts(display_err_src_impl);
+    all.add_pm2_ts(std_error_err_src_impl);
     all
 }
 

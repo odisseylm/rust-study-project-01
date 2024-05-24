@@ -101,26 +101,4 @@ pub enum ErrorSource {
 }
 
 
-impl std::error::Error for ErrorSource {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            ErrorSource::NoSource => { None }
-            ErrorSource::CurrencyFormatError(src) => { Some(src) }
-            ErrorSource::ParseBigDecimalError(src) => { Some(src) }
-        }
-    }
-
-    #[allow(deprecated)]
-    fn description(&self) -> &str {
-        match self {
-            ErrorSource::NoSource => { "" }
-            ErrorSource::CurrencyFormatError(src) => { src.description() }
-            ErrorSource::ParseBigDecimalError(src) => { src.description() }
-        }
-    }
-
-    // fn provide<'a>(&'a self, request: &mut Request<'a>) { ... }
-}
-
-
 // }

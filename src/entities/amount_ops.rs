@@ -132,7 +132,6 @@ pub mod ops {
         pub source: ErrorSource,
     }
 
-    #[derive(thiserror::Error)]
     #[derive(static_error_macro::MyStaticStructErrorSource)]
     #[struct_error_type(AmountOpsError)]
     pub enum ErrorSource {
