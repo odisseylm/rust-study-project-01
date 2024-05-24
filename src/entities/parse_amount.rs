@@ -4,6 +4,15 @@ use crate::entities::amount::Amount;
 use crate::entities::currency::Currency;
 
 
+// Just example
+#[path = "./dir1/dir2/some_relative_path_01.rs"]
+mod relative_welcome_home;
+
+#[allow(dead_code)]
+fn usage_nf_from_relative_path() {
+    relative_welcome_home::fn_from_rs_path_01()
+}
+
 
 // For internal usage, Use Amount::from_str() in production code.
 //
@@ -13,7 +22,7 @@ pub fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
     let s = s.trim();
 
     let last_space_bytes_offset = s.rfind(|ch: char|{ ch.is_ascii_whitespace() })
-        .ok_or( ParseAmountError::new(ErrorKind::NoCurrency)) ?;
+        .ok_or_else(|| ParseAmountError::new(ErrorKind::NoCurrency)) ?;
 
     let (str_amount, str_cur) = s.split_at(last_space_bytes_offset);
 
@@ -58,8 +67,9 @@ pub enum ErrorKind {
 // Duplicated since copy of this code (in amount_parse_old.rs) is also used for testing MyStaticStructError
 // noinspection DuplicatedCode
 //
-#[derive(Debug, thiserror::Error)]
+#[derive(thiserror::Error)]
 #[derive(static_error_macro::MyStaticStructError)]
+// #[do_not_generate_debug]
 pub struct ParseAmountError {
     pub kind: ErrorKind,
     #[source]
@@ -69,24 +79,61 @@ pub struct ParseAmountError {
 }
 
 
-// Duplicated since copy of this code (in amount_parse_old.rs) is also used for testing MyStaticStructError
+// Duplicated code since copy of this code (in amount_parse_old.rs) is also used for testing MyStaticStructError
 // noinspection DuplicatedCode
 //
-#[derive(thiserror::Error)]
+// #[derive(thiserror::Error)]
 #[derive(static_error_macro::MyStaticStructErrorSource)]
 #[struct_error_type(ParseAmountError)]
+// #[derive(Debug)]
 pub enum ErrorSource {
-    #[error("No source")]
+    // #[error("No source")]
     NoSource,
 
-    #[error("Currency format error")]
+    // #[error("Currency format error")]
     #[from_error_kind(IncorrectCurrency)]
     CurrencyFormatError(CurrencyFormatError),
 
-    #[error("Decimal format error")]
+    // #[error("Decimal format error")]
     #[from_error_kind(IncorrectAmount)]
     #[no_source_backtrace]
     ParseBigDecimalError(ParseBigDecimalError),
 }
+
+impl core::fmt::Display for ErrorSource { // TODO: generate it by macro
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            // ErrorSource::NoSource                => { write!(f, "NoSource 666") }
+            ErrorSource::NoSource                => { write!(f, "NoSource") }
+            // TODO: use where no source or if marked #[use_name_as_display]
+            // ErrorSource::CurrencyFormatError(_)  => { write!(f, "CurrencyFormatError 666")  }
+            // ErrorSource::ParseBigDecimalError(_) => { write!(f, "ParseBigDecimalError 666") }
+            ErrorSource::CurrencyFormatError(src)  => { write!(f, "{}", src) }
+            ErrorSource::ParseBigDecimalError(src) => { write!(f, "{}", src) }
+        }
+    }
+}
+
+impl std::error::Error for ErrorSource {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            ErrorSource::NoSource => { None }
+            ErrorSource::CurrencyFormatError(src) => { Some(src) }
+            ErrorSource::ParseBigDecimalError(src) => { Some(src) }
+        }
+    }
+
+    #[allow(deprecated)]
+    fn description(&self) -> &str {
+        match self {
+            ErrorSource::NoSource => { "" }
+            ErrorSource::CurrencyFormatError(src) => { src.description() }
+            ErrorSource::ParseBigDecimalError(src) => { src.description() }
+        }
+    }
+
+    // fn provide<'a>(&'a self, request: &mut Request<'a>) { ... }
+}
+
 
 // }

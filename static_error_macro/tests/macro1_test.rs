@@ -71,6 +71,9 @@ mod util {
         pub trait BacktraceCopyProvider {
             // Using 'provide' name causes warning 'unstable_name_collision'
             fn provide_backtrace(&self) -> BacktraceInfo;
+            fn contains_self_or_child_captured_backtrace(&self) -> bool {
+                self.provide_backtrace().is_captured()
+            }
         }
         #[allow(dead_code)]
         pub trait BacktraceBorrowedProvider { // or better Moved???

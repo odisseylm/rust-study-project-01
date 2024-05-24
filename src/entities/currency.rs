@@ -254,7 +254,7 @@ pub mod parse_currency {
     }
 
     // #[derive(Debug, PartialEq, Copy, Clone)]
-    #[derive(Debug, thiserror::Error)]
+    #[derive(thiserror::Error)]
     #[derive(static_error_macro::MyStaticStructError)]
     pub struct CurrencyFormatError {
         pub kind: ErrorKind,

@@ -185,6 +185,9 @@ impl core::fmt::Debug for BacktraceKind<'_> {
 pub trait BacktraceCopyProvider {
     // Using 'provide' name causes warning 'unstable_name_collision'
     fn provide_backtrace(&self) -> BacktraceInfo;
+    fn contains_self_or_child_captured_backtrace(&self) -> bool {
+        self.provide_backtrace().is_captured()
+    }
 }
 pub trait BacktraceBorrowedProvider { // or better Moved???
     fn provide_backtrace(&self) -> BacktraceInfo;
@@ -407,10 +410,33 @@ impl BacktraceCopyProvider for anyhow::Error {
     }
 }
 
+
+fn std_backtrace_of_std_err<'a>(_err: & 'a dyn std::error::Error) -> Option<& 'a std::backtrace::Backtrace> {
+    // TODO: add support of it after appearing std::error::Error.provide() in stable build.
+    None
+}
+
 impl BacktraceCopyProvider for Box<dyn std::error::Error> {
     fn provide_backtrace(&self) -> BacktraceInfo {
-        // TODO: add support of it after appearing std::error::Error.provide() in stable build.
-        BacktraceInfo::empty()
+        Some(self.as_ref()).provide_backtrace()
+    }
+
+    fn contains_self_or_child_captured_backtrace(&self) -> bool {
+        Some(self.as_ref()).contains_self_or_child_captured_backtrace()
+    }
+}
+
+impl<'a> BacktraceCopyProvider for Option<& 'a dyn std::error::Error> {
+    fn provide_backtrace(&self) -> BacktraceInfo {
+        let std_err_opt = self.and_then(|err| std_backtrace_of_std_err(err));
+        // TODO: do not use string by performance reason
+        // TODO: add warn logging
+        std_err_opt.map(|bt| BacktraceInfo::from_string(bt.to_string())).unwrap_or(BacktraceInfo::empty())
+    }
+
+    fn contains_self_or_child_captured_backtrace(&self) -> bool {
+        let std_err_opt = self.and_then(|err| std_backtrace_of_std_err(err));
+        std_err_opt.map(|bt| bt.status() == std::backtrace::BacktraceStatus::Captured).unwrap_or(false)
     }
 }
 
@@ -418,6 +444,7 @@ impl BacktraceCopyProvider for String {
     fn provide_backtrace(&self) -> BacktraceInfo {
         BacktraceInfo::empty()
     }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
 }
 
 

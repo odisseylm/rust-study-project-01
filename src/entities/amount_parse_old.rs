@@ -12,7 +12,7 @@ fn parse_amount_01(s: &str) -> Result<Amount, parse_amount_old::ParseAmountError
     let s = s.trim();
 
     let last_space_bytes_offset = s.rfind(|ch: char|{ ch.is_ascii_whitespace() })
-        .ok_or( ParseAmountError::new(ErrorKind::NoCurrency)) ?;
+        .ok_or_else(|| ParseAmountError::new(ErrorKind::NoCurrency)) ?;
 
     let (str_amount, str_cur) = s.split_at(last_space_bytes_offset);
 
@@ -56,7 +56,7 @@ fn parse_amount_02(s: &str) -> Result<Amount, parse_amount_old::ParseAmountError
     let s = s.trim();
 
     let last_space_bytes_offset = s.rfind(|ch: char|{ ch.is_ascii_whitespace() })
-        .ok_or( ParseAmountError::new(ErrorKind::NoCurrency)) ?;
+        .ok_or_else(|| ParseAmountError::new(ErrorKind::NoCurrency)) ?;
 
     let (str_amount, str_cur) = s.split_at(last_space_bytes_offset);
 
@@ -78,7 +78,7 @@ fn parse_amount_03(s: &str) -> Result<Amount, parse_amount_old::ParseAmountError
     let s = s.trim();
 
     let last_space_bytes_offset = s.rfind(|ch: char|{ ch.is_ascii_whitespace() })
-        .ok_or( ParseAmountError::new(ErrorKind::NoCurrency)) ?;
+        .ok_or_else(|| ParseAmountError::new(ErrorKind::NoCurrency)) ?;
 
     let (str_amount, str_cur) = s.split_at(last_space_bytes_offset);
 
@@ -116,7 +116,7 @@ pub mod parse_amount_old {
         IncorrectAmount,
     }
 
-    #[derive(Debug, thiserror::Error)]
+    #[derive(thiserror::Error)]
     #[derive(static_error_macro::MyStaticStructError)]
     pub struct ParseAmountError {
         pub kind: ErrorKind,
@@ -218,6 +218,21 @@ pub mod parse_amount_old {
     impl core::fmt::Display for ParseAmountError {
         fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
             write!(f, "{}", self.kind)
+        }
+    }
+
+    impl core::fmt::Debug for ParseAmountError {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            if self.backtrace.is_captured() {
+                let src_contains_captured_backtrace: bool = crate::util::backtrace::BacktraceCopyProvider::contains_self_or_child_captured_backtrace(&self.source);
+                if src_contains_captured_backtrace {
+                    write!(f, "ParseAmountError {{ kind: {:?}, source: {:?} }}", self.kind, self.source)
+                } else {
+                    write!(f, "ParseAmountError {{ kind: {:?}, source: {:?}, backtrace: {} }}", self.kind, self.source, self.backtrace)
+                }
+            } else {
+                write!(f, "ParseAmountError {{ kind: {:?}, source: {:?} }}", self.kind, self.source)
+            }
         }
     }
 

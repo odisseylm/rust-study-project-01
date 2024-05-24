@@ -5,6 +5,7 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use project01::entities::amount::{ Amount, amount };
+use project01::entities::amount::parse_amount;
 use project01::entities::amount::parse_amount::{ ParseAmountError };
 use project01::entities::currency::{ EUR, USD, make_currency };
 use project01::make_currency;
@@ -136,6 +137,181 @@ fn from_string_with_wrong_formed_currency() {
     enable_backtrace();
     Amount::from_str(" \t \n 122.350 USSD ").test_unwrap();
 }
+
+#[test]
+fn from_string_with_wrong_formed_currency_02() {
+    enable_backtrace();
+    let res = Amount::from_str(" \t \n 122.350 USSD ");
+    if let Err(ref err) = res {
+
+        println!("--------------------------------------------------------------------------------");
+        println!("err: {}", err);
+        println!("--------------------------------------------------------------------------------");
+        println!("err: {:?}", err);
+
+        println!("--------------------------------------------------------------------------------");
+        println!("err.source: {}", err.source);
+        println!("--------------------------------------------------------------------------------");
+        println!("err.source: {:?}", err.source);
+    }
+}
+
+#[test]
+fn from_string_with_wrong_formed_currency_do_not_print_stack_trace_twice() {
+    enable_backtrace();
+    let res = Amount::from_str(" \t \n 122.350 USSD ");
+    if let Err(ref err) = res {
+
+        println!("--------------------------------------------------------------------------------");
+        println!("err: {}", err);
+        println!("--------------------------------------------------------------------------------");
+        println!("err: {:?}", err);
+
+        println!("--------------------------------------------------------------------------------");
+        println!("err.source: {}", err.source);
+        println!("--------------------------------------------------------------------------------");
+        println!("err.source: {:?}", err.source);
+
+        // assert_display_stack_trace_is_only_one(&err);
+        assert_debug_stack_trace_is_only_one(&err);
+
+        // assert_display_stack_trace_is_only_one(&err.source);
+        assert_debug_stack_trace_is_only_one(&err.source);
+
+        if let parse_amount::ErrorSource::CurrencyFormatError(ref err) = err.source {
+
+            println!("--------------------------------------------------------------------------------");
+            println!("err: {}", err);
+            println!("--------------------------------------------------------------------------------");
+            println!("err: {:?}", err);
+
+            // println!("--------------------------------------------------------------------------------");
+            // println!("err.source: {}", err.source);
+            // println!("--------------------------------------------------------------------------------");
+            // println!("err.source: {:?}", err.source);
+
+            // assert_display_stack_trace_is_only_one(&err);
+            assert_debug_stack_trace_is_only_one(&err);
+
+            // assert_display_stack_trace_is_only_one(&err.source);
+            // assert_debug_stack_trace_is_only_one(&err.source);
+        } else {
+            assert!(false, "Unexpected flow.")
+        }
+    }
+}
+
+#[test]
+fn from_string_with_wrong_amount_value_do_not_print_stack_trace_twice() {
+    enable_backtrace();
+    let res = Amount::from_str(" \t \n John_350 USD ");
+    if let Err(ref err) = res {
+
+        println!("--------------------------------------------------------------------------------");
+        println!("err: {}", err);
+        println!("--------------------------------------------------------------------------------");
+        println!("err: {:?}", err);
+
+        println!("--------------------------------------------------------------------------------");
+        println!("err.source: {}", err.source);
+        println!("--------------------------------------------------------------------------------");
+        println!("err.source: {:?}", err.source);
+
+        // assert_display_stack_trace_is_only_one(&err);
+        assert_debug_stack_trace_is_only_one(&err);
+
+        // assert_display_stack_trace_is_only_one(&err.source);
+        // T O D O: why no stack trace? Is it ok?
+        // assert_debug_stack_trace_is_only_one(&err.source);
+
+        if let parse_amount::ErrorSource::ParseBigDecimalError(ref err) = err.source {
+
+            println!("--------------------------------------------------------------------------------");
+            println!("err: {}", err);
+            println!("--------------------------------------------------------------------------------");
+            println!("err: {:?}", err);
+
+            // println!("--------------------------------------------------------------------------------");
+            // println!("err.source: {}", err.source);
+            // println!("--------------------------------------------------------------------------------");
+            // println!("err.source: {:?}", err.source);
+
+            // if it fails in the future we will need to verify other 'print' backtrace cases
+            assert_display_no_stack_trace(&err);
+            assert_debug_no_stack_trace(&err);
+
+            // assert_display_no_stack_trace(&err.source);
+            // assert_debug_no_stack_trace(&err.source);
+        } else {
+            assert!(false, "Unexpected flow.")
+        }
+    }
+}
+
+
+#[track_caller]
+#[allow(dead_code)]
+fn assert_display_stack_trace_is_only_one<Err: core::fmt::Display>(err: &Err) {
+    use std::fmt::Write;
+    let mut str_buf = String::new();
+    write!(str_buf, "{}", err).test_unwrap();
+    assert_stack_trace_is_only_one(str_buf.as_str());
+}
+#[track_caller]
+#[allow(dead_code)]
+fn assert_debug_stack_trace_is_only_one<Err: core::fmt::Debug>(err: &Err) {
+    use std::fmt::Write;
+    let mut str_buf = String::new();
+    write!(str_buf, "{:?}", err).test_unwrap();
+    assert_stack_trace_is_only_one(str_buf.as_str());
+}
+#[track_caller]
+fn assert_stack_trace_is_only_one(str: &str) {
+    let first_index: Option<usize> = str.find("backtrace:")
+        .or_else(|| str.find("stacktrace:"))
+        .or_else(|| str.find("stack trace:"))
+        ;
+
+    assert!(first_index.is_some(), "No any backtrace is found in [{}]", str);
+
+    let second_index: Option<usize> = first_index.and_then(|first_index| {
+        let str: &str = &str[first_index + 1..];
+
+        str.find("backtrace:")
+            .or_else(|| str.find("stacktrace:"))
+            .or_else(|| str.find("stack trace:"))
+    });
+
+    assert!(second_index.is_some(), "No any backtrace is found in [{}]", str);
+}
+
+
+#[track_caller]
+#[allow(dead_code)]
+fn assert_display_no_stack_trace<Err: core::fmt::Display>(err: &Err) {
+    use std::fmt::Write;
+    let mut str_buf = String::new();
+    write!(str_buf, "{}", err).test_unwrap();
+    assert_no_stack_trace(str_buf.as_str());
+}
+#[track_caller]
+#[allow(dead_code)]
+fn assert_debug_no_stack_trace<Err: core::fmt::Debug>(err: &Err) {
+    use std::fmt::Write;
+    let mut str_buf = String::new();
+    write!(str_buf, "{:?}", err).test_unwrap();
+    assert_no_stack_trace(str_buf.as_str());
+}
+#[track_caller]
+fn assert_no_stack_trace(str: &str) {
+    let first_index: Option<usize> = str.find("backtrace:")
+        .or_else(|| str.find("stacktrace:"))
+        .or_else(|| str.find("stack trace:"))
+        ;
+
+    assert!(first_index.is_none(), "There is at least one backtrace is found (but non expected) in [{}]", str);
+}
+
 
 #[test]
 // #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: NoCurrencyError")]

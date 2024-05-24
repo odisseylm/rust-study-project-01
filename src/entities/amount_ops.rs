@@ -123,7 +123,7 @@ pub mod ops {
         Incorrect,
     }
 
-    #[derive(Debug, thiserror::Error)]
+    #[derive(thiserror::Error)]
     #[derive(static_error_macro::MyStaticStructError)]
     pub struct AmountOpsError {
         pub kind: ErrorKind,

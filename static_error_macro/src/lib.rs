@@ -10,7 +10,7 @@ use crate::macro_util::*;
 use crate::error_source::*;
 
 
-#[proc_macro_derive(MyStaticStructError, attributes(StaticStructErrorType))]
+#[proc_macro_derive(MyStaticStructError, attributes(StaticStructErrorType, do_not_generate_display, do_not_generate_debug))]
 pub fn my_static_struct_error_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // construct a representation of Rust code as a syntax tree that we can manipulate
     let ast: syn::DeriveInput = syn::parse(input)
@@ -22,6 +22,9 @@ pub fn my_static_struct_error_macro_derive(input: proc_macro::TokenStream) -> pr
 
 fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
     let error_type_name = &ast.ident;
+
+    let do_not_generate_display = find_attr(&ast.attrs, "do_not_generate_display").is_some();
+    let do_not_generate_debug = find_attr(&ast.attrs, "do_not_generate_debug").is_some();
 
     let source_field_exists: bool = if let syn::Data::Struct(ref data) = ast.data {
         if let syn::Fields::Named(ref fields) = data.fields {
@@ -106,13 +109,46 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         }
     };
 
+    let err_debug_impl_with_source = quote! {
+
+        #[allow(unused_imports)]
+        #[allow(unused_qualifications)]
+        impl core::fmt::Debug for #error_type_name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                if self.backtrace.is_captured() {
+                    let src_contains_captured_backtrace: bool = crate::util::backtrace::BacktraceCopyProvider::contains_self_or_child_captured_backtrace(&self.source);
+                    if src_contains_captured_backtrace {
+                        write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?}, source: {:?} }}"), self.kind, self.source)
+                    } else {
+                        write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?}, source: {:?}, backtrace: {} }}"), self.kind, self.source, self.backtrace)
+                    }
+                } else {
+                    write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?}, source: {:?} }}"), self.kind, self.source)
+                }
+            }
+        }
+    };
+
+    let err_debug_impl_without_source = quote! {
+
+        #[allow(unused_imports)]
+        #[allow(unused_qualifications)]
+        impl core::fmt::Debug for #error_type_name {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?}, backtrace: {} }}"), self.kind, self.backtrace)
+            }
+        }
+    };
+
     let err_impl: proc_macro2::TokenStream = if source_field_exists { err_impl_with_source } else { err_impl_without_source };
+    let err_debug_impl: proc_macro2::TokenStream = if source_field_exists { err_debug_impl_with_source } else { err_debug_impl_without_source };
 
     // T O D O: probably it can be done in some short standard way ??
     let mut all = proc_macro::TokenStream::new();
     all.add_pm2_ts(err_impl);
     all.add_pm2_ts(err_backtrace_provider_impl);
-    all.add_pm2_ts(err_display_impl);
+    if !do_not_generate_display { all.add_pm2_ts(err_display_impl) };
+    if !do_not_generate_debug { all.add_pm2_ts(err_debug_impl) };
     all
 }
 
