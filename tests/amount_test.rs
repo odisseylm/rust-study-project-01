@@ -191,6 +191,7 @@ fn from_string_with_wrong_formed_currency_do_not_print_stack_trace_twice() {
             // println!("err.source: {:?}", err.source);
 
             // assert_display_stack_trace_is_only_one(&err);
+            assert_display_no_stack_trace(&err);
             assert_debug_stack_trace_is_only_one(&err);
 
             // assert_display_stack_trace_is_only_one(&err.source);
@@ -218,6 +219,7 @@ fn from_string_with_wrong_amount_value_do_not_print_stack_trace_twice() {
         println!("err.source: {:?}", err.source);
 
         // assert_display_stack_trace_is_only_one(&err);
+        assert_display_no_stack_trace(&err);
         assert_debug_stack_trace_is_only_one(&err);
 
         // assert_display_stack_trace_is_only_one(&err.source);
