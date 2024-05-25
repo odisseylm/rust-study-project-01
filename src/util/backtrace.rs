@@ -73,6 +73,7 @@ fn keep_only_last_file_path_part3<'a>(path: &str) -> &str {
 
 
 use std::cmp::PartialEq;
+use std::fmt::Display;
 
 pub fn print_current_stack_trace() {
     let stacktrace = std::backtrace::Backtrace::capture();
@@ -404,12 +405,17 @@ impl std::fmt::Display for BacktraceInfo {
 //                           BacktraceProvider for standard types
 // -------------------------------------------------------------------------------------------------
 
+
+fn backtrace_to_string_bt<B: Display>(bt: &B) -> BacktraceInfo {
+    // TODO: do not use string by performance reason
+    // TODO: add warn logging
+    println!("WARN: Backtrace is copied by string!");
+    BacktraceInfo::from_string(bt.to_string())
+}
+
 impl BacktraceCopyProvider for anyhow::Error {
     fn provide_backtrace(&self) -> BacktraceInfo {
-        // TODO: do not use string by performance reason
-        // TODO: add warn logging
-        println!("WARN: Backtrace is copied by string!");
-        BacktraceInfo::from_string(self.backtrace().to_string())
+        backtrace_to_string_bt(self.backtrace())
 
         // alternative approach - do not copy it as string by copy as `Debug`
         // BacktraceInfo::empty()
@@ -440,11 +446,8 @@ impl BacktraceCopyProvider for Box<dyn std::error::Error> {
 
 impl<'a> BacktraceCopyProvider for Option<& 'a dyn std::error::Error> {
     fn provide_backtrace(&self) -> BacktraceInfo {
-        let std_err_opt = self.and_then(|err| std_backtrace_of_std_err(err));
-        // TODO: do not use string by performance reason
-        // TODO: add warn logging
-        println!("WARN: Backtrace is copied by string!");
-        std_err_opt.map(|bt| BacktraceInfo::from_string(bt.to_string())).unwrap_or(BacktraceInfo::empty())
+        let std_err_opt: Option<&std::backtrace::Backtrace> = self.and_then(|err| std_backtrace_of_std_err(err));
+        std_err_opt.map(|bt| backtrace_to_string_bt(bt)).unwrap_or(BacktraceInfo::empty())
     }
 
     fn contains_self_or_child_captured_backtrace(&self) -> bool {
