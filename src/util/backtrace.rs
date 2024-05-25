@@ -406,7 +406,19 @@ impl std::fmt::Display for BacktraceInfo {
 
 impl BacktraceCopyProvider for anyhow::Error {
     fn provide_backtrace(&self) -> BacktraceInfo {
+        // TODO: do not use string by performance reason
+        // TODO: add warn logging
+        println!("WARN: Backtrace is copied by string!");
         BacktraceInfo::from_string(self.backtrace().to_string())
+
+        // alternative approach - do not copy it as string by copy as `Debug`
+        // BacktraceInfo::empty()
+    }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool {
+        self.provide_backtrace().is_captured()
+
+        // alternative approach - do not copy it as string by copy as `Debug`
+        // is_anyhow_backtrace_enabled()
     }
 }
 
@@ -431,6 +443,7 @@ impl<'a> BacktraceCopyProvider for Option<& 'a dyn std::error::Error> {
         let std_err_opt = self.and_then(|err| std_backtrace_of_std_err(err));
         // TODO: do not use string by performance reason
         // TODO: add warn logging
+        println!("WARN: Backtrace is copied by string!");
         std_err_opt.map(|bt| BacktraceInfo::from_string(bt.to_string())).unwrap_or(BacktraceInfo::empty())
     }
 
@@ -457,8 +470,51 @@ impl BacktraceCopyProvider for i32 {
     fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
     fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
 }
-
 impl BacktraceCopyProvider for &i32 {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+impl BacktraceCopyProvider for u32 {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+impl BacktraceCopyProvider for &u32 {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+
+impl BacktraceCopyProvider for i64 {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+impl BacktraceCopyProvider for &i64 {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+
+impl BacktraceCopyProvider for u64 {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+impl BacktraceCopyProvider for &u64 {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+
+impl BacktraceCopyProvider for isize {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+impl BacktraceCopyProvider for &isize {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+
+impl BacktraceCopyProvider for usize {
+    fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
+    fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
+}
+impl BacktraceCopyProvider for &usize {
     fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
     fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
 }

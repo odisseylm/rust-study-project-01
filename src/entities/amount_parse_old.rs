@@ -96,6 +96,34 @@ fn parse_amount_03(s: &str) -> Result<Amount, parse_amount_old::ParseAmountError
 //                                        Error
 // -------------------------------------------------------------------------------------------------
 
+#[allow(dead_code)]
+struct S1 { _x: i32 }
+
+#[allow(dead_code)]
+trait ST1 {
+    fn get_x(&self) -> i32;
+}
+impl ST1 for S1 {
+    fn get_x(&self) -> i32 { self._x }
+}
+
+/*
+fn aa_01() {
+    let ptr0: Box<S1> = Box::new(S1{_x:666});
+    let ptr1: Box<dyn ST1> = Box::new(S1{_x:666});
+
+    let s1 = S1{_x:666};
+    let p_s1: &S1 = &s1;
+    let p_s1: & dyn ST1 = &s1;
+    // let p_s1 = & dyn s1;
+
+    let anyhow_err: anyhow::Error = t o d o!();
+    parse_amount_old::ParseAmountError::with_source(parse_amount_old::ErrorKind::IncorrectAmount, ErrorSource::SomeAnyHowError(anyhow_err));
+
+    let anyhow_err: anyhow::Error = t o d o!();
+    parse_amount_old::ParseAmountError::with_from(parse_amount_old::ErrorKind::IncorrectAmount, anyhow_err);
+}
+*/
 
 // rust does not support nested structs/types/so on.
 // As workaround, I decided to use sub-namespace.
@@ -105,6 +133,7 @@ pub mod parse_amount_old {
     use crate::util::BacktraceInfo;
     use crate::entities::currency::parse_currency::CurrencyFormatError;
 
+    //noinspection DuplicatedCode
     #[derive(Debug, thiserror::Error)]
     #[derive(Copy, Clone)]
     pub enum ErrorKind {
@@ -131,6 +160,7 @@ pub mod parse_amount_old {
     #[derive(static_error_macro::MyStaticStructErrorSource)]
     // Full type or short type can be used: ParseAmountError/crate::entities::amount::parse_amount::ParseAmountError
     #[struct_error_type(ParseAmountError)]
+    // #[do_not_generate_std_error]
     pub enum ErrorSource {
         //#[error("No source")]
         NoSource,
@@ -146,10 +176,78 @@ pub mod parse_amount_old {
         ParseBigDecimalError(ParseBigDecimalError),
 
         // just for test
-        SomeInt(i32),
+        SomeInt64(i64),
 
         SomeWithoutArg,
+
+        // With duplicated types
+        // #[error("Some1FromString")]
+        #[no_source_backtrace]
+        // #[from_error_kind(IncorrectAmount)] // temp. to test proper 'duplicates' error
+        Some1FromString(String),
+        // #[error("Some2FromString")]
+        #[no_source_backtrace]
+        // #[from_error_kind(IncorrectAmount)] // temp. to test proper 'duplicates' error
+        Some2FromString(String),
+        // #[error("Some1FromInt")]
+        #[no_source_backtrace]
+        Some1FromInt(i32),
+        // #[error("Some2FromInt")]
+        #[no_source_backtrace]
+        Some2FromInt(i32),
+
+        // #[error("SomeAnyHowError")]
+        SomeAnyHowError(anyhow::Error),
+
+        // #[error("SomeStdError")]
+        // StdErrorError(Box<dyn std::error::Error>),
     }
+
+    /*
+    #[allow(unused_imports)]
+    #[allow(unused_qualifications)]
+    impl std::error::Error for ErrorSource {
+        fn source(& self) -> Option<& (dyn std::error::Error + 'static)> {
+            match self {
+                ErrorSource::NoSource => None,
+                ErrorSource::CurrencyFormatError(ref src) => Some(src),
+                ErrorSource::ParseBigDecimalError(ref src) => Some(src),
+                ErrorSource::SomeInt64(_) => None,
+                ErrorSource::SomeWithoutArg => None,
+                ErrorSource::Some1FromString(_) => None,
+                ErrorSource::Some2FromString(_) => None,
+                ErrorSource::Some1FromInt(_) => None,
+                ErrorSource::Some2FromInt(_) => None,
+                // ErrorSource::SomeAnyHowError(ref src) => Some(src),
+                // ErrorSource::SomeAnyHowError(src) => Some(src),
+                // ErrorSource::SomeAnyHowError(ref src) => src.source(),
+                // ErrorSource::SomeAnyHowError(ref src) => Some(& src),
+                ErrorSource::SomeAnyHowError(ref src) => {
+                    // let p_s0: & dyn std::error::Error = src.as_ref();
+                    // Some(p_s0)
+                    Some(src.as_ref())
+                },
+                _ => None,
+            }
+        }
+        #[allow(deprecated)]
+        fn description(&self) -> &str {
+            match self {
+                ErrorSource::NoSource => "",
+                ErrorSource::CurrencyFormatError(ref src) => src.description(),
+                ErrorSource::ParseBigDecimalError(ref src) => src.description(),
+                ErrorSource::SomeInt64(_) => "",
+                ErrorSource::SomeWithoutArg => "",
+                ErrorSource::Some1FromString(_) => "",
+                ErrorSource::Some2FromString(_) => "",
+                ErrorSource::Some1FromInt(_) => "",
+                ErrorSource::Some2FromInt(_) => "",
+                ErrorSource::SomeAnyHowError(ref src) => src.description(),
+            }
+        }
+    }
+    */
+
 
     /*
     impl ParseAmountError {
@@ -286,7 +384,8 @@ pub mod parse_amount_old {
 
 #[cfg(test)]
 mod tests {
-    use crate::util::TestResultUnwrap;
+    use crate::util::{TestOptionUnwrap, TestResultUnwrap};
+    use crate::util::string::substring_count;
     use super::*;
 
     #[test]
@@ -305,5 +404,30 @@ mod tests {
     #[should_panic(expected = "ParseAmountError { kind: IncorrectAmount, source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
     fn test_parse_amount_03_01() {
         parse_amount_03(" \t \n 12_John_2.350 BRL ").test_unwrap();
+    }
+
+    #[test]
+    fn test_from_anyhow_error() {
+        let anyhow_err: anyhow::Error = anyhow::Error::msg("Error 123");
+        let my_err = parse_amount_old::ParseAmountError::with_source(parse_amount_old::ErrorKind::IncorrectAmount, parse_amount_old::ErrorSource::SomeAnyHowError(anyhow_err));
+        println!("my_err: {}", my_err);
+        println!("-------------------------------------------");
+        println!("my_err: {:?}", my_err);
+
+        println!("\n\n-------------------------------------------");
+        let io_err_res = std::fs::read_to_string("unknown_file.txt");
+        let anyhow_err: anyhow::Error = From::from(io_err_res.err().test_unwrap());
+        let my_err = parse_amount_old::ParseAmountError::with_source(parse_amount_old::ErrorKind::IncorrectAmount, parse_amount_old::ErrorSource::SomeAnyHowError(anyhow_err));
+        println!("my_err: {}", my_err);
+        println!("-------------------------------------------");
+        println!("my_err: {:?}", my_err);
+
+        let mut str_buf = String::new();
+        use std::fmt::Write;
+        write!(str_buf, "{:?}", my_err).test_unwrap();
+
+        // ascii_substring_count(str_buf.as_str(), b"backtrace:");
+        let count = substring_count(str_buf.as_str(), " backtrace:");
+        assert_eq!(count, 1);
     }
 }

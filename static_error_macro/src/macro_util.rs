@@ -1,6 +1,5 @@
 
 
-
 pub fn find_attr<'a>(attrs: & 'a Vec<syn::Attribute>, attr_name: &str) -> Option<& 'a syn::Attribute> {
     attrs.iter().find(|attr|{
         let segments = &attr.meta.path().segments;
@@ -45,7 +44,50 @@ pub fn find_enum_variant_attr<'a>(variant: & 'a syn::Variant, attr_name: & str) 
 
 
 pub fn type_path_to_string(path: &syn::TypePath) -> String {
-    path.path.segments.iter().map(|s| s.ident.to_string() ).collect::<String>()
+    use quote::ToTokens;
+    path.to_token_stream().to_string()
+    // path.path.segments.iter().map(|s| s.ident.to_string() ).collect::<String>()
+}
+
+fn remove_space_chars_impl(str: &str) -> String {
+    let mut res = String::with_capacity(str.len());
+    str.chars().for_each(|ch|{
+        if !ch.is_ascii_whitespace() {
+            res.push(ch);
+        }
+    });
+    res
+}
+
+pub trait StringOp {
+    fn remove_space_chars(&self) -> String;
+}
+impl StringOp for String {
+    fn remove_space_chars(&self) -> String { remove_space_chars_impl(self.as_str()) }
+}
+
+pub trait OptionStringOp {
+    fn is_eq_to_str(&self, str: &str) -> bool;
+}
+impl OptionStringOp for Option<String> {
+    fn is_eq_to_str(&self, str: &str) -> bool {
+        // It moves ??? Unexpected a bit???
+        // self.is_some_and(|t| t.as_str() == str)
+        match self {
+            None => { false }
+            Some(ref self_string) => { str == self_string.as_str() }
+        }
+    }
+}
+impl OptionStringOp for Option<&str> {
+    fn is_eq_to_str(&self, str: &str) -> bool {
+        // It moves ??? Unexpected a bit???
+        // self.is_some_and(|t| t.as_str() == str)
+        match self {
+            None => { false }
+            Some(ref self_string) => { str == *self_string }
+        }
+    }
 }
 
 pub fn type_to_string(t: &syn::Type) -> String {

@@ -202,6 +202,20 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         }
     }).collect::<Vec<_>>();
 
+    let err_src_bt_provider_impl_match_branches2: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
+        let var_name = vr.name;
+        let no_source_backtrace = find_enum_variant_attr(vr.variant, "no_source_backtrace").is_some();
+        let is_arg_present = vr.first_arg_type.is_some();
+
+        if !is_arg_present {
+            quote!(  ErrorSource:: #var_name  => { false }     )
+        } else if no_source_backtrace {
+            quote!(  ErrorSource:: #var_name (_)  => { false }     )
+        } else {
+            quote!(  ErrorSource:: #var_name (ref src)  => { src.contains_self_or_child_captured_backtrace() }  )
+        }
+    }).collect::<Vec<_>>();
+
     let err_src_debug_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let var_name = vr.name;
         let is_arg_present = vr.first_arg_type.is_some();
@@ -225,6 +239,15 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
                     // ErrorSource::NoSource => { BacktraceInfo::empty() }
                     // ErrorSource::ParseBigDecimalError(_)  => { BacktraceInfo::empty()  }
                     // ErrorSource::CurrencyFormatError(ref src) => { src.provide_backtrace() }
+                }
+            }
+            fn contains_self_or_child_captured_backtrace(&self) -> bool {
+                use crate::util::BacktraceInfo;
+                match self {
+                    #(#err_src_bt_provider_impl_match_branches2)*
+                    // ErrorSource::NoSource => { false }
+                    // ErrorSource::ParseBigDecimalError(_)  => { false  }
+                    // ErrorSource::CurrencyFormatError(ref src) => { src.contains_self_or_child_captured_backtrace() }
                 }
             }
         }
@@ -309,7 +332,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         let var_arg_type: &syn::Type = el.first_arg_type
             .expect(&format!("first_arg_type is expected for {}.", var_name));
 
-        let arg_type_as_string = type_to_string(var_arg_type);
+        let arg_type_as_string = type_to_string(var_arg_type).remove_space_chars();
         if duplicated_err_enum_src_types.contains(&arg_type_as_string) {
             // T O D O: log.info()
             return None;
@@ -363,6 +386,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     let types_without_std_err: Vec<&str> = vec!("char",
                                      "i8", "i16", "i32", "i64", "i128",
                                      "u8", "u16", "u32", "u64", "u128",
+                                     "usize", "isize",
                                      "f32", "f64",
                                      "String", "&str", "& 'static str",
     );
@@ -372,6 +396,8 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         let fn_source_items_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|ref el| {
             let var_name: &syn::Ident = el.name;
             let is_src_arg_present: bool = el.first_arg_type.is_some();
+            let arg_str_type: Option<String> = el.first_arg_type
+                .map(|arg_type| type_to_string(arg_type).remove_space_chars());
             let no_std_err_for_arg = el.first_arg_type
                 .map(|arg_type| type_to_string(arg_type))
                 .map(|arg_type_as_str| types_without_std_err.contains(&arg_type_as_str.as_str()))
@@ -381,6 +407,8 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
                 quote! { ErrorSource:: #var_name => { None }  }
             } else if no_std_err_for_arg {
                 quote! { ErrorSource:: #var_name (_) => { None } }
+            } else if arg_str_type.is_eq_to_str("anyhow::Error") {
+                quote! { ErrorSource:: #var_name (ref src) => { Some(src.as_ref()) } }
             } else {
                 quote! { ErrorSource:: #var_name (ref src) => { Some(src) } }
             }
