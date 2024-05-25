@@ -200,12 +200,10 @@ pub mod parse_amount_old {
         SomeAnyHowError(anyhow::Error),
 
         // #[error("SomeStdError")]
-        // StdErrorError(Box<dyn std::error::Error>),
+        StdError(Box<dyn std::error::Error>),
     }
 
     /*
-    #[allow(unused_imports)]
-    #[allow(unused_qualifications)]
     impl std::error::Error for ErrorSource {
         fn source(& self) -> Option<& (dyn std::error::Error + 'static)> {
             match self {
@@ -218,15 +216,12 @@ pub mod parse_amount_old {
                 ErrorSource::Some2FromString(_) => None,
                 ErrorSource::Some1FromInt(_) => None,
                 ErrorSource::Some2FromInt(_) => None,
-                // ErrorSource::SomeAnyHowError(ref src) => Some(src),
-                // ErrorSource::SomeAnyHowError(src) => Some(src),
-                // ErrorSource::SomeAnyHowError(ref src) => src.source(),
-                // ErrorSource::SomeAnyHowError(ref src) => Some(& src),
                 ErrorSource::SomeAnyHowError(ref src) => {
                     // let p_s0: & dyn std::error::Error = src.as_ref();
                     // Some(p_s0)
                     Some(src.as_ref())
                 },
+                ErrorSource::StdError(ref src) => Some(src.as_ref()),
                 _ => None,
             }
         }
@@ -243,6 +238,7 @@ pub mod parse_amount_old {
                 ErrorSource::Some1FromInt(_) => "",
                 ErrorSource::Some2FromInt(_) => "",
                 ErrorSource::SomeAnyHowError(ref src) => src.description(),
+                ErrorSource::StdError(ref src) => src.description(),
             }
         }
     }
@@ -409,7 +405,9 @@ mod tests {
     #[test]
     fn test_from_anyhow_error() {
         let anyhow_err: anyhow::Error = anyhow::Error::msg("Error 123");
-        let my_err = parse_amount_old::ParseAmountError::with_source(parse_amount_old::ErrorKind::IncorrectAmount, parse_amount_old::ErrorSource::SomeAnyHowError(anyhow_err));
+        let my_err = parse_amount_old::ParseAmountError::with_source(
+            parse_amount_old::ErrorKind::IncorrectAmount,
+            parse_amount_old::ErrorSource::SomeAnyHowError(anyhow_err));
         println!("my_err: {}", my_err);
         println!("-------------------------------------------");
         println!("my_err: {:?}", my_err);
@@ -417,13 +415,54 @@ mod tests {
         println!("\n\n-------------------------------------------");
         let io_err_res = std::fs::read_to_string("unknown_file.txt");
         let anyhow_err: anyhow::Error = From::from(io_err_res.err().test_unwrap());
-        let my_err = parse_amount_old::ParseAmountError::with_source(parse_amount_old::ErrorKind::IncorrectAmount, parse_amount_old::ErrorSource::SomeAnyHowError(anyhow_err));
+        let my_err = parse_amount_old::ParseAmountError::with_source(
+            parse_amount_old::ErrorKind::IncorrectAmount,
+            parse_amount_old::ErrorSource::SomeAnyHowError(anyhow_err));
         println!("my_err: {}", my_err);
         println!("-------------------------------------------");
         println!("my_err: {:?}", my_err);
 
         let mut str_buf = String::new();
         use std::fmt::Write;
+        write!(str_buf, "{:?}", my_err).test_unwrap();
+
+        // ascii_substring_count(str_buf.as_str(), b"backtrace:");
+        let count = substring_count(str_buf.as_str(), " backtrace:");
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn test_from_std_error() {
+        println!("\n\n-------------------------------------------");
+
+        let io_err_res = std::fs::read_to_string("unknown_file.txt");
+        let io_err = io_err_res.err().test_unwrap();
+
+        println!("io_err: {}", io_err);
+        println!("-------------------------------------------");
+        println!("io_err: {:?}", io_err);
+
+
+        // -----------------------------------------------------------------------------------------
+        let mut str_buf = String::new();
+        use std::fmt::Write;
+        write!(str_buf, "{:?}", io_err).test_unwrap();
+
+        let count = substring_count(str_buf.as_str(), " backtrace:");
+        // Now rust std errors do not print backtrace.
+        // When it happens we need to make sure that we use it instead of capturing backtrace manually.
+        assert_eq!(count, 0);
+
+
+        let str_err_box: Box<dyn std::error::Error> = Box::new(io_err);
+        let my_err = parse_amount_old::ParseAmountError::with_source(
+            parse_amount_old::ErrorKind::IncorrectAmount,
+            parse_amount_old::ErrorSource::StdError(str_err_box));
+        println!("my_err: {}", my_err);
+        println!("-------------------------------------------");
+        println!("my_err: {:?}", my_err);
+
+        let mut str_buf = String::new();
         write!(str_buf, "{:?}", my_err).test_unwrap();
 
         // ascii_substring_count(str_buf.as_str(), b"backtrace:");

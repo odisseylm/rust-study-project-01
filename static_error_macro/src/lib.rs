@@ -316,6 +316,8 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             //     fn from(error: CurrencyFormatError) -> Self { ParseAmountError::with_from(ErrorKind::IncorrectCurrency, error) }
             // }
 
+            #[allow(unused_imports)]
+            #[allow(unused_qualifications)]
             impl From< #from_err_type_name > for #err_struct_name {
                 fn from(error: #from_err_type_name ) -> Self { #err_struct_name::with_from(ErrorKind:: #err_struct_kind_name, error) }
             }
@@ -332,7 +334,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         let var_arg_type: &syn::Type = el.first_arg_type
             .expect(&format!("first_arg_type is expected for {}.", var_name));
 
-        let arg_type_as_string = type_to_string(var_arg_type).remove_space_chars();
+        let arg_type_as_string = type_to_string_without_spaces(var_arg_type);
         if duplicated_err_enum_src_types.contains(&arg_type_as_string) {
             // T O D O: log.info()
             return None;
@@ -360,7 +362,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             if is_src_arg_present {
                 quote! { ErrorSource:: #var_name (ref src)  => { write!(f, "{}", src) } }
             } else {
-                quote! { ErrorSource:: #var_name  => { write!(f, stringify!(#var_name))  }  }
+                quote! { ErrorSource:: #var_name  => { write!(f, stringify!(#var_name)) } }
             }
         }).collect::<Vec<_>>();
 
@@ -397,7 +399,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             let var_name: &syn::Ident = el.name;
             let is_src_arg_present: bool = el.first_arg_type.is_some();
             let arg_str_type: Option<String> = el.first_arg_type
-                .map(|arg_type| type_to_string(arg_type).remove_space_chars());
+                .map(|arg_type| type_to_string_without_spaces(arg_type));
             let no_std_err_for_arg = el.first_arg_type
                 .map(|arg_type| type_to_string(arg_type))
                 .map(|arg_type_as_str| types_without_std_err.contains(&arg_type_as_str.as_str()))
@@ -408,6 +410,10 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             } else if no_std_err_for_arg {
                 quote! { ErrorSource:: #var_name (_) => { None } }
             } else if arg_str_type.is_eq_to_str("anyhow::Error") {
+                quote! { ErrorSource:: #var_name (ref src) => { Some(src.as_ref()) } }
+            } else if arg_str_type.is_eq_to_str("Box<dyn std::error::Error>")
+                   || arg_str_type.is_eq_to_str("Box<dyn error::Error>")
+                   || arg_str_type.is_eq_to_str("Box<dyn Error>") {
                 quote! { ErrorSource:: #var_name (ref src) => { Some(src.as_ref()) } }
             } else {
                 quote! { ErrorSource:: #var_name (ref src) => { Some(src) } }

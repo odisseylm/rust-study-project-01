@@ -48,6 +48,39 @@ pub fn type_path_to_string(path: &syn::TypePath) -> String {
     path.to_token_stream().to_string()
     // path.path.segments.iter().map(|s| s.ident.to_string() ).collect::<String>()
 }
+#[allow(dead_code)]
+pub fn type_path_to_string_without_spaces(path: &syn::TypePath) -> String {
+    remove_spaces_from_type_string(&type_path_to_string(path))
+}
+fn remove_spaces_from_type_string(type_as_str: &String) -> String {
+
+    let mut trimmed = String::new();
+
+    let mut prev_non_space_is_alpha = false;
+    let mut prev_is_space = false;
+
+    type_as_str.chars().for_each(|ch|{
+
+        let is_space = ch.is_ascii_whitespace();
+
+        if is_space {
+            prev_is_space = true;
+        }
+        else {
+            let is_alpha = ch.is_alphabetic();
+
+            if is_alpha && prev_is_space && prev_non_space_is_alpha {
+                trimmed.push(' ');
+            }
+            trimmed.push(ch);
+
+            prev_is_space = false;
+            prev_non_space_is_alpha = is_alpha;
+        }
+    });
+
+    trimmed
+}
 
 fn remove_space_chars_impl(str: &str) -> String {
     let mut res = String::with_capacity(str.len());
@@ -59,6 +92,7 @@ fn remove_space_chars_impl(str: &str) -> String {
     res
 }
 
+#[allow(dead_code)]
 pub trait StringOp {
     fn remove_space_chars(&self) -> String;
 }
@@ -112,6 +146,9 @@ pub fn type_to_string(t: &syn::Type) -> String {
     }
 }
 
+pub fn type_to_string_without_spaces(t: &syn::Type) -> String {
+    remove_spaces_from_type_string(&type_to_string(t))
+}
 
 
 pub trait AddPMTokenStream {
@@ -143,5 +180,27 @@ impl AddPM2TokenStreams for proc_macro::TokenStream {
             let as_ts: proc_macro::TokenStream = ts_part.to_token_stream().into();
             self.extend(as_ts);
         });
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn remove_spaces_from_type_str(str_type: &str) -> String {
+        remove_spaces_from_type_string(&str_type.to_string())
+    }
+
+    #[test]
+    fn test_remove_spaces_from_type() {
+        assert_eq!(remove_spaces_from_type_str("anyhow::Error"), "anyhow::Error");
+        assert_eq!(remove_spaces_from_type_str("anyhow :: Error"), "anyhow::Error");
+        assert_eq!(remove_spaces_from_type_str(" anyhow :: Error"), "anyhow::Error");
+        assert_eq!(remove_spaces_from_type_str("  anyhow  ::  Error  "), "anyhow::Error");
+
+        assert_eq!(remove_spaces_from_type_str("Box<dyn std::error::Error>"), "Box<dyn std::error::Error>");
+        assert_eq!(remove_spaces_from_type_str(" Box < dyn std :: error :: Error > "), "Box<dyn std::error::Error>");
+        assert_eq!(remove_spaces_from_type_str("  Box  <  dyn  std  ::  error  ::  Error  >  "), "Box<dyn std::error::Error>");
     }
 }

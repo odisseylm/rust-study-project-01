@@ -554,3 +554,8 @@ fn test_amount_format_error_src_from_anyhow() {
     assert!(amount_err_as_str_with_backtrace.contains("fn_anyhow_02"));
 
 }
+
+// #[test]
+// fn test_failed() {
+//     assert!(false, "It should fail.")
+// }
