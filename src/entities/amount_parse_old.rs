@@ -390,7 +390,9 @@ pub mod parse_amount_old {
 
 #[cfg(test)]
 mod tests {
-    use crate::util::{TestOptionUnwrap, TestResultUnwrap};
+    use assertables::{ assert_contains, assert_contains_as_result };
+    use assertables::{ assert_starts_with, assert_starts_with_as_result };
+    use crate::util::{ TestOptionUnwrap, TestResultUnwrap };
     use crate::util::string::substring_count;
     use super::*;
 
@@ -441,6 +443,7 @@ mod tests {
         assert_eq!(count, 1);
     }
 
+
     #[test]
     fn test_from_std_error() {
         println!("\n\n-------------------------------------------");
@@ -478,5 +481,35 @@ mod tests {
         // ascii_substring_count(str_buf.as_str(), b"backtrace:");
         let count = substring_count(str_buf.as_str(), " backtrace:");
         assert_eq!(count, 1);
+    }
+
+
+    #[test]
+    fn test_print_error_source_with_primitive_type() {
+        use parse_amount_old::*;
+        use std::fmt::Write;
+
+        let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::Some1FromInt(852));
+
+        let mut str_buf = String::new();
+        write!(str_buf, "{}", err).test_unwrap();
+        assert_eq!(str_buf, "ParseAmountError { No currency in amount }");
+        // assert_eq!(str_buf, "ParseAmountError { No currency in amount, source: Some1FromInt( 852 ) }");
+        // assert_contains!(str_buf, "Some1FromInt( 852 )");
+
+        let mut str_buf = String::new();
+        write!(str_buf, "{:?}", err).test_unwrap();
+        assert_contains!(str_buf, "Some1FromInt(852)");
+        assert_starts_with!(str_buf, "ParseAmountError { kind: NoCurrency, source: Some1FromInt(852)");
+
+        let mut str_buf = String::new();
+        write!(str_buf, "{}", err.source).test_unwrap();
+        assert_contains!(str_buf, "Some1FromInt(852)");
+        assert_eq!(str_buf, "Some1FromInt(852)");
+
+        let mut str_buf = String::new();
+        write!(str_buf, "{:?}", err.source).test_unwrap();
+        assert_contains!(str_buf, "Some1FromInt(852)");
+        assert_eq!(str_buf, "Some1FromInt(852)");
     }
 }

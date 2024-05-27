@@ -311,11 +311,26 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         }
     }).collect::<Vec<_>>();
 
+
+    let types_to_wrap_with_enum_vr_name: Vec<&str> = vec!("char",
+                                                          "i8", "i16", "i32", "i64", "i128",
+                                                          "u8", "u16", "u32", "u64", "u128",
+                                                          "usize", "isize",
+                                                          "f32", "f64",
+                                                          "String", "&str", "& 'static str",
+    );
+
     let err_src_debug_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let var_name = vr.name;
         let is_arg_present = vr.first_arg_type.is_some();
 
-        if is_arg_present {
+        let to_wrap_with_enum_name: bool = vr.first_arg_type
+            .map(|arg_type| types_to_wrap_with_enum_vr_name.contains(&type_to_string_without_spaces(arg_type).as_str()))
+            .unwrap_or(false);
+
+        if is_arg_present && to_wrap_with_enum_name {
+            quote!(  #var_name(ref src)  => { write!(f, concat!(stringify!(#var_name),"({:?})"), src) }  )
+        } else if is_arg_present {
             quote!(  #var_name(ref src)  => { write!(f, "{:?}", src) }  )
         } else {
             quote!(  #var_name  => { write!(f, stringify!(#var_name)) }  )
@@ -453,8 +468,13 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         let display_err_src_items_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|ref el| {
             let var_name: &syn::Ident = el.name;
             let is_src_arg_present: bool = el.first_arg_type.is_some();
+            let to_wrap_with_enum_name: bool = el.first_arg_type
+                .map(|arg_type| types_to_wrap_with_enum_vr_name.contains(&type_to_string_without_spaces(arg_type).as_str()))
+                .unwrap_or(false);
 
-            if is_src_arg_present {
+            if is_src_arg_present && to_wrap_with_enum_name {
+                quote! { ErrorSource:: #var_name (ref src)  => { write!(f, concat!(stringify!(#var_name), "({})"), src) } }
+            } else if is_src_arg_present {
                 quote! { ErrorSource:: #var_name (ref src)  => { write!(f, "{}", src) } }
             } else {
                 quote! { ErrorSource:: #var_name  => { write!(f, stringify!(#var_name)) } }
