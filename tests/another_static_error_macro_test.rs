@@ -17,7 +17,7 @@ pub mod parse_currency_another_01 {
     // #[derive(Debug, PartialEq, Copy, Clone)]
     #[derive(thiserror::Error)]
     #[derive(static_error_macro::MyStaticStructError)]
-    #[static_struct_error_internal_type_path_mode(ExternalCratePath)]
+    // #[static_struct_error_internal_type_path_mode(ExternalCratePath)]
     pub struct CurrencyFormatError {
         pub kind: ErrorKind,
         // #[source]
@@ -219,7 +219,7 @@ pub mod parse_amount_another_01 {
 //                     Error without source - simple variant.
 // -------------------------------------------------------------------------------------------------
 
-use project01::util::backtrace::NewBacktracePolicy;
+use project01::util::backtrace::{is_anyhow_backtrace_enabled, NewBacktracePolicy};
 use project01::util::backtrace::BacktraceCopyProvider;
 
 #[test]
@@ -241,8 +241,13 @@ fn test_currency_format_error_with_backtrace() {
     assert_eq!(err.kind, ErrorKind::IncorrectCurrencyFormat);
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Capture);
-    assert_contains!(err.backtrace.to_string(), "capture");
-    assert_contains!(err.provide_backtrace().to_string(), "capture");
+    if is_anyhow_backtrace_enabled() {
+        assert_contains!(err.backtrace.to_string(), "capture");
+        assert_contains!(err.provide_backtrace().to_string(), "capture");
+    } else {
+        assert_contains!(err.backtrace.to_string(), "Backtrace disabled");
+        assert_contains!(err.provide_backtrace().to_string(), "Backtrace disabled");
+    }
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::NoBacktrace);
     assert_eq!(err.backtrace.to_string(), "Backtrace disabled");
@@ -307,8 +312,13 @@ fn test_amount_format_error_with_backtrace() {
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
 
     let err = ParseAmountError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Capture);
-    assert_contains!(err.backtrace.to_string(), "capture");
-    assert_contains!(err.provide_backtrace().to_string(), "capture");
+    if is_anyhow_backtrace_enabled() {
+        assert_contains!(err.backtrace.to_string(), "capture");
+        assert_contains!(err.provide_backtrace().to_string(), "capture");
+    } else {
+        assert_contains!(err.backtrace.to_string(), "Backtrace disabled");
+        assert_contains!(err.provide_backtrace().to_string(), "Backtrace disabled");
+    }
 
     let err = ParseAmountError::with_backtrace(ErrorKind::IncorrectAmount, NewBacktracePolicy::NoBacktrace);
     assert_eq!(err.backtrace.to_string(), "Backtrace disabled");
@@ -419,9 +429,10 @@ fn test_amount_format_error_src_from_anyhow() {
 
     println!("{}", amount_err_as_str_with_backtrace);
 
-    assert!(amount_err_as_str_with_backtrace.contains("fn_anyhow_01"));
-    assert!(amount_err_as_str_with_backtrace.contains("fn_anyhow_02"));
-
+    if is_anyhow_backtrace_enabled() {
+        assert_contains!(amount_err_as_str_with_backtrace, "fn_anyhow_01");
+        assert_contains!(amount_err_as_str_with_backtrace, "fn_anyhow_02");
+    }
 }
 
 // #[test]

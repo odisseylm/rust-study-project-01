@@ -11,11 +11,10 @@ use crate::error_source::*;
 
 
 fn bt_root_path_segment(path_mode: InternalTypePathMode) -> proc_macro2::TokenStream {
-    let root_type_path = match path_mode {
-        InternalTypePathMode::CratePath => quote! { crate        },
+    match path_mode {
+        InternalTypePathMode::InternalCratePath => quote! { crate },
         InternalTypePathMode::ExternalCratePath => quote! { :: project01 },
-    };
-    root_type_path
+    }
 }
 
 fn bt_type(path_mode: InternalTypePathMode, type_name: &str) -> proc_macro2::TokenStream {
@@ -53,23 +52,9 @@ fn use_bt_types_expr(path_mode: InternalTypePathMode) -> proc_macro2::TokenStrea
 
 #[proc_macro_derive(MyStaticStructError, attributes(StaticStructErrorType, do_not_generate_display, do_not_generate_debug, static_struct_error_internal_type_path_mode))]
 pub fn my_static_struct_error_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    // construct a representation of Rust code as a syntax tree that we can manipulate
     let ast: syn::DeriveInput = syn::parse(input)
         .expect("No input for derive macro MyStaticStructError");
 
-    // use syn::spanned::Spanned;
-    // let span1 = ast.span();
-    // let ssss = span2.source_text();
-    //
-    // eprintln!("### caller : {:?}", core::panic::Location::caller());
-    // let span = proc_macro::Span::call_site();
-    // eprintln!("### proc_macro::Span : {:?}", span);
-    //
-    // Get the path of the `SourceFile`
-    // let path: PathBuf = source_file.path();
-
-
-    // build the trait implementation
     impl_my_static_struct_error(&ast)
 }
 
@@ -80,23 +65,16 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
     let do_not_generate_debug = find_attr(&ast.attrs, "do_not_generate_debug").is_some();
 
     let int_type_path_mode = get_internal_type_path_mode(ast);
+    let root_type_path = bt_root_path_segment(int_type_path_mode);
 
     let use_bt_types = use_bt_types_expr(int_type_path_mode);
     #[allow(non_snake_case)]
     let BacktraceInfo = bt_type(int_type_path_mode, "BacktraceInfo");
     #[allow(non_snake_case)]
     let NewBacktracePolicy = bt_type(int_type_path_mode, "NewBacktracePolicy");
-    // #[allow(non_snake_case)]
-    // let InheritBacktracePolicy = bt_type(internal_type_path_mode, "InheritBacktracePolicy");
     #[allow(non_snake_case)]
     let BacktraceCopyProvider = bt_type(int_type_path_mode, "BacktraceCopyProvider");
-    // #[allow(non_snake_case)]
-    // let BacktraceBorrowedProvider = bt_type(internal_type_path_mode, "BacktraceBorrowedProvider");
 
-    let root_type_path = match int_type_path_mode {
-        InternalTypePathMode::CratePath => quote! { crate },
-        InternalTypePathMode::ExternalCratePath => quote! { :: project01 },
-    };
 
     let source_field_exists: bool = if let syn::Data::Struct(ref data) = ast.data {
         if let syn::Fields::Named(ref fields) = data.fields {
@@ -233,7 +211,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         no_source_backtrace,
         do_not_generate_display,
         do_not_generate_std_error,
-        static_struct_error_source_internal_type_path_mode, static_struct_error_internal_type_path_mode,
+        static_struct_error_internal_type_path_mode,
     )
 )]
 pub fn my_static_struct_error_source_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -245,7 +223,7 @@ pub fn my_static_struct_error_source_macro_derive(input: proc_macro::TokenStream
 fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
     let _name = ast.ident.to_string();
 
-    // let do_not_generate_debug = find_attr(&ast.attrs, "do_not_generate_debug").is_some();
+    let do_not_generate_debug = find_attr(&ast.attrs, "do_not_generate_debug").is_some();
     let do_not_generate_display = find_attr(&ast.attrs, "do_not_generate_display").is_some();
     let do_not_generate_std_error = find_attr(&ast.attrs, "do_not_generate_std_error").is_some();
 
@@ -254,14 +232,8 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     // let use_bt_types = use_bt_types_expr(internal_type_path_mode);
     #[allow(non_snake_case)]
     let BacktraceInfo = bt_type(int_type_path_mode, "BacktraceInfo");
-    // #[allow(non_snake_case)]
-    // let NewBacktracePolicy = bt_type(internal_type_path_mode, "NewBacktracePolicy");
-    // #[allow(non_snake_case)]
-    // let InheritBacktracePolicy = bt_type(internal_type_path_mode, "InheritBacktracePolicy");
     #[allow(non_snake_case)]
     let BacktraceCopyProvider = bt_type(int_type_path_mode, "BacktraceCopyProvider");
-    // #[allow(non_snake_case)]
-    // let BacktraceBorrowedProvider = bt_type(internal_type_path_mode, "BacktraceBorrowedProvider");
 
     let struct_error_type_attr: Option<&syn::Attribute> = find_attr(&ast.attrs, "struct_error_type");
     let struct_error_type: Option<String> = struct_error_type_attr
@@ -361,18 +333,24 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
                 }
             }
         }
+    };
 
-        #[allow(unused_imports)]
-        #[allow(unused_qualifications)]
-        impl core::fmt::Debug for ErrorSource {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                use ErrorSource::*;
-                match self {
-                    #(#err_src_debug_impl_match_branches)*
-                    // NoSource => { write!(f, "No source") }
-                    // ...
+    let debug_err_src_impl = if do_not_generate_debug { quote!() } else {
+        quote! {
+
+            #[allow(unused_imports)]
+            #[allow(unused_qualifications)]
+            impl core::fmt::Debug for ErrorSource {
+                fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                    use ErrorSource::*;
+                    match self {
+                        #(#err_src_debug_impl_match_branches)*
+                        // NoSource => { write!(f, "No source") }
+                        // ...
+                    }
                 }
             }
+
         }
     };
 
@@ -593,6 +571,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     all.add_ts(err_impl_ts);
     all.add_pm2_tss(into_impl);
     all.add_pm2_tss(from_impl);
+    all.add_pm2_ts(debug_err_src_impl);
     all.add_pm2_ts(display_err_src_impl);
     all.add_pm2_ts(std_error_err_src_impl);
     all

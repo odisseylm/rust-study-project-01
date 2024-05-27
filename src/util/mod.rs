@@ -7,7 +7,6 @@ mod json;
 pub mod backtrace;
 pub mod test_unwrap;
 pub mod string;
-pub mod temp_03;
 
 pub use crate::util::result::{ as_printable, as_printable_ptr };
 pub use crate::util::unchecked::{ UncheckedOptionUnwrap, UncheckedResultUnwrap };

@@ -155,7 +155,7 @@ pub fn type_to_string_without_spaces(t: &syn::Type) -> String {
 #[derive(Debug, Display)]
 #[derive(Copy, Clone)]
 pub enum InternalTypePathMode {
-    CratePath,
+    InternalCratePath,
     ExternalCratePath,
 }
 
@@ -167,30 +167,97 @@ impl FromStr for InternalTypePathMode {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "CratePath" | "crate_path" => Ok(InternalTypePathMode::CratePath),
-            "ExternalCratePath" | "ExtCratePath" | "external_crate_path" | "ext_crate_path" => Ok(InternalTypePathMode::ExternalCratePath),
+            "InternalCratePath" | "internal_crate_path" => Ok(InternalTypePathMode::InternalCratePath),
+            "ExternalCratePath" | "external_crate_path" => Ok(InternalTypePathMode::ExternalCratePath),
             _ => Err(InternalTypePathModeFromStrError::Fuck),
         }
     }
 }
 
 
-pub fn determine_internal_type_path_mode_by_macro_src_pos(_ast: &syn::DeriveInput, _root_type_path_segment: &str) -> Option<InternalTypePathMode> {
+pub fn determine_internal_type_path_mode_by_macro_src_pos(_ast: &syn::DeriveInput, crate_name: &str) -> Option<InternalTypePathMode> {
 
+    // simple hacky solution
+    let building_crate_opt = std::env::var("CARGO_CRATE_NAME");
+    use InternalTypePathMode::*;
+    building_crate_opt.ok().map(|building_crate| if building_crate == crate_name { InternalCratePath } else { ExternalCratePath })
+
+    /*
+    use proc_macro_crate::FoundCrate;
+    use proc_macro_crate::Error as PMCError;
     // use syn::spanned::Spanned;
     // let span = _ast.span();
 
     // let span = span.span();
     // let source_text = span.source_text();
 
+    // let src_pos: Option<std::fs::> = None;
+
     // unstable now
-    // let source_file = span.source_file();
-    // TODO: impl:
+    // let span = _ast.span();
+    // let source_file: Option<PathBuf> = Some(span.source_file().into());
+    // T O D O: impl:
     //  * if it is located in 'tests' source dir, we need to use ExternalCratePath
     //  * if it is located in 'src' source dir and current/nearest Cargo.toml [package].name = "project01", we need to use CratePath
     //  * otherwise use ExternalCratePath
 
-    None
+    // let source_file: Option<PathBuf> = None;
+    // let source_file: Option<PathBuf> = Some(PathBuf::from_str("/home/vmelnykov/projects/rust/rust-study-project-01/tests/another_static_error_macro_test.rs").unwrap());
+    // let source_file: Option<PathBuf> = Some(PathBuf::from_str("/home/vmelnykov/projects/rust/rust-study-project-01/src/entities/currency.rs").unwrap());
+    let is_test_source_file: bool = source_file.map(|path| is_test_source(path)).unwrap_or(false);
+
+    let carte_name_opt: Result<FoundCrate, PMCError> = proc_macro_crate::crate_name(crate_name);
+
+    match carte_name_opt {
+        Ok(ok_res) => {
+            use InternalTypePathMode::*;
+            match ok_res {
+                FoundCrate::Itself => { Some( if is_test_source_file { ExternalCratePath } else { CratePath } ) }
+                // ?? The searched crate was found with this name.
+                FoundCrate::Name(_) => { None }
+            }
+        }
+        Err(err) => {
+            use proc_macro_crate::Error::*;
+            match err {
+                NotFound(_) => Some(InternalTypePathMode::ExternalCratePath),
+                // TODO: use logger
+                // CargoManifestDirNotSet(..) | CargoEnvVariableNotSet(..) | FailedGettingWorkspaceManifestPath(..)
+                //     | CouldNotRead(..) | InvalidToml(..) | CrateNotFound(..)
+                //     => { println!("WARN: cannot determine current crate: {:?}", err); None }
+                _ =>  { println!("WARN: cannot determine current crate: {:?}", err); None }
+            }
+        }
+    }
+    */
+}
+
+#[allow(dead_code)]
+fn is_test_source(path: std::path::PathBuf) -> bool {
+
+    if !path.exists() { return false; }
+
+    let mut p = path.as_path();
+
+    while let Some(ref parent) = p.parent() {
+
+        if let Some(ref parent_file_name) = parent.file_name() {
+            let is_test_dir = parent_file_name.as_encoded_bytes() == b"tests";
+            let is_root_project_or_subproject_dir: bool = if is_test_dir {
+                parent.with_file_name("Cargo.toml").exists()
+            } else { false };
+
+            if is_test_dir && is_root_project_or_subproject_dir {
+                println!("### path [{}] belongs to 'tests' source directory", path.as_path().display());
+                return true;
+            }
+        }
+
+        p = parent;
+    }
+
+    println!("### path [{}] does not belongs to 'tests' source directory", path.as_path().display());
+    false
 }
 
 
@@ -228,6 +295,26 @@ pub fn caller_crate_root() -> PathBuf {
 }
 */
 
+
+/*
+pub fn import_my_crate() -> Option<proc_macro2::TokenStream> {
+    use quote::quote;
+    use syn::Ident;
+    use proc_macro2::Span;
+    use proc_macro_crate::{ crate_name, FoundCrate };
+
+    let found_crate_opt = crate_name("project01"); //.expect("my-crate is present in `Cargo.toml`");
+
+    found_crate_opt.map(|found_crate|
+        match found_crate {
+            FoundCrate::Itself => quote!( crate::Something ),
+            FoundCrate::Name(name) => {
+                let ident = Ident::new(&name, Span::call_site());
+                quote!( #ident::Something )
+            }
+        }).ok()
+}
+*/
 
 pub trait AddPMTokenStream {
     fn add_ts(& mut self, other_ts: proc_macro::TokenStream);

@@ -15,6 +15,7 @@ mod test_proc_macro;
 mod amount_parse_old;
 pub mod parse_amount;
 pub mod amount_ops;
+mod type_path_usage;
 
 
 // pub use crate::parse_amount::{ ParseAmountError as amount::parse_amount::ParseAmountError };
