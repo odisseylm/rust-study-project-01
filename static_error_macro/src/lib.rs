@@ -10,11 +10,76 @@ use crate::macro_util::*;
 use crate::error_source::*;
 
 
-#[proc_macro_derive(MyStaticStructError, attributes(StaticStructErrorType, do_not_generate_display, do_not_generate_debug))]
+fn bt_type(path_mode: InternalTypePathMode, type_name: &str) -> syn::Type {
+
+    let path_to_bt_type = match path_mode {
+        InternalTypePathMode::CratePath => "crate::util::backtrace::",
+        InternalTypePathMode::ExternalCratePath => "::project01::util::backtrace::",
+    };
+
+    let use_path_expr_str = &format!("{}{}", path_to_bt_type, type_name);
+
+    let as_expr: syn::Type = syn::parse_str(use_path_expr_str)
+        .expect(&format!("Internal error: invalid 'type' expr [{}].", use_path_expr_str));
+    as_expr
+}
+
+fn use_bt_types_expr(path_mode: InternalTypePathMode) -> Vec<proc_macro2::TokenStream> { // Vec<proc_macro2::TokenStream> {
+    vec!(
+        "BacktraceInfo",
+        "NewBacktracePolicy", "InheritBacktracePolicy",
+        "BacktraceCopyProvider", "BacktraceBorrowedProvider",
+    ).iter()
+        .map(|bt_type_name| bt_type(path_mode, bt_type_name))
+        .map(|bt_type| quote!( use #bt_type; ))
+        .collect_vec()
+}
+
+
+#[proc_macro_derive(MyStaticStructError, attributes(StaticStructErrorType, do_not_generate_display, do_not_generate_debug, static_struct_error_internal_type_path_mode))]
 pub fn my_static_struct_error_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // construct a representation of Rust code as a syntax tree that we can manipulate
     let ast: syn::DeriveInput = syn::parse(input)
         .expect("No input for derive macro MyStaticStructError");
+
+    // use std::str::FromStr;
+    // use syn::spanned::Spanned;
+
+    // let span1 = ast.span();
+    // eprintln!("### ast.span : {:?}", span1);
+
+    // let span2 = span1.span();
+    // let ssss = span2.source_text();
+    // eprintln!("### span2 : {:?}", span2);
+    // eprintln!("### ssss : {:?}", ssss);
+    //
+    // eprintln!("### caller : {:?}", core::panic::Location::caller());
+    //
+    // let span = proc_macro::Span::call_site();
+    // eprintln!("### proc_macro::Span : {:?}", span);
+
+    // Use the `Span` to get the `SourceFile`
+    // let source_file = span.source_file();
+    // eprintln!("### source_file : {:?}", source_file);
+
+    // let crate_root = caller_crate_root();
+    // eprintln!("### crate_root: {:?}", crate_root);
+
+    // Get the path of the `SourceFile`
+    // let path: PathBuf = source_file.path();
+
+
+    // https://rustc-dev-guide.rust-lang.org/macro-expansion.html#the-call-site-hierarchy
+    //
+    // MacroExpander
+    // ResolverExpand
+    // ExpnId
+    // ExpnData::parent
+    // SyntaxContext
+    // SyntaxContext::root().
+    // SyntaxExtension
+    // rustc_ast::tokenstream::TokenStream
+    //  ExpnData::call_site
 
     // build the trait implementation
     impl_my_static_struct_error(&ast)
@@ -25,6 +90,25 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
     let do_not_generate_display = find_attr(&ast.attrs, "do_not_generate_display").is_some();
     let do_not_generate_debug = find_attr(&ast.attrs, "do_not_generate_debug").is_some();
+
+    let internal_type_path_mode = get_internal_type_path_mode(ast);
+
+    let use_all_bt_types = use_bt_types_expr(internal_type_path_mode);
+    #[allow(non_snake_case)]
+    let BacktraceInfo = bt_type(internal_type_path_mode, "BacktraceInfo");
+    #[allow(non_snake_case)]
+    let NewBacktracePolicy = bt_type(internal_type_path_mode, "NewBacktracePolicy");
+    // #[allow(non_snake_case)]
+    // let InheritBacktracePolicy = bt_type(internal_type_path_mode, "InheritBacktracePolicy");
+    #[allow(non_snake_case)]
+    let BacktraceCopyProvider = bt_type(internal_type_path_mode, "BacktraceCopyProvider");
+    // #[allow(non_snake_case)]
+    // let BacktraceBorrowedProvider = bt_type(internal_type_path_mode, "BacktraceBorrowedProvider");
+
+    let root_type_path = match internal_type_path_mode {
+        InternalTypePathMode::CratePath => quote! { crate },
+        InternalTypePathMode::ExternalCratePath => quote! { :: project01 },
+    };
 
     let source_field_exists: bool = if let syn::Data::Struct(ref data) = ast.data {
         if let syn::Fields::Named(ref fields) = data.fields {
@@ -46,14 +130,15 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         impl #error_type_name {
 
             pub fn new(kind: ErrorKind) -> Self {
-                use crate::util::backtrace::NewBacktracePolicy;
-                use crate::util::BacktraceInfo;
-                Self { kind, backtrace: BacktraceInfo::new() }
+                // Not needed there but just to test usage of generated 'use'.
+                #(#use_all_bt_types)*
+
+                Self { kind, backtrace: #BacktraceInfo ::new() }
             }
-            pub fn with_backtrace(kind: ErrorKind, backtrace_policy: crate::util::backtrace::NewBacktracePolicy) -> Self {
-                use crate::util::backtrace::NewBacktracePolicy;
-                use crate::util::BacktraceInfo;
-                Self { kind, backtrace: BacktraceInfo::new_by_policy(backtrace_policy) }
+            pub fn with_backtrace(kind: ErrorKind, backtrace_policy: #NewBacktracePolicy) -> Self {
+                // #(#use_bt)*
+
+                Self { kind, backtrace: #BacktraceInfo ::new_by_policy(backtrace_policy) }
             }
         }
 
@@ -65,25 +150,25 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         #[allow(unused_qualifications)]
         impl #error_type_name {
             pub fn new(kind: ErrorKind) -> Self {
-                use crate::util::backtrace::NewBacktracePolicy;
-                use crate::util::BacktraceInfo;
-                Self { kind, backtrace: BacktraceInfo::new(), source: ErrorSource::NoSource }
+                // #(#use_all_bt_types)*
+
+                Self { kind, backtrace: #BacktraceInfo ::new(), source: ErrorSource::NoSource }
             }
-            pub fn with_backtrace(kind: ErrorKind, backtrace_policy: crate::util::backtrace::NewBacktracePolicy) -> Self {
-                use crate::util::backtrace::NewBacktracePolicy;
-                use crate::util::BacktraceInfo;
-                Self { kind, backtrace: BacktraceInfo::new_by_policy(backtrace_policy), source: ErrorSource::NoSource }
+            pub fn with_backtrace(kind: ErrorKind, backtrace_policy: #NewBacktracePolicy) -> Self {
+                // #(#use_all_bt_types)*
+
+                Self { kind, backtrace: #BacktraceInfo ::new_by_policy(backtrace_policy), source: ErrorSource::NoSource }
             }
             pub fn with_source(kind: ErrorKind, source: ErrorSource) -> Self {
-                use crate::util::backtrace::NewBacktracePolicy;
-                use crate::util::BacktraceInfo;
-                Self { kind, backtrace: BacktraceInfo::inherit_from(&source), source }
+                // #(#use_all_bt_types)*
+
+                Self { kind, backtrace: #BacktraceInfo ::inherit_from(&source), source }
             }
             pub fn with_from<ES: Into<ErrorSource>>(kind: ErrorKind, source: ES) -> Self {
-                use crate::util::backtrace::NewBacktracePolicy;
-                use crate::util::BacktraceInfo;
+                // #(#use_all_bt_types)*
+
                 let src = source.into();
-                Self { kind, backtrace: BacktraceInfo::inherit_from(&src), source: src }
+                Self { kind, backtrace: #BacktraceInfo ::inherit_from(&src), source: src }
             }
         }
 
@@ -93,8 +178,8 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
-        impl crate::util::backtrace::BacktraceCopyProvider for #error_type_name {
-            fn provide_backtrace(&self) -> crate::util::BacktraceInfo { self.backtrace.clone() }
+        impl #BacktraceCopyProvider for #error_type_name {
+            fn provide_backtrace(&self) -> #BacktraceInfo { self.backtrace.clone() }
         }
     };
 
@@ -114,18 +199,25 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
         impl core::fmt::Debug for #error_type_name {
+
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                if self.backtrace.is_captured() {
-                    let src_contains_captured_backtrace: bool = crate::util::backtrace::BacktraceCopyProvider::contains_self_or_child_captured_backtrace(&self.source);
-                    if src_contains_captured_backtrace {
-                        write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?}, source: {:?} }}"), self.kind, self.source)
-                    } else {
-                        write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?}, source: {:?}, backtrace: {} }}"), self.kind, self.source, self.backtrace)
-                    }
-                } else {
-                    write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?}, source: {:?} }}"), self.kind, self.source)
-                }
+                // crate::util::error::__private::error_debug_fmt_impl(
+                #root_type_path ::util::error::__private::error_debug_fmt_impl(
+                    f, self, stringify!(#error_type_name), |er|&er.kind, |er|&er.source, |er|&er.backtrace)
             }
+
+            // fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            //     if self.backtrace.is_captured() {
+            //         let src_contains_captured_backtrace: bool = #bt_package_path BacktraceCopyProvider::contains_self_or_child_captured_backtrace(&self.source);
+            //         if src_contains_captured_backtrace {
+            //             write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?}, source: {:?} }}"), self.kind, self.source)
+            //         } else {
+            //             write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?}, source: {:?}, backtrace: {} }}"), self.kind, self.source, self.backtrace)
+            //         }
+            //     } else {
+            //         write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?}, source: {:?} }}"), self.kind, self.source)
+            //     }
+            // }
         }
     };
 
@@ -154,7 +246,16 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
 
 
-#[proc_macro_derive(MyStaticStructErrorSource, attributes(struct_error_type, from_error_kind, no_source_backtrace, do_not_generate_display, do_not_generate_std_error))]
+#[proc_macro_derive(MyStaticStructErrorSource,
+    attributes(
+        struct_error_type,
+        from_error_kind,
+        no_source_backtrace,
+        do_not_generate_display,
+        do_not_generate_std_error,
+        static_struct_error_source_internal_type_path_mode, static_struct_error_internal_type_path_mode,
+    )
+)]
 pub fn my_static_struct_error_source_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let ast = syn::parse(input)
         .expect("No input source for derive macro MyStaticStructErrorSource.");
@@ -167,6 +268,20 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     // let do_not_generate_debug = find_attr(&ast.attrs, "do_not_generate_debug").is_some();
     let do_not_generate_display = find_attr(&ast.attrs, "do_not_generate_display").is_some();
     let do_not_generate_std_error = find_attr(&ast.attrs, "do_not_generate_std_error").is_some();
+
+    let internal_type_path_mode = get_internal_type_path_mode(ast);
+
+    // let use_all_bt_types = use_bt_types_expr(internal_type_path_mode);
+    #[allow(non_snake_case)]
+    let BacktraceInfo = bt_type(internal_type_path_mode, "BacktraceInfo");
+    // #[allow(non_snake_case)]
+    // let NewBacktracePolicy = bt_type(internal_type_path_mode, "NewBacktracePolicy");
+    // #[allow(non_snake_case)]
+    // let InheritBacktracePolicy = bt_type(internal_type_path_mode, "InheritBacktracePolicy");
+    #[allow(non_snake_case)]
+    let BacktraceCopyProvider = bt_type(internal_type_path_mode, "BacktraceCopyProvider");
+    // #[allow(non_snake_case)]
+    // let BacktraceBorrowedProvider = bt_type(internal_type_path_mode, "BacktraceBorrowedProvider");
 
     let struct_error_type_attr: Option<&syn::Attribute> = find_attr(&ast.attrs, "struct_error_type");
     let struct_error_type: Option<String> = struct_error_type_attr
@@ -194,9 +309,9 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         let is_arg_present = vr.first_arg_type.is_some();
 
         if !is_arg_present {
-            quote!(  ErrorSource:: #var_name  => { BacktraceInfo::empty() }     )
+            quote!(  ErrorSource:: #var_name  => { #BacktraceInfo ::empty() }     )
         } else if no_source_backtrace {
-            quote!(  ErrorSource:: #var_name (_)  => { BacktraceInfo::empty() }     )
+            quote!(  ErrorSource:: #var_name (_)  => { #BacktraceInfo ::empty() }     )
         } else {
             quote!(  ErrorSource:: #var_name (ref src)  => { src.provide_backtrace() }  )
         }
@@ -231,9 +346,9 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
 
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
-        impl crate::util::backtrace::BacktraceCopyProvider for ErrorSource {
-            fn provide_backtrace(&self) -> crate::util::BacktraceInfo {
-                use crate::util::BacktraceInfo;
+        impl #BacktraceCopyProvider for ErrorSource {
+            fn provide_backtrace(&self) -> #BacktraceInfo {
+                use #BacktraceInfo;
                 match self {
                     #(#err_src_bt_provider_impl_match_branches)*
                     // ErrorSource::NoSource => { BacktraceInfo::empty() }
@@ -242,7 +357,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
                 }
             }
             fn contains_self_or_child_captured_backtrace(&self) -> bool {
-                use crate::util::BacktraceInfo;
+                use #BacktraceInfo ;
                 match self {
                     #(#err_src_bt_provider_impl_match_branches2)*
                     // ErrorSource::NoSource => { false }
@@ -416,6 +531,8 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
                    || arg_str_type.is_eq_to_str("Box<dyn Error>") {
                 quote! { ErrorSource:: #var_name (ref src) => { Some(src.as_ref()) } }
             } else {
+                // T O D O: could we use some universal way with something like TryAsRef
+                // quote! { ErrorSource:: #var_name (ref src) => { Some(src.as_ref()) } }
                 quote! { ErrorSource:: #var_name (ref src) => { Some(src) } }
             }
         }).collect::<Vec<_>>();

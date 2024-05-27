@@ -1,133 +1,7 @@
+use assertables::{ assert_contains, assert_contains_as_result };
 
-/*
-mod util {
-
-    #[allow(unused_imports)]
-    pub use backtrace::BacktraceInfo;
-
-    pub mod backtrace {
-        #[derive(Clone)]
-        pub struct BacktraceInfo {
-            backtrace: String,
-        }
-
-        impl std::fmt::Display for BacktraceInfo {
-            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                if self.backtrace == "empty" {
-                    write!(f, "empty") }
-                else {
-                    // '\n' as sign of captured backtrace
-                    write!(f, "\n{}", self.backtrace)
-                }
-            }
-        }
-        impl std::fmt::Debug for BacktraceInfo {
-            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(f, "BacktraceInfo {{ backtrace: {} }}", self.backtrace)
-            }
-        }
-
-        impl BacktraceInfo {
-            pub fn new() -> Self { Self::capture() }
-            pub fn from_str(str: &str) -> Self { Self::from_string(str.to_string()) }
-            pub fn from_string(string: String) -> Self { BacktraceInfo { backtrace: string } }
-            pub fn copy_from(_backtrace: std::backtrace::Backtrace) -> Self { Self::capture() }
-            pub fn new_by_policy(backtrace_policy: NewBacktracePolicy) -> Self {
-                use NewBacktracePolicy::*;
-                match backtrace_policy {
-                    Default | Capture => { Self::capture() }
-                    NoBacktrace       => { Self::empty() }
-                    ForceCapture      => { Self::force_capture() }
-                }
-            }
-            pub fn capture() -> Self { BacktraceInfo { backtrace: "capture".to_string() } }
-            pub fn force_capture() -> Self { BacktraceInfo { backtrace: "force_capture".to_string() } }
-            pub fn empty() -> Self { BacktraceInfo { backtrace: "empty".to_string() } }
-            pub fn inherit_from<BP: BacktraceCopyProvider>(source: &BP) -> Self {
-                Self::inherit_with_policy(source, InheritBacktracePolicy::Default)
-            }
-            pub fn inherit_with_policy<BP: BacktraceCopyProvider>(source: &BP, backtrace_policy: InheritBacktracePolicy) -> Self {
-                Self::reuse(source.provide_backtrace(), backtrace_policy)
-            }
-            fn reuse(source_bt: BacktraceInfo, backtrace_policy: InheritBacktracePolicy) -> Self {
-                use InheritBacktracePolicy::*;
-                match backtrace_policy {
-                    Inherit                     => { source_bt }
-                    Default | InheritOrCapture  => { if source_bt.is_captured() { source_bt } else { Self::capture() } }
-                    InheritOrForceCapture       => { if source_bt.is_captured() { source_bt } else { Self::force_capture() } }
-                }
-            }
-            pub fn is_captured(&self) -> bool { self.backtrace != "empty" && self.backtrace != "disabled" }
-        }
-
-        pub enum NewBacktracePolicy {
-            Default,
-            NoBacktrace,
-            Capture,
-            ForceCapture,
-        }
-        // should be used together with other/source/from Error
-        pub enum InheritBacktracePolicy {
-            Default,
-            Inherit,
-            InheritOrCapture,
-            InheritOrForceCapture,
-        }
-
-        pub trait BacktraceCopyProvider {
-            // Using 'provide' name causes warning 'unstable_name_collision'
-            fn provide_backtrace(&self) -> BacktraceInfo;
-            fn contains_self_or_child_captured_backtrace(&self) -> bool {
-                self.provide_backtrace().is_captured()
-            }
-        }
-        #[allow(dead_code)]
-        pub trait BacktraceBorrowedProvider { // or better Moved???
-            fn provide_backtrace(&self) -> BacktraceInfo;
-        }
-
-
-        impl BacktraceCopyProvider for anyhow::Error {
-            fn provide_backtrace(&self) -> BacktraceInfo {
-                BacktraceInfo::from_string(self.backtrace().to_string())
-            }
-        }
-
-        fn std_backtrace_of_std_err<'a>(_err: & 'a dyn std::error::Error) -> Option<& 'a std::backtrace::Backtrace> {
-            None
-        }
-
-        impl BacktraceCopyProvider for Box<dyn std::error::Error> {
-            fn provide_backtrace(&self) -> BacktraceInfo { Some(self.as_ref()).provide_backtrace() }
-            fn contains_self_or_child_captured_backtrace(&self) -> bool {
-                Some(self.as_ref()).contains_self_or_child_captured_backtrace()
-            }
-        }
-
-        impl<'a> BacktraceCopyProvider for Option<& 'a dyn std::error::Error> {
-            fn provide_backtrace(&self) -> BacktraceInfo {
-                let std_err_opt = self.and_then(|err| std_backtrace_of_std_err(err));
-                std_err_opt.map(|bt| BacktraceInfo::from_string(bt.to_string())).unwrap_or(BacktraceInfo::empty())
-            }
-
-            fn contains_self_or_child_captured_backtrace(&self) -> bool {
-                let std_err_opt = self.and_then(|err| std_backtrace_of_std_err(err));
-                std_err_opt.map(|bt| bt.status() == std::backtrace::BacktraceStatus::Captured).unwrap_or(false)
-            }
-        }
-
-        impl BacktraceCopyProvider for String {
-            fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
-            fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
-        }
-
-    }
-}
-
-
-pub mod parse_currency {
-    // use static_error_macro::MyStaticStructError;
-    use crate::util::backtrace::BacktraceInfo;
+pub mod parse_currency_another_01 {
+    // use project01::util::backtrace::BacktraceInfo;
 
     // #[derive(Debug, PartialEq, Copy, Clone)]
     #[derive(Debug, thiserror::Error)]
@@ -143,11 +17,12 @@ pub mod parse_currency {
     // #[derive(Debug, PartialEq, Copy, Clone)]
     #[derive(thiserror::Error)]
     #[derive(static_error_macro::MyStaticStructError)]
+    #[static_struct_error_internal_type_path_mode(ExternalCratePath)]
     pub struct CurrencyFormatError {
         pub kind: ErrorKind,
         // #[source]
         // pub source: ErrorSource,
-        pub backtrace: BacktraceInfo,
+        pub backtrace: project01::util::backtrace::BacktraceInfo,
     }
 
     // #[derive(thiserror::Error)]
@@ -184,10 +59,10 @@ pub mod parse_currency {
 
 
 
-pub mod parse_amount {
+pub mod parse_amount_another_01 {
     use bigdecimal::ParseBigDecimalError;
-    use crate::util::backtrace::{ BacktraceInfo };
-    use crate::parse_currency::CurrencyFormatError;
+    use crate::parse_currency_another_01::CurrencyFormatError;
+    use project01::util::backtrace::BacktraceInfo;
 
     #[derive(Debug, thiserror::Error)]
     #[derive(Copy, Clone)]
@@ -203,6 +78,7 @@ pub mod parse_amount {
 
     #[derive(thiserror::Error)]
     #[derive(static_error_macro::MyStaticStructError)]
+    #[static_struct_error_internal_type_path_mode(ExternalCratePath)]
     pub struct ParseAmountError {
         pub kind: ErrorKind,
         #[source]
@@ -212,12 +88,12 @@ pub mod parse_amount {
     }
 
     // It can be generated by macro
-    #[derive(thiserror::Error)] // T O D O: remove
     #[derive(static_error_macro::MyStaticStructErrorSource)]
     // Full type or short type can be used: ParseAmountError/crate::entities::amount::parse_amount::ParseAmountError
     // #[struct_error_type(ParseAmountError)]
     #[struct_error_type(ParseAmountError)]
-    #[do_not_generate_std_error]
+    #[static_struct_error_internal_type_path_mode(ExternalCratePath)]
+    // #[do_not_generate_std_error]
     pub enum ErrorSource {
         // #[error("No source")]
         NoSource,
@@ -232,8 +108,8 @@ pub mod parse_amount {
         #[no_source_backtrace]
         ParseBigDecimalError(ParseBigDecimalError),
 
-        // #[no_source_backtrace] // T O D O: make it automatic
-        // SomeWithoutSource,
+        // #[no_source_backtrace]
+        SomeWithoutSource,
 
         // With duplicated types
         // #[error("Some1FromString")]
@@ -343,44 +219,45 @@ pub mod parse_amount {
 //                     Error without source - simple variant.
 // -------------------------------------------------------------------------------------------------
 
+use project01::util::backtrace::NewBacktracePolicy;
+use project01::util::backtrace::BacktraceCopyProvider;
+
 #[test]
 fn test_currency_format_error_new() {
-    use parse_currency::*;
-    use crate::util::backtrace::BacktraceCopyProvider;
+    use parse_currency_another_01::*;
 
     let err = CurrencyFormatError::new(ErrorKind::NoCurrency);
-    assert_eq!(err.backtrace.to_string(), "\ncapture");
+    assert_contains!(err.backtrace.to_string(), "capture");
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_eq!(err.provide_backtrace().to_string(), "\ncapture");
+    assert_contains!(err.provide_backtrace().to_string(), "capture");
 }
 
 #[test]
 fn test_currency_format_error_with_backtrace() {
-    use parse_currency::*;
-    use crate::util::backtrace::NewBacktracePolicy;
-    use crate::util::backtrace::BacktraceCopyProvider;
+    use parse_currency_another_01::*;
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::IncorrectCurrencyFormat, NewBacktracePolicy::Default);
-    assert_eq!(err.backtrace.to_string(), "\ncapture");
+    assert_contains!(err.backtrace.to_string(), "capture");
     assert_eq!(err.kind, ErrorKind::IncorrectCurrencyFormat);
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Capture);
-    assert_eq!(err.backtrace.to_string(), "\ncapture");
-    assert_eq!(err.provide_backtrace().to_string(), "\ncapture");
+    assert_contains!(err.backtrace.to_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_string(), "capture");
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::NoBacktrace);
-    assert_eq!(err.backtrace.to_string(), "empty");
-    assert_eq!(err.provide_backtrace().to_string(), "empty");
+    assert_eq!(err.backtrace.to_string(), "Backtrace disabled");
+    assert_eq!(err.provide_backtrace().to_string(), "Backtrace disabled");
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture);
-    assert_eq!(err.backtrace.to_string(), "\nforce_capture");
-    assert_eq!(err.provide_backtrace().to_string(), "\nforce_capture");
+    assert_contains!(err.backtrace.to_string(), "force_capture");
+    assert_contains!(err.provide_backtrace().to_string(), "force_capture");
 }
 
 #[test]
 fn test_currency_format_error_other() {
-    use parse_currency::*;
-    use crate::util::backtrace::NewBacktracePolicy;
+    use parse_currency_another_01::*;
+    // use crate::util::backtrace::NewBacktracePolicy;
+    use project01::util::backtrace::NewBacktracePolicy;
     use anyhow::__private::kind::TraitKind;
     use thiserror::__private::AsDynError;
     use std::any::Any;
@@ -412,112 +289,103 @@ fn test_currency_format_error_other() {
 
 #[test]
 fn test_amount_format_error_new() {
-    use parse_amount::*;
-    use crate::util::backtrace::BacktraceCopyProvider;
+    use parse_amount_another_01::*;
 
     let err = ParseAmountError::new(ErrorKind::NoCurrency);
-    assert_eq!(err.backtrace.to_string(), "\ncapture");
+    assert_contains!(err.backtrace.to_string(), "capture");
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_eq!(err.provide_backtrace().to_string(), "\ncapture");
+    assert_contains!(err.provide_backtrace().to_string(), "capture");
 }
 
 
 #[test]
 fn test_amount_format_error_with_backtrace() {
-    use parse_amount::*;
-    use crate::util::backtrace::NewBacktracePolicy;
-    use crate::util::backtrace::BacktraceCopyProvider;
+    use parse_amount_another_01::*;
 
     let err = ParseAmountError::with_backtrace(ErrorKind::IncorrectCurrency, NewBacktracePolicy::Default);
-    assert_eq!(err.backtrace.to_string(), "\ncapture");
+    assert_contains!(err.backtrace.to_string(), "capture");
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
 
     let err = ParseAmountError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Capture);
-    assert_eq!(err.backtrace.to_string(), "\ncapture");
-    assert_eq!(err.provide_backtrace().to_string(), "\ncapture");
+    assert_contains!(err.backtrace.to_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_string(), "capture");
 
     let err = ParseAmountError::with_backtrace(ErrorKind::IncorrectAmount, NewBacktracePolicy::NoBacktrace);
-    assert_eq!(err.backtrace.to_string(), "empty");
-    assert_eq!(err.provide_backtrace().to_string(), "empty");
+    assert_eq!(err.backtrace.to_string(), "Backtrace disabled");
+    assert_eq!(err.provide_backtrace().to_string(), "Backtrace disabled");
 
     let err = ParseAmountError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture);
-    assert_eq!(err.backtrace.to_string(), "\nforce_capture");
-    assert_eq!(err.provide_backtrace().to_string(), "\nforce_capture");
+    assert_contains!(err.backtrace.to_string(), "force_capture");
+    assert_contains!(err.provide_backtrace().to_string(), "force_capture");
 }
 
 
 #[test]
 fn test_amount_format_error_with_source() {
-    use parse_amount::*;
-    use crate::util::backtrace::NewBacktracePolicy;
-    use crate::util::backtrace::BacktraceCopyProvider;
+    use parse_amount_another_01::*;
 
     let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::NoSource);
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_eq!(err.backtrace.to_string(), "\ncapture");
-    assert_eq!(err.provide_backtrace().to_string(), "\ncapture");
+    assert_contains!(err.backtrace.to_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_string(), "capture");
 
     let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::CurrencyFormatError(
-        parse_currency::CurrencyFormatError::with_backtrace(parse_currency::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture)));
+        parse_currency_another_01::CurrencyFormatError::with_backtrace(parse_currency_another_01::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture)));
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_eq!(err.backtrace.to_string(), "\nforce_capture");
-    assert_eq!(err.provide_backtrace().to_string(), "\nforce_capture");
+    assert_contains!(err.backtrace.to_string(), "force_capture");
+    assert_contains!(err.provide_backtrace().to_string(), "force_capture");
 
     let err = ParseAmountError::with_from(ErrorKind::NoCurrency,
-        parse_currency::CurrencyFormatError::with_backtrace(parse_currency::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture));
+        parse_currency_another_01::CurrencyFormatError::with_backtrace(parse_currency_another_01::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture));
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_eq!(err.backtrace.to_string(), "\nforce_capture");
-    assert_eq!(err.provide_backtrace().to_string(), "\nforce_capture");
+    assert_contains!(err.backtrace.to_string(), "force_capture");
+    assert_contains!(err.provide_backtrace().to_string(), "force_capture");
 
     let err = ParseAmountError::with_source(ErrorKind::IncorrectCurrency, ErrorSource::CurrencyFormatError(
-        parse_currency::CurrencyFormatError::with_backtrace(parse_currency::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture)));
+        parse_currency_another_01::CurrencyFormatError::with_backtrace(parse_currency_another_01::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture)));
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
-    assert_eq!(err.backtrace.to_string(), "\nforce_capture");
-    assert_eq!(err.provide_backtrace().to_string(), "\nforce_capture");
+    assert_contains!(err.backtrace.to_string(), "force_capture");
+    assert_contains!(err.provide_backtrace().to_string(), "force_capture");
 
     let err = ParseAmountError::with_from(ErrorKind::IncorrectCurrency,
-        parse_currency::CurrencyFormatError::with_backtrace(parse_currency::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture));
+        parse_currency_another_01::CurrencyFormatError::with_backtrace(parse_currency_another_01::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture));
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
-    assert_eq!(err.backtrace.to_string(), "\nforce_capture");
-    assert_eq!(err.provide_backtrace().to_string(), "\nforce_capture");
+    assert_contains!(err.backtrace.to_string(), "force_capture");
+    assert_contains!(err.provide_backtrace().to_string(), "force_capture");
 
     let err = ParseAmountError::with_source(ErrorKind::IncorrectAmount, ErrorSource::ParseBigDecimalError(
         bigdecimal::ParseBigDecimalError::Other("some decimal error".to_string())));
     assert_eq!(err.kind, ErrorKind::IncorrectAmount);
-    assert_eq!(err.backtrace.to_string(), "\ncapture");
-    assert_eq!(err.provide_backtrace().to_string(), "\ncapture");
+    assert_contains!(err.backtrace.to_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_string(), "capture");
 
     let err = ParseAmountError::with_from(ErrorKind::IncorrectAmount,
         bigdecimal::ParseBigDecimalError::Other("some decimal error".to_string()));
     assert_eq!(err.kind, ErrorKind::IncorrectAmount);
-    assert_eq!(err.backtrace.to_string(), "\ncapture");
-    assert_eq!(err.provide_backtrace().to_string(), "\ncapture");
+    assert_contains!(err.backtrace.to_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_string(), "capture");
 }
 
 
 #[test]
 fn test_amount_format_error_with_source_666() {
-    use parse_amount::*;
-    // use crate::util::backtrace::NewBacktracePolicy;
-    use crate::util::backtrace::BacktraceCopyProvider;
+    use parse_amount_another_01::*;
 
-    // let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::SomeWithoutSource); // T O D O: use it
-    let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::Some1FromInt(666));
+    let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::SomeWithoutSource);
+    // let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::Some1FromInt(666));
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_eq!(err.backtrace.to_string(), "\ncapture");
-    assert_eq!(err.provide_backtrace().to_string(), "\ncapture");
+    assert_contains!(err.backtrace.to_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_string(), "capture");
 }
 
 
 #[test]
 fn test_amount_format_error_src() {
-    use parse_amount::ErrorSource;
-    use parse_currency::{ CurrencyFormatError, ErrorKind };
-    use crate::util::backtrace::NewBacktracePolicy;
-    use crate::util::backtrace::BacktraceCopyProvider;
+    use parse_amount_another_01::ErrorSource;
+    use parse_currency_another_01::{ CurrencyFormatError, ErrorKind };
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Default);
-    assert_eq!(err.provide_backtrace().to_string(), "\ncapture");
+    assert_contains!(err.provide_backtrace().to_string(), "capture");
 
     let err_src: ErrorSource = err.into();
     // assert_eq!(err_src.type_id(), ErrorSource::CurrencyFormatError())
@@ -535,7 +403,7 @@ fn fn_anyhow_02() -> Result<i32, anyhow::Error> { fn_anyhow_01() }
 
 #[test]
 fn test_amount_format_error_src_from_anyhow() {
-    use parse_amount::*;
+    use parse_amount_another_01::*;
     use std::fmt::Write;
 
     let err_res = fn_anyhow_02();
@@ -560,4 +428,3 @@ fn test_amount_format_error_src_from_anyhow() {
 // fn test_failed() {
 //     assert!(false, "It should fail.")
 // }
-*/

@@ -2,7 +2,7 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 use crate::entities::amount::Amount;
 use crate::entities::currency::Currency;
-use crate::util::BacktraceInfo;
+use crate::util::backtrace::BacktraceInfo;
 
 
 #[allow(dead_code)] // it is used by private test
@@ -130,7 +130,7 @@ fn aa_01() {
 //
 pub mod parse_amount_old {
     use bigdecimal::ParseBigDecimalError;
-    use crate::util::BacktraceInfo;
+    use crate::util::backtrace::BacktraceInfo;
     use crate::entities::currency::parse_currency::CurrencyFormatError;
 
     //noinspection DuplicatedCode
@@ -147,6 +147,8 @@ pub mod parse_amount_old {
 
     #[derive(thiserror::Error)]
     #[derive(static_error_macro::MyStaticStructError)]
+    #[do_not_generate_debug]
+    #[static_struct_error_internal_type_path_mode(CratePath)]
     pub struct ParseAmountError {
         pub kind: ErrorKind,
         #[source]
@@ -160,6 +162,7 @@ pub mod parse_amount_old {
     #[derive(static_error_macro::MyStaticStructErrorSource)]
     // Full type or short type can be used: ParseAmountError/crate::entities::amount::parse_amount::ParseAmountError
     #[struct_error_type(ParseAmountError)]
+    #[static_struct_error_internal_type_path_mode(CratePath)]
     // #[do_not_generate_std_error]
     pub enum ErrorSource {
         //#[error("No source")]
@@ -201,6 +204,13 @@ pub mod parse_amount_old {
 
         // #[error("SomeStdError")]
         StdError(Box<dyn std::error::Error>),
+    }
+
+    impl core::fmt::Debug for ParseAmountError {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            crate::util::error::__private::error_debug_fmt_impl(
+                f, self, "ParseAmountError", |er|&er.kind, |er|&er.source, |er|&er.backtrace)
+        }
     }
 
     /*

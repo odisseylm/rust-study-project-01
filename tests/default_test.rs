@@ -1,7 +1,7 @@
 // #![feature(error_generic_meber_access)]
 
 use derivative::Derivative;
-use project01::util::BacktraceInfo;
+use project01::util::backtrace::BacktraceInfo;
 
 #[derive(Debug)]
 struct ParamsStruct {

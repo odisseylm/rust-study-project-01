@@ -109,7 +109,7 @@ impl<'a> core::ops::Div<& 'a BigDecimal> for &Amount {
 
 pub mod ops {
     use crate::entities::currency::Currency;
-    use crate::util::BacktraceInfo;
+    use crate::util::backtrace::BacktraceInfo;
 
     #[derive(Debug, thiserror::Error)]
     #[derive(Copy, Clone)]

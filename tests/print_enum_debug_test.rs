@@ -1,5 +1,5 @@
 use project01::util::backtrace::NewBacktracePolicy;
-use project01::util::BacktraceInfo;
+use project01::util::backtrace::BacktraceInfo;
 
 
 #[allow(dead_code)]

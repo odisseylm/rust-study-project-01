@@ -74,6 +74,7 @@ fn keep_only_last_file_path_part3<'a>(path: &str) -> &str {
 
 use std::cmp::PartialEq;
 use std::fmt::Display;
+use strum_macros::Display;
 
 pub fn print_current_stack_trace() {
     let stacktrace = std::backtrace::Backtrace::capture();
@@ -112,6 +113,7 @@ fn std_backtrace_status_to_inner_not_captured(b: &std::backtrace::Backtrace) -> 
 }
 
 
+#[derive(Debug, Display)]
 pub enum NewBacktracePolicy {
     Default,
     NoBacktrace,
@@ -120,6 +122,7 @@ pub enum NewBacktracePolicy {
 }
 
 // should be used together with other/source/from Error
+#[derive(Debug, Display)]
 pub enum InheritBacktracePolicy {
     Default,
     Inherit,

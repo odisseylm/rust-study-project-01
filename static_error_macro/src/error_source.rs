@@ -1,4 +1,5 @@
-use crate::macro_util::type_path_to_string;
+use syn::DeriveInput;
+use crate::macro_util::{attr_list_as_string, determine_internal_type_path_mode_by_macro_src_pos, find_attr, InternalTypePathMode, type_path_to_string};
 
 
 // #[derive(Debug)] // T O D O: fix/uncomment
@@ -90,4 +91,27 @@ pub fn get_error_source_enum_variants<'a>(ast: & 'a syn::DeriveInput) -> ErrorSo
         name: enum_name,
         variants,
     }
+}
+
+
+pub fn get_internal_type_path_mode(ast: &syn::DeriveInput) -> InternalTypePathMode {
+    use core::str::FromStr;
+
+    let internal_type_path_mode_attr = find_attr(&ast.attrs, "static_struct_error_internal_type_path_mode")
+        .or_else(|| find_attr(&ast.attrs, "static_struct_error_source_internal_type_path_mode"))
+        .or_else(|| find_attr(&ast.attrs, "error_source_internal_type_path_mode"))
+        .or_else(|| find_attr(&ast.attrs, "internal_type_path_mode"));
+
+    internal_type_path_mode_attr.and_then(|type_mode_attr| {
+            attr_list_as_string(type_mode_attr)
+                .map(|s| InternalTypePathMode::from_str(s.as_str())
+                    .expect("static_struct_error_internal_type_path_mode has incorrect value. Possible value: CratePath or ExternalCratePath.")
+                )
+        })
+        .or_else(|| determine_by_macro_src_pos(ast))
+        .unwrap_or(InternalTypePathMode::CratePath)
+}
+
+fn determine_by_macro_src_pos(ast: &DeriveInput) -> Option<InternalTypePathMode> {
+    determine_internal_type_path_mode_by_macro_src_pos(ast, "project01")
 }

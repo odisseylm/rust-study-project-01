@@ -155,7 +155,7 @@ fn test_div_amount_by_zero() {
 }
 
 
-// TODO: find good/professional BigDecimal (like in Java)
+// T O D O: find good/professional BigDecimal (like in Java)
 #[test]
 fn test_div_expects_endless_fraction() { // BUT no endless fraction (comparing with java).
 

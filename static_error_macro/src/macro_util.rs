@@ -1,3 +1,5 @@
+use core::str::FromStr;
+use strum_macros::Display;
 
 
 pub fn find_attr<'a>(attrs: & 'a Vec<syn::Attribute>, attr_name: &str) -> Option<& 'a syn::Attribute> {
@@ -149,6 +151,82 @@ pub fn type_to_string(t: &syn::Type) -> String {
 pub fn type_to_string_without_spaces(t: &syn::Type) -> String {
     remove_spaces_from_type_string(&type_to_string(t))
 }
+
+#[derive(Debug, Display)]
+#[derive(Copy, Clone)]
+pub enum InternalTypePathMode {
+    CratePath,
+    ExternalCratePath,
+}
+
+#[derive(Debug)]
+pub enum InternalTypePathModeFromStrError { Fuck } // TODO: use
+
+impl FromStr for InternalTypePathMode {
+    type Err = InternalTypePathModeFromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "CratePath" | "crate_path" => Ok(InternalTypePathMode::CratePath),
+            "ExternalCratePath" | "ExtCratePath" | "external_crate_path" | "ext_crate_path" => Ok(InternalTypePathMode::ExternalCratePath),
+            _ => Err(InternalTypePathModeFromStrError::Fuck),
+        }
+    }
+}
+
+
+pub fn determine_internal_type_path_mode_by_macro_src_pos(_ast: &syn::DeriveInput, _root_type_path_segment: &str) -> Option<InternalTypePathMode> {
+
+    // use syn::spanned::Spanned;
+    // let span = _ast.span();
+
+    // let span = span.span();
+    // let source_text = span.source_text();
+
+    // unstable now
+    // let source_file = span.source_file();
+    // TODO: impl:
+    //  * if it is located in 'tests' source dir, we need to use ExternalCratePath
+    //  * if it is located in 'src' source dir and current/nearest Cargo.toml [package].name = "project01", we need to use CratePath
+    //  * otherwise use ExternalCratePath
+
+    None
+}
+
+
+/*
+pub fn caller_crate_root() -> PathBuf {
+    let crate_name =
+        std::env::var("CARGO_PKG_NAME").expect("failed to read ENV var `CARGO_PKG_NAME`!");
+    let current_dir = std::env::current_dir().expect("failed to unwrap env::current_dir()!");
+    let search_entry = format!("name=\"{crate_name}\"");
+    for entry in walkdir::WalkDir::new(&current_dir)
+        .into_iter()
+        .filter_entry(|e| !e.file_name().eq_ignore_ascii_case("target"))
+    {
+        let Ok(entry) = entry else { continue };
+        if !entry.file_type().is_file() {
+            continue;
+        }
+        let Some(file_name) = entry.path().file_name() else { continue };
+        if !file_name.eq_ignore_ascii_case("Cargo.toml") {
+            continue;
+        }
+        let Ok(cargo_toml) = std::fs::read_to_string(&entry.path()) else {
+            continue
+        };
+        if cargo_toml
+            .chars()
+            .filter(|&c| !c.is_whitespace())
+            .collect::<String>()
+            .contains(search_entry.as_str())
+        {
+            return entry.path().parent().unwrap().to_path_buf();
+        }
+    }
+    current_dir
+}
+*/
 
 
 pub trait AddPMTokenStream {
