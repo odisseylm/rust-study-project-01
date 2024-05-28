@@ -205,9 +205,7 @@ impl FromStr for InternalTypePathMode {
 
 pub fn determine_internal_type_path_mode_by_macro_src_pos(_ast: &syn::DeriveInput, crate_name: &str) -> Option<InternalTypePathMode> {
 
-    // compile_log_warn!("### 00 determine_internal_type_path_mode_by_macro_src_pos");
-    // compile_log_warn!("### 01 determine_internal_type_path_mode_by_macro_src_pos: {}", 1234);
-    // compile_log_warn!("### 02 determine_internal_type_path_mode_by_macro_src_pos: {} {:?}", 1234, "arg2");
+    // test_compile_log();
 
     // simple hacky solution
     let building_crate_opt = std::env::var("CARGO_CRATE_NAME");
@@ -377,6 +375,28 @@ impl AddPM2TokenStreams for proc_macro::TokenStream {
             self.extend(as_ts);
         });
     }
+}
+
+
+
+#[allow(dead_code)]
+fn test_compile_log() {
+    eprintln!("\n-----------------------------------------------------------------");
+    println! ("### test_compile_log, println");
+    eprintln!("### test_compile_log, eprintln");
+
+    eprintln!("\n-----------------------------------------------------------------");
+    compile_log_warn!("### 00 determine_internal_type_path_mode_by_macro_src_pos");
+    compile_log_warn!("### 01 determine_internal_type_path_mode_by_macro_src_pos: {}", 1234);
+    compile_log_warn!("### 02 determine_internal_type_path_mode_by_macro_src_pos: {} {:?}", 1234, "arg2");
+
+    eprintln!("\n-----------------------------------------------------------------");
+    compile_log_trace!("### test compile log, trace; args: {} {:?}", 1234, "arg2");
+    compile_log_debug!("### test compile log, debug; args: {} {:?}", 1234, "arg2");
+    compile_log_info! ("### test compile log, info ; args: {} {:?}", 1234, "arg2");
+    compile_log_warn! ("### test compile log, warn ; args: {} {:?}", 1234, "arg2");
+    compile_log_error!("### test compile log, error; args: {} {:?}", 1234, "arg2");
+    eprintln!("\n\n");
 }
 
 

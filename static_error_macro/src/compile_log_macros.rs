@@ -1,10 +1,20 @@
 
 
-// #[allow(dead_code)]
-// #[allow(unused_macros)]
-// macro_rules! compile_log_warn {
-//     ($($x:tt)*) => { println!($($x)*) }
-// }
+
+#[allow(unused_macros, dead_code)]
+macro_rules! compile_log_level_error { () => (1) }
+#[allow(unused_macros, dead_code)]
+macro_rules! compile_log_level_warn  { () => (2) }
+#[allow(unused_macros, dead_code)]
+macro_rules! compile_log_level_info  { () => (3) }
+#[allow(unused_macros, dead_code)]
+macro_rules! compile_log_level_debug { () => (4) }
+#[allow(unused_macros, dead_code)]
+macro_rules! compile_log_level_trace { () => (5) }
+
+
+#[allow(unused_macros, dead_code)]
+macro_rules! compile_log_level { () => { compile_log_level_warn!() } }
 
 
 // It is not called 'compile_warn' because there is no support for 'lint', for allow/warn macros.
@@ -15,18 +25,58 @@
 // Thanks a lot to nebulaeandstars :-)
 //
 // #[macro_export] // Not allowed there => 'cannot export macro_rules! macros from a `proc-macro` crate type currently'
-#[allow(dead_code)]
-#[allow(unused_macros)]
+#[allow(unused_macros, dead_code)]
 macro_rules! compile_log_warn {
 
     ($fmt_str:literal) => {{
-        eprintln!(concat!("Compile WARN [{}:{}] ", $fmt_str), file!(), line!());
+        if compile_log_level!() >= compile_log_level_warn!() { eprintln!(concat!("Compile WARN  [{}:{}] ", $fmt_str), file!(), line!()); };
     }};
 
     ($fmt_str:literal, $($args:expr),*) => {{
-        eprintln!(concat!("Compile WARN [{}:{}] ", $fmt_str), file!(), line!(), $($args),*);
+        if compile_log_level!() >= compile_log_level_warn!() { eprintln!(concat!("Compile WARN  [{}:{}] ", $fmt_str), file!(), line!(), $($args),*); };
     }};
 }
+
+#[allow(unused_macros, dead_code)]
+macro_rules! compile_log_error {
+    ($fmt_str:literal) => {{
+        if compile_log_level!() >= compile_log_level_error!() { eprintln!(concat!("Compile ERROR [{}:{}] ", $fmt_str), file!(), line!()); };
+    }};
+    ($fmt_str:literal, $($args:expr),*) => {{
+        if compile_log_level!() >= compile_log_level_error!() { eprintln!(concat!("Compile ERROR [{}:{}] ", $fmt_str), file!(), line!(), $($args),*); };
+    }};
+}
+
+#[allow(unused_macros, dead_code)]
+macro_rules! compile_log_info {
+    ($fmt_str:literal) => {{
+        if compile_log_level!() >= compile_log_level_info!() { println!(concat!("Compile INFO  [{}:{}] ", $fmt_str), file!(), line!()); };
+    }};
+    ($fmt_str:literal, $($args:expr),*) => {{
+        if compile_log_level!() >= compile_log_level_info!() { println!(concat!("Compile INFO  [{}:{}] ", $fmt_str), file!(), line!(), $($args),*); };
+    }};
+}
+
+#[allow(unused_macros, dead_code)]
+macro_rules! compile_log_debug {
+    ($fmt_str:literal) => {{
+        if compile_log_level!() >= compile_log_level_debug!() { println!(concat!("Compile DEBUG [{}:{}] ", $fmt_str), file!(), line!()); };
+    }};
+    ($fmt_str:literal, $($args:expr),*) => {{
+        if compile_log_level!() >= compile_log_level_debug!() { println!(concat!("Compile DEBUG [{}:{}] ", $fmt_str), file!(), line!(), $($args),*); };
+    }};
+}
+
+#[allow(unused_macros, dead_code)]
+macro_rules! compile_log_trace {
+    ($fmt_str:literal) => {{
+        if compile_log_level!() >= compile_log_level_trace!() { println!(concat!("Compile TRACE [{}:{}] ", $fmt_str), file!(), line!()); };
+    }};
+    ($fmt_str:literal, $($args:expr),*) => {{
+        if compile_log_level!() >= compile_log_level_trace!() { println!(concat!("Compile TRACE [{}:{}] ", $fmt_str), file!(), line!(), $($args),*); };
+    }};
+}
+
 
 
 /*
