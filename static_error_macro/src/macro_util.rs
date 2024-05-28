@@ -5,29 +5,29 @@ use strum_macros::Display;
 // A bit hacky, but working solution.
 // #[macro_use]
 // #[path = "./compile_log_macros.rs"]
-// mod compile_log_macros; // import compile_warn
+// mod compile_log_macros; // to import compile_log_warn
 
 // Another a bit hacky, but working solution.
 include!("./compile_log_macros.rs");
 
-// #[macro_use(compile_warn)]
+// #[macro_use(compile_log_warn)]
 // use crate::compile_log_macros;
 
 // // Does not work!
 // extern crate self as xxx;
-// use xxx::compile_log_macros::compile_warn;
+// use xxx::compile_log_macros::compile_log_warn;
 
 // Does not work!
-// use crate::compile_log_macros::compile_warn;
+// use crate::compile_log_macros::compile_log_warn;
 
 // Does not work!
-// #[macro_use(compile_warn)]
+// #[macro_use(compile_log_warn)]
 // use crate::compile_log_macros;
 
 // Does not work!
-// #[macro_use(compile_warn)]
+// #[macro_use(compile_log_warn)]
 // extern crate self as xxx;
-// use xxx::compile_log_macros::compile_warn;
+// use xxx::compile_log_macros::compile_log_warn;
 
 
 pub fn find_attr<'a>(attrs: & 'a Vec<syn::Attribute>, attr_name: &str) -> Option<& 'a syn::Attribute> {
@@ -205,9 +205,9 @@ impl FromStr for InternalTypePathMode {
 
 pub fn determine_internal_type_path_mode_by_macro_src_pos(_ast: &syn::DeriveInput, crate_name: &str) -> Option<InternalTypePathMode> {
 
-    // compile_warn!("### 00 determine_internal_type_path_mode_by_macro_src_pos");
-    // compile_warn!("### 01 determine_internal_type_path_mode_by_macro_src_pos: {}", 1234);
-    // compile_warn!("### 02 determine_internal_type_path_mode_by_macro_src_pos: {} {:?}", 1234, "arg2");
+    // compile_log_warn!("### 00 determine_internal_type_path_mode_by_macro_src_pos");
+    // compile_log_warn!("### 01 determine_internal_type_path_mode_by_macro_src_pos: {}", 1234);
+    // compile_log_warn!("### 02 determine_internal_type_path_mode_by_macro_src_pos: {} {:?}", 1234, "arg2");
 
     // simple hacky solution
     let building_crate_opt = std::env::var("CARGO_CRATE_NAME");
@@ -255,8 +255,8 @@ pub fn determine_internal_type_path_mode_by_macro_src_pos(_ast: &syn::DeriveInpu
                 NotFound(_) => Some(InternalTypePathMode::ExternalCratePath),
                 // CargoManifestDirNotSet(..) | CargoEnvVariableNotSet(..) | FailedGettingWorkspaceManifestPath(..)
                 //     | CouldNotRead(..) | InvalidToml(..) | CrateNotFound(..)
-                //     => { compile_warn!("WARN: cannot determine current crate: {:?}", err); None }
-                _ =>  { compile_warn!("WARN: cannot determine current crate: {:?}", err); None }
+                //     => { compile_log_warn!("Cannot determine current crate: {:?}", err); None }
+                _ =>  { compile_log_warn!("Cannot determine current crate: {:?}", err); None }
             }
         }
     }

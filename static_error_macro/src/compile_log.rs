@@ -1,4 +1,14 @@
 
+
+/*
+
+// There is no sense to implement own log::Log for compile time
+// because (in rust) it should be MANUALLY installed/set up (for example, in java logger uses auto set up):
+//  * what is impossible for macros
+//  * dangerous/ambiguous in case if every macros sets up its own log implementation.
+//
+// For that reasons I've decided to use my own compile_log_warn macros
+
 use std::sync::Once;
 use log::{ Record, Level, Metadata, LevelFilter };
 
@@ -38,3 +48,5 @@ pub fn init_compile_logger() {
             .unwrap()
     )
 }
+
+*/
