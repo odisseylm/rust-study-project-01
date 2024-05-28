@@ -99,7 +99,7 @@ fn test_log4rs_01() {
     // See https://github.com/estk/log4rs/blob/main/docs/Configuration.md
 
     // log4rs::init_file("log4rs.yml", Default::default()).test_unwrap();
-    log4rs::init_file("./resources/log4rs.yml", Default::default()).test_unwrap();
+    log4rs::init_file("../test_resources/log4rs.yml", Default::default()).test_unwrap();
 
     println!("-----------------------------\ntest_log_env\n");
     trace!("### test_log => trace: {}", 123);
