@@ -17,6 +17,8 @@
 
  - Run tests: `cargo test`
  - Run tests with output: `cargo test -- --nocapture`
+ - Run tests with output: `cargo test test_log_env --test log_env_test -- --nocapture --exact`
+ - Run tests with output: `cargo test test_log_env --test log_env_test -- --nocapture`  # ??? --exact
 
 
 Docs test

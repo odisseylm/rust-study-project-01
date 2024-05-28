@@ -2,3 +2,4 @@
 /target/**
 static_error_macro/target/**
 /.idea/**
+/.log/**

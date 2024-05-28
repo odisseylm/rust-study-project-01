@@ -1,6 +1,6 @@
 // #![cfg(feature = "error_generic_member_access")]
 
-use std::fmt;
+use std::{env, fmt};
 use std::fmt::write;
 use std::io::Write;
 use project01::entities::currency::{ Currency, CurrencyFormatError, USD };
@@ -17,6 +17,14 @@ pub fn factorial(n: u128) -> u128 {
 
 fn main() {
     println!("Hello, world!");
+
+    println!("Current dir: {:?}", env::current_dir());
+    println!("std::env MY_VAR1 = {:?}", env::var("MY_VAR1"));
+
+    dotenv::dotenv().ok();
+    println!("std::env MY_VAR1 = {:?}", env::var("MY_VAR1"));
+
+    println!("dotenv::var MY_VAR1 = {:?}", dotenv::var("MY_VAR1"));
 
     let usd_literal: &str = "USD";
     let _usd_str: String = usd_literal.to_string();

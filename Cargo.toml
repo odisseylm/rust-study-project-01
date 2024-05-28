@@ -49,6 +49,11 @@ derivative = "2.2.0"
 once_cell = "1.19.0"
 #lazy_static = "1.4.0"
 
+log = "0.4.21"
+env_logger = "0.11.3"
+log4rs = "1.3.0"
+
+dotenv = "0.15.0"
 
 # unused manifest key: tests
 #[test]
