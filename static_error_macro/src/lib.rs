@@ -1,6 +1,11 @@
 mod macro_util;
 mod error_source;
 
+mod compile_log;
+
+#[macro_use]
+mod compile_log_macros;
+
 
 use std::collections::{ HashMap, HashSet };
 use itertools::*;
