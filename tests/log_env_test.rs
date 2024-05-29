@@ -114,9 +114,44 @@ fn test_log4rs_01() {
 
 
 #[test]
+#[ignore]
 fn test_loading_env_from_env_file() {
     println!("MY_VAR1 = {:?}", env::var("MY_VAR1"));
 
     println!("\n\n");
     assert!(false, "Test failure");
+}
+
+
+#[allow(dead_code)]
+enum Enum1 {
+    Variant1,
+    Variant2(i32),
+    Variant3(i32, & 'static str),
+    Variant4 { _x: i32 },
+    Variant5 { _x: i32, _y: i32 },
+}
+
+
+#[test]
+fn test_matches_macro() {
+    let v1: Option<i32> = Some(123);
+
+    let v11 = match v1 {
+        None    => { false }
+        Some(_) => { true  }
+    };
+    println!("v11: {:?}", v11);
+
+    let v21 = matches!(v1, Some(_));
+    println!("v21: {:?}", v21);
+
+    // let v22 = matches!(v1, Err(_));
+    // println!("v22: {:?}", v22);
+    //
+    // let v23 = matches!(v1, Enum1::Variant1);
+    // println!("v23: {:?}", v23);
+    //
+    // let v24 = matches!(v1, Enum1::Variant2(_));
+    // println!("v24: {:?}", v24);
 }

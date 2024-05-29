@@ -533,8 +533,6 @@ impl BacktraceCopyProvider for &usize {
 
 // T O D O: seems it do NOT work at all or are not stable
 pub fn enable_backtrace() {
-    is_anyhow_backtrace_enabled(); // to init as early as possible, TODO: make it auto-initialized
-
     let to_enable_value = "full"; // or "1" or "full" ??
     let rust_backtrace_cur_value: String = std::env::var("RUST_BACKTRACE").unwrap_or("".to_string());
 
@@ -545,8 +543,6 @@ pub fn enable_backtrace() {
 
 // T O D O: seems it do NOT work at all or are not stable
 pub fn disable_backtrace() {
-    is_anyhow_backtrace_enabled(); // to init as early as possible,
-
     // std::env::set_var("RUST_BACKTRACE", "0");
     std::env::remove_var("RUST_BACKTRACE");
 }
@@ -557,14 +553,28 @@ pub fn disable_backtrace() {
 
 
 // static INITIAL_RUST_BACKTRACE_ENABLED: once_cell::sync::Lazy<bool> = once_cell::sync::Lazy::new(||
-//     {println!("### FUCK Lazy");
+//     { !!! lazy is not suitable for it (env var can be updated later) !!!
 //     std::env::var("RUST_BACKTRACE").map(|v| v == "1" || v == "false").unwrap_or(false)});
 
+// Not compiled.
 // static INITIAL_RUST_BACKTRACE_ENABLED: once_cell::sync::Lazy<bool> = once_cell::sync::Lazy::new(|| is_anyhow_backtrace_enabled_impl());
-static INITIAL_RUST_BACKTRACE_ENABLED: once_cell::sync::Lazy<bool> = once_cell::sync::Lazy::new(|| {
-    println!("### Initializing of INITIAL_RUST_BACKTRACE_ENABLED!!!"); // T O D O: remove after test stabilization
-    is_anyhow_backtrace_enabled_impl()
+//
+#[allow(dead_code)]
+static INITIAL_RUST_BACKTRACE_ENABLED_OLD: once_cell::sync::Lazy<bool> = once_cell::sync::Lazy::new(|| {
+    let enabled = is_anyhow_backtrace_enabled_impl();
+    println!("### Initializing of INITIAL_RUST_BACKTRACE_ENABLED!!! ({})", enabled);
+    enabled
 });
+
+#[static_init::dynamic]
+static INITIAL_RUST_BACKTRACE_ENABLED: bool = {
+    use crate::util::obj_ext::ValExt;
+
+    std::env::var("RUST_BACKTRACE")
+        .map(|rust_bt_val| rust_bt_val.as_str().is_one_of3("1", "full", "short"))
+        .unwrap_or(false)
+        .also(|enabled| println!("### Initializing of INITIAL_RUST_BACKTRACE_ENABLED!!! ({})", enabled))
+};
 
 
 // use lazy_static::lazy_static;
@@ -578,6 +588,7 @@ pub fn is_anyhow_backtrace_enabled() -> bool {
 }
 
 
+#[allow(dead_code)]
 fn is_anyhow_backtrace_enabled_impl() -> bool {
     use std::fmt::Write;
 
