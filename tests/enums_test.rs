@@ -89,7 +89,7 @@ struct Abcdef {
 }
 
 
-#[repr(u8)] // T O D O: Why it successfully compiled? How does it work?
+#[repr(u8)]
 #[allow(dead_code)]
 enum CEnum2 {
     Unit = 3,

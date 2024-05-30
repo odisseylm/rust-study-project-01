@@ -531,7 +531,7 @@ impl BacktraceCopyProvider for &usize {
 //                               Enable/disable backtrace
 // -------------------------------------------------------------------------------------------------
 
-// T O D O: seems it do NOT work at all or are not stable
+// T O D O: seems it does NOT work at all or are not stable
 pub fn enable_backtrace() {
     let to_enable_value = "full"; // or "1" or "full" ??
     let rust_backtrace_cur_value: String = std::env::var("RUST_BACKTRACE").unwrap_or("".to_string());
@@ -541,7 +541,7 @@ pub fn enable_backtrace() {
     }
 }
 
-// T O D O: seems it do NOT work at all or are not stable
+// T O D O: seems it does NOT work at all or are not stable
 pub fn disable_backtrace() {
     // std::env::set_var("RUST_BACKTRACE", "0");
     std::env::remove_var("RUST_BACKTRACE");
@@ -576,6 +576,18 @@ static INITIAL_RUST_BACKTRACE_ENABLED: bool = {
         .also(|enabled| println!("### Initializing of INITIAL_RUST_BACKTRACE_ENABLED!!! ({})", enabled))
 };
 
+// The same using 'ctor' crate
+/*
+#[ctor::ctor]
+static INITIAL_RUST_BACKTRACE_ENABLED_2: bool = {
+    use crate::util::obj_ext::ValExt;
+
+    std::env::var("RUST_BACKTRACE")
+        .map(|rust_bt_val| rust_bt_val.as_str().is_one_of3("1", "full", "short"))
+        .unwrap_or(false)
+        .also(|enabled| println!("### Initializing of INITIAL_RUST_BACKTRACE_ENABLED (02)!!! ({})", enabled))
+};
+*/
 
 // use lazy_static::lazy_static;
 // lazy_static! {

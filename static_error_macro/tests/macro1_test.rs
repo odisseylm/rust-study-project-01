@@ -501,7 +501,7 @@ fn test_amount_format_error_with_source_666() {
     // use crate::util::backtrace::NewBacktracePolicy;
     use crate::util::backtrace::BacktraceCopyProvider;
 
-    // let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::SomeWithoutSource); // T O D O: use it
+    // let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::SomeWithoutSource);
     let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::Some1FromInt(666));
     assert_eq!(err.kind, ErrorKind::NoCurrency);
     assert_eq!(err.backtrace.to_string(), "\ncapture");

@@ -1,5 +1,12 @@
 
 
+#[ctor::ctor]
+static INITIAL_CTOR_2: bool = {
+    println!("### INITIAL_CTOR_2");
+    true
+};
+
+
 #[static_init::dynamic]
 static L1: Vec<i32> = vec![1,2,3,4,5,6];
 

@@ -8,6 +8,7 @@ mod compile_log_macros;
 
 
 use std::collections::{ HashMap, HashSet };
+use if_chain::if_chain;
 use itertools::*;
 
 use quote::quote;
@@ -81,6 +82,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
     let BacktraceCopyProvider = bt_type(int_type_path_mode, "BacktraceCopyProvider");
 
 
+    /*
     let source_field_exists: bool = if let syn::Data::Struct(ref data) = ast.data {
         if let syn::Fields::Named(ref fields) = data.fields {
             fields.named.iter().any(|f|
@@ -93,6 +95,20 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         // T O D O: how to write it shortly (without 2 else->false)
         else { false }
     } else { false };
+    */
+
+    let source_field_exists: bool = if_chain! {
+        if let syn::Data::Struct(ref data) = ast.data;
+        if let syn::Fields::Named(ref fields) = data.fields;
+        then {
+            fields.named.iter().any(|f|
+                f.ident
+                .as_ref()
+                .map(|ident_name| ident_name == "source")
+                .unwrap_or(false)
+            )
+        } else { false }
+    };
 
     let err_impl_without_source = quote! {
 
