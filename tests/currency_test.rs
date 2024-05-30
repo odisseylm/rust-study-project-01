@@ -1,8 +1,9 @@
 mod common;
 
+use std::any::Any;
 use std::str::FromStr;
 use project01::{make_currency, make_currency_b };
-use project01::entities::currency::{ Currency, make_currency_b, make_currency };
+use project01::entities::currency::{Currency, make_currency_b, make_currency, CurrencyFormatError};
 use project01::entities::currency::{ EUR, USD, };
 use common::TestResultUnwrap;
 
@@ -156,10 +157,26 @@ fn macro_impossible_make_wrong_const_literal_currency_for_wrong_length() {
 #[test]
 fn impossible_make_wrong_const_literal_currency_for_non_lowercase() {
     // make_currency("usd");
-    let result = std::panic::catch_unwind(|| make_currency("usd"));
+    let result: Result<Currency, Box<dyn Any + Send + 'static>> = std::panic::catch_unwind(|| make_currency("usd"));
     assert!(result.is_err());
-    // T O D O: how to get error message???
-    //assert_eq!(result.unwrap_err(), "dsd");
+
+    let err: Box<dyn Any + Send> = result.unwrap_err();
+
+    // You're more likely to want this:
+    let err_type_id = err.type_id();
+    println!("### err_type_id: {:?}", err_type_id);
+
+    // type_name() can be used only if type exists (it is generic function)
+    // let err_type_name = err.as_ref().type_name();
+    // println!("### err_type_id: {:?}", err_type_name);
+
+    let _as_currency_format_error = err.downcast_ref::<CurrencyFormatError>(); // None
+    let _as_string = err.downcast_ref::<String>(); // None
+    let as_str = err.downcast_ref::<&str>();
+
+    println!("### err str: {:?}", as_str);
+
+    // assert!(false, "Test error to see stdout");
 }
 
 /*

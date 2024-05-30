@@ -74,6 +74,7 @@ fn keep_only_last_file_path_part3<'a>(path: &str) -> &str {
 
 use std::cmp::PartialEq;
 use std::fmt::Display;
+use log::warn;
 use strum_macros::Display;
 
 pub fn print_current_stack_trace() {
@@ -301,8 +302,8 @@ impl BacktraceInfo {
         }
     }
 
-    // T O D O: Do not use it manually. Use something like: self.inherit(), self.inherit_or_capture()/self.new_or()
-    // #[deprecated(note = "mainly for internal or automatic usage when container is cloned.")]
+    // Do not use it manually. Use something like: self.inherit(), self.inherit_or_capture()/self.new_or()
+    #[deprecated(note = "mainly for internal/automatic usage in macro when container is cloned.")]
     pub fn clone(&self) -> Self {
         if let Some(not_captured) = self.not_captured {
             BacktraceInfo { not_captured: Some(not_captured), inner: None }
@@ -411,8 +412,7 @@ impl std::fmt::Display for BacktraceInfo {
 
 fn backtrace_to_string_bt<B: Display>(bt: &B) -> BacktraceInfo {
     // TODO: do not use string by performance reason
-    // TODO: add warn logging
-    println!("WARN: Backtrace is copied by string!");
+    warn!("Backtrace is copied by string!");
     BacktraceInfo::from_string(bt.to_string())
 }
 

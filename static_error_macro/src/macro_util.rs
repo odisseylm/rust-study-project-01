@@ -188,7 +188,7 @@ pub enum InternalTypePathMode {
 }
 
 #[derive(Debug)]
-pub enum InternalTypePathModeFromStrError { Fuck } // TODO: use
+pub enum InternalTypePathModeFromStrError { IncorrectInternalTypePathModeFormat }
 
 impl FromStr for InternalTypePathMode {
     type Err = InternalTypePathModeFromStrError;
@@ -197,7 +197,7 @@ impl FromStr for InternalTypePathMode {
         match s {
             "InternalCratePath" | "internal_crate_path" => Ok(InternalTypePathMode::InternalCratePath),
             "ExternalCratePath" | "external_crate_path" => Ok(InternalTypePathMode::ExternalCratePath),
-            _ => Err(InternalTypePathModeFromStrError::Fuck),
+            _ => Err(InternalTypePathModeFromStrError::IncorrectInternalTypePathModeFormat),
         }
     }
 }
@@ -345,12 +345,15 @@ pub fn import_my_crate() -> Option<proc_macro2::TokenStream> {
 }
 */
 
+#[allow(dead_code)]
 pub trait AddPMTokenStream {
     fn add_ts(& mut self, other_ts: proc_macro::TokenStream);
 }
+#[allow(dead_code)]
 pub trait AddPM2TokenStream {
     fn add_pm2_ts(& mut self, other_ts: proc_macro2::TokenStream);
 }
+#[allow(dead_code)]
 pub trait AddPM2TokenStreams {
     fn add_pm2_tss(& mut self, other_ts: Vec<proc_macro2::TokenStream>);
 }
@@ -379,27 +382,6 @@ impl AddPM2TokenStreams for proc_macro::TokenStream {
 
 
 
-#[allow(dead_code)]
-fn test_compile_log() {
-    eprintln!("\n-----------------------------------------------------------------");
-    println! ("### test_compile_log, println");
-    eprintln!("### test_compile_log, eprintln");
-
-    eprintln!("\n-----------------------------------------------------------------");
-    compile_log_warn!("### 00 determine_internal_type_path_mode_by_macro_src_pos");
-    compile_log_warn!("### 01 determine_internal_type_path_mode_by_macro_src_pos: {}", 1234);
-    compile_log_warn!("### 02 determine_internal_type_path_mode_by_macro_src_pos: {} {:?}", 1234, "arg2");
-
-    eprintln!("\n-----------------------------------------------------------------");
-    compile_log_trace!("### test compile log, trace; args: {} {:?}", 1234, "arg2");
-    compile_log_debug!("### test compile log, debug; args: {} {:?}", 1234, "arg2");
-    compile_log_info! ("### test compile log, info ; args: {} {:?}", 1234, "arg2");
-    compile_log_warn! ("### test compile log, warn ; args: {} {:?}", 1234, "arg2");
-    compile_log_error!("### test compile log, error; args: {} {:?}", 1234, "arg2");
-    eprintln!("\n\n");
-}
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -418,5 +400,26 @@ mod tests {
         assert_eq!(remove_spaces_from_type_str("Box<dyn std::error::Error>"), "Box<dyn std::error::Error>");
         assert_eq!(remove_spaces_from_type_str(" Box < dyn std :: error :: Error > "), "Box<dyn std::error::Error>");
         assert_eq!(remove_spaces_from_type_str("  Box  <  dyn  std  ::  error  ::  Error  >  "), "Box<dyn std::error::Error>");
+    }
+
+    //noinspection RsUnresolvedPath
+    #[allow(dead_code)]
+    fn test_compile_log() {
+        eprintln!("\n-----------------------------------------------------------------");
+        println! ("### test_compile_log, println");
+        eprintln!("### test_compile_log, eprintln");
+
+        eprintln!("\n-----------------------------------------------------------------");
+        compile_log_warn!("### 00 determine_internal_type_path_mode_by_macro_src_pos");
+        compile_log_warn!("### 01 determine_internal_type_path_mode_by_macro_src_pos: {}", 1234);
+        compile_log_warn!("### 02 determine_internal_type_path_mode_by_macro_src_pos: {} {:?}", 1234, "arg2");
+
+        eprintln!("\n-----------------------------------------------------------------");
+        compile_log_trace!("### test compile log, trace; args: {} {:?}", 1234, "arg2");
+        compile_log_debug!("### test compile log, debug; args: {} {:?}", 1234, "arg2");
+        compile_log_info! ("### test compile log, info ; args: {} {:?}", 1234, "arg2");
+        compile_log_warn! ("### test compile log, warn ; args: {} {:?}", 1234, "arg2");
+        compile_log_error!("### test compile log, error; args: {} {:?}", 1234, "arg2");
+        eprintln!("\n\n");
     }
 }

@@ -3,8 +3,10 @@ mod error_source;
 
 mod compile_log;
 
-#[macro_use]
-mod compile_log_macros;
+// RustRover does not pick it up (however cargo does)
+// #[macro_use]
+// mod compile_log_macros;
+include!("./compile_log_macros.rs");
 
 
 use std::collections::{ HashMap, HashSet };
@@ -92,7 +94,6 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
                 .unwrap_or(false)
             )
         }
-        // T O D O: how to write it shortly (without 2 else->false)
         else { false }
     } else { false };
     */
@@ -163,7 +164,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         }
     };
 
-    let err_display_impl = quote! {
+    let err_display_impl = if do_not_generate_display { quote!() } else { quote! {
 
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
@@ -172,7 +173,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
                 write!(f, concat!(stringify!(#error_type_name), " {{ {} }}"), self.kind)
             }
         }
-    };
+    } };
 
     let err_debug_impl_with_source = quote! {
 
@@ -212,15 +213,26 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
     };
 
     let err_impl: proc_macro2::TokenStream = if source_field_exists { err_impl_with_source } else { err_impl_without_source };
-    let err_debug_impl: proc_macro2::TokenStream = if source_field_exists { err_debug_impl_with_source } else { err_debug_impl_without_source };
+    let err_debug_impl: proc_macro2::TokenStream = if do_not_generate_debug { quote!() } else {
+        if source_field_exists { err_debug_impl_with_source } else { err_debug_impl_without_source }
+    };
 
-    // T O D O: probably it can be done in some short standard way ??
-    let mut all = proc_macro::TokenStream::new();
-    all.add_pm2_ts(err_impl);
-    all.add_pm2_ts(err_backtrace_provider_impl);
-    if !do_not_generate_display { all.add_pm2_ts(err_display_impl) };
-    if !do_not_generate_debug { all.add_pm2_ts(err_debug_impl) };
-    all
+    // let mut all = proc_macro::TokenStream::new();
+    // all.add_pm2_ts(err_impl);
+    // all.add_pm2_ts(err_backtrace_provider_impl);
+    // if !do_not_generate_display { all.add_pm2_ts(err_display_impl) };
+    // if !do_not_generate_debug { all.add_pm2_ts(err_debug_impl) };
+    // all
+
+    // as separate var to avoid warn/error in RustRover
+    let out = quote! {
+        #err_impl
+        #err_backtrace_provider_impl
+        #err_display_impl
+        #err_debug_impl
+    };
+
+    out.into()
 }
 
 
@@ -445,7 +457,9 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
 
         let arg_type_as_string = type_to_string_without_spaces(var_arg_type);
         if duplicated_err_enum_src_types.contains(&arg_type_as_string) {
-            // T O D O: log.info()
+            compile_log_info!("'Into' is not implemented for {}.{} because there are others enum variants \
+            in [{}] with the same src/arg type [{}].",
+                error_source_enum.name, var_name, error_source_enum.name, arg_type_as_string);
             return None;
         }
 
@@ -585,17 +599,28 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         }
     };
 
-    let err_impl_ts: proc_macro::TokenStream = err_src_impl.into();
+    let err_impl_ts: proc_macro2::TokenStream = err_src_impl;
 
-    // T O D O: probably it can be concatenated in standard way.
-    let mut all = proc_macro::TokenStream::new();
-    all.add_ts(err_impl_ts);
-    all.add_pm2_tss(into_impl);
-    all.add_pm2_tss(from_impl);
-    all.add_pm2_ts(debug_err_src_impl);
-    all.add_pm2_ts(display_err_src_impl);
-    all.add_pm2_ts(std_error_err_src_impl);
-    all
+    // let mut all = proc_macro::TokenStream::new();
+    // all.add_ts(err_impl_ts);
+    // all.add_pm2_tss(into_impl);
+    // all.add_pm2_tss(from_impl);
+    // all.add_pm2_ts(debug_err_src_impl);
+    // all.add_pm2_ts(display_err_src_impl);
+    // all.add_pm2_ts(std_error_err_src_impl);
+    // all
+
+    // as separate var to avoid warn/error in RustRover
+    let out = quote! {
+        #err_impl_ts
+        #(#into_impl)*
+        #(#from_impl)*
+        #debug_err_src_impl
+        #display_err_src_impl
+        #std_error_err_src_impl
+    };
+
+    out.into()
 }
 
 

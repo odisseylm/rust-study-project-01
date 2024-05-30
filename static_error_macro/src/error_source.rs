@@ -1,8 +1,8 @@
 use crate::macro_util::{ attr_list_as_string, determine_internal_type_path_mode_by_macro_src_pos,
-                         find_attr, InternalTypePathMode, type_path_to_string };
+                         find_attr, InternalTypePathMode };
 
 
-// #[derive(Debug)] // T O D O: fix/uncomment
+#[derive(Debug)]
 pub struct ErrorSourceEnumVariant<'a> {
     pub variant: & 'a syn::Variant,
     pub name: & 'a syn::Ident,
@@ -15,13 +15,19 @@ pub struct ErrorSourceEnum<'a> {
 }
 
 
+/*
+
+use crate::macro_util::{ type_path_to_string };
+
+Seems it is needed in case of integration tests in THIS subproject.
+
 impl core::fmt::Debug for ErrorSourceEnumVariant<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         use syn::Type;
 
         let detailed_impl: Option<core::fmt::Result> = self.first_arg_type.and_then(|t| {
             if let Type::Path(ref type_path) = t {
-                    Some(write!(f, "ErrorSourceEnumVariant {{ name: {}, type: {} }}", self.name, type_path_to_string(&type_path)))
+                    Some(write!(f, "ErrorSourceEnumVariant {{ {}, type: {} }}", self.name, type_path_to_string(&type_path)))
             } else { None }
         });
 
@@ -50,10 +56,11 @@ impl core::fmt::Debug for ErrorSourceEnumVariant<'_> {
                 }
             };
 
-            write!(f, "ErrorSourceEnumVariant {{ name: {}, type: {} }}", self.name, as_str)
+            write!(f, "ErrorSourceEnumVariant {{ {}, type: {} }}", self.name, as_str)
         })
     }
 }
+*/
 
 
 
