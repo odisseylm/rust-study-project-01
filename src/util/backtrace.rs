@@ -303,7 +303,8 @@ impl BacktraceInfo {
     }
 
     // Do not use it manually. Use something like: self.inherit(), self.inherit_or_capture()/self.new_or()
-    #[deprecated(note = "mainly for internal/automatic usage in macro when container is cloned.")]
+    // #[deprecated(note = "mainly for internal/automatic usage in macro when container is cloned.")]
+    #[must_use = "mainly for internal/automatic usage in macro when container is cloned."]
     pub fn clone(&self) -> Self {
         if let Some(not_captured) = self.not_captured {
             BacktraceInfo { not_captured: Some(not_captured), inner: None }

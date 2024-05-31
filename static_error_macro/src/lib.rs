@@ -160,6 +160,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
         impl #BacktraceCopyProvider for #error_type_name {
+            #[warn(unused_must_use)]
             fn provide_backtrace(&self) -> #BacktraceInfo { self.backtrace.clone() }
         }
     };
