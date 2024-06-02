@@ -7,13 +7,15 @@ use assertables::{ assert_contains, assert_contains_as_result };
 use axum::body::{ BodyDataStream, Bytes };
 use axum::Json;
 use axum::response::{ IntoResponse, Response };
+use bigdecimal::BigDecimal;
 use chrono::{FixedOffset, TimeZone, Utc};
+use indoc::indoc;
 use project01::entities::account::{ self, Account, SSS_RO };
 use project01::entities::amount::Amount;
 use project01::entities::id::Id;
 use project01::util::obj_ext::ValRefExt;
 use project01::util::{ TestOptionUnwrap, TestResultUnwrap };
-use project01::util::test_unwrap::{TestResultDebugErrOps, TestResultDisplayErrOps, TestSringOps};
+use project01::util::test_unwrap::{ TestResultDebugErrOps, TestResultDisplayErrOps };
 
 
 #[test]
@@ -89,6 +91,7 @@ fn test_to_json() {
         )
     );
 
+    /*
     let r = serde_json::from_str::<Account>(r#"{"id":"1","userId":"2","amount":{"value":"123.44","currency":"USD"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#);
     let account = r.test_unwrap();
     println!("### r: {:?}", account);
@@ -100,10 +103,26 @@ fn test_to_json() {
     // updated_at: datetime_from_str("2024-05-31 22:29:57 +02:00"),
     assert_eq!(account.created_at, datetime_from_str("2022-05-31T08:29:30Z")); // or "2022-05-31 10:29:30 +02:00"
     assert_eq!(account.updated_at, datetime_from_str("2024-05-31 22:29:57 +02:00"));
+    */
+
+    let bd = BigDecimal::from_str("123.44444444444444444444444444444444444333").test_unwrap();
+    println!("### 01 bd: {}", bd);
 
 
-    let json_res = serde_json::from_str::<Account>(
-        r#"{
+    let r = serde_json::from_str::<Account>(r#"{"id":"1","userId":"2","amount":{"value":123.44444444444444444444444444444444444333,"currency":"USD"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#);
+    let account = r.test_unwrap();
+    println!("### r: {:?}", account);
+
+    assert_eq!(account.id, Id::from_str("1").test_unwrap());
+    assert_eq!(account.user_id, Id::from_str("2").test_unwrap());
+    assert_eq!(account.amount, Amount::from_str("123.44444444444444444444444444444444444333 USD").test_unwrap());
+    // created_at: datetime_from_str("2022-05-31 10:29:30 +02:00"),
+    // updated_at: datetime_from_str("2024-05-31 22:29:57 +02:00"),
+    assert_eq!(account.created_at, datetime_from_str("2022-05-31T08:29:30Z")); // or "2022-05-31 10:29:30 +02:00"
+    assert_eq!(account.updated_at, datetime_from_str("2024-05-31 22:29:57 +02:00"));
+
+
+    let json_res = serde_json::from_str::<Account>(indoc! {r#"{
             "id":"1",
             "userId":"2",
             "amount":{
@@ -112,10 +131,10 @@ fn test_to_json() {
             },
             "createdAt":"2022-05-31T08:29:30Z",
             "updatedAt":"2024-05-31T20:29:57Z"
-          }"#);
+          }"# });
     let err_str = json_res.err_to_test_debug_string();
-    println!("### err_str: {}", err_str);
-    assert_contains!(err_str.as_str(), r#"Error("ParseAmountError { No currency in amount }", line: 7, column: 13"#);
+    println!("### error str: {}", err_str);
+    assert_contains!(err_str.as_str(), r#"Error("ParseAmountError { No currency in amount }", line: 6, column: 16"#);
 
 
     let json_res = serde_json::from_str::<Account>(
@@ -262,7 +281,7 @@ trait Borrow222<T> {
 mod mutability_check {
     use std::borrow::Cow;
     use std::cell::RefCell;
-    use std::ops::{Deref, DerefMut };
+    // use std::ops::{Deref, DerefMut };
     use project01::util::TestResultUnwrap;
 
 
@@ -359,8 +378,8 @@ mod mutability_check {
         assert_eq!((&mut v).is_borrowable_mut(), true);
 
         let mut v = 123;
-        (&v).deref();
-        (&mut v).deref_mut();
+        // (&v).deref();
+        // (&mut v).deref_mut();
 
         // let rc = RefCell::new(SSS { x: 123});
         let mut rc: Box<SSS> = Box::new(SSS { x: 123 });

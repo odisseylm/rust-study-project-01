@@ -59,7 +59,7 @@ pub impl<T> TestSringOps for T /* where T: Debug */ {
 
 #[extension_trait::extension_trait]
 pub impl<V,E> TestResultDebugErrOps for Result<V,E> where E: Debug {
-    #[inline]
+    // #[inline] // warning: `#[inline]` is ignored on function prototypes
     #[track_caller]
     fn err_to_test_debug_string(self) -> String {
         self.err().test_unwrap().to_test_debug_string()
@@ -68,7 +68,7 @@ pub impl<V,E> TestResultDebugErrOps for Result<V,E> where E: Debug {
 
 #[extension_trait::extension_trait]
 pub impl<V,E> TestResultDisplayErrOps for Result<V,E> where E: core::fmt::Display {
-    #[inline]
+    // #[inline] // warning: `#[inline]` is ignored on function prototypes
     #[track_caller]
     fn err_to_test_display_string(self) -> String {
         self.err().test_unwrap().to_test_display_string()
