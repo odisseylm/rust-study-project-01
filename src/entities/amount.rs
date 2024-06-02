@@ -94,8 +94,9 @@ impl<'de> Deserialize<'de> for Amount {
         impl<'de> Visitor<'de> for FieldVisitor {
             type Value = Amount;
 
-            fn expecting(&self, formatter: &mut core::fmt::Formatter) -> std::fmt::Result {
-                todo!()
+            fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+                // actually it should not be used in our case
+                write!(formatter, r#"{{ value: 1234.5678, currency: EUR }}"#)
             }
             fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: MapAccess<'de> {
 
@@ -135,93 +136,11 @@ impl<'de> Deserialize<'de> for Amount {
                     .map_err(|e|to_de_ser_err_3232::<'de, A>(e)) ?;
 
                 if unexpected_count != 0 {
-                    // TODO: add line and column
+                    // T O D O: hm... It never works because list of expected fields is specified in call deserialize_struct
                     return Err(A::Error::custom("Amount json block has unexpected items."));
                 }
 
                 Ok(Amount { value: amount_value, currency: amount_currency })
-            }
-            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_string<E>(self, v: String) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-
-            fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-
-            fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-
-            fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-
-            fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_i128<E>(self, v: i128) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_char<E>(self, v: char) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_none<E>(self) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error> where D: Deserializer<'de> {
-                todo!()
-            }
-            fn visit_unit<E>(self) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-            fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error> where D: Deserializer<'de> {
-                todo!()
-            }
-            fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error> where A: SeqAccess<'de> {
-                todo!()
-            }
-            fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error> where A: EnumAccess<'de> {
-                todo!()
             }
         }
         let v = FieldVisitor{};
@@ -253,7 +172,7 @@ pub mod ops {
 
 
 impl core::fmt::Display for Amount {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{} {}", self.value, self.currency)
     }
 }

@@ -452,6 +452,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
+name = "extension-trait"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd65f1b59dd22d680c7a626cc4a000c1e03d241c51c3e034d2bc9f1e90734f9b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.65",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1108,6 +1119,7 @@ dependencies = [
  "derivative",
  "dotenv",
  "env_logger",
+ "extension-trait",
  "if_chain",
  "indoc",
  "inherent",

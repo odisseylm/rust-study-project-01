@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 
 // Actually this code is designed for unit test only,
@@ -36,5 +36,41 @@ impl<Ok> TestOptionUnwrap<Ok> for Option<Ok> {
     #[track_caller]
     fn test_unwrap(self) -> Ok {
         self.unwrap() // allowed
+    }
+}
+
+#[extension_trait::extension_trait]
+pub impl<T> TestSringOps for T /* where T: Debug */ {
+    #[track_caller]
+    fn to_test_debug_string(&self) -> String where Self: Debug {
+        let mut str_buf = String::new();
+        use std::fmt::Write;
+        write!(str_buf, "{:?}", self).test_unwrap();
+        str_buf
+    }
+    #[track_caller]
+    fn to_test_display_string(&self) -> String where Self: core::fmt::Display {
+        let mut str_buf = String::new();
+        use std::fmt::Write;
+        write!(str_buf, "{}", self).test_unwrap();
+        str_buf
+    }
+}
+
+#[extension_trait::extension_trait]
+pub impl<V,E> TestResultDebugErrOps for Result<V,E> where E: Debug {
+    #[inline]
+    #[track_caller]
+    fn err_to_test_debug_string(self) -> String {
+        self.err().test_unwrap().to_test_debug_string()
+    }
+}
+
+#[extension_trait::extension_trait]
+pub impl<V,E> TestResultDisplayErrOps for Result<V,E> where E: core::fmt::Display {
+    #[inline]
+    #[track_caller]
+    fn err_to_test_display_string(self) -> String {
+        self.err().test_unwrap().to_test_display_string()
     }
 }
