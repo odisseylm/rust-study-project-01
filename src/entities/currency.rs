@@ -2,10 +2,11 @@
 
 use std::char;
 use std::str::FromStr;
-
+use serde::{Deserialize, Serialize};
 
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Serialize, Deserialize)]
 pub struct Currency([u8;3]);
 
 impl core::fmt::Debug for Currency {

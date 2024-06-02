@@ -19,6 +19,10 @@ pub trait ValRefExt<T> {
         f(self);
         self
     }
+    fn also_ref_mut<F>(&mut self,f :F) -> &Self where F: FnOnce(&mut Self) {
+        f(self);
+        self
+    }
     #[inline]
     fn is_ref_one_of2(&self, v1: &Self, v2: &Self) -> bool where Self: Eq, T: Eq {
         self == v1 || self == v2

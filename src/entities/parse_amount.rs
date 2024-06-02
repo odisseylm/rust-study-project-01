@@ -59,6 +59,8 @@ pub enum ErrorKind {
     NoCurrency,
     #[error("Incorrect currency format")]
     IncorrectCurrency,
+    #[error("No amount in amount")]
+    NoAmount,
     #[error("Incorrect amount format")]
     IncorrectAmount,
 }

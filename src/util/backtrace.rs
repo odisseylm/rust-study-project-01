@@ -563,7 +563,7 @@ pub fn disable_backtrace() {
 #[allow(dead_code)]
 static INITIAL_RUST_BACKTRACE_ENABLED_OLD: once_cell::sync::Lazy<bool> = once_cell::sync::Lazy::new(|| {
     let enabled = is_anyhow_backtrace_enabled_impl();
-    println!("### Initializing of INITIAL_RUST_BACKTRACE_ENABLED!!! ({})", enabled);
+    println!("### Initializing of INITIAL_RUST_BACKTRACE_ENABLED!!! OLD ({})", enabled);
     enabled
 });
 

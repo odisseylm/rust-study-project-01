@@ -25,6 +25,7 @@ pub trait TestOptionUnwrap <Ok> {
 
 impl<Ok,Err: Debug> TestResultUnwrap<Ok,Err> for Result<Ok,Err> {
     #[inline]
+    #[track_caller]
     fn test_unwrap(self) -> Ok {
         self.unwrap() // allowed
     }
@@ -32,6 +33,7 @@ impl<Ok,Err: Debug> TestResultUnwrap<Ok,Err> for Result<Ok,Err> {
 
 impl<Ok> TestOptionUnwrap<Ok> for Option<Ok> {
     #[inline]
+    #[track_caller]
     fn test_unwrap(self) -> Ok {
         self.unwrap() // allowed
     }

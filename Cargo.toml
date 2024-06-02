@@ -60,12 +60,20 @@ log4rs = "1.3.0"
 
 dotenv = "0.15.0"
 
-# test
 inherent = "1.0.11"
+readonly = "0.2.12"
 
-chrono = "0.4.38"
+chrono = {  version = "0.4.38", features = ["default", "serde"] }
+chrono-tz = "0.9.0"
+time = "0.3.36"
+
 #type-rules = { version = "0.2.3", features = ["derive", "regex", "serde"] }
 type-rules = { version = "0.2.3", features = ["derive", "regex"] }
+
+axum = "0.7.5"
+#tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread"] }
+#tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread", "macros"] }
+tokio = { version = "1.38.0", features = ["full"] }
 
 # unused manifest key: tests
 #[test]
@@ -89,6 +97,10 @@ type-rules = { version = "0.2.3", features = ["derive", "regex"] }
 #test-case = "2.2.2"
 test-case = "*"
 assertables = "7.0.1"
+
+#assert_json = "0.1.0"
+assert-json-diff = "2.0.2"
+#jsondiff = "0.1.0"
 
 #assert-str = "0.1.0"
 #assert-text = "0.2.9"
