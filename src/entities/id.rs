@@ -2,7 +2,7 @@ use std::str::FromStr;
 use serde::Deserialize;
 use serde_with::serde_derive::Serialize;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[derive(Serialize, Deserialize)]
 #[derive(PartialEq)]
 pub struct Id(String);

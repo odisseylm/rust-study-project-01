@@ -8,6 +8,9 @@
  - `cargo expand entities::account --lib`
  - `cargo expand another_static_error_macro_test::parse_amount_another_01 --lib`
 
+ - `cargo tree`
+ - `cargo tree --edges features`
+
 # Build notes
 
  - Libraries should ignore Cargo.lock but binaries/applications should check-in Cargo.lock.

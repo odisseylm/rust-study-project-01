@@ -4,13 +4,13 @@ use std::mem::forget;
 use std::ops::{ Deref, DerefMut };
 use std::time::Instant;
 use assertables::{ assert_contains, assert_contains_as_result };
-use axum::body::{ BodyDataStream, Bytes };
-use axum::Json;
-use axum::response::{ IntoResponse, Response };
+// use axum::body::{ BodyDataStream, Bytes };
+// use axum::Json;
+// use axum::response::{ IntoResponse, Response };
 use bigdecimal::BigDecimal;
 use chrono::{FixedOffset, TimeZone, Utc};
 use indoc::indoc;
-use project01::entities::account::{ self, Account, SSS_RO };
+use project01::entities::account::{self, Account, new, SSS_RO};
 use project01::entities::amount::Amount;
 use project01::entities::id::Id;
 use project01::util::obj_ext::ValRefExt;
@@ -21,7 +21,7 @@ use project01::util::test_unwrap::{ TestResultDebugErrOps, TestResultDisplayErrO
 #[test]
 // #[allow(unused_mut)]
 fn test_to_json() {
-    let as_json_obj = Json(account_01());
+    // let as_json_obj = Json(account_01());
     // let aa: String = as_json_obj.into();
     // assert_eq!("gfgfg", aa);
     // let mut aa: Response = as_json_obj.into_response();
@@ -41,7 +41,7 @@ fn test_to_json() {
     let s = serde_json::to_string(&account_01()).test_unwrap();
     println!("###s: {}", s);
 
-    assert_eq!(s, r#"{"id":"1","userId":"2","amount":{"value":"123.44","currency":"USD"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#);
+    assert_eq!(s, r#"{"id":"1","userId":"2","amount":{"value":123.44,"currency":"USD"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#);
 
     // +++
     // Working but only one 'assert_json = "0.1.0"'
@@ -84,14 +84,55 @@ fn test_to_json() {
             {
             "id": "1",
             "userId": "2",
-            "amount": { "value":"123.44", "currency":"USD" },
+            "amount": { "value": 123.44, "currency":"USD" },
             "createdAt": "2022-05-31T08:29:30Z",
             "updatedAt": "2024-05-31T20:29:57Z",
             }
         )
     );
 
-    /*
+
+    let mut account33 = account_01();
+    let account1 = Account::new(new::Args {
+        id: account33.id.clone(),
+        user_id: account33.user_id.clone(),
+        amount: Amount::from_str("123.55555555555555555666666666666666677777 EUR").test_unwrap(),
+        created_at: account33.created_at.clone(),
+        updated_at: account33.updated_at.clone(),
+    });
+
+    let s = serde_json::to_string(&account1).test_unwrap();
+    println!("###s: {}", s);
+    assert_eq!(s, r#"{"id":"1","userId":"2","amount":{"value":123.55555555555555555666666666666666677777,"currency":"EUR"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#);
+
+    assert_json_diff::assert_json_eq!(
+        serde_json::Value::from_str(s.as_str()).test_unwrap(),
+        serde_json::json!(
+            {
+            "id": "1",
+            "userId": "2",
+            // assert_json_eq does not support too long numbers
+            "amount": { "value": 123.55555555555556, "currency":"EUR" },
+            "createdAt": "2022-05-31T08:29:30Z",
+            "updatedAt": "2024-05-31T20:29:57Z",
+            }
+        )
+    );
+
+    assert_json_diff::assert_json_eq!(
+        serde_json::Value::from_str(s.as_str()).test_unwrap(),
+        serde_json::json!(
+            {
+            "id": "1",
+            "userId": "2",
+            // assert_json_eq does not support too long numbers
+            "amount": { "value": 123.55555555555555555666666666666666677777, "currency":"EUR" },
+            "createdAt": "2022-05-31T08:29:30Z",
+            "updatedAt": "2024-05-31T20:29:57Z",
+            }
+        )
+    );
+
     let r = serde_json::from_str::<Account>(r#"{"id":"1","userId":"2","amount":{"value":"123.44","currency":"USD"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#);
     let account = r.test_unwrap();
     println!("### r: {:?}", account);
@@ -103,7 +144,6 @@ fn test_to_json() {
     // updated_at: datetime_from_str("2024-05-31 22:29:57 +02:00"),
     assert_eq!(account.created_at, datetime_from_str("2022-05-31T08:29:30Z")); // or "2022-05-31 10:29:30 +02:00"
     assert_eq!(account.updated_at, datetime_from_str("2024-05-31 22:29:57 +02:00"));
-    */
 
     let bd = BigDecimal::from_str("123.44444444444444444444444444444444444333").test_unwrap();
     println!("### 01 bd: {}", bd);

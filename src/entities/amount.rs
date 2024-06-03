@@ -1,15 +1,16 @@
+use std::ops::Deref;
 use std::str::{ FromStr };
-use bigdecimal::{ BigDecimal, BigDecimalRef, ParseBigDecimalError };
+use bigdecimal::{BigDecimal, BigDecimalRef, ParseBigDecimalError, ToPrimitive};
 use crate::entities::currency::{ Currency, CurrencyFormatError };
-use serde::{ Deserialize, Deserializer, Serialize, Serializer };
+use serde::{ Deserialize, Deserializer, Serialize };
 use serde::de::{EnumAccess, Error, MapAccess, SeqAccess, Visitor};
-use serde::ser::SerializeStruct;
+use serde_json::value::to_raw_value;
 // use crate::entities::currency::Currency;       // ++
 // use ::project01::entities::currency::Currency; // --
 // use project01::entities::currency::Currency;   // --
 // use self::super::currency::Currency;           // ++
 // use super::currency::Currency;                 // ++
-use crate::util::UncheckedResultUnwrap;
+use crate::util::{TestResultUnwrap, UncheckedResultUnwrap};
 
 
 // #[derive(Debug)]
@@ -43,9 +44,13 @@ impl Serialize for Person {
 */
 
 impl Serialize for Amount {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+        use serde::ser::{Error, SerializeStruct};
+
         let mut s = serializer.serialize_struct("amount", 2) ?;
-            s.serialize_field("value", &self.value.to_string()) ?;  // TODO: use Display
+            let bd_wrapper = BDRefSerdeWrapper(&self.value);
+            // s.serialize_field("value", &self.value.to_string()) ?;  // TODO: use Display
+            s.serialize_field("value", &bd_wrapper) ?;  // TODO: use Display
             s.serialize_field("currency", &self.currency.to_string()) ?; // TODO: use &str
         s.end()
     }
@@ -137,21 +142,22 @@ impl<'de> Deserialize<'de> for Amount {
                                     // serde::de::value::Int64(map.next_value()?)
                                     // serde::de::value::
 
-                                    if let Ok::<RawValueWrapper,_>(v) = map.next_value() {
-                                        println!("### bd: {:?}", v);
-                                        let raw_v: &serde_json::value::RawValue = v.0;
-                                        let as_str: &str = raw_v.get();
-                                        let as_str: &str = as_str.trim();
-                                        let as_str: &str = as_str.strip_prefix("\"").unwrap_or(as_str);
-                                        let as_str: &str = as_str.strip_suffix("\"").unwrap_or(as_str);
-                                        let as_str: &str = as_str.trim();
-
-                                        amount_value = Some(BigDecimal::from_str(as_str))
-                                    }
-                                    // if let Ok::<BDSerdeWrapper,_>(v) = map.next_value() {
-                                    //     println!("### bd: {}", v);
-                                    //     amount_value = Some(BigDecimal::from_str("888888"))
+                                    // if let Ok::<RawValueWrapper,_>(v) = map.next_value() {
+                                    //     println!("### bd: {:?}", v);
+                                    //     let raw_v: &serde_json::value::RawValue = v.0;
+                                    //     let as_str: &str = raw_v.get();
+                                    //     let as_str: &str = as_str.trim();
+                                    //     let as_str: &str = as_str.strip_prefix("\"").unwrap_or(as_str);
+                                    //     let as_str: &str = as_str.strip_suffix("\"").unwrap_or(as_str);
+                                    //     let as_str: &str = as_str.trim();
+                                    //
+                                    //     amount_value = Some(BigDecimal::from_str(as_str))
                                     // }
+
+                                    if let Ok::<BDSerdeWrapper,_>(v) = map.next_value() {
+                                        println!("### bd: {}", v);
+                                        amount_value = Some(Ok(v.0))
+                                    }
 
                                     // if let Ok::<BigDecimal,_>(v) = map.next_value() {
                                     //     let sss = v.to_string();
@@ -338,10 +344,19 @@ impl Amount {
 pub fn amount(amount: BigDecimal, currency: Currency) -> Amount { Amount::new(amount, currency) }
 
 
+
 #[derive(Deserialize, Debug)]
 struct RawValueWrapper<'a>(
     #[serde(borrow)]
-    // &'a serde_json::raw::RawValue
+    &'a serde_json::value::RawValue
+);
+
+// #[derive(Serialize)]
+// struct Output<'a> {
+//     info: (u32, &'a serde_json::value::RawValue),
+// }
+#[derive(Serialize)]
+struct Output<'a>(
     &'a serde_json::value::RawValue
 );
 
@@ -358,15 +373,111 @@ impl core::fmt::Display for BDSerdeWrapper {
 pub struct BDRefSerdeWrapper<'a>(& 'a BigDecimal);
 
 impl<'se> Serialize for BDRefSerdeWrapper<'se> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: Serializer {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+        use serde::ser::{ Error, SerializeStruct };
+
         let as_string = self.0.to_string();
-        let as_bytes = as_string.as_bytes();
-        serializer.serialize_bytes(as_bytes)
+        // let raw_value = serde_json::value::RawValue::from_string(as_string).unwrap(); // TODO: remove unwrap
+        // let raw_value = serde_json::value::RawValue::from_string(as_string).map_err(|err| S::Error::custom(err.to_string().as_str()) ) ?;
+        let raw_value = serde_json::value::RawValue::from_string(as_string).map_err(|err| S::Error::custom(err.to_string()) ) ?;
+        // let raw_value = serde_json::value::RawValue::from_string(as_string).map_err(|err| S::Error::custom("Fuck") ) ?;
+
+        serde::Serializer::serialize_newtype_struct(
+            serializer,
+            "BigDecimal",
+            &raw_value,
+        )
+
+        // serializer.serialize_f64(self.0.to_f64().unwrap()) // TODO: remove unwrap
+
+
+        // serde::Serializer::serialize_newtype_struct(
+        //     serializer,
+        //     "RawValueWrapper",
+        //     &as_str,
+        // )
+        // serde::Serializer::serialize_(
+        //     serializer,
+        //     "RawValueWrapper",
+        //     &as_str,
+        // )
+
+
     }
 }
 
+
+/*
+impl<'de: 'a, 'a> Deserialize<'de> for &'a RawValue {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct ReferenceVisitor;
+
+        impl<'de> Visitor<'de> for ReferenceVisitor {
+            type Value = &'de RawValue;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "any valid JSON value")
+            }
+
+            fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let value = tri!(visitor.next_key::<RawKey>());
+                if value.is_none() {
+                    return Err(de::Error::invalid_type(Unexpected::Map, &self));
+                }
+                visitor.next_value_seed(ReferenceFromString)
+            }
+        }
+
+        deserializer.deserialize_newtype_struct(TOKEN, ReferenceVisitor)
+    }
+}
+*/
+
 impl<'de> Deserialize<'de> for BDSerdeWrapper {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+
+        // let mut string = String::with_capacity(256);
+        // string.push_str("{}");
+        // let mut aa = serde_json::value::RawValue::from_string(string).unwrap();
+        // <&'de serde_json::value::RawValue as serde::Deserialize>::deserialize(deserializer);
+
+        let raw_val: &'de serde_json::value::RawValue = <&'de serde_json::value::RawValue as serde::Deserialize>::deserialize(
+            deserializer
+        )?;
+        // let raw_val: &'de crate::entities::alt_raw::RawValue = <&'de crate::entities::alt_raw::RawValue as serde::Deserialize>::deserialize(
+        //     deserializer
+        // )?;
+
+        let str: &str = raw_val.get();
+
+        let str: &str = str.trim();
+        let str: &str = str
+            .strip_prefix('"').unwrap_or(str)
+            .strip_suffix('"').unwrap_or(str)
+            .trim();
+
+        // return Ok::<Self, D::Error>(BDSerdeWrapper(BigDecimal::from_str(str).unwrap()));
+        let bd = BigDecimal::from_str(str).map_err(|err| D::Error::custom(err) ) ?;
+        let bdw = BDSerdeWrapper(bd);
+        return Ok::<Self, D::Error>(bdw);
+
+        // return Err::<Self, D::Error>(D::Error::custom("dffdf"));
+
+
+        //     d,
+        // )?;
+
+        // let __field0: &'a serde_json::value::RawValue = <&'a serde_json::value::RawValue as serde::Deserialize>::deserialize(
+        //     d,
+        // )?;
+
+
         struct FV;
         impl<'de> Visitor<'de> for FV {
             type Value = BDSerdeWrapper;
