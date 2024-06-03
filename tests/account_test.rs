@@ -244,6 +244,9 @@ fn test_to_json() {
 }
 
 
+#[cfg(feature = "serde_json_raw_value")]
+struct  Temp;
+
 #[test]
 #[allow(unused_variables)]
 fn readonly_field_test() {
@@ -276,7 +279,7 @@ fn readonly_field_test() {
     let t = chrono::DateTime::<FixedOffset>::from_str("2024-05-31T22:29:57 +02:00").test_unwrap();
     println!("### t: {}", t);
 
-    assert!(false, "To shoe stdout");
+    // assert!(false, "To shoe stdout");
 }
 
 fn account_01() -> Account {
@@ -335,7 +338,7 @@ mod mutability_check {
         // let aa: Result<& mut i32, _> = RefCell::new(&s.x).try_into();
         // println!("aa: {:?}", aa);
 
-        assert!(false, "To show output");
+        // assert!(false, "To show output");
     }
 
 
