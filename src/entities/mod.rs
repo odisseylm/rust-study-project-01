@@ -18,6 +18,7 @@ pub mod amount_ops;
 mod type_path_usage;
 pub mod account;
 pub mod id;
+pub mod big_decimal;
 
 
 // pub use crate::parse_amount::{ ParseAmountError as amount::parse_amount::ParseAmountError };

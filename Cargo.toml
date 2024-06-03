@@ -18,6 +18,13 @@ serde_json_raw_value = ["serde_json/raw_value"]
 #default = ["serde_json_raw_value", ]
 
 
+#['cfg(feature = "a")'.lib]
+#crate-type = ["staticlib"]
+#
+#['cfg(feature = "b")'.lib]
+#crate-type = ["rlib"]
+
+
 [dependencies]
 static_error_macro = { version = "0.1.0", path = "static_error_macro" }
 

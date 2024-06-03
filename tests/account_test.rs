@@ -1,20 +1,14 @@
-use std::borrow::Cow;
-use std::cell::{ Ref, RefCell };
-use std::mem::forget;
-use std::ops::{ Deref, DerefMut };
-use std::time::Instant;
 use assertables::{ assert_contains, assert_contains_as_result };
 // use axum::body::{ BodyDataStream, Bytes };
 // use axum::Json;
 // use axum::response::{ IntoResponse, Response };
 use bigdecimal::BigDecimal;
-use chrono::{FixedOffset, TimeZone, Utc};
+use chrono::{FixedOffset, Utc};
 use indoc::indoc;
-use project01::entities::account::{self, Account, new, SSS_RO};
+use project01::entities::account::{ self, Account, new, };
 use project01::entities::amount::Amount;
 use project01::entities::id::Id;
-use project01::util::obj_ext::ValRefExt;
-use project01::util::{ TestOptionUnwrap, TestResultUnwrap };
+use project01::util::{ TestResultUnwrap };
 use project01::util::test_unwrap::{ TestResultDebugErrOps, TestResultDisplayErrOps };
 
 
@@ -54,10 +48,10 @@ fn test_to_json() {
     //       "updatedAt": "2024-05-31T20:29:57Z",
     //   });
 
-    let sas: serde_json::Value = serde_json::json!({ "a": { "b": 1 } });
+    let _sas: serde_json::Value = serde_json::json!({ "a": { "b": 1 } });
 
     use std::str::FromStr;
-    let sas22: serde_json::Value = serde_json::Value::from_str(s.as_str()).test_unwrap();
+    let _sas22: serde_json::Value = serde_json::Value::from_str(s.as_str()).test_unwrap();
 
     // serde_json::from_str()
     // serde_json::to_string_pretty
@@ -92,7 +86,7 @@ fn test_to_json() {
     );
 
 
-    let mut account33 = account_01();
+    let account33 = account_01();
     let account1 = Account::new(new::Args {
         id: account33.id.clone(),
         user_id: account33.user_id.clone(),
@@ -244,9 +238,6 @@ fn test_to_json() {
 }
 
 
-#[cfg(feature = "serde_json_raw_value")]
-struct  Temp;
-
 #[test]
 #[allow(unused_variables)]
 fn readonly_field_test() {
@@ -325,7 +316,7 @@ mod mutability_check {
     use std::borrow::Cow;
     use std::cell::RefCell;
     // use std::ops::{Deref, DerefMut };
-    use project01::util::TestResultUnwrap;
+    // use project01::util::TestResultUnwrap;
 
 
     #[test]
@@ -366,6 +357,7 @@ mod mutability_check {
         use std::borrow::Borrow;
 
         let s = SSS { x: 123 };
+        #[allow(noop_method_call)]
         let sb: &i32 = (&s.x).borrow();
         // let pm: & mut i32 = & mut s.x;
 
@@ -459,12 +451,12 @@ mod mutability_check {
         // *x_ref = 124;
         // forget(x_ref);
 
-        let mut fdfdf = rc.try_borrow_mut().map(|el| el.x).test_unwrap();
-        fdfdf = 124;
+        // let mut fdfdf = rc.try_borrow_mut().map(|el| el.x).test_unwrap();
+        // fdfdf = 124;
 
         // forget(fdfdf);
 
-        println!("### s: {:?}", fdfdf);
+        // println!("### s: {:?}", fdfdf);
         // let aa: i32 = rc.try_borrow().map(|el|el.x).test_unwrap();
         // let aa = rc.try_borrow_mut().map(|ref el|&el.x);
 

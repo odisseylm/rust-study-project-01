@@ -1,16 +1,15 @@
-use std::ops::Deref;
 use std::str::{ FromStr };
-use bigdecimal::{BigDecimal, BigDecimalRef, ParseBigDecimalError, ToPrimitive};
+use bigdecimal::{ BigDecimal, BigDecimalRef, ParseBigDecimalError };
 use crate::entities::currency::{ Currency, CurrencyFormatError };
 use serde::{ Deserialize, Deserializer, Serialize };
-use serde::de::{EnumAccess, Error, MapAccess, SeqAccess, Visitor};
-use serde_json::value::to_raw_value;
+use serde::de::{ Error, MapAccess, Visitor};
+use crate::entities::big_decimal::{BDRefSerdeWrapper, BDSerdeWrapper};
 // use crate::entities::currency::Currency;       // ++
 // use ::project01::entities::currency::Currency; // --
 // use project01::entities::currency::Currency;   // --
 // use self::super::currency::Currency;           // ++
 // use super::currency::Currency;                 // ++
-use crate::util::{TestResultUnwrap, UncheckedResultUnwrap};
+use crate::util::UncheckedResultUnwrap;
 
 
 // #[derive(Debug)]
@@ -45,51 +44,23 @@ impl Serialize for Person {
 
 impl Serialize for Amount {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
-        use serde::ser::{Error, SerializeStruct};
+        use serde::ser::SerializeStruct;
+
+        let bd_wrapper = BDRefSerdeWrapper(&self.value);
+        let currency = self.currency.to_string();
 
         let mut s = serializer.serialize_struct("amount", 2) ?;
-            let bd_wrapper = BDRefSerdeWrapper(&self.value);
-            // s.serialize_field("value", &self.value.to_string()) ?;  // TODO: use Display
-            s.serialize_field("value", &bd_wrapper) ?;  // TODO: use Display
-            s.serialize_field("currency", &self.currency.to_string()) ?; // TODO: use &str
+        s.serialize_field("value", &bd_wrapper) ?;  // TODO: use Display
+        s.serialize_field("currency", &currency) ?; // TODO: use &str
         s.end()
     }
 }
 
 
-// struct SSDD {}
-
-// impl<'de> From<ParseAmountError> for MapAccess<'de>::Error {
-// impl<'de> From<ParseAmountError> for serde::de::Error {
-//     fn from(value: ParseAmountError) -> Self {
-//         todo!()
-//     }
-// }
-
-// impl<'de> MapAccess<'de>::Error for ParseAmountError {
-// impl<'de> serde::de::Error for ParseAmountError {
-// impl serde::de::Error for ParseAmountError {
-//     fn custom<T>(msg: T) -> Self where T: Display {
-//         todo!()
-//     }
-// }
-
-
-// fn to_de_ser_err(err: ParseAmountError) -> Box<dyn serde::de::Error> {
-// // fn to_de_ser_err<'de>(err: ParseAmountError) -> Box<dyn MapAccess<'de>::Error> {
-//     todo!()
-// }
-
 fn to_de_ser_err_3232<'de, MA: MapAccess<'de>>(err: parse_amount::ParseAmountError) -> <MA as MapAccess<'de>>::Error {
-    // let err: i32 = MA::Error::custom(err);
-    // let err: <MA as MapAccess<'de>>::Error = <MA as MapAccess<'de>>::Error::custom(err);
-    let err: <MA as MapAccess<'de>>::Error = MA::Error::custom(err);
+    let err: <MA as MapAccess<'de>>::Error = Error::custom(err);
     err
 }
-// fn to_de_ser_err_3233<MA: MapAccess>(err: ParseAmountError) -> <MA as MapAccess>::Error {
-//     let err: <MA as MapAccess>::Error = MA::Error::custom(err);
-//     err
-// }
 
 
 impl<'de> Deserialize<'de> for Amount {
@@ -137,96 +108,9 @@ impl<'de> Deserialize<'de> for Amount {
                                     }
                                 }
                                 "value" => {
-                                    println!("### some amount value...");
-
-                                    // serde::de::value::Int64(map.next_value()?)
-                                    // serde::de::value::
-
-                                    // if let Ok::<RawValueWrapper,_>(v) = map.next_value() {
-                                    //     println!("### bd: {:?}", v);
-                                    //     let raw_v: &serde_json::value::RawValue = v.0;
-                                    //     let as_str: &str = raw_v.get();
-                                    //     let as_str: &str = as_str.trim();
-                                    //     let as_str: &str = as_str.strip_prefix("\"").unwrap_or(as_str);
-                                    //     let as_str: &str = as_str.strip_suffix("\"").unwrap_or(as_str);
-                                    //     let as_str: &str = as_str.trim();
-                                    //
-                                    //     amount_value = Some(BigDecimal::from_str(as_str))
-                                    // }
-
                                     if let Ok::<BDSerdeWrapper,_>(v) = map.next_value() {
                                         println!("### bd: {}", v);
                                         amount_value = Some(Ok(v.0))
-                                    }
-
-                                    // if let Ok::<BigDecimal,_>(v) = map.next_value() {
-                                    //     let sss = v.to_string();
-                                    //     println!("### bd: {}", v);
-                                    //     amount_value = Some(BigDecimal::from_str("888888"))
-                                    // }
-
-                                    if let Ok::<serde_json::Value,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("888888"))
-                                    }
-
-                                    if let Ok::<&str,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str(v))
-                                    }
-                                    if let Ok::<serde_json::Value,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("77777"))
-                                    }
-                                    if let Ok::<serde_json::Number,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("77777"))
-                                    }
-                                    // if let Ok::<serde_json::de::StrRead,_>(v) = map.next_value() {
-                                    //     amount_value = Some(BigDecimal::from_str("77777"))
-                                    // }
-                                    // if let Ok::<serde_json::de::SliceRead,_>(v) = map.next_value() {
-                                    //     amount_value = Some(BigDecimal::from_str("77777"))
-                                    // }
-                                    if let Ok::<&[u8],_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("77777"))
-                                    }
-                                    // if let Ok::<serde_yaml::Number,_>(v) = map.next_value() {
-                                    //     amount_value = Some(BigDecimal::from_str("77777"))
-                                    // }
-                                    if let Ok::<f64,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str(v.to_string().as_str()))
-                                    }
-                                    if let Ok::<f32,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str(v.to_string().as_str()))
-                                    }
-
-                                    if let Ok::<i8,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("888888"))
-                                    }
-                                    if let Ok::<i16,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("888888"))
-                                    }
-                                    if let Ok::<i32,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("888888"))
-                                    }
-                                    if let Ok::<i64,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("888888"))
-                                    }
-                                    if let Ok::<i128,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("888888"))
-                                    }
-
-                                    if let Ok::<u8,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("888888"))
-                                    }
-                                    if let Ok::<u16,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("888888"))
-                                    }
-                                    if let Ok::<u32,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("888888"))
-                                    }
-                                    if let Ok::<u64,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("888888"))
-                                    }
-                                    if let Ok::<u128,_>(v) = map.next_value() {
-                                        amount_value = Some(BigDecimal::from_str("888888"))
                                     }
                                 }
                                 _ => { unexpected_count += 1 }
@@ -254,7 +138,7 @@ impl<'de> Deserialize<'de> for Amount {
 
                 if unexpected_count != 0 {
                     // T O D O: hm... It never works because list of expected fields is specified in call deserialize_struct
-                    return Err(A::Error::custom("Amount json block has unexpected items."));
+                    return Err(Error::custom("Amount json block has unexpected items."));
                 }
 
                 Ok(Amount { value: amount_value, currency: amount_currency })
@@ -262,10 +146,6 @@ impl<'de> Deserialize<'de> for Amount {
         }
         let v = FieldVisitor{};
         deserializer.deserialize_struct("amount", &["value", "currency",], v)
-    }
-
-    fn deserialize_in_place<D>(_deserializer: D, _place: &mut Self) -> Result<(), D::Error> where D: Deserializer<'de> {
-        todo!()
     }
 }
 
@@ -342,309 +222,6 @@ impl Amount {
 // Just short alias (similar to kotlin style)
 #[inline]
 pub fn amount(amount: BigDecimal, currency: Currency) -> Amount { Amount::new(amount, currency) }
-
-
-
-#[derive(Deserialize, Debug)]
-struct RawValueWrapper<'a>(
-    #[serde(borrow)]
-    &'a serde_json::value::RawValue
-);
-
-// #[derive(Serialize)]
-// struct Output<'a> {
-//     info: (u32, &'a serde_json::value::RawValue),
-// }
-#[derive(Serialize)]
-struct Output<'a>(
-    &'a serde_json::value::RawValue
-);
-
-
-#[derive(Debug)]
-pub struct BDSerdeWrapper(BigDecimal);
-
-impl core::fmt::Display for BDSerdeWrapper {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-pub struct BDRefSerdeWrapper<'a>(& 'a BigDecimal);
-
-impl<'se> Serialize for BDRefSerdeWrapper<'se> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
-        use serde::ser::{ Error, SerializeStruct };
-
-        let as_string = self.0.to_string();
-        // let raw_value = serde_json::value::RawValue::from_string(as_string).unwrap(); // TODO: remove unwrap
-        // let raw_value = serde_json::value::RawValue::from_string(as_string).map_err(|err| S::Error::custom(err.to_string().as_str()) ) ?;
-        let raw_value = serde_json::value::RawValue::from_string(as_string).map_err(|err| S::Error::custom(err.to_string()) ) ?;
-        // let raw_value = serde_json::value::RawValue::from_string(as_string).map_err(|err| S::Error::custom("Fuck") ) ?;
-
-        serde::Serializer::serialize_newtype_struct(
-            serializer,
-            "BigDecimal",
-            &raw_value,
-        )
-
-        // serializer.serialize_f64(self.0.to_f64().unwrap()) // TODO: remove unwrap
-
-
-        // serde::Serializer::serialize_newtype_struct(
-        //     serializer,
-        //     "RawValueWrapper",
-        //     &as_str,
-        // )
-        // serde::Serializer::serialize_(
-        //     serializer,
-        //     "RawValueWrapper",
-        //     &as_str,
-        // )
-
-
-    }
-}
-
-
-/*
-impl<'de: 'a, 'a> Deserialize<'de> for &'a RawValue {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct ReferenceVisitor;
-
-        impl<'de> Visitor<'de> for ReferenceVisitor {
-            type Value = &'de RawValue;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                write!(formatter, "any valid JSON value")
-            }
-
-            fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
-            where
-                V: MapAccess<'de>,
-            {
-                let value = tri!(visitor.next_key::<RawKey>());
-                if value.is_none() {
-                    return Err(de::Error::invalid_type(Unexpected::Map, &self));
-                }
-                visitor.next_value_seed(ReferenceFromString)
-            }
-        }
-
-        deserializer.deserialize_newtype_struct(TOKEN, ReferenceVisitor)
-    }
-}
-*/
-
-impl<'de> Deserialize<'de> for BDSerdeWrapper {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
-
-        // let mut string = String::with_capacity(256);
-        // string.push_str("{}");
-        // let mut aa = serde_json::value::RawValue::from_string(string).unwrap();
-        // <&'de serde_json::value::RawValue as serde::Deserialize>::deserialize(deserializer);
-
-        let raw_val: &'de serde_json::value::RawValue = <&'de serde_json::value::RawValue as serde::Deserialize>::deserialize(
-            deserializer
-        )?;
-        // let raw_val: &'de crate::entities::alt_raw::RawValue = <&'de crate::entities::alt_raw::RawValue as serde::Deserialize>::deserialize(
-        //     deserializer
-        // )?;
-
-        let str: &str = raw_val.get();
-
-        let str: &str = str.trim();
-        let str: &str = str
-            .strip_prefix('"').unwrap_or(str)
-            .strip_suffix('"').unwrap_or(str)
-            .trim();
-
-        // return Ok::<Self, D::Error>(BDSerdeWrapper(BigDecimal::from_str(str).unwrap()));
-        let bd = BigDecimal::from_str(str).map_err(|err| D::Error::custom(err) ) ?;
-        let bdw = BDSerdeWrapper(bd);
-        return Ok::<Self, D::Error>(bdw);
-
-        // return Err::<Self, D::Error>(D::Error::custom("dffdf"));
-
-
-        //     d,
-        // )?;
-
-        // let __field0: &'a serde_json::value::RawValue = <&'a serde_json::value::RawValue as serde::Deserialize>::deserialize(
-        //     d,
-        // )?;
-
-
-        struct FV;
-        impl<'de> Visitor<'de> for FV {
-            type Value = BDSerdeWrapper;
-            fn expecting(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-                // todo!()
-                write!(f, "44444")
-            }
-
-            fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_i128<E>(self, v: i128) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_u128<E>(self, v: u128) -> Result<Self::Value, E> where E: Error {
-                todo!()
-            }
-
-            fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_char<E>(self, v: char) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_string<E>(self, v: String) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_none<E>(self) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_some<D>(self, deserializer: D) -> Result<Self::Value, D::Error> where D: Deserializer<'de> {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_unit<E>(self) -> Result<Self::Value, E> where E: Error {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_newtype_struct<D>(self, deserializer: D) -> Result<Self::Value, D::Error> where D: Deserializer<'de> {
-                println!("fuck");
-                deserializer.deserialize_any(FV{});
-                todo!()
-            }
-
-            fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error> where A: SeqAccess<'de> {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error> where A: MapAccess<'de> {
-                println!("fuck");
-                todo!()
-            }
-
-            fn visit_enum<A>(self, data: A) -> Result<Self::Value, A::Error> where A: EnumAccess<'de> {
-                println!("fuck");
-                todo!()
-            }
-
-            fn __private_visit_untagged_option<D>(self, _: D) -> Result<Self::Value, ()> where D: Deserializer<'de> {
-                println!("fuck");
-                todo!()
-            }
-        }
-
-        let v = FV;
-        // Does NOT work!
-        // deserializer.deserialize_bytes(v)
-        // deserializer.deserialize_byte_buf(v)
-
-        // works but converts value to f64 with decreasing precision
-        // deserializer.deserialize_any(v)
-
-        // deserializer.deserialize_ignored_any(v)
-        //deserializer.deserialize_str(v);
-        deserializer.deserialize_newtype_struct("fuck890", v)
-    }
-
-    // fn deserialize_in_place<D>(deserializer: D, place: &mut Self) -> Result<(), D::Error> where D: Deserializer<'de> {
-    //     println!("fuck");
-    //     todo!()
-    // }
-}
 
 
 
