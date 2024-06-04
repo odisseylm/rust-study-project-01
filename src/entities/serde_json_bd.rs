@@ -1,6 +1,8 @@
+use std::fmt::Write;
 use std::ops::Deref;
 use bigdecimal::BigDecimal;
-
+use serde::Deserializer;
+use bytes::BytesMut;
 
 
 // -------------------------------------------------------------------------------------------------
@@ -112,8 +114,14 @@ pub fn deserialize_json_bd_as_raw_value<'de, D>(deserializer: D) -> Result<BigDe
 }
 
 
-fn deserialize_json_bd_as_std_json_value<'de, D>(deserializer: D) -> Result<BigDecimal, D::Error> where D: serde::Deserializer<'de> {
+pub fn deserialize_json_bd_as_std_json_value<'de, D>(deserializer: D) -> Result<BigDecimal, D::Error> where D: serde::Deserializer<'de> {
+
+    // if true { return todo!("Fuck 483483874678") }
+    // const MAX_STR_LEN: usize = 64;
+    // let mut buffer: [u8;MAX_STR_LEN] = [0;MAX_STR_LEN];
+
     use serde::de::{ Visitor, Error };
+    // #[derive(Default)]
     struct FV;
     impl<'de> Visitor<'de> for FV {
         type Value = BigDecimal;
@@ -152,12 +160,61 @@ fn deserialize_json_bd_as_std_json_value<'de, D>(deserializer: D) -> Result<BigD
             Ok(BigDecimal::from(v))
         }
         fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E> where E: Error {
-            use bigdecimal::FromPrimitive;
-            BigDecimal::from_f32(v).ok_or_else(||Error::custom("Wrong f32 big-decimal format"))
+            // if true { return todo!("Fuck f32") }
+            // very-very bad approach with loosing precision
+            // use bigdecimal::FromPrimitive;
+            // BigDecimal::from_f32(v).ok_or_else(||Error::custom("Wrong f32 big-decimal format"))
+
+            // let as_string = v.to_string(); // TODO: remove this heap allocation
+            // use std::str::FromStr;
+            // BigDecimal::from_str(as_string.as_str()).map_err(|err|Error::custom(err))
+
+            // let mut str_buf = String::new();
+            // write!(str_buf, "{}", v).unwrap(); // TODO: fdfdf
+            // use std::str::FromStr;
+            // BigDecimal::from_str(str_buf.as_str()).map_err(|err|Error::custom(err))
+
+            // let mut str_buf = String::new();
+            // str_buf.write_fmt(format_args!("{0}", v)).unwrap();
+            // use std::str::FromStr;
+            // BigDecimal::from_str(str_buf.as_str()).map_err(|err| Error::custom(err))
+
+            use std::str::{ self, FromStr };
+
+            const MAX_STR_LEN: usize = 64;
+            // let mut buffer: [u8;MAX_STR_LEN] = [0;MAX_STR_LEN];
+            let mut buffer: [u8;MAX_STR_LEN] = [0;MAX_STR_LEN];
+            let mut buffer = BytesMut::from(buffer.as_slice());
+            buffer.write_fmt(format_args!("{0}", v)).map_err(|err| Error::custom(err)) ?;
+
+            let as_str: &str = str::from_utf8(buffer.as_ref()).unwrap();
+            BigDecimal::from_str(as_str).map_err(|err| Error::custom(err))
+
+            // write!(&buffer, "{}", v).map_err(|err|Error::custom(err)) ?;
+            // write!(&buffer, "{}", v).map_err(|err|Error::custom(err)) ?;
+
         }
         fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E> where E: Error {
-            use bigdecimal::FromPrimitive;
-            BigDecimal::from_f64(v).ok_or_else(||Error::custom("Wrong f64 big-decimal format"))
+            // very-very bad approach with loosing precision
+            // use bigdecimal::FromPrimitive;
+            // BigDecimal::from_f64(v).ok_or_else(||Error::custom("Wrong f64 big-decimal format"))
+
+            // 13.346000000000000085265128291212022304534912109375
+
+            // let as_string = v.to_string(); // TODO: remove this heap allocation
+            // use std::str::FromStr;
+            // BigDecimal::from_str(as_string.as_str()).map_err(|err|Error::custom(err))
+
+            use std::str::{ self, FromStr };
+
+            const MAX_STR_LEN: usize = 64;
+            // let mut buffer: [u8;MAX_STR_LEN] = [0;MAX_STR_LEN];
+            let mut buffer: [u8;MAX_STR_LEN] = [0;MAX_STR_LEN];
+            let mut buffer = BytesMut::from(buffer.as_slice());
+            buffer.write_fmt(format_args!("{0}", v)).map_err(|err| Error::custom(err)) ?;
+
+            let as_str: &str = str::from_utf8(buffer.as_ref()).unwrap();
+            BigDecimal::from_str(as_str).map_err(|err| Error::custom(err))
         }
         fn visit_char<E>(self, v: char) -> Result<Self::Value, E> where E: Error {
             let mut as_raw_str: [u8; 4] = [0; 4];
@@ -180,7 +237,7 @@ fn deserialize_json_bd_as_std_json_value<'de, D>(deserializer: D) -> Result<BigD
     }
 
     let v = FV;
-    deserializer.deserialize_newtype_struct("BigDecimal", v)
+    deserializer.deserialize_any(v)
 }
 
 

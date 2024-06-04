@@ -96,6 +96,7 @@ axum = "0.7.5"
 #tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread"] }
 #tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread", "macros"] }
 tokio = { version = "1.38.0", features = ["full"] }
+bytes = "1.6.0"
 
 # unused manifest key: tests
 #[test]
