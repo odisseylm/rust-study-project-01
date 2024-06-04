@@ -17,6 +17,7 @@ pub struct Account {
     // pub created_at: std::time::Instant,
     // pub updated_at: std::time::Instant,
     pub created_at: chrono::DateTime<Utc>,
+    // #[serde(serialize_with = "serialize_fn...")]
     pub updated_at: chrono::DateTime<Utc>,
 
     // // Never serialized.

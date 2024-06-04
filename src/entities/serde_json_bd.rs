@@ -28,21 +28,17 @@ impl<'a> core::fmt::Display for BDRefSerdeWrapper<'a> {
 
 impl Deref for BDSerdeWrapper {
     type Target = BigDecimal;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+    fn deref(&self) -> &Self::Target { &self.0 }
 }
 impl<'a> Deref for BDRefSerdeWrapper<'a> {
     type Target = BigDecimal;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
+    fn deref(&self) -> &Self::Target { &self.0 }
 }
 
 
 impl<'se> serde::Serialize for BDRefSerdeWrapper<'se> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
-        serialize_bd_to_json(self.0, serializer)
+        serialize_json_bd(self.0, serializer)
     }
 }
 
@@ -52,10 +48,9 @@ impl<'de> serde::Deserialize<'de> for BDSerdeWrapper {
         deserialize_json_bd(deserializer).map(|bd| BDSerdeWrapper(bd))
     }
 }
-// impl<'se> serde::Serialize<'se> for BDSerdeWrapper {
 impl serde::Serialize for BDSerdeWrapper {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
-        serialize_bd_to_json(&self.0, serializer)
+        serialize_json_bd(&self.0, serializer)
     }
 }
 
@@ -65,7 +60,7 @@ impl serde::Serialize for BDSerdeWrapper {
 // -------------------------------------------------------------------------------------------------
 
 #[cfg(feature = "serde_json_raw_value")]
-fn serialize_bd_as_raw_value<'se,S>(bd: &BigDecimal, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+pub fn serialize_json_bd_as_raw_value<'se,S>(bd: &BigDecimal, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
     use serde::ser::Error;
 
     let as_string = bd.to_string();
@@ -74,12 +69,12 @@ fn serialize_bd_as_raw_value<'se,S>(bd: &BigDecimal, serializer: S) -> Result<S:
     serde::Serializer::serialize_newtype_struct(serializer, "BigDecimal", &raw_value)
 }
 
-fn serialize_bd_as_string<'se,S>(bd: &BigDecimal, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+pub fn serialize_json_bd_as_string<'se,S>(bd: &BigDecimal, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
     let as_string = bd.to_string();
     serde::Serializer::serialize_str(serializer, as_string.as_str())
 }
 
-fn serialize_bd_as_f64<'se,S>(bd: &BigDecimal, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+pub fn serialize_json_bd_as_f64<'se,S>(bd: &BigDecimal, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
     use serde::ser::Error;
     use bigdecimal::ToPrimitive;
 
@@ -87,18 +82,18 @@ fn serialize_bd_as_f64<'se,S>(bd: &BigDecimal, serializer: S) -> Result<S::Ok, S
     serde::Serializer::serialize_f64(serializer, as_f64)
 }
 
-pub fn serialize_bd_to_json<'se,S>(bd: &BigDecimal, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+pub fn serialize_json_bd<'se,S>(bd: &BigDecimal, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
     #[cfg(feature = "serde_json_raw_value")]
-    { serialize_bd_as_raw_value(bd, serializer) }
+    { serialize_json_bd_as_raw_value(bd, serializer) }
 
     #[cfg(not(feature = "serde_json_raw_value"))]
-    { serialize_bd_as_f64(bd, serializer) }
+    { serialize_json_bd_as_f64(bd, serializer) }
 }
 
 
 
 #[cfg(feature = "serde_json_raw_value")]
-fn deserialize_bd_as_raw_value<'de, D>(deserializer: D) -> Result<BigDecimal, D::Error> where D: serde::Deserializer<'de> {
+pub fn deserialize_json_bd_as_raw_value<'de, D>(deserializer: D) -> Result<BigDecimal, D::Error> where D: serde::Deserializer<'de> {
     use serde_json::value::RawValue;
     let raw_val: &'de RawValue = <&'de RawValue as serde::Deserialize>::deserialize(deserializer) ?;
 
@@ -117,7 +112,7 @@ fn deserialize_bd_as_raw_value<'de, D>(deserializer: D) -> Result<BigDecimal, D:
 }
 
 
-fn deserialize_bd_as_std_json_value<'de, D>(deserializer: D) -> Result<BigDecimal, D::Error> where D: serde::Deserializer<'de> {
+fn deserialize_json_bd_as_std_json_value<'de, D>(deserializer: D) -> Result<BigDecimal, D::Error> where D: serde::Deserializer<'de> {
     use serde::de::{ Visitor, Error };
     struct FV;
     impl<'de> Visitor<'de> for FV {
@@ -192,8 +187,28 @@ fn deserialize_bd_as_std_json_value<'de, D>(deserializer: D) -> Result<BigDecima
 pub fn deserialize_json_bd<'de, D>(deserializer: D) -> Result<BigDecimal, D::Error> where D: serde::Deserializer<'de> {
 
     #[cfg(feature = "serde_json_raw_value")]
-    { deserialize_bd_as_raw_value(deserializer) }
+    { deserialize_json_bd_as_raw_value(deserializer) }
 
     #[cfg(not(feature = "serde_json_raw_value"))]
-    { deserialize_bd_as_std_json_value(deserializer) }
+    { deserialize_json_bd_as_std_json_value(deserializer) }
 }
+
+
+// -------------------------------------------------------------------------------------------------
+//                           As serde BigDecimal serialize/deserialize module
+// -------------------------------------------------------------------------------------------------
+
+pub mod bd_with {
+    use bigdecimal::BigDecimal;
+
+    #[inline]
+    pub fn serialize<'se,S>(bd: &BigDecimal, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+        super::serialize_json_bd(bd, serializer)
+    }
+
+    #[inline]
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<BigDecimal, D::Error> where D: serde::Deserializer<'de> {
+        super::deserialize_json_bd::<'de, D>(deserializer)
+    }
+}
+

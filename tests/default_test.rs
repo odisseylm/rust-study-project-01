@@ -1,4 +1,4 @@
-// #![feature(error_generic_meber_access)]
+// #![feature(error_generic_member_access)]
 
 use derivative::Derivative;
 use project01::util::backtrace::BacktraceInfo;

@@ -9,7 +9,19 @@
  - `cargo expand another_static_error_macro_test::parse_amount_another_01 --lib`
 
  - `cargo tree`
- - `cargo tree --edges features`
+   - `cargo tree --edges features`
+   - `cargo tree -e features`
+   - `cargo tree -f "{p} {f}"`
+   - ? `cargo tree -e features -i serde_json`
+
+ - Docker https://docs.docker.com/language/rust/
+   - `docker build -t rust_docker .`
+   - `docker run -it --rm --name my-running-app rust_docker`
+   - Links
+     - ??? https://www.docker.com/blog/simplify-your-deployments-using-the-rust-official-image/
+     - https://habr.com/ru/companies/T1Holding/articles/766620/
+     - https://hub.docker.com/_/rust
+
 
 # Build notes
 

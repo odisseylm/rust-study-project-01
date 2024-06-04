@@ -3,7 +3,7 @@ use bigdecimal::{ BigDecimal, BigDecimalRef, ParseBigDecimalError };
 use crate::entities::currency::{ Currency, CurrencyFormatError };
 use serde::{ Deserialize, Deserializer, Serialize };
 use serde::de::{ Error, MapAccess, Visitor};
-use crate::entities::big_decimal::{BDRefSerdeWrapper, BDSerdeWrapper};
+use crate::entities::serde_json_bd::{BDRefSerdeWrapper, BDSerdeWrapper};
 // use crate::entities::currency::Currency;       // ++
 // use ::project01::entities::currency::Currency; // --
 // use project01::entities::currency::Currency;   // --
@@ -57,12 +57,6 @@ impl Serialize for Amount {
 }
 
 
-fn to_de_ser_err_3232<'de, MA: MapAccess<'de>>(err: parse_amount::ParseAmountError) -> <MA as MapAccess<'de>>::Error {
-    let err: <MA as MapAccess<'de>>::Error = Error::custom(err);
-    err
-}
-
-
 impl<'de> Deserialize<'de> for Amount {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
 
@@ -72,7 +66,7 @@ impl<'de> Deserialize<'de> for Amount {
 
             fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
                 // actually it should not be used in our case
-                write!(formatter, r#"{{ value: 1234.5678, currency: EUR }}"#)
+                write!(formatter, r#"{{ value: 1234.5678, currency: "EUR" }}"#)
             }
             fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: MapAccess<'de> {
 
@@ -81,21 +75,6 @@ impl<'de> Deserialize<'de> for Amount {
                 let mut unexpected_count = 0;
                 let mut amount_value: Option<Result<BigDecimal, ParseBigDecimalError>> = None;
                 let mut amount_currency: Option<Result<Currency, CurrencyFormatError>> = None;
-
-                /*
-                while let Ok::<Option<(&str,&str)>,_>(ref v) = map.next_entry() {
-                    match v {
-                        Some::<(&str,&str)>(ref v) => {
-                            match v.0 {
-                                "value"    => { amount_value    = Some(BigDecimal::from_str(v.1)) }
-                                "currency" => { amount_currency = Some(Currency::from_str(v.1))   }
-                                _ => { unexpected_count += 1 }
-                            }
-                        }
-                        None => { break; }
-                    }
-                }
-                */
 
                 while let Ok::<Option<&str>,_>(key) = map.next_key() {
                     match key {
@@ -109,7 +88,6 @@ impl<'de> Deserialize<'de> for Amount {
                                 }
                                 "value" => {
                                     if let Ok::<BDSerdeWrapper,_>(v) = map.next_value() {
-                                        println!("### bd: {}", v);
                                         amount_value = Some(Ok(v.0))
                                     }
                                 }
@@ -119,25 +97,24 @@ impl<'de> Deserialize<'de> for Amount {
                     }
                 };
 
-
                 let amount_value: Result<BigDecimal, ParseBigDecimalError> = amount_value
                     .ok_or_else(|| ParseAmountError::new(ErrorKind::NoAmount))
-                    .map_err(|e|to_de_ser_err_3232::<'de, A>(e)) ?;
+                    .map_err(Error::custom) ?;
 
                 let amount_currency = amount_currency
                     .ok_or_else(|| ParseAmountError::new(ErrorKind::NoCurrency))
-                    .map_err(|e|to_de_ser_err_3232::<'de, A>(e)) ?;
+                    .map_err(Error::custom) ?;
 
                 let amount_value    = amount_value
                     .map_err(|amount_err| ParseAmountError::with_from(ErrorKind::IncorrectAmount, amount_err))
-                    .map_err(|e|to_de_ser_err_3232::<'de, A>(e)) ?;
+                    .map_err(Error::custom) ?;
 
                 let amount_currency = amount_currency
                     .map_err(|cur_err| ParseAmountError::with_from(ErrorKind::IncorrectCurrency, cur_err))
-                    .map_err(|e|to_de_ser_err_3232::<'de, A>(e)) ?;
+                    .map_err(Error::custom) ?;
 
                 if unexpected_count != 0 {
-                    // T O D O: hm... It never works because list of expected fields is specified in call deserialize_struct
+                    // Seems it never works because list of expected fields is specified in call of deserialize_struct().
                     return Err(Error::custom("Amount json block has unexpected items."));
                 }
 

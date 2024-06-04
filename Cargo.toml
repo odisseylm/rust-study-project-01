@@ -25,6 +25,12 @@ serde_json_raw_value = ["serde_json/raw_value"]
 #crate-type = ["rlib"]
 
 
+
+
+[build-dependencies]
+cargo_metadata = "0.18.1"
+
+
 [dependencies]
 static_error_macro = { version = "0.1.0", path = "static_error_macro" }
 
