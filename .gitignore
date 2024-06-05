@@ -1,5 +1,7 @@
 /target
 /target/**
+/vendor
+/vendor/**
 static_error_macro/target/**
 /.idea/**
 /.log/**

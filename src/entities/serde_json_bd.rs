@@ -1,8 +1,6 @@
-use std::fmt::Write;
 use std::ops::Deref;
 use bigdecimal::BigDecimal;
-use serde::Deserializer;
-use bytes::BytesMut;
+use crate::util::fmt::BytesAsBuf;
 
 
 // -------------------------------------------------------------------------------------------------
@@ -116,12 +114,8 @@ pub fn deserialize_json_bd_as_raw_value<'de, D>(deserializer: D) -> Result<BigDe
 
 pub fn deserialize_json_bd_as_std_json_value<'de, D>(deserializer: D) -> Result<BigDecimal, D::Error> where D: serde::Deserializer<'de> {
 
-    // if true { return todo!("Fuck 483483874678") }
-    // const MAX_STR_LEN: usize = 64;
-    // let mut buffer: [u8;MAX_STR_LEN] = [0;MAX_STR_LEN];
-
     use serde::de::{ Visitor, Error };
-    // #[derive(Default)]
+
     struct FV;
     impl<'de> Visitor<'de> for FV {
         type Value = BigDecimal;
@@ -160,39 +154,32 @@ pub fn deserialize_json_bd_as_std_json_value<'de, D>(deserializer: D) -> Result<
             Ok(BigDecimal::from(v))
         }
         fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E> where E: Error {
-            // if true { return todo!("Fuck f32") }
             // very-very bad approach with loosing precision
             // use bigdecimal::FromPrimitive;
             // BigDecimal::from_f32(v).ok_or_else(||Error::custom("Wrong f32 big-decimal format"))
 
-            // let as_string = v.to_string(); // TODO: remove this heap allocation
-            // use std::str::FromStr;
-            // BigDecimal::from_str(as_string.as_str()).map_err(|err|Error::custom(err))
-
-            // let mut str_buf = String::new();
-            // write!(str_buf, "{}", v).unwrap(); // TODO: fdfdf
-            // use std::str::FromStr;
-            // BigDecimal::from_str(str_buf.as_str()).map_err(|err|Error::custom(err))
-
-            // let mut str_buf = String::new();
-            // str_buf.write_fmt(format_args!("{0}", v)).unwrap();
-            // use std::str::FromStr;
-            // BigDecimal::from_str(str_buf.as_str()).map_err(|err| Error::custom(err))
-
             use std::str::{ self, FromStr };
+            use std::fmt::Write;
 
-            const MAX_STR_LEN: usize = 64;
-            // let mut buffer: [u8;MAX_STR_LEN] = [0;MAX_STR_LEN];
-            let mut buffer: [u8;MAX_STR_LEN] = [0;MAX_STR_LEN];
-            let mut buffer = BytesMut::from(buffer.as_slice());
-            buffer.write_fmt(format_args!("{0}", v)).map_err(|err| Error::custom(err)) ?;
+            if !v.is_normal() && !v.is_subnormal() {
+                return Err(Error::custom("BigDecimal supports only norma/subnormal float values."));
+            }
 
-            let as_str: &str = str::from_utf8(buffer.as_ref()).unwrap();
+            let mut bytes = [0u8;64];
+            let mut as_buf = BytesAsBuf::new(&mut bytes[..]);
+            write!(as_buf, "{}", v).map_err(|err| Error::custom(err)) ?;
+
+            // Internal optimized to_string like impl, but it uses internal inaccessible API :-(
+            // let mut formatter = core::fmt::Formatter::new(&mut as_buf);
+            // // Bypass format_args!() to avoid write_str with zero-length strs
+            // core::fmt::Display::fmt(&v, &mut formatter)
+            //     .expect("a Display implementation returned an error unexpectedly");
+
+            // We use separate var to avoid error 'cannot borrow `bytes` as mutable more than once at a time'
+            let len = as_buf.pos;
+
+            let as_str: &str = str::from_utf8(&mut bytes[0..len]).unwrap();
             BigDecimal::from_str(as_str).map_err(|err| Error::custom(err))
-
-            // write!(&buffer, "{}", v).map_err(|err|Error::custom(err)) ?;
-            // write!(&buffer, "{}", v).map_err(|err|Error::custom(err)) ?;
-
         }
         fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E> where E: Error {
             // very-very bad approach with loosing precision
@@ -201,19 +188,27 @@ pub fn deserialize_json_bd_as_std_json_value<'de, D>(deserializer: D) -> Result<
 
             // 13.346000000000000085265128291212022304534912109375
 
-            // let as_string = v.to_string(); // TODO: remove this heap allocation
-            // use std::str::FromStr;
-            // BigDecimal::from_str(as_string.as_str()).map_err(|err|Error::custom(err))
-
             use std::str::{ self, FromStr };
+            use std::fmt::Write;
 
-            const MAX_STR_LEN: usize = 64;
-            // let mut buffer: [u8;MAX_STR_LEN] = [0;MAX_STR_LEN];
-            let mut buffer: [u8;MAX_STR_LEN] = [0;MAX_STR_LEN];
-            let mut buffer = BytesMut::from(buffer.as_slice());
-            buffer.write_fmt(format_args!("{0}", v)).map_err(|err| Error::custom(err)) ?;
+            if !v.is_normal() && !v.is_subnormal() {
+                return Err(Error::custom("BigDecimal supports only norma/subnormal float values."));
+            }
 
-            let as_str: &str = str::from_utf8(buffer.as_ref()).unwrap();
+            let mut bytes = [0u8;64];
+            let mut as_buf = BytesAsBuf::new(&mut bytes[..]);
+            write!(as_buf, "{}", v).map_err(|err| Error::custom(err)) ?;
+
+            // Internal optimized to_string like impl, but it uses internal inaccessible API :-(
+            // let mut formatter = core::fmt::Formatter::new(&mut as_buf);
+            // // Bypass format_args!() to avoid write_str with zero-length strs
+            // core::fmt::Display::fmt(&v, &mut formatter)
+            //     .expect("a Display implementation returned an error unexpectedly");
+
+            // We use separate var to avoid error 'cannot borrow `bytes` as mutable more than once at a time'
+            let len = as_buf.pos;
+
+            let as_str: &str = str::from_utf8(&mut bytes[0..len]).unwrap();
             BigDecimal::from_str(as_str).map_err(|err| Error::custom(err))
         }
         fn visit_char<E>(self, v: char) -> Result<Self::Value, E> where E: Error {
@@ -269,3 +264,14 @@ pub mod bd_with {
     }
 }
 
+
+/*
+pub fn array_init<const LEN: usize>() -> [u8; LEN] {
+    let x = [0u8; LEN];
+    x
+}
+
+pub fn array_uninit<const LEN: usize>() -> [MaybeUninit<u8>; LEN] {
+    MaybeUninit::uninit_array()
+}
+*/

@@ -1144,7 +1144,6 @@ dependencies = [
  "assertables",
  "axum",
  "bigdecimal",
- "bytes",
  "cargo_metadata",
  "chrono",
  "chrono-tz",
