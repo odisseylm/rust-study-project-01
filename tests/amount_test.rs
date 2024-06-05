@@ -5,8 +5,8 @@ use std::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use project01::entities::amount::{ Amount, amount };
-use project01::entities::amount::parse_amount;
-use project01::entities::amount::parse_amount::{ ParseAmountError };
+use project01::entities::amount::parse;
+use project01::entities::amount::parse::{ ParseAmountError };
 use project01::entities::currency::{ EUR, USD, make_currency };
 use project01::make_currency;
 
@@ -178,7 +178,7 @@ fn from_string_with_wrong_formed_currency_do_not_print_stack_trace_twice() {
         // assert_display_stack_trace_is_only_one(&err.source);
         assert_debug_stack_trace_is_only_one(&err.source);
 
-        if let parse_amount::ErrorSource::CurrencyFormatError(ref err) = err.source {
+        if let parse::ErrorSource::CurrencyFormatError(ref err) = err.source {
 
             println!("--------------------------------------------------------------------------------");
             println!("err (display): {}", err);
@@ -226,7 +226,7 @@ fn from_string_with_wrong_amount_value_do_not_print_stack_trace_twice() {
         // T O D O: why no stack trace? Is it ok?
         // assert_debug_stack_trace_is_only_one(&err.source);
 
-        if let parse_amount::ErrorSource::ParseBigDecimalError(ref err) = err.source {
+        if let parse::ErrorSource::ParseBigDecimalError(ref err) = err.source {
 
             println!("--------------------------------------------------------------------------------");
             println!("err (display): {}", err);
@@ -297,7 +297,7 @@ fn aa() {
         println!("err.source (display): {}", err.source);
         println!("err.source (debug)  : {:?}", err.source);
 
-        if let parse_amount::ErrorSource::ParseBigDecimalError(ref bd_err) = err.source {
+        if let parse::ErrorSource::ParseBigDecimalError(ref bd_err) = err.source {
             println!("err.source (display): {}", bd_err);
             println!("err.source (debug)  : {:?}", bd_err);
         }
@@ -525,8 +525,8 @@ fn test_std_error() {
 
 #[test]
 fn test_parse_amount_error() {
-    use project01::entities::amount::parse_amount;
+    use project01::entities::amount::parse::*;
 
-    let err = ParseAmountError::new(parse_amount::ErrorKind::IncorrectAmount);
+    let err = ParseAmountError::new(ErrorKind::IncorrectAmount);
     println!("err: {:?}", err)
 }

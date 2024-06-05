@@ -30,7 +30,7 @@ impl<'de> serde::Deserialize<'de> for Currency {
     }
 }
 
-pub type CurrencyFormatError = parse_currency::CurrencyFormatError;
+pub type CurrencyFormatError = parse::CurrencyFormatError;
 
 impl Currency {
 
@@ -42,6 +42,7 @@ impl Currency {
         self.0
     }
 
+    /*
     pub fn code_as_string(&self) -> String {
         // a bit overcomplicated and needs risky unwrap...
         //String::from_utf8(Vec::from(self.0))
@@ -52,6 +53,7 @@ impl Currency {
         s.push(self.0[2] as char);
         return s;
     }
+    */
 }
 
 impl core::fmt::Display for Currency {
@@ -64,7 +66,7 @@ impl DisplayValueExample for Currency {
 }
 
 fn parse_currency(currency_code: & str) -> Result<Currency, CurrencyFormatError> {
-    use parse_currency::*;
+    use parse::*;
 
     if currency_code.is_empty() {
         return Err(CurrencyFormatError::new(ErrorKind::NoCurrency))
@@ -256,7 +258,7 @@ pub const EUR: Currency = make_currency("EUR");
 // rust does not support nested structs/types/so on.
 // As workaround, I decided to use sub-namespace.
 //
-pub mod parse_currency {
+pub mod parse {
     // use core::fmt;
     // use core::fmt::Formatter;
     // use crate::util::backtrace::{ BacktraceCopyProvider, NewBacktracePolicy };

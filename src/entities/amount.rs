@@ -107,7 +107,7 @@ fn deserialize_amount_as_struct<'de, D>(deserializer: D) -> Result<Amount, D::Er
         }
         fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: MapAccess<'de> {
 
-            use parse_amount::{ ParseAmountError, ErrorKind };
+            use parse::{ ParseAmountError, ErrorKind };
 
             let mut unexpected_count = 0;
             let mut amount_value: Option<Result<BigDecimal, ParseBigDecimalError>> = None;
@@ -169,7 +169,7 @@ impl core::fmt::Debug for Amount {
     }
 }
 
-pub mod parse_amount {
+pub mod parse {
     pub type ParseAmountError = crate::entities::parse_amount::ParseAmountError;
     pub type ErrorKind = crate::entities::parse_amount::ErrorKind;
     pub type ErrorSource = crate::entities::parse_amount::ErrorSource;
@@ -194,12 +194,12 @@ impl crate::util::string::DisplayValueExample for Amount {
 
 impl Amount {
 
-    pub fn with_str_amount(amount: &str, currency: Currency) -> Result<Self, parse_amount::ParseAmountError> {
+    pub fn with_str_amount(amount: &str, currency: Currency) -> Result<Self, parse::ParseAmountError> {
         use core::str::FromStr;
 
-        let bd: Result<BigDecimal, parse_amount::ParseAmountError> = BigDecimal::from_str(amount)
-            .map_err(|bd_err|parse_amount::ParseAmountError::with_from(
-                parse_amount::ErrorKind::IncorrectAmount, bd_err));
+        let bd: Result<BigDecimal, parse::ParseAmountError> = BigDecimal::from_str(amount)
+            .map_err(|bd_err|parse::ParseAmountError::with_from(
+                parse::ErrorKind::IncorrectAmount, bd_err));
         return bd.map(|am| Amount { value: am, currency } );
     }
 
@@ -249,8 +249,8 @@ pub fn amount(amount: BigDecimal, currency: Currency) -> Amount { Amount::new(am
 
 #[inherent::inherent]
 impl core::str::FromStr for Amount {
-    type Err = parse_amount::ParseAmountError;
+    type Err = parse::ParseAmountError;
 
     #[inline]
-    pub fn from_str(s: &str) -> Result<Amount, parse_amount::ParseAmountError> { crate::entities::parse_amount::parse_amount(s) }
+    pub fn from_str(s: &str) -> Result<Amount, parse::ParseAmountError> { crate::entities::parse_amount::parse_amount(s) }
 }

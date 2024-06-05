@@ -13,7 +13,8 @@ use common::TestResultUnwrap;
 fn test_temp() {
 
     let cur: Currency = make_currency!("USD");
-    assert_eq!(cur.code_as_string(), "USD");
+    // assert_eq!(cur.code_as_string(), "USD");
+    assert_eq!(cur.to_string(), "USD");
 
     // let cur: Currency = make_currency2!("US");
     // assert_eq!(cur.code_as_string(), "US");
@@ -25,7 +26,8 @@ fn test_temp() {
     // assert_eq!(CUR43.code_as_string(), "USD");
 
     let cur43: Currency = make_currency!("usd"); // Does NOT fail at compile time (only at runtime) - BAD!!! Why??
-    assert_eq!(cur43.code_as_string(), "USD");
+    // assert_eq!(cur43.code_as_string(), "USD");
+    assert_eq!(cur43.to_string(), "USD");
 
     //const CUR44: Currency = make_currency2!("US");
     //assert_eq!(CUR44.code_as_string(), "US");
@@ -34,7 +36,8 @@ fn test_temp() {
     // assert_eq!(CUR44.code_as_string(), "US");
 
     let cur45_4: Currency = make_currency!("usd");
-    assert_eq!(cur45_4.code_as_string(), "US");
+    // assert_eq!(cur45_4.code_as_string(), "US");
+    assert_eq!(cur45_4.to_string(), "US");
 
     // noinspection RsConstNaming
     // const cur45_2: Currency = make_currency("US"); // fails at compile time - vey good
@@ -43,10 +46,12 @@ fn test_temp() {
     let not_direct_literal = "US";
     let cur45_0: Currency = make_currency(not_direct_literal);
     // let cur45: Currency = make_currency3!(not_direct_literal);
-    assert_eq!(cur45_0.code_as_string(), "US");
+    // assert_eq!(cur45_0.code_as_string(), "US");
+    assert_eq!(cur45_0.to_string(), "US");
 
     let cur46: Currency = make_currency!("US");
-    assert_eq!(cur46.code_as_string(), "US");
+    // assert_eq!(cur46.code_as_string(), "US");
+    assert_eq!(cur46.to_string(), "US");
 }
 
 // ??? Does not work !!!
@@ -59,12 +64,14 @@ fn test_temp() {
 #[test]
 fn make_currency_test() {
     const UAH: Currency = make_currency("UAH");
-    assert_eq!(UAH.code_as_string(), "UAH");
+    // assert_eq!(UAH.code_as_string(), "UAH");
+    assert_eq!(UAH.to_string(), "UAH");
     assert_eq!(UAH.code_as_ascii_bytes(), *b"UAH");
     assert_eq!(UAH.code_as_ascii_bytes(), ['U' as u8, 'A' as u8, 'H' as u8]);
 
     let jpy = make_currency("JPY");
-    assert_eq!(jpy.code_as_string(), "JPY");
+    // assert_eq!(jpy.code_as_string(), "JPY");
+    assert_eq!(jpy.to_string(), "JPY");
     assert_eq!(jpy.code_as_ascii_bytes(), *b"JPY");
     assert_eq!(jpy.code_as_ascii_bytes(), ['J' as u8, 'P' as u8, 'Y' as u8]);
 }
@@ -72,36 +79,42 @@ fn make_currency_test() {
 #[test]
 fn make_currency_b_test() {
     const UAH: Currency = make_currency_b(b"UAH");
-    assert_eq!(UAH.code_as_string(), "UAH");
+    // assert_eq!(UAH.code_as_string(), "UAH");
+    assert_eq!(UAH.to_string(), "UAH");
     assert_eq!(UAH.code_as_ascii_bytes(), *b"UAH");
     assert_eq!(UAH.code_as_ascii_bytes(), ['U' as u8, 'A' as u8, 'H' as u8]);
 
     //const UAH2: Currency = make_currency!(b"UAH");
     const UAH2: Currency = make_currency_b!(b"UAH");
-    assert_eq!(UAH2.code_as_string(), "UAH");
+    // assert_eq!(UAH2.code_as_string(), "UAH");
+    assert_eq!(UAH2.to_string(), "UAH");
     assert_eq!(UAH2.code_as_ascii_bytes(), *b"UAH");
     assert_eq!(UAH2.code_as_ascii_bytes(), ['U' as u8, 'A' as u8, 'H' as u8]);
 
     let jpy = make_currency_b(b"JPY");
-    assert_eq!(jpy.code_as_string(), "JPY");
+    // assert_eq!(jpy.code_as_string(), "JPY");
+    assert_eq!(jpy.to_string(), "JPY");
     assert_eq!(jpy.code_as_ascii_bytes(), *b"JPY");
 }
 
 #[test]
 fn make_currency2_test() {
     const UAH: Currency = make_currency("UAH");
-    assert_eq!(UAH.code_as_string(), "UAH");
+    // assert_eq!(UAH.code_as_string(), "UAH");
+    assert_eq!(UAH.to_string(), "UAH");
     assert_eq!(UAH.code_as_ascii_bytes(), ['U' as u8, 'A' as u8, 'H' as u8]);
 
     let jpy = make_currency("JPY");
-    assert_eq!(jpy.code_as_string(), "JPY");
+    // assert_eq!(jpy.code_as_string(), "JPY");
+    assert_eq!(jpy.to_string(), "JPY");
     assert_eq!(jpy.code_as_ascii_bytes(), ['J' as u8, 'P' as u8, 'Y' as u8]);
 }
 
 #[test]
 fn currency_new_test() {
     let uah = Currency::new("UAH".to_string()).test_unwrap();
-    assert_eq!(uah.code_as_string(), "UAH");
+    // assert_eq!(uah.code_as_string(), "UAH");
+    assert_eq!(uah.to_string(), "UAH");
     assert_eq!(uah.code_as_ascii_bytes(), ['U' as u8, 'A' as u8, 'H' as u8]);
 }
 
@@ -214,15 +227,18 @@ fn impossible_to_change_existent_currency_from_outside_package() {
 
     let mut temp_obj: Currency = USD;
     temp_obj.code_as_ascii_bytes()[0] = 'W' as u8;
-    temp_obj.code_as_string().push('Z'); // As expected it does not change currency object.
+    // temp_obj.code_as_string().push('Z'); // As expected it does not change currency object.
+    temp_obj.to_string().push('Z'); // As expected it does not change currency object.
     println!("{}", temp_obj);
 
-    assert_eq!(temp_obj.code_as_string(), "USD");
+    // assert_eq!(temp_obj.code_as_string(), "USD");
+    assert_eq!(temp_obj.to_string(), "USD");
 }
 
 #[test]
 fn use_public_constants() {
-    assert_eq!(USD.code_as_string(), "USD");
+    // assert_eq!(USD.code_as_string(), "USD");
+    assert_eq!(USD.to_string(), "USD");
     assert_eq!(EUR.code_as_ascii_bytes()[0], 'E' as u8);
     assert_eq!(EUR.code_as_ascii_bytes()[1], 'U' as u8);
     assert_eq!(EUR.code_as_ascii_bytes()[2], 'R' as u8);

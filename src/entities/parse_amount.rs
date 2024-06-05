@@ -17,7 +17,6 @@ fn usage_nf_from_relative_path() {
 // For internal usage, Use Amount::from_str() in production code.
 //
 pub fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
-    // use crate::entities::amount::parse_amount::{ParseAmountError, ErrorKind };
 
     let s = s.trim();
 
@@ -46,7 +45,7 @@ pub fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
 
 use bigdecimal::ParseBigDecimalError;
 use crate::util::backtrace::BacktraceInfo;
-use crate::entities::currency::parse_currency::CurrencyFormatError;
+use crate::entities::currency::parse::CurrencyFormatError;
 
 
 // Duplicated since copy of this code (in amount_parse_old.rs) is also used for testing MyStaticStructError

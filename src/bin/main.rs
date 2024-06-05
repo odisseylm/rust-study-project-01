@@ -32,7 +32,8 @@ fn main() {
 
     println!("{}", USD);
     //println!("{}", USD.code());
-    println!("{} (as code_as_string)", USD.code_as_string());
+    // println!("{} (as code_as_string)", USD.code_as_string());
+    println!("{} (as string)", USD.to_string());
 
     // let cur2 = Currency::new(['u' as u8, 'S' as u8, 'D' as u8]);
     let cur2: Result<Currency, CurrencyFormatError> = Currency::new("uSD".to_string());
