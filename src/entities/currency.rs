@@ -81,11 +81,12 @@ fn parse_currency(currency_code: & str) -> Result<Currency, CurrencyFormatError>
 }
 
 
+#[inherent::inherent]
 impl FromStr for Currency {
     type Err = CurrencyFormatError;
 
     #[inline]
-    fn from_str(s: &str) -> Result<Currency, Self::Err> {
+    pub fn from_str(s: &str) -> Result<Currency, CurrencyFormatError> {
         parse_currency(s)
     }
 }

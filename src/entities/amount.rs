@@ -1,23 +1,17 @@
-use std::str::{ FromStr };
-use bigdecimal::{ BigDecimal, BigDecimalRef, ParseBigDecimalError };
-use crate::entities::currency::{ Currency, CurrencyFormatError };
-use serde::{ Deserialize, Deserializer, Serialize };
-use serde::de::{ Error, MapAccess, Visitor};
-use crate::entities::serde_json_bd::{BDRefSerdeWrapper, BDSerdeWrapper};
-use crate::util::serde_json::{ deserialize_as_from_str, serialize_as_display_string };
-use crate::util::string::DisplayValueExample;
+use bigdecimal::BigDecimal;
+use crate::entities::currency::Currency;
 // use crate::entities::currency::Currency;       // ++
 // use ::project01::entities::currency::Currency; // --
 // use project01::entities::currency::Currency;   // --
 // use self::super::currency::Currency;           // ++
 // use super::currency::Currency;                 // ++
-use crate::util::UncheckedResultUnwrap;
 
 
 // #[derive(Debug)]
 #[derive(PartialEq, Eq)]
-// #[derive(Serialize, Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Amount {
+    #[serde(with = "crate::entities::serde_json_bd::bd_with")]
     value: BigDecimal,
     currency: Currency,
 }
@@ -43,15 +37,15 @@ impl Serialize for Person {
     }
 }
 */
-
-impl Serialize for Amount {
+/*
+impl serde::Serialize for Amount {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
         // serialize_amount_as_string(self, serializer)
         serialize_amount_as_struct(self, serializer)
     }
 }
-impl<'de> Deserialize<'de> for Amount {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+impl<'de> serde::Deserialize<'de> for Amount {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: serde::Deserializer<'de> {
         // deserialize_amount_as_string(deserializer)
         deserialize_amount_as_struct(deserializer)
     }
@@ -60,6 +54,7 @@ impl<'de> Deserialize<'de> for Amount {
 
 fn serialize_amount_as_struct<S>(amount: &Amount, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
     use serde::ser::SerializeStruct;
+    use crate::entities::serde_json_bd::BDRefSerdeWrapper;
 
     // let bd_wrapper = BDRefSerdeWrapper(&amount.value);
     // let currency = amount.currency.to_string();
@@ -81,16 +76,26 @@ fn serialize_amount_as_struct<S>(amount: &Amount, serializer: S) -> Result<S::Ok
 // TODO: add test
 #[allow(dead_code)]
 fn serialize_amount_as_string<S>(amount: &Amount, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+    use crate::util::serde_json::serialize_as_display_string;
     serialize_as_display_string(serializer, &amount)
 }
 
 // TODO: add test
 #[allow(dead_code)]
-fn deserialize_amount_as_string<'de, D>(deserializer: D) -> Result<Amount, D::Error> where D: Deserializer<'de> {
+fn deserialize_amount_as_string<'de, D>(deserializer: D) -> Result<Amount, D::Error>
+    where D: serde::Deserializer<'de> {
+
+    use crate::util::serde_json::deserialize_as_from_str;
     deserialize_as_from_str(deserializer)
 }
 
-fn deserialize_amount_as_struct<'de, D>(deserializer: D) -> Result<Amount, D::Error> where D: Deserializer<'de> {
+fn deserialize_amount_as_struct<'de, D>(deserializer: D) -> Result<Amount, D::Error>
+    where D: serde::Deserializer<'de> {
+
+    use crate::entities::serde_json_bd::BDSerdeWrapper;
+    use crate::entities::currency::CurrencyFormatError;
+    use bigdecimal::ParseBigDecimalError;
+    use serde::de::{ Visitor, MapAccess, Error };
 
     struct FieldVisitor;
     impl<'de> Visitor<'de> for FieldVisitor {
@@ -156,6 +161,7 @@ fn deserialize_amount_as_struct<'de, D>(deserializer: D) -> Result<Amount, D::Er
     let v = FieldVisitor{};
     deserializer.deserialize_struct("amount", &["value", "currency",], v)
 }
+*/
 
 impl core::fmt::Debug for Amount {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -181,19 +187,24 @@ impl core::fmt::Display for Amount {
         write!(f, "{} {}", self.value, self.currency)
     }
 }
-impl DisplayValueExample for Amount {
+impl crate::util::string::DisplayValueExample for Amount {
     fn display_value_example() -> &'static str { r#""1234.5678 EUR""# }
 }
 
 
 impl Amount {
 
-    pub fn with_str_amount(amount: &str, currency: Currency) -> Result<Self, ParseBigDecimalError> {
-        let bd: Result<BigDecimal, ParseBigDecimalError> = BigDecimal::from_str(amount);
+    pub fn with_str_amount(amount: &str, currency: Currency) -> Result<Self, parse_amount::ParseAmountError> {
+        use core::str::FromStr;
+
+        let bd: Result<BigDecimal, parse_amount::ParseAmountError> = BigDecimal::from_str(amount)
+            .map_err(|bd_err|parse_amount::ParseAmountError::with_from(
+                parse_amount::ErrorKind::IncorrectAmount, bd_err));
         return bd.map(|am| Amount { value: am, currency } );
     }
 
     pub fn with_str_amount_unchecked(amount: &str, currency: Currency) -> Self {
+        use crate::util::UncheckedResultUnwrap;
         Amount::with_str_amount(amount, currency).unchecked_unwrap()
     }
 
@@ -215,7 +226,7 @@ impl Amount {
         &self.value
     }
 
-    pub fn value_bd_ref(&self) -> BigDecimalRef<'_> {
+    pub fn value_bd_ref(&self) -> bigdecimal::BigDecimalRef<'_> {
         self.value.to_ref()
     }
 
@@ -237,7 +248,7 @@ pub fn amount(amount: BigDecimal, currency: Currency) -> Amount { Amount::new(am
 
 
 #[inherent::inherent]
-impl FromStr for Amount {
+impl core::str::FromStr for Amount {
     type Err = parse_amount::ParseAmountError;
 
     #[inline]

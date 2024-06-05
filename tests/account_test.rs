@@ -14,7 +14,7 @@ use project01::util::test_unwrap::{ TestResultDebugErrOps, TestResultDisplayErrO
 
 #[test]
 // #[allow(unused_mut)]
-fn test_to_json() {
+fn test_to_json() { // TODO: split to several tests or use soft assertions
     // let as_json_obj = Json(account_01());
     // let aa: String = as_json_obj.into();
     // assert_eq!("gfgfg", aa);
@@ -188,7 +188,8 @@ fn test_to_json() {
     let err_str = json_res.err_to_test_debug_string();
     println!("### error str: {}", err_str);
     assert_contains!(err_str.as_str(),
-        r#"Error("ParseAmountError { No currency in amount }", line: 6, column: 16"#
+        // r#"Error("ParseAmountError { No currency in amount }", line: 6, column: 16"#
+        r#"Error("missing field `currency`", line: 7, column: 3)"#
         // r#"Error("invalid type: map, expected \"1234.5678 EUR\"", line: 4, column: 11"#
     );
 
@@ -198,7 +199,7 @@ fn test_to_json() {
             "id":"1",
             "userId":"2",
             "amount":{
-              "value":"123.44",
+              "value":"123.44"
             },
             "createdAt":"2022-05-31T08:29:30Z",
             "updatedAt":"2024-05-31T20:29:57Z"
@@ -206,7 +207,8 @@ fn test_to_json() {
     let err_str = json_res.err_to_test_display_string();
     println!("### err_str: {}", err_str);
     assert_contains!(err_str.as_str(),
-        r#"ParseAmountError { No currency in amount } at line 6 column 13"#
+        r#"missing field `currency` at line 6 column 13"#
+        // r#"ParseAmountError { No currency in amount } at line 6 column 13"#
         // r#"invalid type: map, expected "1234.5678 EUR" at line 4 column 21"#
     );
 
@@ -224,7 +226,8 @@ fn test_to_json() {
     let err_str = json_res.err_to_test_debug_string();
     println!("### err_str: {}", err_str);
     assert_contains!(err_str.as_str(),
-        r#"Error("ParseAmountError { No amount in amount }", line: 6, column: 13"#
+        r#"Error("missing field `value`", line: 6, column: 13)"#
+        // r#"Error("ParseAmountError { No amount in amount }", line: 6, column: 13"#
         // r#"invalid type: map, expected \"1234.5678 EUR\"", line: 4, column: 21"#
     );
 
@@ -243,7 +246,8 @@ fn test_to_json() {
     let err_str = json_res.err_to_test_debug_string();
     println!("### err_str: {}", err_str);
     assert_contains!(err_str.as_str(),
-        r#"Error("ParseAmountError { Incorrect currency format }", line: 7, column: 13)"#
+        r#"Error("CurrencyFormatError { Incorrect currency format }", line: 6, column: 29)"#
+        // r#"Error("ParseAmountError { Incorrect currency format }", line: 7, column: 13)"#
         // r#"invalid type: map, expected \"1234.5678 EUR\"", line: 4, column: 21"#
     );
 
