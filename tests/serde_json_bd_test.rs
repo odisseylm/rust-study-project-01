@@ -76,19 +76,21 @@ fn test_big_decimal_fields_as_ser_by_f64_fn() {
 
     use bigdecimal::{ FromPrimitive, ToPrimitive };
 
-    let bd_from_str = BigDecimal::from_str("13.346").test_unwrap();
+    // !!! BigDecimal has very-very BAD converting from f32/f64 !!!
+    // If value is not nan/infinity/etc, it is better to convert f32/f64 to string,
+    // and convert resulting string to BigDecimal
     let bd_from_f64 = BigDecimal::from_f64(13.346f64).test_unwrap();
+    let bd_from_str = BigDecimal::from_str("13.346").test_unwrap();
     println!("bd_from_str: {}, bd_from_f64: {}", bd_from_str, bd_from_f64);
     assert_in_epsilon!(bd_from_str.to_f64().test_unwrap(), bd_from_f64.to_f64().test_unwrap(), 0.00000000000001);
-    //assert_contains!();
     // assert_eq!(bd_from_f64, bd_from_str);
 
     let s: StructBDDeSerByF64 = serde_json::from_str(r#"{"bd":15.346}"#).test_unwrap();
     assert_eq!(s.bd, BigDecimal::from_str("15.346").test_unwrap());
-    assert_in_epsilon!(
-        s.bd.to_f64().test_unwrap(),
-        BigDecimal::from_str("15.346").unwrap().to_f64().test_unwrap(),
-        0.000000000000001);
+    // assert_in_epsilon!(
+    //     s.bd.to_f64().test_unwrap(),
+    //     BigDecimal::from_str("15.346").unwrap().to_f64().test_unwrap(),
+    //     0.000000000000001);
 }
 
 
@@ -114,4 +116,29 @@ fn test_big_decimal_fields_as_with_ser_module() {
 }
 
 
-// TODO: add precision & from string & to string serialization/deserialization.
+#[cfg(feature = "serde_json_raw_value")]
+#[derive(Debug, Serialize, Deserialize)]
+struct StructBDDeSerByRawValue {
+    #[serde(
+        serialize_with = "project01::entities::serde_json_bd::serialize_json_bd_as_raw_value",
+        deserialize_with = "project01::entities::serde_json_bd::deserialize_json_bd_as_raw_value",
+    )]
+    bd: BigDecimal,
+}
+
+#[cfg(feature = "serde_json_raw_value")]
+#[test]
+fn test_big_decimal_fields_as_ser_by_raw_value() {
+    use core::str::FromStr;
+
+    let s = StructBDDeSerByRawValue { bd: BigDecimal::from_str(
+        "12.345111111111111111222222222222222233333333333334444444444455555555").test_unwrap() };
+
+    let s = serde_json::to_string(&s).test_unwrap();
+    println!("###s: {}", s);
+    assert_eq!(s, r#"{"bd":12.345111111111111111222222222222222233333333333334444444444455555555}"#);
+
+    let s: StructBDDeSerByRawValue = serde_json::from_str(
+        r#"{"bd":12.345111111111111111222222222222222233333333333334444444444455555555}"#).test_unwrap();
+    assert_eq!(s.bd, BigDecimal::from_str("12.345111111111111111222222222222222233333333333334444444444455555555").test_unwrap());
+}
