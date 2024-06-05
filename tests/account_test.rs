@@ -35,7 +35,10 @@ fn test_to_json() {
     let s = serde_json::to_string(&account_01()).test_unwrap();
     println!("###s: {}", s);
 
-    assert_eq!(s, r#"{"id":"1","userId":"2","amount":{"value":123.44,"currency":"USD"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#);
+    assert_eq!(s,
+        r#"{"id":"1","userId":"2","amount":{"value":123.44,"currency":"USD"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#
+        // r#"{"id":"1","userId":"2","amount":"123.44 USD","createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#
+    );
 
     // +++
     // Working but only one 'assert_json = "0.1.0"'
@@ -79,6 +82,7 @@ fn test_to_json() {
             "id": "1",
             "userId": "2",
             "amount": { "value": 123.44, "currency":"USD" },
+            // "amount": "123.44 USD",
             "createdAt": "2022-05-31T08:29:30Z",
             "updatedAt": "2024-05-31T20:29:57Z",
             }
@@ -97,7 +101,10 @@ fn test_to_json() {
 
     let s = serde_json::to_string(&account1).test_unwrap();
     println!("###s: {}", s);
-    assert_eq!(s, r#"{"id":"1","userId":"2","amount":{"value":123.55555555555555555666666666666666677777,"currency":"EUR"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#);
+    assert_eq!(s,
+        r#"{"id":"1","userId":"2","amount":{"value":123.55555555555555555666666666666666677777,"currency":"EUR"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#
+        // r#"{"id":"1","userId":"2","amount":"123.55555555555555555666666666666666677777 EUR","createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#
+    );
 
     assert_json_diff::assert_json_eq!(
         serde_json::Value::from_str(s.as_str()).test_unwrap(),
@@ -107,6 +114,7 @@ fn test_to_json() {
             "userId": "2",
             // assert_json_eq does not support too long numbers
             "amount": { "value": 123.55555555555556, "currency":"EUR" },
+            // "amount": "123.55555555555555555666666666666666677777 EUR",
             "createdAt": "2022-05-31T08:29:30Z",
             "updatedAt": "2024-05-31T20:29:57Z",
             }
@@ -121,13 +129,21 @@ fn test_to_json() {
             "userId": "2",
             // assert_json_eq does not support too long numbers
             "amount": { "value": 123.55555555555555555666666666666666677777, "currency":"EUR" },
+            // "amount": "123.55555555555555555666666666666666677777 EUR",
             "createdAt": "2022-05-31T08:29:30Z",
             "updatedAt": "2024-05-31T20:29:57Z",
             }
         )
     );
 
-    let r = serde_json::from_str::<Account>(r#"{"id":"1","userId":"2","amount":{"value":"123.44","currency":"USD"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#);
+    let r = serde_json::from_str::<Account>(
+        r#"{"id":"1","userId":"2","amount":
+        {"value":"123.44","currency":"USD"},
+        "createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#
+        // r#"{"id":"1","userId":"2","amount":
+        // "123.44 USD",
+        // "createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#
+    );
     let account = r.test_unwrap();
     println!("### r: {:?}", account);
 
@@ -143,7 +159,10 @@ fn test_to_json() {
     println!("### 01 bd: {}", bd);
 
 
-    let r = serde_json::from_str::<Account>(r#"{"id":"1","userId":"2","amount":{"value":123.44444444444444444444444444444444444333,"currency":"USD"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#);
+    let r = serde_json::from_str::<Account>(
+        r#"{"id":"1","userId":"2","amount":{"value":123.44444444444444444444444444444444444333,"currency":"USD"},"createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#
+        // r#"{"id":"1","userId":"2","amount":"123.44444444444444444444444444444444444333 USD","createdAt":"2022-05-31T08:29:30Z","updatedAt":"2024-05-31T20:29:57Z"}"#
+    );
     let account = r.test_unwrap();
     println!("### r: {:?}", account);
 
@@ -168,7 +187,10 @@ fn test_to_json() {
           }"# });
     let err_str = json_res.err_to_test_debug_string();
     println!("### error str: {}", err_str);
-    assert_contains!(err_str.as_str(), r#"Error("ParseAmountError { No currency in amount }", line: 6, column: 16"#);
+    assert_contains!(err_str.as_str(),
+        r#"Error("ParseAmountError { No currency in amount }", line: 6, column: 16"#
+        // r#"Error("invalid type: map, expected \"1234.5678 EUR\"", line: 4, column: 11"#
+    );
 
 
     let json_res = serde_json::from_str::<Account>(
@@ -183,7 +205,10 @@ fn test_to_json() {
           }"#);
     let err_str = json_res.err_to_test_display_string();
     println!("### err_str: {}", err_str);
-    assert_contains!(err_str.as_str(), r#"ParseAmountError { No currency in amount } at line 6 column 13"#);
+    assert_contains!(err_str.as_str(),
+        r#"ParseAmountError { No currency in amount } at line 6 column 13"#
+        // r#"invalid type: map, expected "1234.5678 EUR" at line 4 column 21"#
+    );
 
 
     let json_res = serde_json::from_str::<Account>(
@@ -198,7 +223,10 @@ fn test_to_json() {
           }"#);
     let err_str = json_res.err_to_test_debug_string();
     println!("### err_str: {}", err_str);
-    assert_contains!(err_str.as_str(), r#"Error("ParseAmountError { No amount in amount }", line: 6, column: 13"#);
+    assert_contains!(err_str.as_str(),
+        r#"Error("ParseAmountError { No amount in amount }", line: 6, column: 13"#
+        // r#"invalid type: map, expected \"1234.5678 EUR\"", line: 4, column: 21"#
+    );
 
 
     let json_res = serde_json::from_str::<Account>(
@@ -214,7 +242,10 @@ fn test_to_json() {
           }"#);
     let err_str = json_res.err_to_test_debug_string();
     println!("### err_str: {}", err_str);
-    assert_contains!(err_str.as_str(), r#"Error("ParseAmountError { Incorrect currency format }", line: 7, column: 13)"#);
+    assert_contains!(err_str.as_str(),
+        r#"Error("ParseAmountError { Incorrect currency format }", line: 7, column: 13)"#
+        // r#"invalid type: map, expected \"1234.5678 EUR\"", line: 4, column: 21"#
+    );
 
 
     // This test does not fail. Let's live with it.

@@ -44,86 +44,125 @@ impl Serialize for Person {
 
 impl Serialize for Amount {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
-        use serde::ser::SerializeStruct;
-
-        let bd_wrapper = BDRefSerdeWrapper(&self.value);
-        let currency = self.currency.to_string();
-
-        let mut s = serializer.serialize_struct("amount", 2) ?;
-        s.serialize_field("value", &bd_wrapper) ?;  // TODO: use Display
-        s.serialize_field("currency", &currency) ?; // TODO: use &str
-        s.end()
+        // serialize_amount_as_string(self, serializer)
+        serialize_amount_as_struct(self, serializer)
+    }
+}
+impl<'de> Deserialize<'de> for Amount {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+        // deserialize_amount_as_string(deserializer)
+        deserialize_amount_as_struct(deserializer)
     }
 }
 
 
-impl<'de> Deserialize<'de> for Amount {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: Deserializer<'de> {
+fn serialize_amount_as_struct<S>(amount: &Amount, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+    use serde::ser::SerializeStruct;
 
-        struct FieldVisitor;
-        impl<'de> Visitor<'de> for FieldVisitor {
-            type Value = Amount;
+    let bd_wrapper = BDRefSerdeWrapper(&amount.value);
+    let currency = amount.currency.to_string();
 
-            fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
-                // actually it should not be used in our case
-                write!(formatter, r#"{{ value: 1234.5678, currency: "EUR" }}"#)
-            }
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: MapAccess<'de> {
+    let mut s = serializer.serialize_struct("amount", 2) ?;
+    s.serialize_field("value", &bd_wrapper) ?;  // TODO: use Display
+    s.serialize_field("currency", &currency) ?; // TODO: use &str
+    s.end()
+}
 
-                use parse_amount::{ ParseAmountError, ErrorKind };
+fn serialize_amount_as_string<S>(amount: &Amount, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+    let amount_as_str = amount.to_string();
+    serializer.serialize_str(&amount_as_str)
+}
 
-                let mut unexpected_count = 0;
-                let mut amount_value: Option<Result<BigDecimal, ParseBigDecimalError>> = None;
-                let mut amount_currency: Option<Result<Currency, CurrencyFormatError>> = None;
 
-                while let Ok::<Option<&str>,_>(key) = map.next_key() {
-                    match key {
-                        None => { break }
-                        Some(key) => {
-                            match key {
-                                "currency" => {
-                                    if let Ok::<&'de str,_>(v) = map.next_value() {
-                                        amount_currency = Some(Currency::from_str(v))
-                                    }
+
+fn deserialize_amount_as_string<'de, D>(deserializer: D) -> Result<Amount, D::Error> where D: Deserializer<'de> {
+
+    struct FieldVisitor;
+    impl<'de> Visitor<'de> for FieldVisitor {
+        type Value = Amount;
+
+        fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+            write!(formatter, r#""1234.5678 EUR""#)
+        }
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: Error {
+            Amount::from_str(v).map_err(Error::custom)
+        }
+        fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E> where E: Error {
+            Amount::from_str(v).map_err(Error::custom)
+        }
+        fn visit_string<E>(self, v: String) -> Result<Self::Value, E> where E: Error {
+            Amount::from_str(v.as_str()).map_err(Error::custom)
+        }
+    }
+    let v = FieldVisitor{};
+    deserializer.deserialize_str(v)
+}
+
+fn deserialize_amount_as_struct<'de, D>(deserializer: D) -> Result<Amount, D::Error> where D: Deserializer<'de> {
+
+    struct FieldVisitor;
+    impl<'de> Visitor<'de> for FieldVisitor {
+        type Value = Amount;
+
+        fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
+            // actually it should not be used in our case
+            write!(formatter, r#"{{ value: 1234.5678, currency: "EUR" }}"#)
+        }
+        fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: MapAccess<'de> {
+
+            use parse_amount::{ ParseAmountError, ErrorKind };
+
+            let mut unexpected_count = 0;
+            let mut amount_value: Option<Result<BigDecimal, ParseBigDecimalError>> = None;
+            let mut amount_currency: Option<Result<Currency, CurrencyFormatError>> = None;
+
+            while let Ok::<Option<&str>,_>(key) = map.next_key() {
+                match key {
+                    None => { break }
+                    Some(key) => {
+                        match key {
+                            "currency" => {
+                                if let Ok::<&'de str,_>(v) = map.next_value() {
+                                    amount_currency = Some(Currency::from_str(v))
                                 }
-                                "value" => {
-                                    if let Ok::<BDSerdeWrapper,_>(v) = map.next_value() {
-                                        amount_value = Some(Ok(v.0))
-                                    }
-                                }
-                                _ => { unexpected_count += 1 }
                             }
+                            "value" => {
+                                if let Ok::<BDSerdeWrapper,_>(v) = map.next_value() {
+                                    amount_value = Some(Ok(v.0))
+                                }
+                            }
+                            _ => { unexpected_count += 1 }
                         }
                     }
-                };
-
-                let amount_value: Result<BigDecimal, ParseBigDecimalError> = amount_value
-                    .ok_or_else(|| ParseAmountError::new(ErrorKind::NoAmount))
-                    .map_err(Error::custom) ?;
-
-                let amount_currency = amount_currency
-                    .ok_or_else(|| ParseAmountError::new(ErrorKind::NoCurrency))
-                    .map_err(Error::custom) ?;
-
-                let amount_value    = amount_value
-                    .map_err(|amount_err| ParseAmountError::with_from(ErrorKind::IncorrectAmount, amount_err))
-                    .map_err(Error::custom) ?;
-
-                let amount_currency = amount_currency
-                    .map_err(|cur_err| ParseAmountError::with_from(ErrorKind::IncorrectCurrency, cur_err))
-                    .map_err(Error::custom) ?;
-
-                if unexpected_count != 0 {
-                    // Seems it never works because list of expected fields is specified in call of deserialize_struct().
-                    return Err(Error::custom("Amount json block has unexpected items."));
                 }
+            };
 
-                Ok(Amount { value: amount_value, currency: amount_currency })
+            let amount_value: Result<BigDecimal, ParseBigDecimalError> = amount_value
+                .ok_or_else(|| ParseAmountError::new(ErrorKind::NoAmount))
+                .map_err(Error::custom) ?;
+
+            let amount_currency = amount_currency
+                .ok_or_else(|| ParseAmountError::new(ErrorKind::NoCurrency))
+                .map_err(Error::custom) ?;
+
+            let amount_value    = amount_value
+                .map_err(|amount_err| ParseAmountError::with_from(ErrorKind::IncorrectAmount, amount_err))
+                .map_err(Error::custom) ?;
+
+            let amount_currency = amount_currency
+                .map_err(|cur_err| ParseAmountError::with_from(ErrorKind::IncorrectCurrency, cur_err))
+                .map_err(Error::custom) ?;
+
+            if unexpected_count != 0 {
+                // Seems it never works because list of expected fields is specified in call of deserialize_struct().
+                return Err(Error::custom("Amount json block has unexpected items."));
             }
+
+            Ok(Amount { value: amount_value, currency: amount_currency })
         }
-        let v = FieldVisitor{};
-        deserializer.deserialize_struct("amount", &["value", "currency",], v)
     }
+    let v = FieldVisitor{};
+    deserializer.deserialize_struct("amount", &["value", "currency",], v)
 }
 
 impl core::fmt::Debug for Amount {
