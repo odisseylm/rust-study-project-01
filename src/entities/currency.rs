@@ -2,11 +2,14 @@
 
 use std::char;
 use std::str::FromStr;
-use serde::{Deserialize, Serialize};
+use crate::util::serde_json::{ deserialize_as_from_str, serialize_as_display_string };
+use crate::util::string::DisplayValueExample;
 
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-#[derive(Serialize, Deserialize)]
+// #[derive(Serialize, Deserialize)]
+// #[serde(with = crate::util::serde_json::as_str)]
+// #[serde(deserialize_with = "string_or_struct")]
 pub struct Currency([u8;3]);
 
 impl core::fmt::Debug for Currency {
@@ -15,6 +18,17 @@ impl core::fmt::Debug for Currency {
     }
 }
 
+// TODO: how simplify it? I wanna have only one line instead of 4.
+impl serde::ser::Serialize for Currency {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+        serialize_as_display_string(serializer, &self)
+    }
+}
+impl<'de> serde::Deserialize<'de> for Currency {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error> where D: serde::Deserializer<'de> {
+        deserialize_as_from_str(deserializer)
+    }
+}
 
 pub type CurrencyFormatError = parse_currency::CurrencyFormatError;
 
@@ -44,6 +58,9 @@ impl core::fmt::Display for Currency {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}{}{}", self.0[0] as char, self.0[1] as char, self.0[2] as char)
     }
+}
+impl DisplayValueExample for Currency {
+    fn display_value_example() -> &'static str { "AUD" }
 }
 
 fn parse_currency(currency_code: & str) -> Result<Currency, CurrencyFormatError> {

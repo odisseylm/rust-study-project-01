@@ -9,6 +9,7 @@ pub mod test_unwrap;
 pub mod string;
 pub mod obj_ext;
 pub mod fmt;
+pub mod serde_json;
 
 pub use crate::util::result::{ as_printable, as_printable_ptr };
 pub use crate::util::unchecked::{ UncheckedOptionUnwrap, UncheckedResultUnwrap };

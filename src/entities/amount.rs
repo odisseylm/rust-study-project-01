@@ -4,6 +4,8 @@ use crate::entities::currency::{ Currency, CurrencyFormatError };
 use serde::{ Deserialize, Deserializer, Serialize };
 use serde::de::{ Error, MapAccess, Visitor};
 use crate::entities::serde_json_bd::{BDRefSerdeWrapper, BDSerdeWrapper};
+use crate::util::serde_json::{ deserialize_as_from_str, serialize_as_display_string };
+use crate::util::string::DisplayValueExample;
 // use crate::entities::currency::Currency;       // ++
 // use ::project01::entities::currency::Currency; // --
 // use project01::entities::currency::Currency;   // --
@@ -59,43 +61,33 @@ impl<'de> Deserialize<'de> for Amount {
 fn serialize_amount_as_struct<S>(amount: &Amount, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
     use serde::ser::SerializeStruct;
 
-    let bd_wrapper = BDRefSerdeWrapper(&amount.value);
-    let currency = amount.currency.to_string();
+    // let bd_wrapper = BDRefSerdeWrapper(&amount.value);
+    // let currency = amount.currency.to_string();
+    //
+    // let mut s = serializer.serialize_struct("amount", 2) ?;
+    // s.serialize_field("value", &bd_wrapper) ?;  // T O D O: use Display
+    // s.serialize_field("currency", &currency) ?; // T O D O: use &str
+    // s.end()
+
+    // let bd_wrapper = BDRefSerdeWrapper(&amount.value);
+    // let currency = amount.currency.to_string();
 
     let mut s = serializer.serialize_struct("amount", 2) ?;
-    s.serialize_field("value", &bd_wrapper) ?;  // TODO: use Display
-    s.serialize_field("currency", &currency) ?; // TODO: use &str
+    s.serialize_field("value", &BDRefSerdeWrapper(&amount.value)) ?;
+    s.serialize_field("currency", &amount.currency) ?;
     s.end()
 }
 
+// TODO: add test
+#[allow(dead_code)]
 fn serialize_amount_as_string<S>(amount: &Amount, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
-    let amount_as_str = amount.to_string();
-    serializer.serialize_str(&amount_as_str)
+    serialize_as_display_string(serializer, &amount)
 }
 
-
-
+// TODO: add test
+#[allow(dead_code)]
 fn deserialize_amount_as_string<'de, D>(deserializer: D) -> Result<Amount, D::Error> where D: Deserializer<'de> {
-
-    struct FieldVisitor;
-    impl<'de> Visitor<'de> for FieldVisitor {
-        type Value = Amount;
-
-        fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
-            write!(formatter, r#""1234.5678 EUR""#)
-        }
-        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E> where E: Error {
-            Amount::from_str(v).map_err(Error::custom)
-        }
-        fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E> where E: Error {
-            Amount::from_str(v).map_err(Error::custom)
-        }
-        fn visit_string<E>(self, v: String) -> Result<Self::Value, E> where E: Error {
-            Amount::from_str(v.as_str()).map_err(Error::custom)
-        }
-    }
-    let v = FieldVisitor{};
-    deserializer.deserialize_str(v)
+    deserialize_as_from_str(deserializer)
 }
 
 fn deserialize_amount_as_struct<'de, D>(deserializer: D) -> Result<Amount, D::Error> where D: Deserializer<'de> {
@@ -188,6 +180,9 @@ impl core::fmt::Display for Amount {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{} {}", self.value, self.currency)
     }
+}
+impl DisplayValueExample for Amount {
+    fn display_value_example() -> &'static str { r#""1234.5678 EUR""# }
 }
 
 

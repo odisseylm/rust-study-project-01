@@ -2,6 +2,7 @@ use std::sync::mpsc::RecvError;
 use project01::util::TestResultUnwrap;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 struct S {
     name: String,
 }

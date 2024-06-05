@@ -96,7 +96,7 @@ fn cow_test() {
 }
 
 
-fn modulo_3(input: u8) -> Cow<'static, str> {
+fn _modulo_3(input: u8) -> Cow<'static, str> {
     match input % 3 {
         0 => "Remainder is 0".into(),
         1 => "Remainder is 1".into(),
@@ -118,6 +118,6 @@ fn move_to_slice_test() {
     println!("### string: {}", string);
 }
 
-fn aaa(string: String) -> Box<str> {
+fn _aaa(string: String) -> Box<str> {
     string.into()
 }

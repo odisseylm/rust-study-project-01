@@ -1,5 +1,10 @@
 // use const_format::ascii_str;
 
+pub trait DisplayValueExample : core::fmt::Display {
+    fn display_value_example() -> &'static str;
+}
+
+
 pub fn substring_count(str: &str, sub_str: &str) -> usize {
     let aa: core::str::Matches<&str> = str.matches(sub_str);
     aa.count()
