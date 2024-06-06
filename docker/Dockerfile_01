@@ -1,0 +1,25 @@
+
+# The simplest one
+
+FROM rust:1.78.0-slim-bullseye
+
+EXPOSE 80 8080 443 8443 8000 2735 3000
+
+LABEL rust-test-label-02=value-2
+
+
+# View app name in Cargo.toml
+#ARG APP_NAME=mvv_temp
+
+WORKDIR /app
+
+COPY . .
+RUN cargo build --locked --release
+RUN cp ./target/release/web_main_1 /bin/web_main_1
+
+#ENV ROCKET_ADDRESS=0.0.0.0
+#CMD ["/bin/web_main_1"]
+ENTRYPOINT /bin/web_main_1 arg1 arg2
+
+# interval=1m
+#HEALTHCHECK --interval=5s --timeout=3s CMD wget --quiet --no-check-certificate --tries=1 --spider https://localhost/${PROJECT_CONTEXT_PATH}/api/ping || exit 1

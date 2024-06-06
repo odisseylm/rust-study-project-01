@@ -4,6 +4,20 @@
 
 # Build
 
+ - `cargo build`
+ - See step by step https://medium.com/@hmquan08011996/dockerfile-for-rust-6d13dadca84d
+   - `docker build --file docker/Dockerfile_01 .`
+   - `docker build --file docker/Dockerfile_02 --tag rust-mvv-webapp-02 --no-cache .`
+   - `docker build --file docker/Dockerfile_02 --tag rust-mvv-webapp-02 .`
+
+ - Docker https://docs.docker.com/language/rust/
+   - `docker build -t rust_docker .`
+   - `docker run -it --rm --name my-running-app rust_docker`
+   - Links
+     - ??? https://www.docker.com/blog/simplify-your-deployments-using-the-rust-official-image/
+     - https://habr.com/ru/companies/T1Holding/articles/766620/
+     - https://hub.docker.com/_/rust
+
  - `cargo expand entities::amount_parse_old --lib`
  - `cargo expand entities::account --lib`
  - `cargo expand another_static_error_macro_test::parse_amount_another_01 --lib`
@@ -13,14 +27,6 @@
    - `cargo tree -e features`
    - `cargo tree -f "{p} {f}"`
    - ? `cargo tree -e features -i serde_json`
-
- - Docker https://docs.docker.com/language/rust/
-   - `docker build -t rust_docker .`
-   - `docker run -it --rm --name my-running-app rust_docker`
-   - Links
-     - ??? https://www.docker.com/blog/simplify-your-deployments-using-the-rust-official-image/
-     - https://habr.com/ru/companies/T1Holding/articles/766620/
-     - https://hub.docker.com/_/rust
 
 
 # Build notes

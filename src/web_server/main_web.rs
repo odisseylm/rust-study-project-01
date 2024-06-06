@@ -1,5 +1,6 @@
 use std::future::Future;
 use axum::{ routing::get, routing::post, Router, Json };
+use tokio::signal;
 // use axum::{ routing::post_service };
 
 pub async fn run_web_1() {
@@ -41,8 +42,15 @@ pub async fn run_web_2() {
     // async fn foo_bar() { async { "GET foo_bar" } }
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
-}
+
+    // axum::serve(listener, app).await.unwrap();
+
+    println!("### with_graceful_shutdown");
+    // Run the server with graceful shutdown
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .unwrap();}
 
 async fn root() -> & 'static str { "GET root" }
 async fn get_foo() -> & 'static str { "GET foo" }
@@ -54,3 +62,28 @@ async fn post_foo() -> & 'static str { async { "POST foo" }.await }
 
 async fn get_json_foo_01() -> Json<& 'static str> { Json("GET foo") }
 async fn post_json_foo_02(input: Json<String>) -> Json<String> { Json(format!("GET foo <= {}", input.0)) }
+
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+        let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+        let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+}
