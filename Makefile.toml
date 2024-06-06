@@ -1,0 +1,34 @@
+#[tasks.format]
+#install_crate = "rustfmt"
+#command = "cargo"
+#args = ["fmt", "--", "--emit=files"]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+#[tasks.build]
+#command = "cargo"
+#args = ["build"]
+##dependencies = ["clean"]
+#dependencies = []
+
+[tasks.test]
+command = "cargo"
+args = ["test"]
+
+[tasks.my-flow]
+script = "echo \"Fucking cargo make!!! (from my-flow)\""
+dependencies = [
+    #"format",
+    "build",
+    "test"
+]
+
+[tasks.myflow]
+script = "echo \"Fucking cargo make!!! (from myflow)\""
+dependencies = [
+    #"format",
+    "build",
+    "test"
+]

@@ -127,7 +127,7 @@ const fn is_valid_currency_ascii(cur: &[u8]) -> bool {
 /// ```
 /// use project01::entities::currency::{ Currency, make_currency };
 /// const PLN: Currency = make_currency("PLN");
-/// assert_eq!(PLN.code_as_string(), "PLN");
+/// assert_eq!(PLN.to_string(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
@@ -156,7 +156,7 @@ pub const fn make_currency(currency_code: & 'static str) -> Currency {
 /// ```
 /// use project01::entities::currency::{ Currency, make_currency_b };
 /// const PLN: Currency = make_currency_b(b"PLN");
-/// assert_eq!(PLN.code_as_string(), "PLN");
+/// assert_eq!(PLN.to_string(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
@@ -185,7 +185,7 @@ pub const fn make_currency_b(cur: & 'static [u8;3]) -> Currency {
 /// use project01::entities::currency::make_currency; // required inline function
 ///
 /// const PLN: Currency = make_currency!("PLN");
-/// assert_eq!(PLN.code_as_string(), "PLN");
+/// assert_eq!(PLN.to_string(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
@@ -345,7 +345,8 @@ mod tests {
         let mut temp_obj: Currency = USD;
         temp_obj.0[0] = 'W' as u8;  // Compilation error as expected (impossible to change currency object).
         //assert_eq!(4, internal_adder(2, 2));
-        assert_eq!(temp_obj.code_as_string(), "USD");
+        // assert_eq!(temp_obj.code_as_string(), "USD");
+        assert_eq!(temp_obj.to_string(), "USD");
     }
 
     #[test]
@@ -353,7 +354,8 @@ mod tests {
     fn impossible_to_change_const_currency_01() {
         USD.0[0] = 'W' as u8;  // Compilation warning 'attempting to modify a `const` item'
         // without modification 'const' object.
-        assert_eq!(USD.code_as_string(), "USD");
+        // assert_eq!(USD.code_as_string(), "USD");
+        assert_eq!(USD.to_string(), "USD");
     }
 
     // #[test]
@@ -369,9 +371,11 @@ mod tests {
 
         let mut temp_obj: Currency = USD;
         temp_obj.code_as_ascii_bytes()[0] = 'W' as u8;
-        temp_obj.code_as_string().push('Z'); // As expected it does not change currency object.
+        // temp_obj.code_as_string().push('Z'); // As expected it does not change currency object.
+        temp_obj.to_string().push('Z'); // As expected it does not change currency object.
         println!("{}", temp_obj);
 
-        assert_eq!(temp_obj.code_as_string(), "USD");
+        // assert_eq!(temp_obj.code_as_string(), "USD");
+        assert_eq!(temp_obj.to_string(), "USD");
     }
 }

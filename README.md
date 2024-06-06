@@ -31,6 +31,17 @@
    - ? `cargo tree -e features -i serde_json`
 
 
+## Cargo make
+
+ - Install
+   - `cargo install cargo-make`
+   - `cargo install --force cargo-make`
+   - `cargo install --no-default-features --force cargo-make`
+ - Run tasks
+   - `cargo-make make -- my-flow`
+   - If submodules do not have own Makefiles
+     - `cargo-make make --no-workspace -- my-flow`
+
 # Build notes
 
  - Libraries should ignore Cargo.lock but binaries/applications should check-in Cargo.lock.
