@@ -19,6 +19,7 @@ args = ["test"]
 
 [tasks.my-flow]
 script = "echo \"Fucking cargo make!!! (from my-flow)\""
+workspace = false
 dependencies = [
     #"format",
     "build",
@@ -26,9 +27,17 @@ dependencies = [
 ]
 
 [tasks.myflow]
-script = "echo \"Fucking cargo make!!! (from myflow)\""
+alias = "my-flow"
+
+[tasks.docker-build]
+command = "docker"
+args = ["build", "--file", "docker/Dockerfile", "--tag", "rust-mvv-webapp-02", ".",]
+workspace = false
 dependencies = [
     #"format",
     "build",
     "test"
 ]
+
+[tasks.docker_build]
+alias = "docker-build"

@@ -17,13 +17,13 @@ args = ["clean"]
 command = "cargo"
 args = ["test"]
 
-[tasks.my-flow]
-script = "echo \"Fucking cargo make!!! (from my-flow)\""
-dependencies = [
-    #    "format",
-    "build",
-    "test"
-]
+#[tasks.my-flow]
+#script = "echo \"Fucking cargo make!!! (from my-flow)\""
+#dependencies = [
+#    #    "format",
+#    "build",
+#    "test"
+#]
 
 #[tasks.myflow]
 #script = "echo \"Fucking cargo make!!! (from myflow)\""
