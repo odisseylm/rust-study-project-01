@@ -52,7 +52,7 @@ LABEL rust-test-label-02=value-2
 
 #ENV ROCKET_ADDRESS=0.0.0.0
 CMD ["/bin/web_main_1"]
-ENTRYPOINT /bin/web_main_1 arg1 arg2
+ENTRYPOINT ["/bin/web_main_1", "arg1", "arg2"]
 
 # interval=1m
 #HEALTHCHECK --interval=5s --timeout=3s CMD wget --quiet --no-check-certificate --tries=1 --spider https://localhost/${PROJECT_CONTEXT_PATH}/api/ping || exit 1
