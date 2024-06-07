@@ -119,12 +119,42 @@ dependencies = [
 [tasks.myflow]
 alias = "my-flow"
 
+
 [tasks.docker-build]
 command = "docker"
 # ${CARGO_MAKE_PROJECT_NAME} ${CARGO_MAKE_PROJECT_VERSION} ${CARGO_MAKE_WORKSPACE_PACKAGE_NAME}
 # CARGO_MAKE_GIT_BRANCH CARGO_MAKE_GIT_USER_NAME CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH
 # CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX
-args = ["build", "--file", "docker/Dockerfile", "--tag", "rust-mvv-webapp-02", ".",]
+args = ["build", "--file", "docker/Dockerfile", "--tag", "rust-mvv-webapp", ".",]
+workspace = false
+dependencies = [
+    #"format",
+    "build",
+    "test"
+]
+
+
+[tasks.docker-build-debug]
+command = "docker"
+# ${CARGO_MAKE_PROJECT_NAME} ${CARGO_MAKE_PROJECT_VERSION} ${CARGO_MAKE_WORKSPACE_PACKAGE_NAME}
+# CARGO_MAKE_GIT_BRANCH CARGO_MAKE_GIT_USER_NAME CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH
+# CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX
+args = ["build", "--file", "docker/Dockerfile",
+    "--tag", "rust-mvv-webapp-debug",
+    "--build-arg", "RELEASE_OR_DEBUG_BUILD_PARAM=",
+    "--build-arg", "RELEASE_OR_DEBUG_TARGET_DIR=./target/debug",
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
+    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+    ".",]
 workspace = false
 dependencies = [
     #"format",
