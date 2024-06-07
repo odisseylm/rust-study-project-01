@@ -1,11 +1,44 @@
+
+#[config]
+#skip_core_tasks = true
+
+[env]
+# Vars
+RUST_BACKTRACE = 1
+
+EVALUATED_VAR = { script = ["echo SOME VALUE"] }
+STRING = "value"
+BOOL_VALUE = true
+COMPOSITE = "${BOOL_VALUE} ${RUST_BACKTRACE}"
+LIST_VALUE = [ "VALUE1", "VALUE2", "VALUE3" ]
+VARIABLE = {unset = true}
+
+# profile based environment override
+[env.development]
+DEV = true
+
+[env.production]
+PROD = true
+
+
+[tasks.format]
+condition_script = [" 0 "]
+[tasks.format-flow]
+condition_script = [" 0 "]
+[tasks.format-toml]
+condition_script = [" 0 "]
+[tasks.format-toml-flow]
+condition_script = [" 0 "]
+
+
 #[tasks.format]
 #install_crate = "rustfmt"
 #command = "cargo"
 #args = ["fmt", "--", "--emit=files"]
 
-[tasks.clean]
-command = "cargo"
-args = ["clean"]
+#[tasks.clean]
+#command = "cargo"
+#args = ["clean"]
 
 #[tasks.build]
 #command = "cargo"
@@ -13,12 +46,69 @@ args = ["clean"]
 ##dependencies = ["clean"]
 #dependencies = []
 
+
+#[tasks.test-condition]
+#condition = {
+#    profiles = ["development", "production"],
+#    platforms = ["windows", "linux"],
+#    channels = ["beta", "nightly"],
+#    env_set = [ "CARGO_MAKE_KCOV_VERSION" ],
+#    env_not_set = [ "CARGO_MAKE_SKIP_CODECOV" ],
+#    env = { "CARGO_MAKE_CI" = true, "CARGO_MAKE_RUN_CODECOV" = true },
+#    rust_version = { min = "1.20.0", max = "1.30.0" },
+#    files_exist = ["${CARGO_MAKE_WORKING_DIRECTORY}/Cargo.toml"],
+#    files_not_exist = ["${CARGO_MAKE_WORKING_DIRECTORY}/Cargo2.toml"],
+#    files_modified = { input = ["${CARGO_MAKE_WORKING_DIRECTORY}/Cargo.toml", "./src/**/*.rs"], output = ["./target/**/myapp*"] }
+#}
+#handlers = [
+#    {name = "default", level = "info",  output = "stdout"},
+#    {name = "stderr",  level = "error", output = "stderr"},
+#    {name = "access",  level = "info",  output = "/var/log/access.log"},
+#]
+
+[tasks.test-condition-files-modified]
+condition = { files_modified = { input = [
+  "./examples/condition.toml",
+  "./src/**/*",
+], output = [
+  "./target/**/cargo-make*",
+] } }
+command = "echo"
+args = ["condition was met, sources updated..."]
+
+
+[tasks.private_set_var__src_or_test_are_changed]
+private = true
+#condition = { files_modified = { input = ["${CARGO_MAKE_WORKING_DIRECTORY}/Cargo.toml", otheers ], output = ["./target/**/main"] } }
+condition = { files_modified = { input = ["./Cargo.toml", "./src/**/*.rs", "./tests/**/*.rs", "./test_resources/**/*"], output = ["./target/**/main"] } }
+env = { "PRIVATE_SRC_OR_TEST_SRC_ARE_CHANGED" = true }
+
+
 [tasks.test]
 command = "cargo"
 args = ["test"]
+condition_script = ["""
+    if [ "${CARGO_MAKE_TASK}" = "test" ] || [ "${CARGO_MAKE_TASK}" = "build" ] || [ "${PRIVATE_SRC_OR_TEST_SRC_ARE_CHANGED}" = "true" ]
+    then
+        "true"
+    else
+        "false"
+    fi
+"""]
+dependencies = ["private_set_var__src_or_test_are_changed", "build"]
+
+
+[tasks.implicit-test]
+workspace = false
+dependencies = ["test"]
+
 
 [tasks.my-flow]
-script = "echo \"Fucking cargo make!!! (from my-flow)\""
+env = { "SOME_ENV_VAR" = "value" }
+script = '''
+echo var: ${SOME_ENV_VAR}
+'''
+#script = "echo \"Fucking cargo make!!! (from my-flow)\""
 workspace = false
 dependencies = [
     #"format",
@@ -31,6 +121,9 @@ alias = "my-flow"
 
 [tasks.docker-build]
 command = "docker"
+# ${CARGO_MAKE_PROJECT_NAME} ${CARGO_MAKE_PROJECT_VERSION} ${CARGO_MAKE_WORKSPACE_PACKAGE_NAME}
+# CARGO_MAKE_GIT_BRANCH CARGO_MAKE_GIT_USER_NAME CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH
+# CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX
 args = ["build", "--file", "docker/Dockerfile", "--tag", "rust-mvv-webapp-02", ".",]
 workspace = false
 dependencies = [
@@ -40,4 +133,21 @@ dependencies = [
 ]
 
 [tasks.docker_build]
+workspace = false
 alias = "docker-build"
+
+
+[tasks.task1]
+workspace = false
+script = "echo  '                                                             **********   task1'"
+
+[tasks.task2]
+workspace = false
+script = "echo  '                                                             **********   task2'"
+dependencies = ["task1" ]
+condition_script = [" 0 "]
+
+[tasks.task3]
+workspace = false
+script = "echo  '                                                             **********   task3'"
+dependencies = ["task2" ]

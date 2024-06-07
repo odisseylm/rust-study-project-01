@@ -42,6 +42,11 @@
    - If submodules do not have own Makefiles
      - `cargo-make make --no-workspace -- my-flow`
 
+ - Predefined vars
+   - https://github.com/sagiegurari/cargo-make#global
+ - Predefined tasks
+   - https://github.com/sagiegurari/cargo-make/blob/master/docs/cargo_make_task_list.md
+
 # Build notes
 
  - Libraries should ignore Cargo.lock but binaries/applications should check-in Cargo.lock.
