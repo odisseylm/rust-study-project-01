@@ -9,11 +9,12 @@ use crate::entities::currency::Currency;
 
 // #[derive(Debug)]
 #[derive(PartialEq, Eq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)] // TODO: move it to DTO
+#[readonly::make]
 pub struct Amount {
     #[serde(with = "crate::entities::serde_json_bd::bd_with")]
-    value: BigDecimal,
-    currency: Currency,
+    pub value: BigDecimal,
+    pub currency: Currency,
 }
 
 /*

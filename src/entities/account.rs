@@ -2,17 +2,38 @@ use chrono::Utc;
 use serde::{ Deserialize, Serialize };
 use crate::entities::amount::Amount;
 use crate::entities::id::Id;
+use crate::entities::user::UserId;
 // use chrono::serde::*;
 
 
+#[derive(Debug, Clone)]
+#[derive(Serialize, Deserialize)]
+#[derive(PartialEq)]
+pub struct AccountId( #[allow(dead_code)] Id);
+type AccountIdFormatError = crate::entities::id::parse::IdFormatError;
+
+#[inherent::inherent]
+impl core::str::FromStr for AccountId { // TODO: create macros for it
+    type Err = AccountIdFormatError;
+    pub fn from_str(str: &str) -> Result<AccountId, AccountIdFormatError> {
+        let raw_id = Id::from_str(str) ?;
+        Ok(AccountId(raw_id))
+    }
+}
+impl core::fmt::Display for AccountId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 #[derive(Debug)]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[readonly::make]
+// #[derive(Send)]
 pub struct Account {
-    pub id: Id,
-    pub user_id: Id,
+    pub id: AccountId,
+    pub user_id: UserId,
     pub amount: Amount,
     // pub created_at: std::time::Instant,
     // pub updated_at: std::time::Instant,
@@ -44,12 +65,13 @@ impl Account {
 
 pub mod new {
     use chrono::Utc;
+    use crate::entities::account::AccountId;
     use crate::entities::amount::Amount;
-    use crate::entities::id::Id;
+    use crate::entities::user::UserId;
 
     pub struct Args {
-        pub id: Id,
-        pub user_id: Id,
+        pub id: AccountId,
+        pub user_id: UserId,
         pub amount: Amount,
         pub created_at: chrono::DateTime<Utc>,
         pub updated_at: chrono::DateTime<Utc>,
@@ -110,16 +132,17 @@ const _: () = {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{FixedOffset, Utc};
-    use crate::entities::account::{Account, new};
+    use chrono::{ FixedOffset, Utc };
+    use crate::entities::account::{ Account, AccountId, new };
     use crate::entities::amount::Amount;
     use crate::entities::id::Id;
+    use crate::entities::user::UserId;
     use crate::util::TestResultUnwrap;
 
     fn aa() {
         let account = Account::new(new::Args {
-            id: Id::from_str("1").test_unwrap(),
-            user_id: Id::from_str("2").test_unwrap(),
+            id: AccountId::from_str("1").test_unwrap(),
+            user_id: UserId::from_str("2").test_unwrap(),
             amount: Amount::from_str("123.44 USD").test_unwrap(),
             created_at: datetime_from_str("2022-05-31 10:29:30 +02:00"),
             updated_at: datetime_from_str("2024-05-31 22:29:57 +02:00"),

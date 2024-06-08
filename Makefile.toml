@@ -77,6 +77,26 @@ command = "echo"
 args = ["condition was met, sources updated..."]
 
 
+# Eample to set var if some arg is present (`cargo make examples verbose`)
+# https://github.com/sagiegurari/cargo-make/issues/876
+#env_scripts = [
+#'''
+##!@duckscript
+#
+#for arg in ${@}
+#  verbose_found = eq ${arg} verbose
+#  if ${verbose_found}
+#    set_env RUSTC_LOG rustc_codegen_ssa::back::link=info
+#    goto :postloop
+#  end
+#end
+#:postloop
+#'''
+#]
+
+
+
+
 [tasks.private_set_var__src_or_test_are_changed]
 private = true
 #condition = { files_modified = { input = ["${CARGO_MAKE_WORKING_DIRECTORY}/Cargo.toml", otheers ], output = ["./target/**/main"] } }
@@ -108,7 +128,6 @@ env = { "SOME_ENV_VAR" = "value" }
 script = '''
 echo var: ${SOME_ENV_VAR}
 '''
-#script = "echo \"Fucking cargo make!!! (from my-flow)\""
 workspace = false
 dependencies = [
     #"format",
@@ -120,29 +139,32 @@ dependencies = [
 alias = "my-flow"
 
 
-[tasks.docker-build]
+# TODO: How to reuse it?
+[tasks.private_docker_build_prepare_labels]
+env = { DOCKER_IMAGE_LABELS = [
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
+    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+] }
+
+
+
+[tasks.build-docker]
 command = "docker"
-# ${CARGO_MAKE_PROJECT_NAME} ${CARGO_MAKE_PROJECT_VERSION} ${CARGO_MAKE_WORKSPACE_PACKAGE_NAME}
-# CARGO_MAKE_GIT_BRANCH CARGO_MAKE_GIT_USER_NAME CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH
-# CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX
-args = ["build", "--file", "docker/Dockerfile", "--tag", "rust-mvv-webapp", ".",]
-workspace = false
-dependencies = [
-    #"format",
+args = [
     "build",
-    "test"
-]
-
-
-[tasks.docker-build-debug]
-command = "docker"
-# ${CARGO_MAKE_PROJECT_NAME} ${CARGO_MAKE_PROJECT_VERSION} ${CARGO_MAKE_WORKSPACE_PACKAGE_NAME}
-# CARGO_MAKE_GIT_BRANCH CARGO_MAKE_GIT_USER_NAME CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH
-# CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX
-args = ["build", "--file", "docker/Dockerfile",
-    "--tag", "rust-mvv-webapp-debug",
-    "--build-arg", "RELEASE_OR_DEBUG_BUILD_PARAM=",
-    "--build-arg", "RELEASE_OR_DEBUG_TARGET_DIR=./target/debug",
+    "--file", "docker/Dockerfile",
+    "--tag", "rust-mvv-webapp",
+    # ?? How to reuse it?
+    #    ${DOCKER_IMAGE_LABELS},
     "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
     "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
     "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
@@ -159,12 +181,44 @@ workspace = false
 dependencies = [
     #"format",
     "build",
-    "test"
+    "test",
+    "private_docker_build_prepare_labels",
+]
+
+
+[tasks.build-debug-docker]
+command = "docker"
+args = ["build", "--file", "docker/Dockerfile",
+    "--tag", "rust-mvv-webapp-debug",
+    "--build-arg", "RELEASE_OR_DEBUG_BUILD_PARAM=",
+    "--build-arg", "RELEASE_OR_DEBUG_TARGET_DIR=./target/debug",
+    # ?? How to reuse it?
+    #${DOCKER_IMAGE_LABELS},
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
+    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+    ".",]
+workspace = false
+dependencies = [
+    #"format",
+    "build",
+    "test",
+    "private_docker_build_prepare_labels",
 ]
 
 [tasks.docker_build]
 workspace = false
 alias = "docker-build"
+
+
 
 
 [tasks.task1]

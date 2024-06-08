@@ -5,6 +5,10 @@ use serde_with::serde_derive::Serialize;
 #[derive(Debug, Clone)]
 #[derive(Serialize, Deserialize)]
 #[derive(PartialEq)]
+// #[nutype(
+//     validate(not_empty, len_char_max = 20),
+//     derive(Debug, PartialEq),
+// )]
 pub struct Id(String);
 
 impl Id {
@@ -21,16 +25,16 @@ impl FromStr for Id {
     }
 }
 
-
 // TODO: use nu-type crate
 impl core::fmt::Display for Id {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "ID({})", self.0)
+        write!(f, "{}", self.0)
     }
 }
 
 
-mod parse {
+
+pub mod parse {
     use crate::util::backtrace::BacktraceInfo;
 
     #[derive(Debug, thiserror::Error)]

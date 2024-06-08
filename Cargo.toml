@@ -42,6 +42,8 @@ const_format = "0.2.32"
 bigdecimal = "0.4.3"
 #bigdecimal = {  version = "0.4.3", features = ["default", "serde" ] }
 
+trait-variant = "0.1.2"
+
 serde = { version = "1.0.201", features = ["derive", "std", "rc", "serde_derive" ] }
 #serde = "1.0.201"
 #serde_json = "1.0.117"
@@ -84,6 +86,7 @@ dotenv = "0.15.0"
 inherent = "1.0.11"
 readonly = "0.2.12"
 extension-trait = "1.0.2"
+nutype = "0.4.2"
 
 chrono = {  version = "0.4.38", features = ["default", "serde"] }
 chrono-tz = "0.9.0"
