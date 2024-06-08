@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::sync::Arc;
 use crate::entities::amount::Amount;
 use crate::entities::prelude::{ Account, AccountId, UserId };
 
@@ -18,19 +19,19 @@ pub enum AccountsError {
 }
 
 
-#[trait_variant::make(SendAccountService: Send)]
+// #[trait_variant::make(SendAccountService: Send)]
+#[trait_variant::make(Send)]
 pub trait AccountService {
     async fn get_user_accounts(&self, user_id: UserId) -> Result<Vec<Account>, AccountsError>;
-    // fn get_user_accounts(&self, user_id: UserId) -> impl std::future::Future<Output = Result<Vec<Account>, AccountsError>> + Send;
-    // fn get_user_accounts(&self, user_id: UserId) -> impl std::future::Future<Output = Result<Vec<Account>, AccountsError>> + Send + Sync;
     async fn get_user_account(&self, account_id: AccountId, user_id: UserId) -> Result<Account, AccountsError>;
     async fn get_account(&self, account_id: AccountId, user_id: UserId) -> Result<Account, AccountsError>;
 }
 
 pub struct AccountServiceImpl {
-    database_connection: Rc<DatabaseConnection>,
+    database_connection: Arc<DatabaseConnection>,
 }
 
+// ??? Hm... cannot use there AccountServiceSafe !?
 impl AccountService for AccountServiceImpl {
 
     async fn get_user_accounts(&self, user_id: UserId) -> Result<Vec<Account>, AccountsError> {
