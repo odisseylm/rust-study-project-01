@@ -1,13 +1,7 @@
-use std::rc::Rc;
 use std::sync::Arc;
+use crate::database::DatabaseConnection;
 use crate::entities::amount::Amount;
 use crate::entities::prelude::{ Account, AccountId, UserId };
-
-
-// TODO: temp
-struct DatabaseConnection {
-}
-
 
 
 #[derive(thiserror::Error, Debug)]
@@ -29,7 +23,7 @@ pub trait AccountService {
 }
 
 pub struct AccountServiceImpl {
-    database_connection: Arc<DatabaseConnection>,
+    pub database_connection: Arc<DatabaseConnection>,
 }
 
 // ??? Hm... cannot use there AccountServiceSafe !?

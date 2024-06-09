@@ -1,3 +1,4 @@
+use std::sync::Arc;
 // use axum::routing::{ delete, get, post };
 use axum::routing::{ get };
 use crate::entities::account::AccountId;
@@ -12,7 +13,7 @@ use crate::service::account_service::{ AccountService };
 
 
 // fn accounts_rest_router<AccountS: crate::service::account_service::AccountService + Send + Sync>() -> axum::Router {
-fn accounts_rest_router<
+pub fn accounts_rest_router<
     AccountS: AccountService + Send + Sync + 'static,
     >(
     dependencies: Dependencies<AccountS>,
@@ -26,10 +27,10 @@ fn accounts_rest_router<
     let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
 
     let accounts_router = Router::new()
-        .route("account/all", get(|State(state): State<Arc<AccountRest<AccountS>>>| async move {
+        .route("/api/account/all", get(|State(state): State<Arc<AccountRest<AccountS>>>| async move {
             state.get_current_user_accounts().to_json().await
         }))
-        .route("account/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
+        .route("/api/account/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
             state.get_user_account(id).to_json().await
         }))
         .with_state(shared_state)
@@ -43,7 +44,7 @@ fn accounts_rest_router<
 static TEMP_CURRENT_USER_ID: UserId = UserId::from_str("11").unchecked_unwrap();
 
 pub struct AccountRest <AS: AccountService> {
-    account_service: AS,
+    pub account_service: Arc<AS>,
 }
 
 

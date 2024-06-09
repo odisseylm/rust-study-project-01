@@ -96,6 +96,26 @@ time = "0.3.36"
 type-rules = { version = "0.2.3", features = ["derive", "regex"] }
 
 axum = "0.7.5"
+axum-login = "0.15.2"
+axum-auth = "0.7.0"
+axum-extra = "0.9.3"
+axum-ctx = "0.4.0"
+#axum-handler-error = "0.1.1"
+#axum-error = "0.2.0"
+#axum-htpasswd = "0.2.0"
+#axum-limit = ""
+#axum-openapi = ""
+#axum-request-validator = "0.1.0"
+#axum-route = ""
+#axum-swagger-ui = "0.3.0"
+#axum-template = "2.3.0" # ++
+axum-typed-routing = "0.2.1"
+#axum_health = ""
+axum_session_auth = "0.14.0"
+axum_static = "1.7.1"
+#axum_typed_multipart = "0.11.1"
+#axum_static_include = "0.3.0"
+
 #tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread"] }
 #tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread", "macros"] }
 tokio = { version = "1.38.0", features = ["full"] }

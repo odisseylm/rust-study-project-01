@@ -12,8 +12,8 @@ pub mod util;
 pub mod adder;
 pub mod web_server;
 pub mod service;
-mod database;
-mod rest;
+pub mod database;
+pub mod rest;
 
 // by full path
 // use crate::entities::currency::{ Currency, make_currency };

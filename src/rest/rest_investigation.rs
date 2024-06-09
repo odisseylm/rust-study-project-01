@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 
 use std::sync::Arc;
 use axum::body::Body;
@@ -261,7 +263,6 @@ impl Default for Pagination {
 // -------------------------------------------------------------------------------
 
 use std::future::Future;
-use std::process::Output;
 
 trait AsyncFnOnce0 {
     type Output;

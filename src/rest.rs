@@ -1,6 +1,8 @@
+
 pub mod account_rest;
 pub mod dto;
-mod error_rest;
+pub mod error_rest;
 mod rest_investigation;
-mod app_dependencies;
-mod utils;
+pub mod app_dependencies;
+pub mod utils;
+pub mod web_app;
