@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use axum::body::Body;
-use axum::extract::{NestedPath, Path, Query};
-use axum::http::Uri;
+// use axum::extract::{NestedPath, Path, Query};
+use axum::http::{StatusCode, Uri};
 use axum::Json;
 use axum::routing::{ delete, get, post };
 use crate::entities::account::AccountId;
@@ -9,7 +9,6 @@ use crate::entities::prelude::UserId;
 use crate::util::UncheckedResultUnwrap;
 use super::dto::{ Account as AccountDTO, Amount as AmountDTO };
 use crate::entities::prelude::{ Account as AccountEntity };
-// use crate::service::account_service::{ AccountServiceSafe as AccountService };
 use crate::service::account_service::{ AccountService };
 
 
@@ -32,7 +31,7 @@ async fn handler3 <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,
 >(
-    axum::extract::State(state): axum::extract::State<Arc<AccountRest<AccountS>>>,
+    axum::extract::State(_state): axum::extract::State<Arc<AccountRest<AccountS>>>,
 ) -> String {
     // ...
     "Hello, World!".to_string()
@@ -59,16 +58,21 @@ async fn handler5 <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,
 >(
-    axum::extract::State(state): axum::extract::State<Arc<AccountRest<AccountS>>>,
+    axum::extract::State(_state): axum::extract::State<Arc<AccountRest<AccountS>>>,
     //axum::extract::Query()
-    uri: Uri,
-    axum::extract::OriginalUri(original_uri): axum::extract::OriginalUri,
-    path: NestedPath,
-    axum::extract::RawQuery(query): axum::extract::RawQuery,
-    axum::extract::RawForm(form): axum::extract::RawForm,
-    axum::extract::Host(host): axum::extract::Host,
-    axum::extract::Form(form22): axum::extract::Form<Form22>,
-    request: axum::extract::Request<Body>,
+    _uri: Uri,
+    axum::extract::OriginalUri(_original_uri): axum::extract::OriginalUri,
+    _path: axum::extract::NestedPath,
+    axum::extract::RawQuery(_query): axum::extract::RawQuery,
+    axum::extract::RawForm(_raw_form): axum::extract::RawForm,
+    axum::extract::Host(_host): axum::extract::Host,
+    axum::extract::Form(_form): axum::extract::Form<Form22>,
+    _request: axum::extract::Request<Body>,
+
+    // Custom extractor
+    //  https://dev.to/pongsakornsemsuwan/rust-axum-extracting-query-param-of-vec-4pdm
+
+
 ) -> Json<AccountDTO> {
     // ...
     //Json("Hello, World!".to_string())
@@ -81,9 +85,18 @@ async fn handler6 <
 >(
     axum::extract::State(state): axum::extract::State<Arc<AccountRest<AccountS>>>,
 ) -> Json<AccountDTO> {
+// ) -> Result<axum::response::Response, anyhow::Error> {
+// ) -> Result<Json< crate::rest::dto::Account >, anyhow::Error> {
     let ac: AccountDTO = state.get_user_account("678".to_string()).await.unwrap();
     Json(ac)
+
+    // Ok(Json(ac))
+    // Ok::<_, anyhow::Error>(axum::response::Response::new(Body::empty()))
 }
+
+// TODO: error processing
+//       * https://docs.rs/axum/latest/axum/error_handling/
+//       * https://github.com/tokio-rs/axum/blob/main/examples/anyhow-error-response/src/main.rs
 
 async fn handler7 <
     AccountS: AccountService + Send + Sync + 'static,
@@ -93,6 +106,11 @@ async fn handler7 <
 ) -> Json<Vec<AccountDTO>> {
     let ac = state.get_current_user_accounts().await.unwrap();
     Json(ac)
+}
+
+async fn handler8() -> Result<String, StatusCode> {
+    // ...
+    todo!()
 }
 
 struct AppState {
@@ -176,15 +194,16 @@ fn accounts_rest_router<
         // .route("current_user/account/all5", get(handler5))
         .route("current_user/account/all6", get(handler6))
         .route("current_user/account/all7", get(handler7))
+        .route("current_user/account/all8", get(handler8))
         .route("current_user/account/id33", get(|State(state): State<Arc<AccountRest<AccountS>>>| async move {
             Json(state.get_current_user_accounts().await.unwrap())
             // state.get_current_user_accounts()
         }))
         .route("current_user/account/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>,
-                                                Path(id): Path<String>,
-                                                pagination: Option<Query<Pagination>>,
+                                                axum::extract::Path(id): axum::extract::Path<String>,
+                                                pagination: Option<axum::extract::Query<Pagination>>,
         | async move {
-            let Query(pagination) = pagination.unwrap_or_default();
+            let axum::extract::Query(_pagination) = pagination.unwrap_or_default();
             Json(state.get_user_account(id).await.unwrap())
             // state.get_current_user_accounts()
         }))
