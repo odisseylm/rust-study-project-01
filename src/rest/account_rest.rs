@@ -1,4 +1,7 @@
 use std::sync::Arc;
+use axum::body::Body;
+use axum::extract::{NestedPath, Path, Query};
+use axum::http::Uri;
 use axum::Json;
 use axum::routing::{ delete, get, post };
 use crate::entities::account::AccountId;
@@ -45,11 +48,27 @@ async fn handler4 <
     Json("Hello, World!".to_string())
 }
 
+
+#[derive(serde::Deserialize)]
+struct Form22 {
+    field1: Option<String>,
+    field2: Option<String>,
+}
+
 async fn handler5 <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,
 >(
     axum::extract::State(state): axum::extract::State<Arc<AccountRest<AccountS>>>,
+    //axum::extract::Query()
+    uri: Uri,
+    axum::extract::OriginalUri(original_uri): axum::extract::OriginalUri,
+    path: NestedPath,
+    axum::extract::RawQuery(query): axum::extract::RawQuery,
+    axum::extract::RawForm(form): axum::extract::RawForm,
+    axum::extract::Host(host): axum::extract::Host,
+    axum::extract::Form(form22): axum::extract::Form<Form22>,
+    request: axum::extract::Request<Body>,
 ) -> Json<AccountDTO> {
     // ...
     //Json("Hello, World!".to_string())
@@ -85,8 +104,8 @@ pub struct Dependencies <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,
 > {
-    pub account_service: std::sync::Arc<AccountS>,
-    pub account_rest: std::sync::Arc<AccountRest<AccountS>>,
+    pub account_service: Arc<AccountS>,
+    pub account_rest: Arc<AccountRest<AccountS>>,
 }
 
 
@@ -119,6 +138,8 @@ fn accounts_rest_router<
         ;
      */
 
+    // type AA = State<Arc<AccountRest<AccountS>>>;
+    // type AA2 = Arc<AccountRest<AccountS>>;
     let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
 
     let accounts_router = Router::new()
@@ -155,8 +176,16 @@ fn accounts_rest_router<
         // .route("current_user/account/all5", get(handler5))
         .route("current_user/account/all6", get(handler6))
         .route("current_user/account/all7", get(handler7))
-        .route("current_user/account/{id}", get(|State(state): State<Arc<AccountRest<AccountS>>>| async {
-            // state.get_current_user_account("666")
+        .route("current_user/account/id33", get(|State(state): State<Arc<AccountRest<AccountS>>>| async move {
+            Json(state.get_current_user_accounts().await.unwrap())
+            // state.get_current_user_accounts()
+        }))
+        .route("current_user/account/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>,
+                                                Path(id): Path<String>,
+                                                pagination: Option<Query<Pagination>>,
+        | async move {
+            let Query(pagination) = pagination.unwrap_or_default();
+            Json(state.get_user_account(id).await.unwrap())
             // state.get_current_user_accounts()
         }))
         // .route("account/{id}", get(|State(state): State<Arc<AccountRest<AccountS>>>| async {
@@ -168,6 +197,17 @@ fn accounts_rest_router<
     accounts_router
 }
 
+#[derive(serde::Deserialize)]
+struct Pagination {
+    page: usize,
+    per_page: usize,
+}
+
+impl Default for Pagination {
+    fn default() -> Self {
+        Self { page: 1, per_page: 30 }
+    }
+}
 
 // #[static_init::constructor]
 #[static_init::dynamic]
