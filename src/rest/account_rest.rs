@@ -10,26 +10,6 @@ use crate::rest::error_rest::AppRestError;
 use crate::service::account_service::{ AccountService };
 
 
-// struct AppState {
-//     // ...
-// }
-//
-// async fn rest_handler <
-//     AccountS: AccountService + Send + Sync + 'static,
-//     // AccountR: AccountRest<AccountS> + Send + Sync,
-//     RT: Debug + Display,
-//     F, // : Fn(&AccountRest<AccountS>)-> impl Future<Output = Result<RT, AppRestError>>,
-// > (
-//     axum::extract::State(_state): axum::extract::State<Arc<AccountRest<AccountS>>>,
-// ) -> &'static str
-//     // where F: Fn(&AccountRest<AccountS>)-> impl Future<Output = Result<RT, AppRestError>>
-//     where F: Fn(&AccountRest<AccountS>)-> impl Future<Output = & 'static str>
-// {
-//     // ...
-//     //"Hello, World!"
-//     t o d o!()
-// }
-
 
 // fn accounts_rest_router<AccountS: crate::service::account_service::AccountService + Send + Sync>() -> axum::Router {
 fn accounts_rest_router<
@@ -101,6 +81,7 @@ async fn handler_get_user_account <
 */
 
 
+#[allow(dead_code)] // !!! It is really used ?!
 fn map_account_to_rest(account: entity::Account) -> dto::Account {
     dto::Account {
         id: account.id.to_string(), // TODO: use moving

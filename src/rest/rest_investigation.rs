@@ -1,20 +1,36 @@
 
-use std::fmt::{Debug, Display, Formatter};
 use std::sync::Arc;
 use axum::body::Body;
-// use axum::extract::{NestedPath, Path, Query};
 use axum::http::{StatusCode, Uri};
 use axum::Json;
-use axum::response::IntoResponse;
-use axum::routing::{ delete, get, post };
-use crate::entities::account::AccountId;
-use crate::entities::prelude::UserId;
-use crate::util::UncheckedResultUnwrap;
-use super::dto::{ Account as AccountDTO, Amount as AmountDTO };
-use crate::entities::prelude::{ Account as AccountEntity };
+// use axum::routing::{ delete, get, post };
+use axum::routing::{ get };
+use super::dto::{ Account as AccountDTO };
 use crate::rest::account_rest::AccountRest;
 use crate::rest::error_rest::AppRestError;
 use crate::service::account_service::{ AccountService };
+
+
+
+// struct AppState {
+//     // ...
+// }
+//
+// async fn rest_handler <
+//     AccountS: AccountService + Send + Sync + 'static,
+//     // AccountR: AccountRest<AccountS> + Send + Sync,
+//     RT: Debug + Display,
+//     F, // : Fn(&AccountRest<AccountS>)-> impl Future<Output = Result<RT, AppRestError>>,
+// > (
+//     axum::extract::State(_state): axum::extract::State<Arc<AccountRest<AccountS>>>,
+// ) -> &'static str
+//     // where F: Fn(&AccountRest<AccountS>)-> impl Future<Output = Result<RT, AppRestError>>
+//     where F: Fn(&AccountRest<AccountS>)-> impl Future<Output = & 'static str>
+// {
+//     // ...
+//     //"Hello, World!"
+//     t o d o!()
+// }
 
 
 async fn handler(
@@ -99,7 +115,7 @@ async fn handler6 <
 // ) -> Result<axum::response::Response, anyhow::Error> {
 // ) -> Result<Json< crate::rest::dto::Account >, anyhow::Error> {
     let aa: Result<(), anyhow::Error> = Ok(());
-    let aa2 = aa ?;
+    let _aa2 = aa ?;
     let ac: AccountDTO = state.get_user_account("678".to_string()).await.unwrap();
     Ok(Json(ac))
 
@@ -174,7 +190,7 @@ fn accounts_rest_router<
     let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
 
     let accounts_router = Router::new()
-        .route("current_user/account/all", get(|State(state): State<Arc<AccountRest<AccountS>>>| async move {
+        .route("current_user/account/all", get(|State(_state): State<Arc<AccountRest<AccountS>>>| async move {
             // "Hello, World!"
             // Json(state.get_current_user_accounts())
             // let accounts_r = state.get_current_user_accounts().await;
