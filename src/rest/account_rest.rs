@@ -1,8 +1,10 @@
+use std::fmt::Formatter;
 use std::sync::Arc;
 use axum::body::Body;
 // use axum::extract::{NestedPath, Path, Query};
 use axum::http::{StatusCode, Uri};
 use axum::Json;
+use axum::response::IntoResponse;
 use axum::routing::{ delete, get, post };
 use crate::entities::account::AccountId;
 use crate::entities::prelude::UserId;
@@ -79,16 +81,55 @@ async fn handler5 <
     todo!()
 }
 
+// Make our own error that wraps `anyhow::Error`.
+// #[derive(thiserror::Error)]
+#[derive(Debug)]
+pub enum AppRestError {
+    AnyhowError(anyhow::Error),
+    // ...
+    // other errors if it is needed
+}
+impl core::fmt::Display for AppRestError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AppRestError::AnyhowError(ref anyhow_err) => { write!(f, "AnyhowError: {}", anyhow_err) }
+        }
+    }
+}
+
+
+// Tell axum how to convert `AppError` into a response.
+impl IntoResponse for AppRestError {
+    fn into_response(self) -> axum::response::Response {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong: {}", self),
+        ).into_response()
+    }
+}
+// This enables using `?` on functions that return `Result<_, anyhow::Error>` to turn them into
+// `Result<_, AppError>`. That way you don't need to do that manually.
+impl<E> From<E> for AppRestError where E: Into<anyhow::Error> {
+    fn from(err: E) -> Self {
+        AppRestError::AnyhowError(err.into())
+    }
+}
+
+
 async fn handler6 <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,
 >(
     axum::extract::State(state): axum::extract::State<Arc<AccountRest<AccountS>>>,
-) -> Json<AccountDTO> {
+// ) -> Json<AccountDTO> {
+// ) -> Result<Json<AccountDTO>, anyhow::Error> {
+) -> Result<Json<AccountDTO>, AppRestError> {
 // ) -> Result<axum::response::Response, anyhow::Error> {
 // ) -> Result<Json< crate::rest::dto::Account >, anyhow::Error> {
+    let aa: Result<(), anyhow::Error> = Ok(());
+    let aa2 = aa ?;
     let ac: AccountDTO = state.get_user_account("678".to_string()).await.unwrap();
-    Json(ac)
+    Ok(Json(ac))
 
     // Ok(Json(ac))
     // Ok::<_, anyhow::Error>(axum::response::Response::new(Body::empty()))
