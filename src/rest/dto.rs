@@ -4,7 +4,7 @@ use serde::{ Deserialize, Serialize };
 
 
 // pub type Amount = crate::entities::amount::Amount;
-pub type Id = crate::entities::id::Id;
+// pub type Id = crate::entities::id::Id;
 
 
 #[derive(Debug)]

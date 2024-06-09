@@ -21,7 +21,21 @@ pub mod id;
 pub mod serde_json_bd;
 pub mod user;
 
+// Experimental approach... What is better??
 pub mod prelude {
+    pub use super::id::Id;
+    pub use super::user::UserId;
+    pub use super::account::AccountId;
+
+    pub use super::currency::Currency;
+    pub use super::currency::parse::CurrencyFormatError;
+    pub use super::amount::Amount;
+    pub use super::amount::parse::ParseAmountError as AmountFormatError;
+    pub use super::account::Account;
+}
+
+// Experimental approach... What is better??
+pub mod entity {
     pub use super::id::Id;
     pub use super::user::UserId;
     pub use super::account::AccountId;
