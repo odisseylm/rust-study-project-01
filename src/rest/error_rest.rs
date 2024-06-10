@@ -1,6 +1,7 @@
 
 use core::fmt;
 use axum::body::Body;
+use axum::http::response::Parts;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 
@@ -45,7 +46,7 @@ impl IntoResponse for RestAppError {
                     .status(StatusCode::UNAUTHORIZED)
                     .header("WWW-Authenticate", "Basic")
                     .body(Body::from("Unauthenticated")) // or Body::empty()
-                    .unwrap_or_else(|_err|axum::response::Response::new(Body::empty()))
+                    .unwrap_or_else(|_err| StatusCode::UNAUTHORIZED.into_response())
             }
             RestAppError::Unauthorized =>
                 ( StatusCode::FORBIDDEN, "Unauthorized".to_string() ).into_response(),
