@@ -7,7 +7,7 @@ use crate::util::UncheckedResultUnwrap;
 use crate::entities::entity;
 use crate::rest::app_dependencies::Dependencies;
 use crate::rest::dto;
-use crate::rest::error_rest::RestAppError;
+use crate::rest::error_rest::{authenticate, RestAppError};
 use crate::service::account_service::{ AccountService };
 
 
@@ -35,17 +35,7 @@ pub fn accounts_rest_router<
         .route("/api/account/all", get(|State(state): State<Arc<AccountRest<AccountS>>>,
                                         creds: Option<TypedHeader<Authorization<Basic>>>,
         | async move {
-
-            match creds {
-                None => return Err(RestAppError::Unauthenticated),
-                Some(TypedHeader(Authorization(creds))) => {
-                    let usr = creds.username();
-                    let psw = creds.password();
-                    if usr != "vovan" || psw != "qwerty" {
-                        return Err(RestAppError::Unauthorized)
-                    }
-                }
-            }
+            authenticate(&creds) ?;
 
             state.get_current_user_accounts().to_json().await
         }))

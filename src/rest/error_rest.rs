@@ -1,9 +1,13 @@
 
 use core::fmt;
 use axum::body::Body;
-use axum::http::response::Parts;
-use axum::http::StatusCode;
+use axum::http::{ Response, StatusCode };
+use axum::Json;
 use axum::response::IntoResponse;
+use axum_extra::headers::Authorization;
+use axum_extra::headers::authorization::Basic;
+use axum_extra::TypedHeader;
+use serde_json::Value;
 
 
 // Error processing:
@@ -41,19 +45,23 @@ impl IntoResponse for RestAppError {
         match self {
             RestAppError::AnyhowError(ref err) =>
                 ( StatusCode::INTERNAL_SERVER_ERROR, format!("Internal error: {}", err) ).into_response(),
-            RestAppError::Unauthenticated => {
-                axum::response::Response::builder()
-                    .status(StatusCode::UNAUTHORIZED)
-                    .header("WWW-Authenticate", "Basic")
-                    .body(Body::from("Unauthenticated")) // or Body::empty()
-                    .unwrap_or_else(|_err| StatusCode::UNAUTHORIZED.into_response())
-            }
+            RestAppError::Unauthenticated =>
+                unauthenticated_401_response(),
             RestAppError::Unauthorized =>
                 ( StatusCode::FORBIDDEN, "Unauthorized".to_string() ).into_response(),
             RestAppError::IllegalArgument(ref err) =>
                 ( StatusCode::BAD_REQUEST, format!("Illegal arguments: {}", err) ).into_response(),
-        }//.into_response()
+        }
     }
+}
+
+fn unauthenticated_401_response() -> Response<Body> {
+    axum::response::Response::builder()
+        .status(StatusCode::UNAUTHORIZED)
+        // to show user dialog in web-browser; can be removed in prod
+        .header("WWW-Authenticate", "Basic")
+        .body(Body::from("Unauthenticated")) // or Body::empty() // Json(json!({"error": "Unauthorized"}))
+        .unwrap_or_else(|_err| StatusCode::UNAUTHORIZED.into_response())
 }
 
 
@@ -62,5 +70,63 @@ impl IntoResponse for RestAppError {
 impl<E> From<E> for RestAppError where E: Into<anyhow::Error> {
     fn from(err: E) -> Self {
         RestAppError::AnyhowError(err.into())
+    }
+}
+
+
+pub fn authenticate(creds: &Option<TypedHeader<Authorization<Basic>>>) -> Result<(), RestAppError> {
+    match creds {
+        None => return Err(RestAppError::Unauthenticated),
+        Some(TypedHeader(Authorization(ref creds))) => {
+            let usr = creds.username();
+            let psw = creds.password();
+            if usr != "vovan" || psw != "qwerty" {
+                return Err(RestAppError::Unauthorized)
+            }
+        }
+    }
+    return Ok(());
+}
+
+
+const SECRET_SIGNING_KEY: &[u8] = b"keep_th1s_@_secret";
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct OurJwtPayload {
+    pub sub: String,
+    pub exp: usize,
+}
+impl OurJwtPayload {
+    pub fn new(sub: String) -> Self {
+        use std::time::{ Duration, SystemTime };
+
+        // expires by default in 60 minutes from now
+        let exp = SystemTime::now()
+            .checked_add(Duration::from_secs(60 * 60))
+            .expect("valid timestamp")
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("valid duration")
+            .as_secs() as usize;
+
+        OurJwtPayload { sub, exp }
+    }
+}
+
+// pub fn verify_jwt<C:Credentials>(creds: &C) {
+pub fn verify_jwt(creds: &Basic) -> Result<(), (StatusCode, Json<Value>)> {
+    use serde_json::json;
+    use axum::Json;
+
+    if let Ok(_jwt) = jsonwebtoken::encode(
+        &jsonwebtoken::Header::default(),
+        &OurJwtPayload::new(creds.username().to_string()),
+        &jsonwebtoken::EncodingKey::from_secret(SECRET_SIGNING_KEY),
+    ) {
+        // some validation...
+        Ok(())
+    } else {
+        Err((
+            StatusCode::UNAUTHORIZED, // // StatusCode::INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Failed to generate token"})),
+        ))
     }
 }
