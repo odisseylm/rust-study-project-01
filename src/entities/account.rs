@@ -12,6 +12,11 @@ use crate::entities::user::UserId;
 pub struct AccountId( #[allow(dead_code)] Id);
 type AccountIdFormatError = crate::entities::id::parse::IdFormatError;
 
+impl AccountId {
+    pub fn move_out(self) -> Id { self.0 }
+    pub fn move_string_out(self) -> String { self.0.move_out() }
+}
+
 #[inherent::inherent]
 impl core::str::FromStr for AccountId { // TODO: create macros for it
     type Err = AccountIdFormatError;
@@ -62,6 +67,32 @@ impl Account {
         }
     }
 }
+
+
+// pub struct AccountValues {
+//     pub id: String,
+//     pub user_id: String,
+//     pub amount: crate::rest::dto::Amount,
+//     pub created_at: chrono::DateTime<Utc>,
+//     // #[serde(serialize_with = "serialize_fn...")]
+//     pub updated_at: chrono::DateTime<Utc>,
+// }
+
+pub type AccountParts = new::Args;
+
+impl Account {
+    pub fn move_out(self) -> AccountParts {
+        AccountParts {
+            id: self.id,
+            user_id: self.user_id,
+            amount: self.amount,
+            created_at: self.created_at,
+            updated_at: self.updated_at,
+        }
+    }
+}
+
+
 
 pub mod new {
     use chrono::Utc;

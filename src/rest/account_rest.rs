@@ -7,7 +7,7 @@ use crate::util::UncheckedResultUnwrap;
 use crate::entities::entity;
 use crate::rest::app_dependencies::Dependencies;
 use crate::rest::dto;
-use crate::rest::error_rest::AppRestError;
+use crate::rest::error_rest::RestAppError;
 use crate::service::account_service::{ AccountService };
 
 
@@ -23,11 +23,30 @@ pub fn accounts_rest_router<
     use axum::extract::{ Path, State };
     use std::sync::Arc;
     use super::utils::RestFutureToJson;
+    //use axum_extra::extract::
+    use axum_extra::{
+        headers::{authorization::Basic, Authorization},
+        TypedHeader,
+    };
 
     let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
 
     let accounts_router = Router::new()
-        .route("/api/account/all", get(|State(state): State<Arc<AccountRest<AccountS>>>| async move {
+        .route("/api/account/all", get(|State(state): State<Arc<AccountRest<AccountS>>>,
+                                        creds: Option<TypedHeader<Authorization<Basic>>>,
+        | async move {
+
+            match creds {
+                None => return Err(RestAppError::Unauthenticated),
+                Some(TypedHeader(Authorization(creds))) => {
+                    let usr = creds.username();
+                    let psw = creds.password();
+                    if usr != "vovan" || psw != "qwerty" {
+                        return Err(RestAppError::Unauthorized)
+                    }
+                }
+            }
+
             state.get_current_user_accounts().to_json().await
         }))
         .route("/api/account/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
@@ -54,7 +73,7 @@ impl<AS: AccountService> AccountRest<AS> {
         TEMP_CURRENT_USER_ID.clone()
     }
 
-    pub async fn get_user_account(&self, account_id: String) -> Result<dto::Account, AppRestError> {
+    pub async fn get_user_account(&self, account_id: String) -> Result<dto::Account, RestAppError> {
         let current_user_id = self.current_user_id().await;
         let account_id = AccountId::from_str(account_id.as_str()) ?;
         let account = self.account_service.get_user_account(account_id, current_user_id).await ?;
@@ -62,7 +81,7 @@ impl<AS: AccountService> AccountRest<AS> {
         Ok(account_dto)
     }
 
-    pub async fn get_current_user_accounts(&self) -> Result<Vec<dto::Account>, AppRestError> {
+    pub async fn get_current_user_accounts(&self) -> Result<Vec<dto::Account>, RestAppError> {
         let current_user_id = self.current_user_id().await;
         let accounts = self.account_service.get_user_accounts(current_user_id).await;
         let accounts_dto = accounts.map(move|acs|acs.into_iter().map(move |ac| map_account_to_rest(ac)).collect::<Vec<_>>()) ?;
@@ -84,12 +103,17 @@ async fn handler_get_user_account <
 
 #[allow(dead_code)] // !!! It is really used ?!
 fn map_account_to_rest(account: entity::Account) -> dto::Account {
+    use crate::entities::account::AccountParts;
+    use crate::entities::amount::AmountParts;
+
+    let AccountParts { id, user_id, amount, created_at, updated_at } = account.move_out();
+    let AmountParts { value: amount_value, currency } = amount.move_out();
     dto::Account {
-        id: account.id.to_string(), // TODO: use moving
-        user_id: account.user_id.to_string(),
-        amount: dto::Amount { value: account.amount.value.clone(), currency: account.amount.currency.to_string() },
-        created_at: account.created_at,
-        updated_at: account.updated_at,
+        id: id.move_string_out(),
+        user_id: user_id.move_string_out(),
+        amount: dto::Amount { value: amount_value, currency: currency.to_string() },
+        created_at,
+        updated_at,
     }
 }
 

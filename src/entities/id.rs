@@ -12,6 +12,7 @@ use serde_with::serde_derive::Serialize;
 pub struct Id(String);
 
 impl Id {
+    pub fn move_out(self) -> String { self.0 }
 }
 
 

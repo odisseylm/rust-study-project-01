@@ -8,6 +8,11 @@ use crate::entities::id::Id;
 pub struct UserId( #[allow(dead_code)] Id);
 type UserIdFormatError = crate::entities::id::parse::IdFormatError;
 
+impl UserId {
+    pub fn move_out(self) -> Id { self.0 }
+    pub fn move_string_out(self) -> String { self.0.move_out() }
+}
+
 
 #[inherent::inherent]
 impl core::str::FromStr for UserId { // TODO: generate by macro

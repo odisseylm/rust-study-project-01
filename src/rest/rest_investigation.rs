@@ -9,7 +9,7 @@ use axum::Json;
 use axum::routing::{ get };
 use super::dto::{ Account as AccountDTO };
 use crate::rest::account_rest::AccountRest;
-use crate::rest::error_rest::AppRestError;
+use crate::rest::error_rest::RestAppError;
 use crate::service::account_service::{ AccountService };
 
 
@@ -113,7 +113,7 @@ async fn handler6 <
     axum::extract::State(state): axum::extract::State<Arc<AccountRest<AccountS>>>,
 // ) -> Json<AccountDTO> {
 // ) -> Result<Json<AccountDTO>, anyhow::Error> {
-) -> Result<Json<AccountDTO>, AppRestError> {
+) -> Result<Json<AccountDTO>, RestAppError> {
 // ) -> Result<axum::response::Response, anyhow::Error> {
 // ) -> Result<Json< crate::rest::dto::Account >, anyhow::Error> {
     let aa: Result<(), anyhow::Error> = Ok(());

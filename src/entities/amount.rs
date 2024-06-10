@@ -17,6 +17,11 @@ pub struct Amount {
     pub currency: Currency,
 }
 
+pub struct AmountParts {
+    pub value: BigDecimal,
+    pub currency: Currency,
+}
+
 /*
 struct Person {
     name: String,
@@ -240,6 +245,10 @@ impl Amount {
     // pub fn with_currency(&self, currency: Currency) -> Amount {
     //     Amount { value: self.value.clone(), currency }
     // }
+
+    pub fn move_out(self) -> AmountParts {
+        AmountParts { value: self.value, currency: self.currency }
+    }
 }
 
 // Just short alias (similar to kotlin style)
