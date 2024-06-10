@@ -1,6 +1,7 @@
 use std::sync::Arc;
 // use axum::routing::{ delete, get, post };
 use axum::routing::{ get };
+use axum_login::AuthManagerLayerBuilder;
 use tracing::{ debug, info, error };
 use log::{ debug as log_debug, info as log_info, error as log_error };
 use crate::entities::account::AccountId;
@@ -10,6 +11,7 @@ use crate::entities::entity;
 use crate::rest::app_dependencies::Dependencies;
 use crate::rest::dto;
 use crate::rest::error_rest::{authenticate, RestAppError};
+use crate::rest::rest_auth::auth_manager_layer;
 use crate::service::account_service::{ AccountService };
 
 
@@ -33,7 +35,11 @@ pub fn accounts_rest_router<
 
     let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
 
+    // let accounts_router: Router<_> = Router::new()
     let accounts_router = Router::new()
+        .layer(axum::Extension(shared_state.clone()))
+        .layer(auth_manager_layer())
+        // .with_state(shared_state.clone())
         .route("/api/account/all", get(|State(state): State<Arc<AccountRest<AccountS>>>,
                                         creds: Option<TypedHeader<Authorization<Basic>>>,
         | async move {
@@ -41,10 +47,21 @@ pub fn accounts_rest_router<
 
             state.get_current_user_accounts().to_json().await
         }))
+        .with_state(shared_state.clone())
         .route("/api/account/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
             state.get_user_account(id).to_json().await
         }))
-        .with_state(shared_state)
+        // .route_layer()
+        // .with_state(shared_state)
+        // .layer(
+        //     ServiceBuilder::new()
+        //         .layer(TraceLayer::new_for_http())
+        //         .layer(auth_manager_layer())
+        //         // Why is 'Extension' needed?
+        //         // TODO: uncomment it
+        //         .layer(axum::Extension(shared_state.clone())) // !!?? it causes changing type of Route<S> !!!
+        // )
+        .with_state(shared_state.clone())
         ;
 
     accounts_router

@@ -30,6 +30,11 @@
    - `cargo tree -f "{p} {f}"`
    - ? `cargo tree -e features -i serde_json`
 
+# Run
+
+ - ``
+ - http://localhost:3000/api/account/all
+ - http://localhost:3000/api/account/345
 
 ## Cargo make
 

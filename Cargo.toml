@@ -103,7 +103,15 @@ time = "0.3.36"
 type-rules = { version = "0.2.3", features = ["derive", "regex"] }
 
 axum = "0.7.5"
-axum-login = "0.15.2"
+#axum = {  version = "0.7.5", features = ["default", "tracing", ] }
+#tower = "0.4.13"
+tower = {  version = "0.4.13", features = ["full"] }
+#tower-http = "0.5.2"
+tower-http = {  version = "0.5.2", features = ["default", "trace", "tracing"] }
+tower-async-http = "0.2.0"
+
+#axum-login = "0.15.2"
+axum-login = {  version = "0.15.2" }
 axum-auth = "0.7.0"
 #axum-extra = "0.9.3"
 axum-extra = { version = "0.9.3", features = ["typed-header"] }

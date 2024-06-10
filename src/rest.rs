@@ -6,3 +6,5 @@ mod rest_investigation;
 pub mod app_dependencies;
 pub mod utils;
 pub mod web_app;
+pub mod rest_auth;
+pub mod axum_login_investigation;

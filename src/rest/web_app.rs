@@ -1,8 +1,11 @@
 use std::sync::Arc;
 use axum::Router;
+use tower::ServiceBuilder;
+use tower_http::trace::TraceLayer;
 use crate::database::DatabaseConnection;
 use crate::rest::account_rest::{ AccountRest, accounts_rest_router };
 use crate::rest::app_dependencies::Dependencies;
+use crate::rest::rest_auth::auth_manager_layer;
 use crate::service::account_service::AccountServiceImpl;
 
 
@@ -57,12 +60,32 @@ pub async fn web_app_main() {
         .with(tracing_subscriber::fmt::Layer::default().compact())
         .init();
 
+    /*
+    tracing_subscriber::registry()
+        .with(EnvFilter::new(std::env::var("RUST_LOG").unwrap_or_else(
+            |_| "axum_login=debug,tower_sessions=debug,sqlx=warn,tower_http=debug".into(),
+        )))
+        .with(tracing_subscriber::fmt::layer())
+        .try_init()?;
+    */
+
     log::info!("Hello from [web_app_main]");
 
     let dependencies = create_prod_dependencies();
 
     let app_router = Router::new()
-        .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()));
+        .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))
+        // .layer(
+        //     ServiceBuilder::new()
+        //         .layer(TraceLayer::new_for_http())
+        //         .layer(auth_manager_layer())
+        //         // Why is 'Extension' needed?
+        //         // TODO: uncomment it
+        //         // .layer(axum::Extension(shared_state.clone())) // !!?? it causes changing type of Route<S> !!!
+        // )
+        ;
+
+    let app_router: axum::Router<_> = accounts_rest_router::<AccountServiceImpl>(dependencies.clone());
 
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();

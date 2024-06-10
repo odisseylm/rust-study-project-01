@@ -55,7 +55,7 @@ impl IntoResponse for RestAppError {
     }
 }
 
-fn unauthenticated_401_response() -> Response<Body> {
+pub fn unauthenticated_401_response() -> Response<Body> {
     axum::response::Response::builder()
         .status(StatusCode::UNAUTHORIZED)
         // To show user dialog in web-browser; can be removed in prod.
