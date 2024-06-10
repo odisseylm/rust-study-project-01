@@ -1,3 +1,4 @@
+use core::fmt;
 use bigdecimal::BigDecimal;
 use chrono::Utc;
 use serde::{ Deserialize, Serialize };
@@ -20,6 +21,30 @@ pub struct Account {
 }
 
 
+// See https://crates.io/crates/axum-valid
+#[derive(Debug, validator::Validate, serde::Deserialize)]
+pub struct SomeRequest {
+    #[validate(range(min = 1, max = 50))]
+    pub page_size: usize,
+    #[validate(range(min = 1))]
+    pub page_no: usize,
+}
+
+/*
+pub async fn pager_from_query(Valid(Query(pager)): Valid<Query<Pager>>) {
+    assert!((1..=50).contains(&pager.page_size));
+    assert!((1..).contains(&pager.page_no));
+}
+
+pub async fn pager_from_json(pager: Valid<Json<Pager>>) {
+    assert!((1..=50).contains(&pager.page_size));
+    assert!((1..).contains(&pager.page_no));
+    // NOTE: all extractors provided support automatic dereferencing
+    println!("page_no: {}, page_size: {}", pager.page_no, pager.page_size);
+}
+*/
+
+
 #[derive(PartialEq, Eq)]
 #[derive(serde::Serialize, serde::Deserialize)] // TODO: move it to DTO
 pub struct Amount {
@@ -28,8 +53,8 @@ pub struct Amount {
     // currency: Currency,
     pub currency: String, // Now it is String there just for projection's test
 }
-impl core::fmt::Debug for Amount {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl fmt::Debug for Amount {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Amount {{ {} {}  ({:?}) }}", self.value, self.currency, self.value)
     }
 }

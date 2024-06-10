@@ -80,6 +80,13 @@ static_init = "1.0.3"
 log = "0.4.21"
 env_logger = "0.11.3"
 log4rs = "1.3.0"
+#tracing = "0.1.40"
+tracing = {  version = "0.1.40", features = ["attributes", "log", ] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing-futures = "0.2.5"
+#tracing-log = "0.2.0"
+#tracing-attributes = "0.1.27"
+tracing-timing = "0.6.0"
 
 dotenv = "0.15.0"
 
@@ -114,6 +121,9 @@ axum-typed-routing = "0.2.1"
 #axum_health = ""
 axum_session_auth = "0.14.0"
 axum_static = "1.7.1"
+#axum-request-validator = "0.1.0"
+axum-valid = "0.18.0"
+validator = {  version = "0.18.1", features = ["derive", "validator_derive"] }
 #axum_typed_multipart = "0.11.1"
 #axum_static_include = "0.3.0"
 jsonwebtoken = "9.3.0"

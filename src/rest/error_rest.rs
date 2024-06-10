@@ -58,7 +58,9 @@ impl IntoResponse for RestAppError {
 fn unauthenticated_401_response() -> Response<Body> {
     axum::response::Response::builder()
         .status(StatusCode::UNAUTHORIZED)
-        // to show user dialog in web-browser; can be removed in prod
+        // To show user dialog in web-browser; can be removed in prod.
+        // Also, other auth schemas can be there (Bearer, Digest, OAuth, PrivateToken, etc.)
+        //   See https://www.iana.org/assignments/http-authschemes/http-authschemes.xhtml
         .header("WWW-Authenticate", "Basic")
         .body(Body::from("Unauthenticated")) // or Body::empty() // Json(json!({"error": "Unauthorized"}))
         .unwrap_or_else(|_err| StatusCode::UNAUTHORIZED.into_response())

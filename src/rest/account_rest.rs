@@ -1,6 +1,8 @@
 use std::sync::Arc;
 // use axum::routing::{ delete, get, post };
 use axum::routing::{ get };
+use tracing::{ debug, info, error };
+use log::{ debug as log_debug, info as log_info, error as log_error };
 use crate::entities::account::AccountId;
 use crate::entities::prelude::UserId;
 use crate::util::UncheckedResultUnwrap;
@@ -63,7 +65,23 @@ impl<AS: AccountService> AccountRest<AS> {
         TEMP_CURRENT_USER_ID.clone()
     }
 
+    #[tracing::instrument(
+        // level = "trace",
+        // Level::DEBUG,
+        // level = "error",
+        // skip(dependencies),
+        skip(self),
+    )]
     pub async fn get_user_account(&self, account_id: String) -> Result<dto::Account, RestAppError> {
+
+        debug!("TD get_user_account");
+        info! ("TI get_user_account");
+        error!("TI get_user_account");
+
+        log_debug!("LD get_user_account");
+        log_info! ("LI get_user_account");
+        log_error!("LI get_user_account");
+
         let current_user_id = self.current_user_id().await;
         let account_id = AccountId::from_str(account_id.as_str()) ?;
         let account = self.account_service.get_user_account(account_id, current_user_id).await ?;
