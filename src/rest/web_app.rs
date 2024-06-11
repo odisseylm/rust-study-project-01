@@ -5,7 +5,7 @@ use tower_http::trace::TraceLayer;
 use crate::database::DatabaseConnection;
 use crate::rest::account_rest::{ AccountRest, accounts_rest_router };
 use crate::rest::app_dependencies::Dependencies;
-use crate::rest::rest_auth::{auth_manager_layer, AuthnBackend0};
+use crate::rest::auth::auth_manager_layer;
 use crate::service::account_service::AccountServiceImpl;
 
 
@@ -72,7 +72,7 @@ pub async fn web_app_main() {
     log::info!("Hello from [web_app_main]");
 
     let dependencies = create_prod_dependencies();
-    let auth_layer: axum_login::AuthManagerLayer<AuthnBackend0, axum_login::tower_sessions::MemoryStore> = auth_manager_layer();
+    let auth_layer = auth_manager_layer();
 
     let app_router = Router::new()
         .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))

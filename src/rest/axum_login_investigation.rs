@@ -15,8 +15,8 @@ use axum_extra::TypedHeader;
 use axum_login::AuthSession;
 use tower_http::{trace::TraceLayer};
 use tower::{service_fn, ServiceBuilder};
-use crate::rest::rest_auth::{auth_manager_layer, AuthnBackend0, Cred0, RequiredAuthenticationExtension, validate_auth};
-
+use crate::rest::auth::{auth_manager_layer, RequiredAuthenticationExtension, validate_auth_temp};
+use super::auth;
 
 
 
@@ -84,27 +84,27 @@ macro_rules! login_required23 {
 
 
 async fn handler(state22: State<State22>) {}
-async fn handler_1_protected_with_state(state: Extension<Arc<State22>>, auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json<String> {
+async fn handler_1_protected_with_state(state: Extension<Arc<State22>>, auth_session: auth::AuthSession) -> Json<String> {
     println!("### handler1 PROTECTED with_state, state: {}", state.x);
     // ...
     Json("bla-bla 22".to_string())
 }
-async fn handler_2_open_with_state(state: Extension<Arc<State22>>, _auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json<String> {
+async fn handler_2_open_with_state(state: Extension<Arc<State22>>, _auth_session: auth::AuthSession) -> Json<String> {
     println!("### handler2 OPEN state, state: {}", state.x);
     // ...
     Json("bla-bla 23".to_string())
 }
-async fn handler_3_protected_with_state(state: axum::extract::State<State11>, _auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json<String> {
+async fn handler_3_protected_with_state(state: axum::extract::State<State11>, _auth_session: auth::AuthSession) -> Json<String> {
     println!("### handler3 PROTECTED with_state, state11: {}", state.x);
     // ...
     Json("bla-bla 22".to_string())
 }
-async fn handler_4_open_with_state(state: Extension<Arc<State22>>, _auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json<String> {
+async fn handler_4_open_with_state(state: Extension<Arc<State22>>, _auth_session: auth::AuthSession) -> Json<String> {
     println!("### handler4 OPEN with_state, state: {}", state.x);
     // ...
     Json("bla-bla 23".to_string())
 }
-async fn handler22(auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json<String> {
+async fn handler22(auth_session: auth::AuthSession) -> Json<String> {
     println!("### handler22");
     // ...
     Json("bla-bla 22".to_string())
@@ -156,7 +156,7 @@ pub async fn temp_handler() {
     */
 
 
-    let auth_layer: axum_login::AuthManagerLayer<AuthnBackend0, axum_login::tower_sessions::MemoryStore> = auth_manager_layer();
+    let auth_layer: axum_login::AuthManagerLayer<auth::AuthnBackend, axum_login::tower_sessions::MemoryStore> = auth_manager_layer();
 
     // !!! WORKING router !!!
     // let app_router = Router::new()
@@ -194,7 +194,7 @@ pub async fn temp_handler() {
             Router::new()
                 .route("/temp_handler3", get(handler_3_protected_with_state))
                 .with_state(State11 { x: "101" })
-                .route_layer(axum::middleware::from_fn(validate_auth))
+                .route_layer(axum::middleware::from_fn(validate_auth_temp))
         )
         .nest(
             "/also-protected",

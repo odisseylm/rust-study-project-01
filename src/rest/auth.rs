@@ -1,17 +1,23 @@
 use core::fmt;
 use std::collections::hash_map::HashMap;
-use std::hash::Hash;
+// use std::hash::Hash;
 use axum::body::Body;
 use axum_extra::TypedHeader;
 use axum_extra::headers::Authorization as AuthorizationHeader;
 use axum_extra::headers::authorization::Basic;
-use axum_login::{AuthManagerLayer, AuthSession};
-use axum_login::tower_sessions::{MemoryStore, SessionManagerLayer};
-// use axum_login::{AuthManagerLayerBuilder, UserId};
+
+// pub mod auth {
+//     // pub use super::AuthUser;
+//     pub use super::validate_auth;
+//
+//     pub type AuthUser = super::AuthUser;
+//     pub type AuthnBackend = super::AuthnBackend;
+//     pub type AuthSession = super::AuthSession;
+// }
 
 
 async fn is_authenticated(
-    auth_session: AuthSession<AuthnBackend0>,
+    auth_session: AuthSession,
     basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
     ) -> bool
 {
@@ -21,15 +27,22 @@ async fn is_authenticated(
 
     if let Some(TypedHeader(AuthorizationHeader(ref creds))) = basic_auth_creds {
         // T O D O: avoid to_string()
-        let is_auth_res = auth_session.authenticate(Cred0 { username: creds.username().to_string(), password: creds.password().to_string() }).await;
+        let is_auth_res = auth_session.authenticate(AuthCredentials { username: creds.username().to_string(), password: creds.password().to_string() }).await;
         is_auth_res.is_ok()
     }
     else { false }
 }
 
 
+#[inline]
+pub async fn validate_auth_temp(
+    auth_session: AuthSession, basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
+    req: axum::extract::Request, next: axum::middleware::Next) -> axum::http::Response<Body> {
+    validate_auth(auth_session, basic_auth_creds, req, next).await
+}
+
 pub async fn validate_auth(
-    auth_session: AuthSession<AuthnBackend0>,
+    auth_session: AuthSession,
     basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
     req: axum::extract::Request,
     next: axum::middleware::Next
@@ -53,7 +66,7 @@ pub impl<S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for a
     }
 }
 
-pub fn auth_manager_layer() -> AuthManagerLayer<AuthnBackend0, MemoryStore> {
+pub fn auth_manager_layer() -> axum_login::AuthManagerLayer<AuthnBackend, axum_login::tower_sessions::MemoryStore> {
 
     use axum_login::{
         // login_required,
@@ -75,23 +88,23 @@ pub fn auth_manager_layer() -> AuthManagerLayer<AuthnBackend0, MemoryStore> {
     //
     // This combines the session layer with our backend to establish the auth
     // service which will provide the auth session as a request extension.
-    let backend = AuthnBackend0::new();
-    let auth_layer: AuthManagerLayer<AuthnBackend0, MemoryStore> = AuthManagerLayerBuilder::new(backend, session_layer).build();
+    let backend = AuthnBackend::new();
+    let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, MemoryStore> = AuthManagerLayerBuilder::new(backend, session_layer).build();
     auth_layer
 }
 
 
 #[derive(Clone)]
-pub struct AuthnBackend0 {
-    users: HashMap<String, User0>,
+pub struct AuthnBackend {
+    users: HashMap<String, AuthUser>,
 }
 
-impl AuthnBackend0 {
-    fn new() -> AuthnBackend0 {
-        AuthnBackend0 {
+impl AuthnBackend {
+    fn new() -> AuthnBackend {
+        AuthnBackend {
             users: {
-                let mut users = HashMap::<String, User0>::with_capacity(2);
-                users.insert("vovan".to_string(), User0::new("vovan", "qwerty"));
+                let mut users = HashMap::<String, AuthUser>::with_capacity(2);
+                users.insert("vovan".to_string(), AuthUser::new("vovan", "qwerty"));
                 users
             }
         }
@@ -108,9 +121,9 @@ pub enum AuthError {
 
 
 #[axum::async_trait]
-impl axum_login::AuthnBackend for AuthnBackend0 {
-    type User = User0;
-    type Credentials = Cred0;
+impl axum_login::AuthnBackend for AuthnBackend {
+    type User = AuthUser;
+    type Credentials = AuthCredentials;
     type Error = AuthError;
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
@@ -135,20 +148,21 @@ impl axum_login::AuthnBackend for AuthnBackend0 {
     }
 }
 
+pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
 
 #[derive(Clone)]
-pub struct User0 {
+pub struct AuthUser {
     username: String,
     psw: String,
 }
 
-impl User0 {
-    fn new(username: &'static str, psw: &'static str) -> User0 {
-        User0 { username: username.to_string(), psw: psw.to_string() }
+impl AuthUser {
+    fn new(username: &'static str, psw: &'static str) -> AuthUser {
+        AuthUser { username: username.to_string(), psw: psw.to_string() }
     }
 }
 
-impl fmt::Debug for User0 {
+impl fmt::Debug for AuthUser {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("User0")
             .field("username", &self.username)
@@ -157,7 +171,7 @@ impl fmt::Debug for User0 {
     }
 }
 
-impl axum_login::AuthUser for User0 {
+impl axum_login::AuthUser for AuthUser {
     type Id = String;
 
     fn id(&self) -> Self::Id {
@@ -178,12 +192,12 @@ impl axum_login::AuthUser for User0 {
 }
 
 #[derive(Clone, serde::Deserialize)]
-pub struct Cred0 {
+pub struct AuthCredentials {
     pub username: String,
     pub password: String,
 }
 
-impl fmt::Debug for Cred0 {
+impl fmt::Debug for AuthCredentials {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Cred0 {{ username: {:?}, psw: [...] }},", self.username)
     }

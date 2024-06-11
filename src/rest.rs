@@ -6,5 +6,15 @@ mod rest_investigation;
 pub mod app_dependencies;
 pub mod utils;
 pub mod web_app;
-pub mod rest_auth;
+
+// mod rest_auth;
+// pub mod auth {
+//     // pub use super::AuthUser;
+//     pub use crate::rest::rest_auth::validate_auth;
+//     pub use crate::rest::rest_auth::AuthUser;
+//     pub use crate::rest::rest_auth::AuthnBackend;
+//     pub use crate::rest::rest_auth::AuthSession;
+// }
+pub mod auth;
+
 pub mod axum_login_investigation;

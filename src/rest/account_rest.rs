@@ -1,7 +1,6 @@
 use std::sync::Arc;
 // use axum::routing::{ delete, get, post };
 use axum::routing::{ get };
-use axum_login::AuthManagerLayerBuilder;
 use tracing::{ debug, info, error };
 use log::{ debug as log_debug, info as log_info, error as log_error };
 use crate::entities::account::AccountId;
@@ -11,7 +10,7 @@ use crate::entities::entity;
 use crate::rest::app_dependencies::Dependencies;
 use crate::rest::dto;
 use crate::rest::error_rest::{authenticate, RestAppError};
-use crate::rest::rest_auth::{auth_manager_layer, RequiredAuthenticationExtension};
+use crate::rest::auth::RequiredAuthenticationExtension;
 use crate::service::account_service::{ AccountService };
 
 
