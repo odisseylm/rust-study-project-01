@@ -15,25 +15,9 @@ use axum_extra::TypedHeader;
 use axum_login::AuthSession;
 use tower_http::{trace::TraceLayer};
 use tower::{service_fn, ServiceBuilder};
-use crate::rest::rest_auth::{ auth_manager_layer, AuthnBackend0, Cred0 };
+use crate::rest::rest_auth::{auth_manager_layer, AuthnBackend0, Cred0, RequiredAuthenticationExtension, validate_auth};
 
 
-async fn is_authenticated_by_session_or_basic_auth(auth_session: axum_login::AuthSession<AuthnBackend0>,
-                            basic_auth_creds: Option<axum_extra::TypedHeader<axum_extra::headers::Authorization<axum_extra::headers::authorization::Basic>>>) -> bool {
-    use axum_extra::headers::Authorization;
-    use axum_extra::TypedHeader;
-
-    if auth_session.user.is_some() {
-        return true;
-    }
-
-    if let Some(TypedHeader(Authorization(ref creds))) = basic_auth_creds {
-        // T O D O: avoid to_string()
-        let is_auth_res = auth_session.authenticate(Cred0 { username: creds.username().to_string(), password: creds.password().to_string() }).await;
-        is_auth_res.is_ok()
-    }
-    else { false }
-}
 
 
 macro_rules! predicate_required22 {
@@ -97,31 +81,6 @@ macro_rules! login_required23 {
         )
     }};
 }
-
-async fn validate_auth(
-    auth_session: axum_login::AuthSession<AuthnBackend0>,
-    basic_auth_creds: Option<TypedHeader<Authorization<Basic>>>,
-    req: axum::extract::Request,
-    next: axum::middleware::Next
-) -> axum::http::Response<Body> {
-    if is_authenticated_by_session_or_basic_auth(auth_session, basic_auth_creds).await {
-        next.run(req).await
-    } else {
-        // or redirect to login page
-        super::error_rest::unauthenticated_401_response()
-    }
-}
-
-
-#[extension_trait::extension_trait]
-pub impl<S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for axum::Router<S> {
-    // #[inline] // warning: `#[inline]` is ignored on function prototypes
-    #[track_caller]
-    fn auth_required(self) -> Self {
-        self.route_layer(axum::middleware::from_fn(validate_auth))
-    }
-}
-
 
 
 async fn handler(state22: State<State22>) {}

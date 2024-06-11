@@ -5,7 +5,7 @@ use tower_http::trace::TraceLayer;
 use crate::database::DatabaseConnection;
 use crate::rest::account_rest::{ AccountRest, accounts_rest_router };
 use crate::rest::app_dependencies::Dependencies;
-use crate::rest::rest_auth::auth_manager_layer;
+use crate::rest::rest_auth::{auth_manager_layer, AuthnBackend0};
 use crate::service::account_service::AccountServiceImpl;
 
 
@@ -72,20 +72,18 @@ pub async fn web_app_main() {
     log::info!("Hello from [web_app_main]");
 
     let dependencies = create_prod_dependencies();
+    let auth_layer: axum_login::AuthManagerLayer<AuthnBackend0, axum_login::tower_sessions::MemoryStore> = auth_manager_layer();
 
     let app_router = Router::new()
         .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))
-        // .layer(
-        //     ServiceBuilder::new()
-        //         .layer(TraceLayer::new_for_http())
-        //         .layer(auth_manager_layer())
-        //         // Why is 'Extension' needed?
-        //         // TODO: uncomment it
-        //         // .layer(axum::Extension(shared_state.clone())) // !!?? it causes changing type of Route<S> !!!
-        // )
-        ;
-
-    let app_router: axum::Router<_> = accounts_rest_router::<AccountServiceImpl>(dependencies.clone());
+        .layer(
+            ServiceBuilder::new()
+                .layer(TraceLayer::new_for_http())
+                // .layer(axum::middleware::from_fn(temp_my_middleware))
+                .layer(auth_layer)
+                // additional state which will/can be accessible for ALL route methods
+                // .layer(Extension(Arc::new(State22 { x: "963" })))
+        );
 
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
