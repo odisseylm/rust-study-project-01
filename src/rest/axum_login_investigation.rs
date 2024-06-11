@@ -1,8 +1,20 @@
+#![allow(unused_imports, unused)]
+
+use std::convert::Infallible;
 use std::sync::Arc;
 use axum::{routing::get, Extension, Router, Json};
-use axum::extract::State;
+use axum::body::Body;
+use axum::extract::{Request, State};
+use axum::handler::Handler;
+use axum::middleware::FromFnLayer;
+use axum::response::Response;
+use axum::routing::any_service;
+use axum_extra::headers::Authorization;
+use axum_extra::headers::authorization::Basic;
+use axum_extra::TypedHeader;
+use axum_login::AuthSession;
 use tower_http::{trace::TraceLayer};
-use tower::ServiceBuilder;
+use tower::{service_fn, ServiceBuilder};
 use crate::rest::rest_auth::{ auth_manager_layer, AuthnBackend0, Cred0 };
 
 
@@ -48,7 +60,7 @@ macro_rules! predicate_required22 {
 
 
 
-#[macro_export]
+//#[macro_export]
 macro_rules! login_required22 {
     ($backend_type:ty) => {{
         async fn is_authenticated(auth_session: axum_login::AuthSession<$backend_type>) -> bool {
@@ -62,6 +74,55 @@ macro_rules! login_required22 {
     }};
 }
 
+macro_rules! login_required23 {
+    ($backend_type:ty) => {{
+
+        use axum::middleware::{ from_fn, Next };
+        use axum::response::IntoResponse;
+        use axum_extra::TypedHeader;
+        use axum_extra::headers::{ authorization::Basic, Authorization};
+
+        axum::middleware::from_fn(|
+                auth_session: axum_login::AuthSession<_>,
+                basic_auth_creds: Option<TypedHeader<Authorization<Basic>>>,
+                req, next: Next
+            | async move {
+                if is_authenticated_by_session_or_basic_auth(auth_session, basic_auth_creds).await {
+                    next.run(req).await
+                } else {
+                    // or redirect to login page
+                    $crate::rest::error_rest::unauthenticated_401_response()
+                }
+            },
+        )
+    }};
+}
+
+async fn validate_auth(
+    auth_session: axum_login::AuthSession<AuthnBackend0>,
+    basic_auth_creds: Option<TypedHeader<Authorization<Basic>>>,
+    req: axum::extract::Request,
+    next: axum::middleware::Next
+) -> axum::http::Response<Body> {
+    if is_authenticated_by_session_or_basic_auth(auth_session, basic_auth_creds).await {
+        next.run(req).await
+    } else {
+        // or redirect to login page
+        super::error_rest::unauthenticated_401_response()
+    }
+}
+
+
+#[extension_trait::extension_trait]
+pub impl<S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for axum::Router<S> {
+    // #[inline] // warning: `#[inline]` is ignored on function prototypes
+    #[track_caller]
+    fn auth_required(self) -> Self {
+        self.route_layer(axum::middleware::from_fn(validate_auth))
+    }
+}
+
+
 
 async fn handler(state22: State<State22>) {}
 async fn handler_1_protected_with_state(state: Extension<Arc<State22>>, auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json<String> {
@@ -69,17 +130,17 @@ async fn handler_1_protected_with_state(state: Extension<Arc<State22>>, auth_ses
     // ...
     Json("bla-bla 22".to_string())
 }
-async fn handler_2_open_with_state(state: Extension<Arc<State22>>, auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json<String> {
+async fn handler_2_open_with_state(state: Extension<Arc<State22>>, _auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json<String> {
     println!("### handler2 OPEN state, state: {}", state.x);
     // ...
     Json("bla-bla 23".to_string())
 }
-async fn handler_3_protected_with_state(state: Extension<Arc<State22>>, auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json<String> {
-    println!("### handler3 PROTECTED with_state, state: {}", state.x);
+async fn handler_3_protected_with_state(state: axum::extract::State<State11>, _auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json<String> {
+    println!("### handler3 PROTECTED with_state, state11: {}", state.x);
     // ...
     Json("bla-bla 22".to_string())
 }
-async fn handler_4_open_with_state(state: Extension<Arc<State22>>, auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json<String> {
+async fn handler_4_open_with_state(state: Extension<Arc<State22>>, _auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json<String> {
     println!("### handler4 OPEN with_state, state: {}", state.x);
     // ...
     Json("bla-bla 23".to_string())
@@ -93,6 +154,10 @@ async fn handler22(auth_session: axum_login::AuthSession<AuthnBackend0>) -> Json
 
 #[derive(Clone)]
 struct State22 {
+    x: &'static str,
+}
+#[derive(Clone)]
+struct State11 {
     x: &'static str,
 }
 
@@ -119,7 +184,6 @@ async fn temp_my_middleware(req: axum::extract::Request, next: axum::middleware:
 // let app = Router::new()
 // ...
 // .layer(axum::middleware::from_fn(auth_middleware))
-
 
 
 pub async fn temp_handler() {
@@ -167,17 +231,57 @@ pub async fn temp_handler() {
 
     let app_router = Router::new()
         .route("/temp_handler1", get(handler_1_protected_with_state))
-        .route("/temp_handler3", get(handler_3_protected_with_state))
-        // Note that the middleware is only applied to existing routes. So you have to
-        // first add your routes (and / or fallback) and then call `route_layer`
-        // afterwards. Additional routes added after `route_layer` is called will not have
-        // the middleware added.
-        // .route_layer(login_required!(AuthnBackend0, login_url = "/login"))
-        // .route_layer(login_required!(AuthnBackend0))
-        .route_layer(login_required22!(AuthnBackend0))
+        .merge(
+            Router::new()
+                .route("/temp_handler3", get(handler_3_protected_with_state))
+                .with_state(State11 { x: "101" })
+                .route_layer(axum::middleware::from_fn(validate_auth))
+        )
+        .nest(
+            "/also-protected",
+            Router::new()
+                .route("/temp_handler3", get(handler_3_protected_with_state))
+                .with_state(State11 { x: "101" })
+                //.route_layer(axum::middleware::from_fn(validate_auth))
+                .auth_required()
+        )
+        .nest(
+            "/not-protected",
+            Router::new()
+                .route("/temp_handler3", get(handler_3_protected_with_state))
+                .with_state(State11 { x: "101" })
+        )
+
+        // .route("/temp_handler3", get(handler_3_protected_with_state))
+        // // .with_state(Arc::new(State11 { x: "101" }))
+        // .with_state(State11 { x: "101" })
+        // // Note that the middleware is only applied to existing routes. So you have to
+        // // first add your routes (and / or fallback) and then call `route_layer`
+        // // afterwards. Additional routes added after `route_layer` is called will not have
+        // // the middleware added.
+        // // .route_layer(login_required!(AuthnBackend0, login_url = "/login"))
+        // // .route_layer(login_required!(AuthnBackend0))
+        //
+        // // .route_layer(login_required22!(AuthnBackend0))
+        // // .route_layer(login_required23!(AuthnBackend0))
+        // .route_layer(axum::middleware::from_fn(validate_auth))
 
         .route("/temp_handler2", get(handler_2_open_with_state))
         .route("/temp_handler4", get(handler_4_open_with_state))
+
+        // .route("/temp_handler4", get(handler_4_open_with_state))
+        .route(
+            // Any request to `/` goes to a service
+            "/temp_handler5",
+            // Services whose response body is not `axum::body::BoxBody`
+            // can be wrapped in `axum::routing::any_service` (or one of the other routing filters)
+            // to have the response body mapped
+            any_service(service_fn(|_: Request| async {
+                let res = Response::new(Body::from("Hi from `GET /`"));
+                Ok::<_, Infallible>(res)
+            }))
+        )
+
 
         .layer(
             ServiceBuilder::new()
