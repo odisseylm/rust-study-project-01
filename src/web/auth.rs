@@ -10,7 +10,6 @@ use axum::{
 use axum_login::tower_sessions::Session;
 use serde::Deserialize;
 
-// use crate::{users::AuthSession, web::oauth::CSRF_STATE_KEY};
 
 pub const NEXT_URL_KEY: &str = "auth.next-url";
 
@@ -40,8 +39,9 @@ mod post {
     use super::*;
 
     pub(super) mod login {
-        use crate::auth::composite_auth::{ AuthSession, PasswordCreds, OAuthCreds };
-        use crate::auth::oauth2_auth::Credentials;
+        use crate::auth::temp::{ AuthSession };
+        use crate::auth::composite_auth::{ PasswordCreds };
+        use crate::auth::composite_auth::AuthCredentials as Credentials;
         use crate::rest::oauth::CSRF_STATE_KEY;
         use super::*;
 
@@ -96,7 +96,7 @@ mod post {
 }
 
 mod get {
-    use crate::auth::composite_auth::AuthSession;
+    use crate::auth::temp::AuthSession;
     use super::*;
 
     pub async fn login(Query(NextUrl { next }): Query<NextUrl>) -> LoginTemplate {

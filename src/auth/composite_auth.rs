@@ -2,8 +2,10 @@ use std::sync::Arc;
 use axum_login::UserId;
 // use axum_login::UserId;
 use oauth2::basic::BasicClient;
-use crate::auth::auth_user_provider as auth;
-use crate::auth::auth_user_provider::{ AuthUserProvider, PlainPasswordComparator};
+// use crate::auth::auth_user_provider as auth;
+use super::by_psw_auth;
+use crate::auth::auth_user::{ self, AuthUserProvider };
+use crate::auth::psw::PlainPasswordComparator;
 use crate::auth::authn_backend_dyn_wrapper::AuthnBackendDynWrapper;
 
 /*
@@ -84,62 +86,20 @@ pub fn auth_manager_layer() -> axum_login::AuthManagerLayer<AuthnBackend, axum_l
 }
 */
 
-/*
-trait Trait123: Clone {
-    fn do_smth(&self);
-}
-
-
-#[axum::async_trait]
-pub trait AuthnBackend22: Clone /*: Clone + Send + Sync*/ {
-    /// Authenticating user type.
-    type User: axum_login::AuthUser;
-
-    /// Credential type used for authentication.
-    type Credentials: Send + Sync;
-
-    /// An error which can occur during authentication and authorization.
-    type Error: std::error::Error + Send + Sync;
-
-    /// Authenticates the given credentials with the backend.
-    async fn authenticate(
-        &self,
-        creds: Self::Credentials,
-    ) -> Result<Option<Self::User>, Self::Error>;
-
-    // Gets the user by provided ID from the backend.
-    // async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error>;
-}
-
-
-fn aa() {
-    // let psw_backends: Box<dyn Trait123> = todo!();
-    // let psw_backends: Box<dyn axum_login::AuthnBackend<
-    //     User = super::auth_user_provider::AuthUser, // + Clone + Sync + Send + 'static,
-    //     Credentials = super::by_psw_auth::AuthCredentials,
-    //     Error = super::by_psw_auth::AuthError> + Send + Sync
-    // > = todo!();
-    // let psw_backends: Arc<dyn crate::auth::by_psw_auth::AuthBackend<
-    //     UserProvider,
-    //     PswComparator,
-    // >> = todo!();
-}
-*/
 
 // #[derive(Clone)]
 pub struct AuthnBackend <
-    UsrProvider: AuthUserProvider<User = super::auth_user_provider::AuthUser> + Sync + Send, // + Clone + Sync + Send,
+    UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
     > {
-    // psw_backend: Arc<crate::auth::by_psw_auth::AuthBackend<UsrProvider, _>>,
     psw_backend: Arc<dyn AuthnBackendDynWrapper<
-        Credentials = super::by_psw_auth::AuthCredentials,
-        Error = super::by_psw_auth::AuthError,
-        RealAuthnBackend = super::by_psw_auth::AuthBackend<UsrProvider, PlainPasswordComparator>
+        Credentials = by_psw_auth::AuthCredentials,
+        Error = by_psw_auth::AuthError,
+        RealAuthnBackend = by_psw_auth::AuthBackend<UsrProvider, PlainPasswordComparator>
     >>,
 }
 
 impl <
-    UsrProvider: AuthUserProvider<User = super::auth_user_provider::AuthUser> + Sync + Send, // + Clone + Sync + Send,
+    UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
 > Clone for AuthnBackend<UsrProvider> {
     fn clone(&self) -> Self {
         AuthnBackend::<UsrProvider> {
@@ -153,27 +113,30 @@ impl <
 
 #[axum::async_trait]
 impl <
-    UsrProvider: AuthUserProvider<User = super::auth_user_provider::AuthUser> + Sync + Send, // + Clone + Sync + Send,
+    UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
 > axum_login::AuthnBackend for AuthnBackend<UsrProvider> {
-    type User = auth::AuthUser;
+    type User = auth_user::AuthUser;
     type Credentials = AuthCredentials;
     type Error = AuthError;
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
         match creds {
-            AuthCredentials::Password(psw_creds) => self.psw_backend.authenticate(psw_creds)
-                .await.map_err(|el|self::AuthError::IncorrectUsernameOrPsw), // TODO: fdf
+            AuthCredentials::Password(psw_creds) => {
+                self.psw_backend.authenticate(psw_creds).await.map_err(AuthError::from)
+                // let aa = self.psw_backend.authenticate(psw_creds).await ?;
+                // Ok(aa)
+            }
             AuthCredentials::OAuth(_) => { todo!() }
         }
     }
 
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
-        self.psw_backend.get_user(user_id).await.map_err(|el|self::AuthError::IncorrectUsernameOrPsw) // TODO: fdf
+        self.psw_backend.get_user(user_id).await.map_err(AuthError::from)
     }
 }
 
 impl <
-    UsrProvider: AuthUserProvider<User = super::auth_user_provider::AuthUser> + Sync + Send, // + Clone + Sync + Send,
+    UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
 > AuthnBackend<UsrProvider> {
     fn test_users() -> AuthnBackend<UsrProvider> {
         todo!()
@@ -182,13 +145,38 @@ impl <
     pub fn oath2_only(_client: BasicClient) -> AuthnBackend<UsrProvider> {
         todo!()
     }
+
+    pub fn authorize_url(&self) -> (oauth2::url::Url, oauth2::CsrfToken) {
+        //
+        // self.client.authorize_url(oauth2::CsrfToken::new_random).url()
+        todo!() // TODO: redirect to OAuth2Backend
+    }
 }
+
+// pub type AuthSession<UsrProvider: AuthUserProvider + Send + Sync> = axum_login::AuthSession<AuthnBackend<UsrProvider>>;
+pub type AuthSession<UsrProvider> = axum_login::AuthSession<AuthnBackend<UsrProvider>>;
+
+
+pub type OAuthCreds = super::oauth2_auth::Credentials;
+pub type PasswordCreds = super::by_psw_auth::AuthCredentials;
+
+#[derive(Debug, Clone, serde::Deserialize)]
+pub enum AuthCredentials {
+    Password(PasswordCreds),
+    OAuth(OAuthCreds),
+}
+
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
-    // #[error("NoUser")]
     #[error("NoUser")]
     NoUser,
+
+    #[error("IncorrectUsernameOrPsw")]
+    IncorrectUsernameOrPsw,
+
+    #[error("UserProviderError")]
+    UserProviderError,
 
     #[error(transparent)]
     OAuth2(oauth2::basic::BasicRequestTokenError<oauth2::reqwest::AsyncHttpClientError>),
@@ -201,20 +189,16 @@ pub enum AuthError {
 
     // #[error(transparent)]
     // TaskJoin(#[from] task::JoinError),
-
-    //#[error("IncorrectUsernameOrPsw")]
-    #[error("IncorrectUsernameOrPsw")]
-    IncorrectUsernameOrPsw, // TODO: Do we need it?
 }
 
-pub type AuthSession<UsrProvider: AuthUserProvider + Send + Sync> = axum_login::AuthSession<self::AuthnBackend<UsrProvider>>;
-
-
-pub type OAuthCreds = super::oauth2_auth::Credentials;
-pub type PasswordCreds = super::by_psw_auth::AuthCredentials;
-
-#[derive(Debug, Clone, serde::Deserialize)]
-pub enum AuthCredentials {
-    Password(PasswordCreds),
-    OAuth(OAuthCreds),
+impl From<by_psw_auth::AuthError> for AuthError {
+    fn from(value: by_psw_auth::AuthError) -> Self {
+        use by_psw_auth as psw;
+        match value {
+            psw::AuthError::NoUser => AuthError::NoUser,
+            psw::AuthError::IncorrectUsernameOrPsw => AuthError::IncorrectUsernameOrPsw,
+            psw::AuthError::UserProviderError => AuthError::UserProviderError,
+        }
+    }
 }
+

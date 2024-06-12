@@ -1,4 +1,5 @@
 
+use super::auth_user;
 use sqlx::SqlitePool; // TODO: remove direct dependency
 
 
@@ -47,7 +48,7 @@ impl Backend {
 
 #[axum::async_trait]
 impl axum_login::AuthnBackend for Backend {
-    type User = super::auth_user_provider::AuthUser;
+    type User = auth_user::AuthUser;
     type Credentials = Credentials;
     type Error = BackendError;
 

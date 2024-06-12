@@ -12,11 +12,11 @@ use axum_extra::headers::authorization::Basic;
 // use axum_login::tower_sessions::{ Expiry, MemoryStore, SessionManagerLayer };
 use axum_login::tower_sessions::cookie::SameSite;
 use time::Duration;
-use crate::auth::auth_user_provider::AuthUserProvider;
+use crate::auth::auth_user::AuthUserProvider;
 use axum_login;
 use axum_login::tower_sessions;
-use super::auth_user_provider::AuthUser;
-use super::auth_user_provider::{ PasswordComparator, PlainPasswordComparator };
+use super::auth_user::AuthUser;
+use super::psw::{ PasswordComparator, PlainPasswordComparator };
 
 
 mod tw {
@@ -105,8 +105,8 @@ pub async fn validate_auth_by_password<
 }
 
 pub type AuthSession<
-    UsrProvider: AuthUserProvider<User = AuthUser> + Sync + Send, // + Clone + Sync + Send,
-    PswComparator: PasswordComparator + Clone + Sync + Send,
+    UsrProvider,   // : AuthUserProvider<User = AuthUser> + Sync + Send, // + Clone + Sync + Send,
+    PswComparator, // : PasswordComparator + Clone + Sync + Send,
 > = axum_login::AuthSession<AuthBackend<UsrProvider,PswComparator>>;
 
 
@@ -186,7 +186,7 @@ impl<
 
 
 #[derive(Clone)]
-struct TestAuthUserProvider { // TODO: use Arc
+pub struct TestAuthUserProvider { // TODO: use Arc
     users_by_username: HashMap<String, AuthUser>,
     users_by_id: HashMap<i64, AuthUser>,
 }
@@ -214,7 +214,7 @@ impl AuthUserProvider for TestAuthUserProvider {
     }
     // fn get_user_by_id(&self, user_id: &Self::User::Id) -> Option<Self::User> {
     fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Option<Self::User> {
-        self.users_by_username.get(user_id).map(|usr|usr.clone())
+        self.users_by_id.get(user_id).map(|usr|usr.clone())
     }
 }
 
@@ -267,7 +267,7 @@ impl<
 
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         // TODO: what is UserId there???
-        let usr_opt = self.users_provider.get_user_by_name(user_id.as_str());
+        let usr_opt = self.users_provider.get_user_by_id(user_id);
         match usr_opt {
             None => Ok(None),
             Some(user) => Ok(Some(user.clone()))
