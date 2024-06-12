@@ -186,7 +186,7 @@ impl<
 }
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct TestAuthUserProvider { // TODO: use Arc
     users_by_username: HashMap<String, AuthUser>,
     users_by_id: HashMap<i64, AuthUser>,
@@ -208,13 +208,14 @@ impl TestAuthUserProvider {
         }
     }
 }
+#[axum::async_trait]
 impl AuthUserProvider for TestAuthUserProvider {
     type User = AuthUser;
-    fn get_user_by_name(&self, username: &str) -> Option<Self::User> {
+    async fn get_user_by_name(&self, username: &str) -> Option<Self::User> {
         self.users_by_username.get(username).map(|usr|usr.clone())
     }
     // fn get_user_by_id(&self, user_id: &Self::User::Id) -> Option<Self::User> {
-    fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Option<Self::User> {
+    async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Option<Self::User> {
         self.users_by_id.get(user_id).map(|usr|usr.clone())
     }
 }
@@ -250,7 +251,7 @@ impl<
     type Error = AuthError;
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
-        let usr_opt = self.users_provider.get_user_by_name(creds.username.as_str());
+        let usr_opt = self.users_provider.get_user_by_name(creds.username.as_str()).await;
         match usr_opt {
             None => Err(Self::Error::NoUser),
             Some(usr) => {
@@ -268,7 +269,7 @@ impl<
 
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         // TODO: what is UserId there???
-        let usr_opt = self.users_provider.get_user_by_id(user_id);
+        let usr_opt = self.users_provider.get_user_by_id(user_id).await;
         match usr_opt {
             None => Ok(None),
             Some(user) => Ok(Some(user.clone()))

@@ -63,8 +63,9 @@ impl axum_login::AuthUser for AuthUser {
 }
 
 
-pub trait AuthUserProvider {
+#[axum::async_trait]
+pub trait AuthUserProvider : fmt::Debug {
     type User: axum_login::AuthUser;
-    fn get_user_by_name(&self, username: &str) -> Option<Self::User>;
-    fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Option<Self::User>;
+    async fn get_user_by_name(&self, username: &str) -> Option<Self::User>; // TODO: replace by Result
+    async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Option<Self::User>; // TODO: replace by Result
 }

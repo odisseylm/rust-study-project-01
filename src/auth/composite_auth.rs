@@ -5,7 +5,6 @@ use super::psw_auth;
 use crate::auth::auth_user;
 use crate::auth::oauth2_auth;
 use crate::auth::psw::PlainPasswordComparator;
-use crate::auth::authn_backend_dyn_wrapper::AuthnBackendDynWrapper;
 use crate::auth::psw_auth::TestAuthUserProvider;
 
 /*
@@ -97,6 +96,7 @@ pub struct AuthnBackend <
 
 impl AuthnBackend {
     async fn test_users() -> Result<AuthnBackend, anyhow::Error> {
+        /*
         use oauth2::{ ClientId, ClientSecret, AuthUrl, TokenUrl };
 
         let client_id = std::env::var("CLIENT_ID")
@@ -112,13 +112,15 @@ impl AuthnBackend {
 
         // let db = SqlitePool::connect(":memory:").await?;
         // sqlx::migrate!().run(&db).await?;
+        */
 
         Ok(AuthnBackend {
             psw_backend: Some(
                 psw_auth::AuthBackend::new(
                     Arc::new(TestAuthUserProvider::new()))),
-            oauth2_backend: Some(
-                oauth2_auth::Backend::new(todo!(), basic_client)),
+            oauth2_backend: None,
+            // oauth2_backend: Some(
+            //     oauth2_auth::Backend::new(todo!(), basic_client)),
         })
     }
 }
@@ -252,7 +254,7 @@ impl From<oauth2_auth::BackendError> for AuthError {
             // o::BackendError::UserProviderError => AuthError::UserProviderError,
             o::BackendError::Sqlx(_) => AuthError::UserProviderError, // TODO: pass error cause
             o::BackendError::OAuth2(cause) => AuthError::OAuth2(cause),
+            o::BackendError::UserProviderError => AuthError::UserProviderError,
         }
     }
 }
-

@@ -1,6 +1,12 @@
-
+use std::sync::Arc;
 use super::auth_user;
-use sqlx::SqlitePool; // TODO: remove direct dependency
+use crate::auth::auth_user::{AuthUser, AuthUserProvider}; // TODO: remove direct dependency
+
+
+#[axum::async_trait]
+pub trait Oauth2UserProvider: AuthUserProvider {
+    async fn update_user_access_token(&self, username: &str, secret_token: &str) -> AuthUser;
+}
 
 
 pub type AuthSession = axum_login::AuthSession<Backend>;
@@ -17,6 +23,9 @@ pub enum BackendError {
     #[error(transparent)]
     Sqlx(sqlx::Error),
 
+    #[error("UserProviderError")]
+    UserProviderError, // (anyhow::Error), // TODO: use cause
+
     #[error(transparent)]
     Reqwest(reqwest::Error),
 
@@ -26,10 +35,28 @@ pub enum BackendError {
 
 
 #[derive(Debug, Clone)]
+// #[derive(Debug)]
+// #[derive(Clone)]
 pub struct Backend {
-    db: SqlitePool,
+    // db: SqlitePool,
+    user_provider: Arc<dyn Oauth2UserProvider<User = AuthUser> + Send + Sync>,
     client: oauth2::basic::BasicClient,
 }
+
+/*
+impl Clone for Backend {
+    fn clone(&self) -> Self {
+        Backend {
+            user_provider: self.user_provider.clone(),
+            client: self.client.clone(),
+        }
+    }
+    fn clone_from(&mut self, source: &Self) {
+        self.user_provider = source.user_provider.clone();
+        self.client = source.client.clone();
+    }
+}
+*/
 
 #[derive(Debug, serde::Deserialize)]
 struct UserInfo {
@@ -37,8 +64,12 @@ struct UserInfo {
 }
 
 impl Backend {
-    pub fn new(db: SqlitePool, client: oauth2::basic::BasicClient) -> Self {
-        Self { db, client }
+    pub fn new(
+        // db: SqlitePool,
+        user_provider: Arc<dyn Oauth2UserProvider<User = AuthUser> + Send + Sync>,
+        client: oauth2::basic::BasicClient,
+    ) -> Self {
+        Self { user_provider, client }
     }
 
     pub fn authorize_url(&self) -> (oauth2::url::Url, oauth2::CsrfToken) {
@@ -86,8 +117,13 @@ impl axum_login::AuthnBackend for Backend {
             .await
             .map_err(Self::Error::Reqwest)?;
 
+        let user: AuthUser = self.user_provider.update_user_access_token(
+            user_info.login.as_str(), token_res.access_token().secret().as_str())
+            .await;
+
+        /*
         // Persist user in our database so we can use `get_user`.
-        let user = sqlx::query_as(
+        let user: AuthUser = sqlx::query_as(
             r#"
             insert into users (username, access_token)
             values (?, ?)
@@ -101,15 +137,20 @@ impl axum_login::AuthnBackend for Backend {
         .fetch_one(&self.db)
         .await
         .map_err(Self::Error::Sqlx)?;
+        */
 
         Ok(Some(user))
     }
 
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
+        // self.user_provider.get_user_by_id(user_id).ok_or_else(||BackendError::UserProviderError)
+        Ok(self.user_provider.get_user_by_id(user_id).await) //.ok_or_else(||BackendError::UserProviderError)
+        /*
         Ok(sqlx::query_as("select * from users where id = ?")
             .bind(user_id)
             .fetch_optional(&self.db)
             .await
             .map_err(Self::Error::Sqlx)?)
+        */
     }
 }
