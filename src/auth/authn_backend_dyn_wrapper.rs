@@ -23,6 +23,7 @@ pub struct AuthnBackendDynWrapperImpl <
     authn_backend: RealAuthnBackend,
 }
 
+#[allow(dead_code)]
 pub fn wrap_authn_backend_as_dyn<
     Credentials: Send + Sync,
     Error: std::error::Error + Send + Sync,

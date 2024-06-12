@@ -2,7 +2,7 @@ use std::sync::Arc;
 use axum_login::UserId;
 use oauth2::basic::BasicClient;
 use super::psw_auth;
-use crate::auth::auth_user::{ self, AuthUserProvider };
+use crate::auth::auth_user;
 use crate::auth::oauth2_auth;
 use crate::auth::psw::PlainPasswordComparator;
 use crate::auth::authn_backend_dyn_wrapper::AuthnBackendDynWrapper;
@@ -90,12 +90,12 @@ pub fn auth_manager_layer() -> axum_login::AuthManagerLayer<AuthnBackend, axum_l
 
 // #[derive(Clone)]
 pub struct AuthnBackend <
-    UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
+    // UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
     > {
     psw_backend: Option<Arc<dyn AuthnBackendDynWrapper<
         Credentials = psw_auth::AuthCredentials,
         Error = psw_auth::AuthError,
-        RealAuthnBackend = psw_auth::AuthBackend<UsrProvider, PlainPasswordComparator>
+        RealAuthnBackend = psw_auth::AuthBackend<PlainPasswordComparator>
     >>>,
     oauth2_backend: Option<Arc<dyn AuthnBackendDynWrapper<
         Credentials = oauth2_auth::Credentials,
@@ -104,8 +104,8 @@ pub struct AuthnBackend <
     >>>,
 }
 
-impl AuthnBackend<TestAuthUserProvider> {
-    async fn test_users() -> Result<AuthnBackend<TestAuthUserProvider>, anyhow::Error> {
+impl AuthnBackend {
+    async fn test_users() -> Result<AuthnBackend, anyhow::Error> {
         use oauth2::{ ClientId, ClientSecret, AuthUrl, TokenUrl };
 
         let client_id = std::env::var("CLIENT_ID")
@@ -138,11 +138,9 @@ impl AuthnBackend<TestAuthUserProvider> {
 }
 
 
-impl <
-    UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
-> AuthnBackend<UsrProvider> {
+impl AuthnBackend {
 
-    pub fn oath2_only(_client: BasicClient) -> AuthnBackend<UsrProvider> {
+    pub fn oath2_only(_client: BasicClient) -> AuthnBackend {
         todo!()
     }
 
@@ -155,11 +153,9 @@ impl <
 }
 
 
-impl <
-    UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
-> Clone for AuthnBackend<UsrProvider> {
+impl Clone for AuthnBackend {
     fn clone(&self) -> Self {
-        AuthnBackend::<UsrProvider> {
+        AuthnBackend {
             psw_backend: self.psw_backend.clone(),
             oauth2_backend: self.oauth2_backend.clone(),
         }
@@ -170,9 +166,7 @@ impl <
 }
 
 #[axum::async_trait]
-impl <
-    UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
-> axum_login::AuthnBackend for AuthnBackend<UsrProvider> {
+impl axum_login::AuthnBackend for AuthnBackend {
     type User = auth_user::AuthUser;
     type Credentials = AuthCredentials;
     type Error = AuthError;
@@ -212,7 +206,7 @@ impl <
 }
 
 // pub type AuthSession<UsrProvider: AuthUserProvider + Send + Sync> = axum_login::AuthSession<AuthnBackend<UsrProvider>>;
-pub type AuthSession<UsrProvider> = axum_login::AuthSession<AuthnBackend<UsrProvider>>;
+pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
 
 
 pub type OAuthCreds = oauth2_auth::Credentials;
