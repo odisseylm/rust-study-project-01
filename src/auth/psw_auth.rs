@@ -2,7 +2,9 @@
 use core::fmt;
 use std::collections::hash_map::HashMap;
 use std::marker::PhantomData;
-use std::sync::Arc;
+use std::mem::forget;
+use std::ops::{Deref, DerefMut};
+use std::sync::{Arc, RwLock};
 // use std::hash::Hash;
 use axum::body::Body;
 use axum_extra::TypedHeader;
@@ -12,9 +14,10 @@ use axum_extra::headers::authorization::Basic;
 // use axum_login::tower_sessions::{ Expiry, MemoryStore, SessionManagerLayer };
 use axum_login::tower_sessions::cookie::SameSite;
 use time::Duration;
-use crate::auth::auth_user::AuthUserProvider;
+use crate::auth::auth_user::{AuthUserProvider, AuthUserProviderError};
 use axum_login;
 use axum_login::tower_sessions;
+use crate::auth::oauth2_auth::Oauth2UserProvider;
 use super::auth_user::AuthUser;
 use super::psw::{ PasswordComparator, PlainPasswordComparator };
 
@@ -186,40 +189,182 @@ impl<
 }
 
 
-#[derive(Clone, Debug)]
-pub struct TestAuthUserProvider { // TODO: use Arc
-    users_by_username: HashMap<String, AuthUser>,
-    users_by_id: HashMap<i64, AuthUser>,
+struct InMemoryState {
+    // TODO: I think we could use there Rc (instead of Arc) because it is protected by mutex... but how to say rust about it??
+    // TODO: RwLock TWICE?? It is too much!!!
+    users_by_username: HashMap<String, Arc<RwLock<AuthUser>>>,
+    users_by_id: HashMap<i64, Arc<RwLock<AuthUser>>>,
 }
-impl TestAuthUserProvider {
-    pub fn new() -> TestAuthUserProvider {
-        let user_1 = AuthUser::new(1, "vovan", "qwerty");
-        TestAuthUserProvider {
-            users_by_username: {
-                let mut users = HashMap::<String, AuthUser>::with_capacity(2);
-                users.insert(user_1.username.clone(), user_1.clone());
-                users
-            },
-            users_by_id: {
-                let mut users = HashMap::<i64, AuthUser>::with_capacity(2);
-                users.insert(user_1.id, user_1.clone());
-                users
-            },
+impl InMemoryState {
+    fn new() -> InMemoryState {
+        InMemoryState {
+            users_by_username: HashMap::<String, Arc<RwLock<AuthUser>>>::new(),
+            users_by_id: HashMap::<i64, Arc<RwLock<AuthUser>>>::new(),
+        }
+    }
+    fn with_capacity(capacity: usize) -> InMemoryState {
+        InMemoryState {
+            users_by_username: HashMap::<String, Arc<RwLock<AuthUser>>>::with_capacity(capacity),
+            users_by_id: HashMap::<i64, Arc<RwLock<AuthUser>>>::with_capacity(capacity),
         }
     }
 }
-#[axum::async_trait]
-impl AuthUserProvider for TestAuthUserProvider {
-    type User = AuthUser;
-    async fn get_user_by_name(&self, username: &str) -> Option<Self::User> {
-        self.users_by_username.get(username).map(|usr|usr.clone())
+
+
+// #[derive(Clone, Debug)]
+#[derive(Clone)]
+pub struct TestAuthUserProvider {
+    // state: Arc<Mutex<InMemoryState>>,
+    state: Arc<RwLock<InMemoryState>>,
+}
+impl TestAuthUserProvider {
+    pub fn new() -> TestAuthUserProvider {
+        TestAuthUserProvider {
+            // state: Arc::new(Mutex::<InMemoryState>::new(InMemoryState::new())),
+            state: Arc::new(RwLock::<InMemoryState>::new(InMemoryState::new())),
+        }
     }
-    // fn get_user_by_id(&self, user_id: &Self::User::Id) -> Option<Self::User> {
-    async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Option<Self::User> {
-        self.users_by_id.get(user_id).map(|usr|usr.clone())
+
+    pub fn with_users(users: Vec<AuthUser>) -> Result<TestAuthUserProvider, AuthUserProviderError> {
+        let in_memory_state = {
+            // let in_memory_state = Arc::new(Mutex::<InMemoryState>::new(InMemoryState::with_capacity(users.len())));
+            let in_memory_state = Arc::new(RwLock::<InMemoryState>::new(InMemoryState::with_capacity(users.len())));
+            // let mut guarded = in_memory_state.lock()
+            let mut guarded = in_memory_state.deref().write() // get_mut()
+                .map_err(|_|AuthUserProviderError::LockedResourceError) ?;
+
+            for user in users {
+                let user_ref = Arc::new(RwLock::new(user.clone()));
+
+                guarded.users_by_id.insert(user.id, user_ref.clone());
+                guarded.users_by_username.insert(user.username.to_string(), user_ref.clone());
+            }
+            forget(guarded);
+            in_memory_state
+        };
+
+        Ok(TestAuthUserProvider {
+            state: in_memory_state,
+        })
+    }
+
+    fn test_users() -> Result<TestAuthUserProvider, AuthUserProviderError> {
+        Self::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
     }
 }
 
+
+impl fmt::Debug for TestAuthUserProvider {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // let state_res = self.state.lock();
+        let state_res = self.state.deref().read();
+        match state_res {
+            Ok(ref state) => {
+                let users = state.users_by_username.keys().map(|el|el.clone()).collect::<Vec<String>>().join(", ");
+                write!(f, "TestAuthUserProvider {{ {} }}", users)
+            }
+            Err(_) => write!(f, "TestAuthUserProvider {{ Inaccessible content }}"),
+        }
+    }
+}
+
+#[axum::async_trait]
+impl AuthUserProvider for TestAuthUserProvider {
+    type User = AuthUser;
+    async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
+        let state_res = self.state.read(); // lock();
+        match state_res {
+            Err(_)    => Err(AuthUserProviderError::LockedResourceError),
+            Ok(state) => {
+                // Ok(state.users_by_username.get(username).map(|usr| usr.deref().clone()))
+                let map_value: Option<&Arc<RwLock<AuthUser>>> = state.users_by_username.get(username);
+                match map_value {
+                    None => Ok(None),
+                    Some(map_value) => {
+                        match map_value.read() {
+                            Err(_) => Err(AuthUserProviderError::LockedResourceError),
+                            Ok(v)  => Ok(Some(v.deref().clone())),
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
+        let state_res = self.state.read(); // lock();
+        match state_res {
+            Err(_)    => Err(AuthUserProviderError::LockedResourceError),
+            Ok(state) => {
+                // Ok(state.users_by_username.get(username).map(|usr| usr.deref().clone()))
+                let map_value: Option<&Arc<RwLock<AuthUser>>> = state.users_by_id.get(user_id);
+                match map_value {
+                    None => Ok(None),
+                    Some(map_value) => {
+                        match map_value.read() {
+                            Err(_) => Err(AuthUserProviderError::LockedResourceError),
+                            Ok(v)  => Ok(Some(v.deref().clone())),
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+#[axum::async_trait]
+impl Oauth2UserProvider for TestAuthUserProvider {
+    // type User = AuthUser;
+
+    async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
+        let state_res = self.state.write(); // lock();
+        match state_res {
+            Err(_)    => Err(AuthUserProviderError::LockedResourceError),
+            Ok(state) => {
+                // Ok(state.users_by_username.get(username).map(|usr| usr.deref().clone()))
+                let map_value: Option<&Arc<RwLock<AuthUser>>> = state.users_by_username.get(username);
+                match map_value {
+                    None => Ok(None),
+                    Some(map_value) => {
+                        match map_value.write() {
+                            Err(_) => Err(AuthUserProviderError::LockedResourceError),
+                            Ok(ref mut v)  => {
+                                v.deref_mut().access_token(Some(secret_token.to_string()));
+                                Ok(Some(v.clone()))
+                            },
+                        }
+                    }
+                }
+            }
+        }
+        /*
+        let state_res = self.state.write(); // lock();
+        match state_res {
+            Err(_) =>
+                Err(AuthUserProviderError::LockedResourceError),
+            Ok(mut state) => {
+                let mut usr_opt = state.users_by_username.get_mut(username);
+                match usr_opt {
+                    None => Err(AuthUserProviderError::UserNotFound),
+                    Some(mut usr) => {
+                        let mut usr2: Option<&mut AuthUser> = Arc::get_mut(&mut usr);
+
+                        match usr2 {
+                            None => return Err(AuthUserProviderError::LockedResourceError),
+                            Some(ref mut usr3) => {
+                                let uuu: &mut AuthUser = usr3;
+                                uuu.access_token = Some(secret_token.to_string());
+                                usr3.access_token = Some(secret_token.to_string());
+                                Ok(Some(usr3.clone()))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        */
+    }
+}
 
 impl<PswComparator> AuthBackend<PswComparator> where
     // UserProvider: AuthUserProvider<User = AuthUser> + Sync + Send, // + Clone + Sync + Send,
@@ -237,7 +382,13 @@ pub enum AuthError {
     #[error("IncorrectUsernameOrPsw")]
     IncorrectUsernameOrPsw,
     #[error("UserProviderError")]
-    UserProviderError,
+    UserProviderError(AuthUserProviderError),
+}
+
+impl From<AuthUserProviderError> for AuthError {
+    fn from(value: AuthUserProviderError) -> Self {
+        AuthError::UserProviderError(value)
+    }
 }
 
 
@@ -251,7 +402,13 @@ impl<
     type Error = AuthError;
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
-        let usr_opt = self.users_provider.get_user_by_name(creds.username.as_str()).await;
+        let usr_res = self.users_provider.get_user_by_name(creds.username.as_str()).await;
+
+        let usr_opt = match usr_res {
+            Ok(usr_opt) => usr_opt,
+            Err(err) => return Err(Self::Error::UserProviderError(err))
+        };
+
         match usr_opt {
             None => Err(Self::Error::NoUser),
             Some(usr) => {
@@ -269,11 +426,8 @@ impl<
 
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         // TODO: what is UserId there???
-        let usr_opt = self.users_provider.get_user_by_id(user_id).await;
-        match usr_opt {
-            None => Ok(None),
-            Some(user) => Ok(Some(user.clone()))
-        }
+        let usr_opt_res = self.users_provider.get_user_by_id(user_id).await.map_err(From::<AuthUserProviderError>::from);
+        usr_opt_res
     }
 }
 

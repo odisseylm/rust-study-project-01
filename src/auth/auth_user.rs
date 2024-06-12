@@ -17,6 +17,9 @@ impl AuthUser {
     pub fn new(id: i64, username: &'static str, password: &'static str) -> AuthUser {
         AuthUser { id, username: username.to_string(), password: Some(password.to_string()), access_token: None }
     }
+    pub fn access_token(&mut self, access_token: Option<String>) {
+        self.access_token = access_token;
+    }
     pub fn has_password<PswComparator: PasswordComparator>(&self, cred_psw: &str) -> bool {
         match self.password {
             None => false,
@@ -66,6 +69,21 @@ impl axum_login::AuthUser for AuthUser {
 #[axum::async_trait]
 pub trait AuthUserProvider : fmt::Debug {
     type User: axum_login::AuthUser;
-    async fn get_user_by_name(&self, username: &str) -> Option<Self::User>; // TODO: replace by Result
-    async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Option<Self::User>; // TODO: replace by Result
+    async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError>;
+    async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError>;
+}
+
+
+#[derive(Debug, thiserror::Error)]
+pub enum AuthUserProviderError {
+    // 1) It is used only for updates.
+    // 2) If user is not found on get operation, just Ok(None) is returned.
+    #[error("UserNotFound")]
+    UserNotFound,
+
+    #[error(transparent)]
+    Sqlx(sqlx::Error),
+
+    #[error("LockedResourceError")]
+    LockedResourceError,
 }

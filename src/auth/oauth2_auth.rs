@@ -1,11 +1,11 @@
 use std::sync::Arc;
 use super::auth_user;
-use crate::auth::auth_user::{AuthUser, AuthUserProvider}; // TODO: remove direct dependency
+use crate::auth::auth_user::{ AuthUserProvider, AuthUserProviderError };
 
 
 #[axum::async_trait]
 pub trait Oauth2UserProvider: AuthUserProvider {
-    async fn update_user_access_token(&self, username: &str, secret_token: &str) -> AuthUser;
+    async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError>;
 }
 
 
@@ -24,7 +24,7 @@ pub enum BackendError {
     Sqlx(sqlx::Error),
 
     #[error("UserProviderError")]
-    UserProviderError, // (anyhow::Error), // TODO: use cause
+    UserProviderError(AuthUserProviderError), // (anyhow::Error), // TODO: use cause
 
     #[error(transparent)]
     Reqwest(reqwest::Error),
@@ -33,13 +33,19 @@ pub enum BackendError {
     OAuth2(oauth2::basic::BasicRequestTokenError<oauth2::reqwest::AsyncHttpClientError>),
 }
 
+impl From<AuthUserProviderError> for BackendError {
+    fn from(value: AuthUserProviderError) -> Self {
+        BackendError::UserProviderError(value)
+    }
+}
+
 
 #[derive(Debug, Clone)]
 // #[derive(Debug)]
 // #[derive(Clone)]
 pub struct Backend {
     // db: SqlitePool,
-    user_provider: Arc<dyn Oauth2UserProvider<User = AuthUser> + Send + Sync>,
+    user_provider: Arc<dyn Oauth2UserProvider<User = auth_user::AuthUser> + Send + Sync>,
     client: oauth2::basic::BasicClient,
 }
 
@@ -66,7 +72,7 @@ struct UserInfo {
 impl Backend {
     pub fn new(
         // db: SqlitePool,
-        user_provider: Arc<dyn Oauth2UserProvider<User = AuthUser> + Send + Sync>,
+        user_provider: Arc<dyn Oauth2UserProvider<User = auth_user::AuthUser> + Send + Sync>,
         client: oauth2::basic::BasicClient,
     ) -> Self {
         Self { user_provider, client }
@@ -85,8 +91,6 @@ impl axum_login::AuthnBackend for Backend {
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
 
-        // use axum::http::header::{ AUTHORIZATION, USER_AGENT };
-        // use oauth2::reqwest::async_http_client;
         use axum::http::header::{ AUTHORIZATION, USER_AGENT };
         use oauth2::{ reqwest::async_http_client, TokenResponse };
 
@@ -117,12 +121,14 @@ impl axum_login::AuthnBackend for Backend {
             .await
             .map_err(Self::Error::Reqwest)?;
 
-        let user: AuthUser = self.user_provider.update_user_access_token(
+        let user_res = self.user_provider.update_user_access_token(
             user_info.login.as_str(), token_res.access_token().secret().as_str())
-            .await;
+            .await
+            .map_err(From::<AuthUserProviderError>::from);
+        user_res
 
         /*
-        // Persist user in our database so we can use `get_user`.
+        // Persist user in our database, so we can use `get_user`.
         let user: AuthUser = sqlx::query_as(
             r#"
             insert into users (username, access_token)
@@ -138,13 +144,10 @@ impl axum_login::AuthnBackend for Backend {
         .await
         .map_err(Self::Error::Sqlx)?;
         */
-
-        Ok(Some(user))
     }
 
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
-        // self.user_provider.get_user_by_id(user_id).ok_or_else(||BackendError::UserProviderError)
-        Ok(self.user_provider.get_user_by_id(user_id).await) //.ok_or_else(||BackendError::UserProviderError)
+        self.user_provider.get_user_by_id(user_id).await.map_err(From::<AuthUserProviderError>::from)
         /*
         Ok(sqlx::query_as("select * from users where id = ?")
             .bind(user_id)

@@ -3,6 +3,7 @@ use axum_login::UserId;
 use oauth2::basic::BasicClient;
 use super::psw_auth;
 use crate::auth::auth_user;
+use crate::auth::auth_user::AuthUserProviderError;
 use crate::auth::oauth2_auth;
 use crate::auth::psw::PlainPasswordComparator;
 use crate::auth::psw_auth::TestAuthUserProvider;
@@ -219,7 +220,7 @@ pub enum AuthError {
     IncorrectUsernameOrPsw,
 
     #[error("UserProviderError")]
-    UserProviderError,
+    UserProviderError(AuthUserProviderError),
 
     #[error(transparent)]
     OAuth2(oauth2::basic::BasicRequestTokenError<oauth2::reqwest::AsyncHttpClientError>),
@@ -240,21 +241,27 @@ impl From<psw_auth::AuthError> for AuthError {
         match value {
             psw::AuthError::NoUser => AuthError::NoUser,
             psw::AuthError::IncorrectUsernameOrPsw => AuthError::IncorrectUsernameOrPsw,
-            psw::AuthError::UserProviderError => AuthError::UserProviderError,
+            psw::AuthError::UserProviderError(err) => AuthError::UserProviderError(err),
         }
     }
 }
+
+
+impl From<AuthUserProviderError> for AuthError {
+    fn from(value: AuthUserProviderError) -> Self {
+        AuthError::UserProviderError(value)
+    }
+}
+
+
 impl From<oauth2_auth::BackendError> for AuthError {
     fn from(value: oauth2_auth::BackendError) -> Self {
         use oauth2_auth as o;
         match value {
-            // o::BackendError::NoUser => AuthError::NoUser,
-            // o::BackendError::IncorrectUsernameOrPsw => AuthError::IncorrectUsernameOrPsw,
             o::BackendError::Reqwest(cause) => AuthError::Reqwest(cause),
-            // o::BackendError::UserProviderError => AuthError::UserProviderError,
-            o::BackendError::Sqlx(_) => AuthError::UserProviderError, // TODO: pass error cause
             o::BackendError::OAuth2(cause) => AuthError::OAuth2(cause),
-            o::BackendError::UserProviderError => AuthError::UserProviderError,
+            o::BackendError::UserProviderError(err) => AuthError::UserProviderError(err),
+            o::BackendError::Sqlx(err) => AuthError::Sqlx(err),
         }
     }
 }
