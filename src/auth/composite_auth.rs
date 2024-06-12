@@ -1,13 +1,12 @@
 use std::sync::Arc;
 use axum_login::UserId;
-// use axum_login::UserId;
 use oauth2::basic::BasicClient;
-// use crate::auth::auth_user_provider as auth;
-use super::by_psw_auth;
+use super::psw_auth;
 use crate::auth::auth_user::{ self, AuthUserProvider };
+use crate::auth::oauth2_auth;
 use crate::auth::psw::PlainPasswordComparator;
 use crate::auth::authn_backend_dyn_wrapper::AuthnBackendDynWrapper;
-use crate::auth::by_psw_auth::TestAuthUserProvider;
+use crate::auth::psw_auth::TestAuthUserProvider;
 use super::authn_backend_dyn_wrapper::wrap_authn_backend_as_dyn;
 
 /*
@@ -94,9 +93,9 @@ pub struct AuthnBackend <
     UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
     > {
     psw_backend: Arc<dyn AuthnBackendDynWrapper<
-        Credentials = by_psw_auth::AuthCredentials,
-        Error = by_psw_auth::AuthError,
-        RealAuthnBackend = by_psw_auth::AuthBackend<UsrProvider, PlainPasswordComparator>
+        Credentials = psw_auth::AuthCredentials,
+        Error = psw_auth::AuthError,
+        RealAuthnBackend = psw_auth::AuthBackend<UsrProvider, PlainPasswordComparator>
     >>,
 }
 
@@ -105,7 +104,7 @@ impl AuthnBackend<TestAuthUserProvider> {
         AuthnBackend {
             psw_backend: Arc::new(
                 wrap_authn_backend_as_dyn(
-                    by_psw_auth::AuthBackend::new(
+                    psw_auth::AuthBackend::new(
                         Arc::new(TestAuthUserProvider::new())))),
         }
     }
@@ -172,8 +171,8 @@ impl <
 pub type AuthSession<UsrProvider> = axum_login::AuthSession<AuthnBackend<UsrProvider>>;
 
 
-pub type OAuthCreds = super::oauth2_auth::Credentials;
-pub type PasswordCreds = super::by_psw_auth::AuthCredentials;
+pub type OAuthCreds = oauth2_auth::Credentials;
+pub type PasswordCreds = psw_auth::AuthCredentials;
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub enum AuthCredentials {
@@ -206,9 +205,9 @@ pub enum AuthError {
     // TaskJoin(#[from] task::JoinError),
 }
 
-impl From<by_psw_auth::AuthError> for AuthError {
-    fn from(value: by_psw_auth::AuthError) -> Self {
-        use by_psw_auth as psw;
+impl From<psw_auth::AuthError> for AuthError {
+    fn from(value: psw_auth::AuthError) -> Self {
+        use psw_auth as psw;
         match value {
             psw::AuthError::NoUser => AuthError::NoUser,
             psw::AuthError::IncorrectUsernameOrPsw => AuthError::IncorrectUsernameOrPsw,
