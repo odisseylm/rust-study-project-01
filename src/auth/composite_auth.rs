@@ -97,16 +97,43 @@ pub struct AuthnBackend <
         Error = psw_auth::AuthError,
         RealAuthnBackend = psw_auth::AuthBackend<UsrProvider, PlainPasswordComparator>
     >>,
+    oauth2_backend: Arc<dyn AuthnBackendDynWrapper<
+        Credentials = oauth2_auth::Credentials,
+        Error = oauth2_auth::BackendError,
+        RealAuthnBackend = oauth2_auth::Backend
+    >>,
 }
 
 impl AuthnBackend<TestAuthUserProvider> {
-    fn test_users() -> AuthnBackend<TestAuthUserProvider> {
-        AuthnBackend {
+    async fn test_users() -> Result<AuthnBackend<TestAuthUserProvider>, anyhow::Error> {
+        use oauth2::{ ClientId, ClientSecret, AuthUrl, TokenUrl };
+
+        let client_id = std::env::var("CLIENT_ID")
+            .map(ClientId::new)
+            .expect("CLIENT_ID should be provided.");
+        let client_secret = std::env::var("CLIENT_SECRET")
+            .map(ClientSecret::new)
+            .expect("CLIENT_SECRET should be provided");
+
+        let auth_url = AuthUrl::new("https://github.com/login/oauth/authorize".to_string())?;
+        let token_url = TokenUrl::new("https://github.com/login/oauth/access_token".to_string())?;
+        let basic_client = BasicClient::new(client_id, Some(client_secret), auth_url, Some(token_url));
+
+        // let db = SqlitePool::connect(":memory:").await?;
+        // sqlx::migrate!().run(&db).await?;
+
+        Ok(AuthnBackend {
             psw_backend: Arc::new(
                 wrap_authn_backend_as_dyn(
                     psw_auth::AuthBackend::new(
                         Arc::new(TestAuthUserProvider::new())))),
-        }
+            oauth2_backend: Arc::new(
+                wrap_authn_backend_as_dyn(
+                    oauth2_auth::Backend::new(
+                        todo!(),
+                        basic_client,
+                    ))),
+        })
     }
 }
 
@@ -114,18 +141,19 @@ impl AuthnBackend<TestAuthUserProvider> {
 impl <
     UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
 > AuthnBackend<UsrProvider> {
-    // fn test_users() -> AuthnBackend<UsrProvider> {
-    //     todo!()
-    // }
 
     pub fn oath2_only(_client: BasicClient) -> AuthnBackend<UsrProvider> {
         todo!()
     }
 
     pub fn authorize_url(&self) -> (oauth2::url::Url, oauth2::CsrfToken) {
+        // let aa: &dyn AuthnBackendDynWrapper<Credentials=oauth2_auth::Credentials, Error=oauth2_auth::BackendError, RealAuthnBackend=oauth2_auth::Backend> = self.oauth2_backend.deref();
+        // let bb: &oauth2_auth::Backend = aa.backend();
         //
-        // self.client.authorize_url(oauth2::CsrfToken::new_random).url()
-        todo!() // TODO: redirect to OAuth2Backend
+        // bb.authorize_url();
+
+        // self.oauth2_backend.authorize_url(oauth2::CsrfToken::new_random).url()
+        self.oauth2_backend.backend().authorize_url()
     }
 }
 
@@ -136,6 +164,7 @@ impl <
     fn clone(&self) -> Self {
         AuthnBackend::<UsrProvider> {
             psw_backend: self.psw_backend.clone(),
+            oauth2_backend: self.oauth2_backend.clone(),
         }
     }
     fn clone_from(&mut self, source: &Self) {
@@ -153,16 +182,15 @@ impl <
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
         match creds {
-            AuthCredentials::Password(psw_creds) => {
-                self.psw_backend.authenticate(psw_creds).await.map_err(AuthError::from)
-                // let aa = self.psw_backend.authenticate(psw_creds).await ?;
-                // Ok(aa)
-            }
-            AuthCredentials::OAuth(_) => { todo!() }
+            AuthCredentials::Password(creds) =>
+                self.psw_backend.authenticate(creds).await.map_err(AuthError::from),
+            AuthCredentials::OAuth(creds) =>
+                self.oauth2_backend.authenticate(creds).await.map_err(AuthError::from),
         }
     }
 
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
+        // expected that app uses only one Users Provider (in all auth backends)
         self.psw_backend.get_user(user_id).await.map_err(AuthError::from)
     }
 }
@@ -198,11 +226,11 @@ pub enum AuthError {
     #[error(transparent)]
     Sqlx(sqlx::Error),
 
-    // #[error(transparent)]
-    // Reqwest(reqwest::Error),
+    #[error(transparent)]
+    Reqwest(reqwest::Error),
 
-    // #[error(transparent)]
-    // TaskJoin(#[from] task::JoinError),
+    #[error(transparent)]
+    TaskJoin(#[from] tokio::task::JoinError),
 }
 
 impl From<psw_auth::AuthError> for AuthError {
@@ -212,6 +240,19 @@ impl From<psw_auth::AuthError> for AuthError {
             psw::AuthError::NoUser => AuthError::NoUser,
             psw::AuthError::IncorrectUsernameOrPsw => AuthError::IncorrectUsernameOrPsw,
             psw::AuthError::UserProviderError => AuthError::UserProviderError,
+        }
+    }
+}
+impl From<oauth2_auth::BackendError> for AuthError {
+    fn from(value: oauth2_auth::BackendError) -> Self {
+        use oauth2_auth as o;
+        match value {
+            // o::BackendError::NoUser => AuthError::NoUser,
+            // o::BackendError::IncorrectUsernameOrPsw => AuthError::IncorrectUsernameOrPsw,
+            o::BackendError::Reqwest(cause) => AuthError::Reqwest(cause),
+            // o::BackendError::UserProviderError => AuthError::UserProviderError,
+            o::BackendError::Sqlx(_) => AuthError::UserProviderError, // TODO: pass error cause
+            o::BackendError::OAuth2(cause) => AuthError::OAuth2(cause),
         }
     }
 }

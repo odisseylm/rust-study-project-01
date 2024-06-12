@@ -8,6 +8,8 @@ pub trait AuthnBackendDynWrapper: Send + Sync {
     type Error: std::error::Error + Send + Sync;
     type RealAuthnBackend: axum_login::AuthnBackend<User = auth_user::AuthUser, Credentials = Self::Credentials, Error = Self::Error>; // + Send + Sync;
 
+    fn backend(&self) -> &Self::RealAuthnBackend;
+
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<auth_user::AuthUser>, Self::Error>;
     async fn get_user(&self, user_id: &axum_login::UserId<Self::RealAuthnBackend>) -> Result<Option<auth_user::AuthUser>, Self::Error>;
 }
@@ -41,6 +43,10 @@ impl  <
     type Credentials = Credentials;
     type Error = Error;
     type RealAuthnBackend = RealAuthnBackend;
+
+    fn backend(&self) -> &Self::RealAuthnBackend {
+        &self.authn_backend
+    }
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<auth_user::AuthUser>, Self::Error> {
         self.authn_backend.authenticate(creds).await
