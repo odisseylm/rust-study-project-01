@@ -3,6 +3,7 @@ use super::auth_user;
 
 
 #[axum::async_trait]
+#[allow(dead_code)] // TODO: try to write test
 pub trait AuthnBackendDynWrapper: Send + Sync {
     type Credentials: Send + Sync;
     type Error: std::error::Error + Send + Sync;

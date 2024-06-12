@@ -7,7 +7,6 @@ use crate::auth::oauth2_auth;
 use crate::auth::psw::PlainPasswordComparator;
 use crate::auth::authn_backend_dyn_wrapper::AuthnBackendDynWrapper;
 use crate::auth::psw_auth::TestAuthUserProvider;
-use super::authn_backend_dyn_wrapper::wrap_authn_backend_as_dyn;
 
 /*
 async fn is_authenticated(
@@ -92,16 +91,8 @@ pub fn auth_manager_layer() -> axum_login::AuthManagerLayer<AuthnBackend, axum_l
 pub struct AuthnBackend <
     // UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
     > {
-    psw_backend: Option<Arc<dyn AuthnBackendDynWrapper<
-        Credentials = psw_auth::AuthCredentials,
-        Error = psw_auth::AuthError,
-        RealAuthnBackend = psw_auth::AuthBackend<PlainPasswordComparator>
-    >>>,
-    oauth2_backend: Option<Arc<dyn AuthnBackendDynWrapper<
-        Credentials = oauth2_auth::Credentials,
-        Error = oauth2_auth::BackendError,
-        RealAuthnBackend = oauth2_auth::Backend
-    >>>,
+    psw_backend: Option<psw_auth::AuthBackend<PlainPasswordComparator>>,
+    oauth2_backend: Option<oauth2_auth::Backend>,
 }
 
 impl AuthnBackend {
@@ -123,16 +114,11 @@ impl AuthnBackend {
         // sqlx::migrate!().run(&db).await?;
 
         Ok(AuthnBackend {
-            psw_backend: Some(Arc::new(
-                wrap_authn_backend_as_dyn(
-                    psw_auth::AuthBackend::new(
-                        Arc::new(TestAuthUserProvider::new()))))),
-            oauth2_backend: Some(Arc::new(
-                wrap_authn_backend_as_dyn(
-                    oauth2_auth::Backend::new(
-                        todo!(),
-                        basic_client,
-                    )))),
+            psw_backend: Some(
+                psw_auth::AuthBackend::new(
+                    Arc::new(TestAuthUserProvider::new()))),
+            oauth2_backend: Some(
+                oauth2_auth::Backend::new(todo!(), basic_client)),
         })
     }
 }
@@ -147,7 +133,7 @@ impl AuthnBackend {
     pub fn authorize_url(&self) -> Result<(oauth2::url::Url, oauth2::CsrfToken), AuthError> {
         match self.oauth2_backend {
             None => Err(AuthError::NoRequestedBackend),
-            Some(ref oauth2_backend) => Ok(oauth2_backend.backend().authorize_url()),
+            Some(ref oauth2_backend) => Ok(oauth2_backend.authorize_url()),
         }
     }
 }
@@ -188,7 +174,7 @@ impl axum_login::AuthnBackend for AuthnBackend {
 
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         // expected that app uses only one Users Provider (in all auth backends)
-        let mut res = match self.psw_backend {
+        let res = match self.psw_backend {
             None => Err(AuthError::NoRequestedBackend),
             Some(ref backend) => backend.get_user(user_id).await.map_err(AuthError::from),
         };
