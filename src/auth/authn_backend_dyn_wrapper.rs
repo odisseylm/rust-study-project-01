@@ -21,7 +21,7 @@ pub struct AuthnBackendDynWrapperImpl <
     authn_backend: RealAuthnBackend,
 }
 
-fn wrap_authn_backend_as_dyn<
+pub fn wrap_authn_backend_as_dyn<
     Credentials: Send + Sync,
     Error: std::error::Error + Send + Sync,
     RealAuthnBackend: axum_login::AuthnBackend<User = auth_user::AuthUser, Credentials = Credentials, Error = Error>, // + Send + Sync,

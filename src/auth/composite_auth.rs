@@ -7,6 +7,8 @@ use super::by_psw_auth;
 use crate::auth::auth_user::{ self, AuthUserProvider };
 use crate::auth::psw::PlainPasswordComparator;
 use crate::auth::authn_backend_dyn_wrapper::AuthnBackendDynWrapper;
+use crate::auth::by_psw_auth::TestAuthUserProvider;
+use super::authn_backend_dyn_wrapper::wrap_authn_backend_as_dyn;
 
 /*
 async fn is_authenticated(
@@ -98,6 +100,37 @@ pub struct AuthnBackend <
     >>,
 }
 
+impl AuthnBackend<TestAuthUserProvider> {
+    fn test_users() -> AuthnBackend<TestAuthUserProvider> {
+        AuthnBackend {
+            psw_backend: Arc::new(
+                wrap_authn_backend_as_dyn(
+                    by_psw_auth::AuthBackend::new(
+                        Arc::new(TestAuthUserProvider::new())))),
+        }
+    }
+}
+
+
+impl <
+    UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
+> AuthnBackend<UsrProvider> {
+    // fn test_users() -> AuthnBackend<UsrProvider> {
+    //     todo!()
+    // }
+
+    pub fn oath2_only(_client: BasicClient) -> AuthnBackend<UsrProvider> {
+        todo!()
+    }
+
+    pub fn authorize_url(&self) -> (oauth2::url::Url, oauth2::CsrfToken) {
+        //
+        // self.client.authorize_url(oauth2::CsrfToken::new_random).url()
+        todo!() // TODO: redirect to OAuth2Backend
+    }
+}
+
+
 impl <
     UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
 > Clone for AuthnBackend<UsrProvider> {
@@ -132,24 +165,6 @@ impl <
 
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         self.psw_backend.get_user(user_id).await.map_err(AuthError::from)
-    }
-}
-
-impl <
-    UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
-> AuthnBackend<UsrProvider> {
-    fn test_users() -> AuthnBackend<UsrProvider> {
-        todo!()
-    }
-
-    pub fn oath2_only(_client: BasicClient) -> AuthnBackend<UsrProvider> {
-        todo!()
-    }
-
-    pub fn authorize_url(&self) -> (oauth2::url::Url, oauth2::CsrfToken) {
-        //
-        // self.client.authorize_url(oauth2::CsrfToken::new_random).url()
-        todo!() // TODO: redirect to OAuth2Backend
     }
 }
 

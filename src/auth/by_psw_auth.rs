@@ -191,7 +191,7 @@ pub struct TestAuthUserProvider { // TODO: use Arc
     users_by_id: HashMap<i64, AuthUser>,
 }
 impl TestAuthUserProvider {
-    fn new() -> TestAuthUserProvider {
+    pub fn new() -> TestAuthUserProvider {
         let user_1 = AuthUser::new(1, "vovan", "qwerty");
         TestAuthUserProvider {
             users_by_username: {
@@ -223,7 +223,7 @@ impl<UserProvider, PswComparator> AuthBackend<UserProvider, PswComparator> where
     UserProvider: AuthUserProvider<User = AuthUser> + Sync + Send, // + Clone + Sync + Send,
     PswComparator: PasswordComparator + Clone + Sync + Send,
 {
-    fn new(users_provider: Arc<UserProvider>) -> AuthBackend<UserProvider, PswComparator> {
+    pub fn new(users_provider: Arc<UserProvider>) -> AuthBackend<UserProvider, PswComparator> {
         AuthBackend::<UserProvider, PswComparator> { users_provider: users_provider.clone(), _pd: PhantomData }
     }
 }
