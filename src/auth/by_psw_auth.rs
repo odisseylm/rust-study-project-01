@@ -2,6 +2,7 @@
 use core::fmt;
 use std::collections::hash_map::HashMap;
 use std::marker::PhantomData;
+use std::sync::Arc;
 // use std::hash::Hash;
 use axum::body::Body;
 use axum_extra::TypedHeader;
@@ -49,7 +50,7 @@ mod tw {
 // TODO: how to avoid this AuthUserProvider? It is really unneeded there.
 //       Or use some '_' or '*' or '?'...
 async fn is_authenticated<
-    UP: AuthUserProvider<User = AuthUser> + Clone + Sync + Send,
+    UP: AuthUserProvider<User = AuthUser> + Sync + Send, // + Clone + Sync + Send,
     PswComparator: PasswordComparator + Clone + Sync + Send,
     >(
     auth_session: AuthSession<UP,PswComparator>,
@@ -85,7 +86,7 @@ pub async fn validate_auth_temp<
 
 
 pub async fn validate_auth_by_password<
-    UP: AuthUserProvider<User = AuthUser> + Clone + Sync + Send,
+    UP: AuthUserProvider<User = AuthUser> + Sync + Send, // + Clone + Sync + Send,
     PC: PasswordComparator + Clone + Sync + Send,
     >(
     auth_session: AuthSession<UP,PC>,
@@ -104,7 +105,7 @@ pub async fn validate_auth_by_password<
 }
 
 pub type AuthSession<
-    UsrProvider: AuthUserProvider<User = AuthUser> + Clone + Sync + Send,
+    UsrProvider: AuthUserProvider<User = AuthUser> + Sync + Send, // + Clone + Sync + Send,
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > = axum_login::AuthSession<AuthBackend<UsrProvider,PswComparator>>;
 
@@ -117,7 +118,7 @@ pub impl<
     // #[inline] // warning: `#[inline]` is ignored on function prototypes
     #[track_caller]
     fn auth_by_password_required<
-        UsrProvider: AuthUserProvider<User = AuthUser> + Clone + Sync + Send + 'static,
+        UsrProvider: AuthUserProvider<User = AuthUser> + Sync + Send + 'static, // + Clone + Sync + Send + 'static,
         PswComparator: PasswordComparator + Clone + Sync + Send + 'static,
         >(self) -> Self {
         self.route_layer(axum::middleware::from_fn(validate_auth_by_password::<UsrProvider, PswComparator>))
@@ -129,7 +130,7 @@ pub fn test_auth_by_psw_manager_layer()
 
     use tower_sessions::{ MemoryStore, service::SessionManagerLayer, Expiry };
 
-    let user_provider = TestAuthUserProvider::new();
+    let user_provider = Arc::new(TestAuthUserProvider::new());
     let session_layer = SessionManagerLayer::new(MemoryStore::default())
         .with_secure(false)
         .with_same_site(SameSite::Lax) // Ensure we send the cookie from the OAuth redirect.
@@ -140,12 +141,13 @@ pub fn test_auth_by_psw_manager_layer()
 
 
 pub fn build_auth_by_psw_manager_layer<
-    UsrProvider: AuthUserProvider<User = AuthUser> + Clone + Sync + Send,
+    // UsrProvider: AuthUserProvider<User = AuthUser> + Clone + Sync + Send,
+    UsrProvider: AuthUserProvider<User = AuthUser> + Sync + Send,
     PswComparator: PasswordComparator + Clone + Sync + Send,
     SessionStore: tower_sessions::SessionStore,
     CookieController: tower_sessions::service::CookieController,
     >(
-    user_provider: UsrProvider,
+    user_provider: Arc<UsrProvider>,
     session_manager_layer: tower_sessions::SessionManagerLayer<SessionStore, CookieController>,
     // ) -> axum_login::AuthManagerLayer<AuthBackend<UsrProvider, PswComparator>, tower_sessions::MemoryStore> {
     ) -> axum_login::AuthManagerLayer<AuthBackend<UsrProvider, PswComparator>, SessionStore, CookieController> {
@@ -159,14 +161,29 @@ pub fn build_auth_by_psw_manager_layer<
 }
 
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct AuthBackend<
-    UserProvider: AuthUserProvider<User = AuthUser> + Clone + Sync + Send,
+    UserProvider: AuthUserProvider<User = AuthUser> + Sync + Send, // + Clone + Sync + Send,
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > {
-    users_provider: UserProvider,
+    users_provider: Arc<UserProvider>,
     _pd: PhantomData<PswComparator>,
 }
+impl<
+    UserProvider: AuthUserProvider<User = AuthUser> + Sync + Send, // + Clone + Sync + Send,
+    PswComparator: PasswordComparator + Clone + Sync + Send,
+> Clone for AuthBackend<UserProvider, PswComparator> {
+    fn clone(&self) -> Self {
+        AuthBackend::<UserProvider, PswComparator> {
+            users_provider: self.users_provider.clone(),
+            _pd: PhantomData,
+        }
+    }
+    fn clone_from(&mut self, source: &Self) {
+        self.users_provider = source.users_provider.clone();
+    }
+}
+
 
 #[derive(Clone)]
 struct TestAuthUserProvider { // TODO: use Arc
@@ -203,11 +220,11 @@ impl AuthUserProvider for TestAuthUserProvider {
 
 
 impl<UserProvider, PswComparator> AuthBackend<UserProvider, PswComparator> where
-    UserProvider: AuthUserProvider<User = AuthUser> + Clone + Sync + Send,
+    UserProvider: AuthUserProvider<User = AuthUser> + Sync + Send, // + Clone + Sync + Send,
     PswComparator: PasswordComparator + Clone + Sync + Send,
 {
-    fn new(users_provider: UserProvider) -> AuthBackend<UserProvider, PswComparator> {
-        AuthBackend::<UserProvider, PswComparator> { users_provider, _pd: PhantomData }
+    fn new(users_provider: Arc<UserProvider>) -> AuthBackend<UserProvider, PswComparator> {
+        AuthBackend::<UserProvider, PswComparator> { users_provider: users_provider.clone(), _pd: PhantomData }
     }
 }
 
@@ -224,7 +241,7 @@ pub enum AuthError {
 
 #[axum::async_trait]
 impl<
-    UserProvider: AuthUserProvider<User = AuthUser> + Clone + Sync + Send,
+    UserProvider: AuthUserProvider<User = AuthUser> + Sync + Send, // + Clone + Sync + Send,
     PswComparator: PasswordComparator + Clone + Sync + Send,
     > axum_login::AuthnBackend for AuthBackend<UserProvider, PswComparator> {
     type User = AuthUser;
