@@ -78,7 +78,8 @@ mod post {
             session: Session,
             Form(NextUrl { next }): Form<NextUrl>,
         ) -> impl IntoResponse {
-            let (auth_url, csrf_state) = auth_session.backend.authorize_url();
+            let Ok((auth_url, csrf_state)) = auth_session.backend.authorize_url()
+                else { return StatusCode::INTERNAL_SERVER_ERROR.into_response() };
 
             session
                 .insert(CSRF_STATE_KEY, csrf_state.secret())
