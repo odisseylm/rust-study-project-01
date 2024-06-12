@@ -152,7 +152,7 @@ pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
 
 #[derive(Clone)]
 pub struct AuthUser {
-    username: String,
+    pub username: String,
     psw: String,
 }
 

@@ -18,3 +18,4 @@ pub mod web_app;
 pub mod auth;
 
 pub mod axum_login_investigation;
+pub mod oauth;
