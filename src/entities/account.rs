@@ -183,7 +183,7 @@ mod tests {
         // let mut id: & Id = &account.id;
         // id.0 = "443".to_string();
 
-        let as_id: Result<&Id, _> = TryInto::<&Id>::try_into(&account.id);
+        let as_id: Result<&AccountId, _> = TryInto::<&AccountId>::try_into(&account.id);
         println!("### as_id: {:?}", as_id);
     }
 
