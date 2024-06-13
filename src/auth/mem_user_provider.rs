@@ -62,7 +62,7 @@ impl InMemAuthUserProvider {
                     guarded.users_by_id.insert(user.id, Arc::clone(&user_ref));
                     guarded.users_by_username.insert(user.username.to_string(), Arc::clone(&user_ref));
                 }
-            //forget(guarded); // !!! 'forget' is risky function !!??!! It does NOT work!!
+                //forget(guarded); // !!! 'forget' is risky function !!??!! It does NOT work!!
             }
 
             in_memory_state
@@ -98,10 +98,29 @@ impl fmt::Debug for InMemAuthUserProvider {
     }
 }
 
+
+async fn extract_cloned_value<T: Clone, E>(map_value: Option<&Arc<RwLock<T>>>) -> Result<Option<T>, E> {
+    match map_value {
+        None => Ok(None),
+        Some(map_value) => {
+            let v = map_value.read().await;
+            Ok(Some(v.deref().clone()))
+        }
+    }
+}
+#[inline(always)]
+async fn extract_cloned_user(map_value: Option<&Arc<RwLock<AuthUser>>>) -> Result<Option<AuthUser>, AuthUserProviderError> {
+    extract_cloned_value::<AuthUser, AuthUserProviderError>(map_value).await
+}
+
 #[axum::async_trait]
 impl AuthUserProvider for InMemAuthUserProvider {
     type User = AuthUser;
     async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
+        let state = self.state.read().await;
+        extract_cloned_user(state.users_by_username.get(username)).await
+
+        /*
         let state_res = rw_lock_ok(self.state.read().await);
         match state_res {
             Err(_)    => Err(AuthUserProviderError::LockedResourceError),
@@ -118,9 +137,14 @@ impl AuthUserProvider for InMemAuthUserProvider {
                 }
             }
         }
+        */
     }
 
     async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
+        let state = self.state.read().await;
+        extract_cloned_user(state.users_by_id.get(user_id)).await
+
+        /*
         let state_res = rw_lock_ok(self.state.read().await);
         match state_res {
             Err(_)    => Err(AuthUserProviderError::LockedResourceError),
@@ -138,11 +162,8 @@ impl AuthUserProvider for InMemAuthUserProvider {
                 }
             }
         }
+        */
     }
-}
-
-fn rw_lock_ok<T>(t: T) -> Result<T, AuthUserProviderError> {
-    Ok(t)
 }
 
 #[axum::async_trait]
@@ -150,24 +171,14 @@ impl Oauth2UserProvider for InMemAuthUserProvider {
     // type User = AuthUser;
 
     async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
-        let state_res = rw_lock_ok(self.state.write().await);
-        match state_res {
-            Err(_)    => Err(AuthUserProviderError::LockedResourceError),
-            Ok(state) => {
-                // Ok(state.users_by_username.get(username).map(|usr| usr.deref().clone()))
-                let map_value = state.users_by_username.get(username);
-                match map_value {
-                    None => Ok(None),
-                    Some(map_value) => {
-                        match rw_lock_ok(map_value.write().await) {
-                            Err(_) => Err(AuthUserProviderError::LockedResourceError),
-                            Ok(ref mut v)  => {
-                                v.deref_mut().access_token(Some(secret_token.to_string()));
-                                Ok(Some(v.clone()))
-                            },
-                        }
-                    }
-                }
+        let state = self.state.write().await;
+        let map_value = state.users_by_username.get(username);
+        match map_value {
+            None => Ok(None),
+            Some(map_value) => {
+                let mut v = map_value.write().await;
+                v.deref_mut().access_token(Some(secret_token.to_string()));
+                Ok(Some(v.deref().clone()))
             }
         }
     }
