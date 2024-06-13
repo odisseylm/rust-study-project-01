@@ -3,7 +3,7 @@ use axum_login::UserId;
 use oauth2::basic::BasicClient;
 use super::psw_auth;
 use crate::auth::auth_user;
-use crate::auth::auth_user::AuthUserProviderError;
+use crate::auth::auth_user::AuthBackendError;
 use crate::auth::oauth2_auth;
 use crate::auth::psw::PlainPasswordComparator;
 use crate::auth::mem_user_provider::InMemAuthUserProvider;
@@ -133,9 +133,9 @@ impl AuthnBackend {
         todo!()
     }
 
-    pub fn authorize_url(&self) -> Result<(oauth2::url::Url, oauth2::CsrfToken), AuthError> {
+    pub fn authorize_url(&self) -> Result<(oauth2::url::Url, oauth2::CsrfToken), AuthBackendError> {
         match self.oauth2_backend {
-            None => Err(AuthError::NoRequestedBackend),
+            None => Err(AuthBackendError::NoRequestedBackend),
             Some(ref oauth2_backend) => Ok(oauth2_backend.authorize_url()),
         }
     }
@@ -158,19 +158,19 @@ impl Clone for AuthnBackend {
 impl axum_login::AuthnBackend for AuthnBackend {
     type User = auth_user::AuthUser;
     type Credentials = AuthCredentials;
-    type Error = AuthError;
+    type Error = AuthBackendError;
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
         match creds {
             AuthCredentials::Password(creds) =>
                 match self.psw_backend {
-                    None => Err(AuthError::NoRequestedBackend),
-                    Some(ref backend) => backend.authenticate(creds).await.map_err(AuthError::from)
+                    None => Err(AuthBackendError::NoRequestedBackend),
+                    Some(ref backend) => backend.authenticate(creds).await.map_err(AuthBackendError::from)
                 },
             AuthCredentials::OAuth(creds) =>
                 match self.oauth2_backend {
-                    None => Err(AuthError::NoRequestedBackend),
-                    Some(ref backend) => backend.authenticate(creds).await.map_err(AuthError::from)
+                    None => Err(AuthBackendError::NoRequestedBackend),
+                    Some(ref backend) => backend.authenticate(creds).await.map_err(AuthBackendError::from)
                 },
         }
     }
@@ -178,16 +178,16 @@ impl axum_login::AuthnBackend for AuthnBackend {
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         // expected that app uses only one Users Provider (in all auth backends)
         let res = match self.psw_backend {
-            None => Err(AuthError::NoRequestedBackend),
-            Some(ref backend) => backend.get_user(user_id).await.map_err(AuthError::from),
+            None => Err(AuthBackendError::NoRequestedBackend),
+            Some(ref backend) => backend.get_user(user_id).await.map_err(AuthBackendError::from),
         };
 
         if res.is_ok() { return res }
 
         // TODO: simplify
         let res = match self.oauth2_backend {
-            None => Err(AuthError::NoRequestedBackend),
-            Some(ref backend) => backend.get_user(user_id).await.map_err(AuthError::from),
+            None => Err(AuthBackendError::NoRequestedBackend),
+            Some(ref backend) => backend.get_user(user_id).await.map_err(AuthBackendError::from),
         };
 
         res
@@ -204,63 +204,4 @@ pub type PasswordCreds = psw_auth::AuthCredentials;
 pub enum AuthCredentials {
     Password(PasswordCreds),
     OAuth(OAuthCreds),
-}
-
-
-#[derive(Debug, thiserror::Error)]
-pub enum AuthError {
-    #[error("NoUser")]
-    NoUser,
-
-    #[error("NoRequestedBackend")]
-    NoRequestedBackend,
-
-    #[error("IncorrectUsernameOrPsw")]
-    IncorrectUsernameOrPsw,
-
-    #[error("UserProviderError")]
-    UserProviderError(AuthUserProviderError),
-
-    #[error(transparent)]
-    OAuth2(oauth2::basic::BasicRequestTokenError<oauth2::reqwest::AsyncHttpClientError>),
-
-    #[error(transparent)]
-    Sqlx(sqlx::Error),
-
-    #[error(transparent)]
-    Reqwest(reqwest::Error),
-
-    #[error(transparent)]
-    TaskJoin(#[from] tokio::task::JoinError),
-}
-
-impl From<psw_auth::AuthError> for AuthError {
-    fn from(value: psw_auth::AuthError) -> Self {
-        use psw_auth as psw;
-        match value {
-            psw::AuthError::NoUser => AuthError::NoUser,
-            psw::AuthError::IncorrectUsernameOrPsw => AuthError::IncorrectUsernameOrPsw,
-            psw::AuthError::UserProviderError(err) => AuthError::UserProviderError(err),
-        }
-    }
-}
-
-
-impl From<AuthUserProviderError> for AuthError {
-    fn from(value: AuthUserProviderError) -> Self {
-        AuthError::UserProviderError(value)
-    }
-}
-
-
-impl From<oauth2_auth::BackendError> for AuthError {
-    fn from(value: oauth2_auth::BackendError) -> Self {
-        use oauth2_auth as o;
-        match value {
-            o::BackendError::Reqwest(cause) => AuthError::Reqwest(cause),
-            o::BackendError::OAuth2(cause) => AuthError::OAuth2(cause),
-            o::BackendError::UserProviderError(err) => AuthError::UserProviderError(err),
-            o::BackendError::Sqlx(err) => AuthError::Sqlx(err),
-        }
-    }
 }

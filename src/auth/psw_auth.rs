@@ -12,7 +12,7 @@ use axum_extra::headers::authorization::Basic;
 // use axum_login::tower_sessions::{ Expiry, MemoryStore, SessionManagerLayer };
 use axum_login::tower_sessions::cookie::SameSite;
 use time::Duration;
-use crate::auth::auth_user::{AuthUserProvider, AuthUserProviderError};
+use crate::auth::auth_user::{AuthBackendError, AuthUserProvider, AuthUserProviderError};
 use axum_login;
 use axum_login::tower_sessions;
 use crate::auth::mem_user_provider::InMemAuthUserProvider;
@@ -157,21 +157,6 @@ impl<PswComparator> AuthBackend<PswComparator> where
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum AuthError {
-    #[error("NoUser")]
-    NoUser,
-    #[error("IncorrectUsernameOrPsw")]
-    IncorrectUsernameOrPsw,
-    #[error("UserProviderError")]
-    UserProviderError(AuthUserProviderError),
-}
-
-impl From<AuthUserProviderError> for AuthError {
-    fn from(value: AuthUserProviderError) -> Self {
-        AuthError::UserProviderError(value)
-    }
-}
 
 
 #[axum::async_trait]
@@ -180,7 +165,7 @@ impl<
     > axum_login::AuthnBackend for AuthBackend<PswComparator> {
     type User = AuthUser;
     type Credentials = AuthCredentials;
-    type Error = AuthError;
+    type Error = AuthBackendError;
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
         let usr_res = self.users_provider.get_user_by_name(creds.username.as_str()).await;

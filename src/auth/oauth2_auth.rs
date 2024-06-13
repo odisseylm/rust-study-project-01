@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use super::auth_user;
-use crate::auth::auth_user::{ AuthUserProvider, AuthUserProviderError };
+use crate::auth::auth_user::{AuthBackendError, AuthUserProvider, AuthUserProviderError};
 
 
 #[axum::async_trait]
@@ -16,27 +16,6 @@ pub struct Credentials {
     pub code: String,
     pub old_state: oauth2::CsrfToken,
     pub new_state: oauth2::CsrfToken,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum BackendError {
-    #[error(transparent)]
-    Sqlx(sqlx::Error),
-
-    #[error("UserProviderError")]
-    UserProviderError(AuthUserProviderError), // (anyhow::Error), // TODO: use cause
-
-    #[error(transparent)]
-    Reqwest(reqwest::Error),
-
-    #[error(transparent)]
-    OAuth2(oauth2::basic::BasicRequestTokenError<oauth2::reqwest::AsyncHttpClientError>),
-}
-
-impl From<AuthUserProviderError> for BackendError {
-    fn from(value: AuthUserProviderError) -> Self {
-        BackendError::UserProviderError(value)
-    }
 }
 
 
@@ -87,7 +66,7 @@ impl Backend {
 impl axum_login::AuthnBackend for Backend {
     type User = auth_user::AuthUser;
     type Credentials = Credentials;
-    type Error = BackendError;
+    type Error = AuthBackendError;
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
 
