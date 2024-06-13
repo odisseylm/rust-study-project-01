@@ -4,7 +4,7 @@ use axum_extra::TypedHeader;
 use axum_extra::headers::Authorization as AuthorizationHeader;
 use axum_extra::headers::authorization::Basic;
 use oauth2::basic::BasicClient;
-use crate::auth::{ InMemAuthUserProvider, PlainPasswordComparator, wrap_static_ptr_auth_user_provider };
+use crate::auth::{ InMemAuthUserProvider, PlainPasswordComparator };
 use crate::auth::oauth2_auth::Oauth2Config;
 use crate::auth::oauth2_auth;
 
@@ -79,9 +79,15 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     // service which will provide the auth session as a request extension.
 
     let usr_provider_impl: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::test_users().await ?);
+
     // Rust does not support casting dyn sub-trait to dyn super-trait :-(
-    let std_usr_provider: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = wrap_static_ptr_auth_user_provider(Arc::clone(&usr_provider_impl));
-    let oauth2_usr_store: Arc<dyn crate::auth::OAuth2UserStore<User = AuthUser> + Sync + Send> = usr_provider_impl;
+    // let std_usr_provider: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = wrap_static_ptr_auth_user_provider(Arc::clone(&usr_provider_impl));
+    // Seems we may not use wrap_static_ptr_auth_user_provider(Arc::clone(&usr_provider_impl))
+    // but we need to use usr_provider_impl.clone(), NOT Arc::clone(&usr_provider_impl) !!!
+    // !!! With Arc::clone(&usr_provider_impl) auto casting does NOT work !!!
+    //
+    let std_usr_provider: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = usr_provider_impl.clone();
+    let oauth2_usr_store: Arc<dyn crate::auth::OAuth2UserStore<User = AuthUser> + Sync + Send> = usr_provider_impl; // or .clone();
 
     let config = Oauth2Config::git_from_env() ?;
     let oauth2_backend: Option<oauth2_auth::AuthBackend> = match config {
