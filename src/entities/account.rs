@@ -166,11 +166,10 @@ mod tests {
     use chrono::{ FixedOffset, Utc };
     use crate::entities::account::{ Account, AccountId, new };
     use crate::entities::amount::Amount;
-    use crate::entities::id::Id;
     use crate::entities::user::UserId;
     use crate::util::TestResultUnwrap;
 
-    fn aa() {
+    fn _aa() {
         let account = Account::new(new::Args {
             id: AccountId::from_str("1").test_unwrap(),
             user_id: UserId::from_str("2").test_unwrap(),
@@ -179,7 +178,7 @@ mod tests {
             updated_at: datetime_from_str("2024-05-31 22:29:57 +02:00"),
         });
 
-        let id = &account.id;
+        let _id = &account.id;
         // let mut id: & Id = &account.id;
         // id.0 = "443".to_string();
 
@@ -187,6 +186,7 @@ mod tests {
         println!("### as_id: {:?}", as_id);
     }
 
+    #[allow(dead_code)] // actually it is really used
     fn datetime_from_str(str: &str) -> chrono::DateTime<Utc> {
         use std::str::FromStr;
         chrono::DateTime::<FixedOffset>::from_str(str).test_unwrap().to_utc()

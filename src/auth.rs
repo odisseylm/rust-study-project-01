@@ -7,3 +7,4 @@ mod authn_backend_dyn_wrapper;
 mod auth_user;
 mod psw;
 pub(crate) mod temp;
+mod mem_user_provider;

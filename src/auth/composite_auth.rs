@@ -6,7 +6,7 @@ use crate::auth::auth_user;
 use crate::auth::auth_user::AuthUserProviderError;
 use crate::auth::oauth2_auth;
 use crate::auth::psw::PlainPasswordComparator;
-use crate::auth::psw_auth::TestAuthUserProvider;
+use crate::auth::mem_user_provider::InMemAuthUserProvider;
 
 /*
 async fn is_authenticated(
@@ -118,7 +118,7 @@ impl AuthnBackend {
         Ok(AuthnBackend {
             psw_backend: Some(
                 psw_auth::AuthBackend::new(
-                    Arc::new(TestAuthUserProvider::new()))),
+                    Arc::new(InMemAuthUserProvider::new()))),
             oauth2_backend: None,
             // oauth2_backend: Some(
             //     oauth2_auth::Backend::new(todo!(), basic_client)),
@@ -194,7 +194,6 @@ impl axum_login::AuthnBackend for AuthnBackend {
     }
 }
 
-// pub type AuthSession<UsrProvider: AuthUserProvider + Send + Sync> = axum_login::AuthSession<AuthnBackend<UsrProvider>>;
 pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
 
 
