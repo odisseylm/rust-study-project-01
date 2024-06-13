@@ -105,34 +105,9 @@ impl axum_login::AuthnBackend for AuthBackend {
             .await
             .map_err(From::<AuthUserProviderError>::from);
         user_res
-
-        /*
-        // Persist user in our database, so we can use `get_user`.
-        let user: AuthUser = sqlx::query_as(
-            r#"
-            insert into users (username, access_token)
-            values (?, ?)
-            on conflict(username) do update
-            set access_token = excluded.access_token
-            returning *
-            "#,
-        )
-        .bind(user_info.login)
-        .bind(token_res.access_token().secret())
-        .fetch_one(&self.db)
-        .await
-        .map_err(Self::Error::Sqlx)?;
-        */
     }
 
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         self.user_provider.get_user_by_id(user_id).await.map_err(From::<AuthUserProviderError>::from)
-        /*
-        Ok(sqlx::query_as("select * from users where id = ?")
-            .bind(user_id)
-            .fetch_optional(&self.db)
-            .await
-            .map_err(Self::Error::Sqlx)?)
-        */
     }
 }

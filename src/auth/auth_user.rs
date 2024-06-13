@@ -123,3 +123,15 @@ impl From<AuthUserProviderError> for AuthBackendError {
         AuthBackendError::UserProviderError(value)
     }
 }
+
+impl From<sqlx::Error> for AuthUserProviderError {
+    fn from(value: sqlx::Error) -> Self {
+        AuthUserProviderError::Sqlx(value)
+    }
+}
+
+impl From<sqlx::Error> for AuthBackendError {
+    fn from(value: sqlx::Error) -> Self {
+        AuthBackendError::Sqlx(value)
+    }
+}
