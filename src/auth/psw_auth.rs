@@ -1,21 +1,19 @@
-
 use core::fmt;
-use std::marker::PhantomData;
-// use std::sync::{Arc, RwLock};
+use core::marker::PhantomData;
 use std::sync::Arc;
-// use std::hash::Hash;
+use time::Duration;
+
+use axum_login;
+use axum_login::tower_sessions;
 use axum::body::Body;
 use axum_extra::TypedHeader;
 use axum_extra::headers::Authorization as AuthorizationHeader;
 use axum_extra::headers::authorization::Basic;
-// use axum_login::tower_sessions::service::{ CookieController, PlaintextCookie };
-// use axum_login::tower_sessions::{ Expiry, MemoryStore, SessionManagerLayer };
 use axum_login::tower_sessions::cookie::SameSite;
-use time::Duration;
-use crate::auth::auth_user::{AuthBackendError, AuthUserProvider, AuthUserProviderError};
-use axum_login;
-use axum_login::tower_sessions;
-use crate::auth::mem_user_provider::InMemAuthUserProvider;
+
+use super::error::AuthBackendError;
+use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
+use super::mem_user_provider::InMemAuthUserProvider;
 use super::auth_user::AuthUser;
 use super::psw::{ PasswordComparator, PlainPasswordComparator };
 

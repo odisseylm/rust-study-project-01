@@ -1,10 +1,13 @@
 use core::fmt;
+use core::ops::{ Deref, DerefMut };
 use std::collections::HashMap;
-use std::ops::{ Deref, DerefMut };
 use std::sync::Arc;
+
 use tokio::sync::RwLock;
-use crate::auth::auth_user::{AuthUser, AuthUserProvider, AuthUserProviderError};
-use crate::auth::oauth2_auth::Oauth2UserProvider;
+
+use super::auth_user::AuthUser;
+use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
+use super::oauth2_auth::Oauth2UserProvider;
 
 
 struct InMemoryState {

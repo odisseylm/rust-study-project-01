@@ -1,5 +1,5 @@
 use core::fmt;
-use crate::auth::auth_user::AuthUser;
+use super::auth_user::AuthUser;
 
 
 #[axum::async_trait]

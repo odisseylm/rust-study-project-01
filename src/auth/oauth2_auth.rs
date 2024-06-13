@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use super::auth_user;
-use crate::auth::auth_user::{AuthBackendError, AuthUserProvider, AuthUserProviderError};
+use super::error::AuthBackendError;
+use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
 
 
 #[axum::async_trait]

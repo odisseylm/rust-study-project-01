@@ -1,12 +1,15 @@
 use std::sync::Arc;
+
 use axum_login::UserId;
 use oauth2::basic::BasicClient;
+
 use super::psw_auth;
-use crate::auth::auth_user;
-use crate::auth::auth_user::AuthBackendError;
-use crate::auth::oauth2_auth;
-use crate::auth::psw::PlainPasswordComparator;
-use crate::auth::mem_user_provider::InMemAuthUserProvider;
+use super::auth_user;
+use super::error::AuthBackendError;
+use super::oauth2_auth;
+use super::psw::PlainPasswordComparator;
+use super::mem_user_provider::InMemAuthUserProvider;
+
 
 /*
 async fn is_authenticated(
