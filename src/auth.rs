@@ -24,7 +24,7 @@ pub use error::AuthBackendError;
 
 pub use auth_user_provider::AuthUserProvider;
 pub use auth_user_provider::AuthUserProviderError;
-pub use oauth2_auth::Oauth2UserStore;
+pub use oauth2_auth::OAuth2UserStore;
 pub use mem_user_provider::InMemAuthUserProvider;
 pub use sql_user_provider::SqlUserProvider;
 

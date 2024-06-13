@@ -81,7 +81,7 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     let usr_provider_impl: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::test_users().await ?);
     // Rust does not support casting dyn sub-trait to dyn super-trait :-(
     let std_usr_provider: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = wrap_static_ptr_auth_user_provider(Arc::clone(&usr_provider_impl));
-    let oauth2_usr_store: Arc<dyn crate::auth::Oauth2UserStore<User = AuthUser> + Sync + Send> = usr_provider_impl;
+    let oauth2_usr_store: Arc<dyn crate::auth::OAuth2UserStore<User = AuthUser> + Sync + Send> = usr_provider_impl;
 
     let config = Oauth2Config::git_from_env() ?;
     let oauth2_backend: Option<oauth2_auth::AuthBackend> = match config {
