@@ -16,6 +16,7 @@ use axum_login::AuthSession;
 use tower_http::{trace::TraceLayer};
 use tower::{service_fn, ServiceBuilder};
 use crate::rest::auth::{auth_manager_layer, RequiredAuthenticationExtension, validate_auth_temp};
+use crate::util::TestResultUnwrap;
 use super::auth;
 
 
@@ -156,7 +157,7 @@ pub async fn temp_handler() {
     */
 
 
-    let auth_layer: axum_login::AuthManagerLayer<auth::AuthnBackend, axum_login::tower_sessions::MemoryStore> = auth_manager_layer();
+    let auth_layer: axum_login::AuthManagerLayer<auth::AuthnBackend, axum_login::tower_sessions::MemoryStore> = auth_manager_layer().await.test_unwrap();
 
     // !!! WORKING router !!!
     // let app_router = Router::new()

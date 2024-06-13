@@ -1,3 +1,4 @@
+use std::env::VarError;
 use std::sync::Arc;
 use super::auth_user;
 use super::error::AuthBackendError;
@@ -5,7 +6,8 @@ use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
 
 
 #[axum::async_trait]
-pub trait Oauth2UserProvider: AuthUserProvider {
+// pub trait Oauth2UserProvider<'a>: AuthUserProvider + Into<&'a dyn AuthUserProvider> {
+pub trait Oauth2UserProvider: AuthUserProvider /*+ Into<&dyn AuthUserProvider>*/ {
     async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError>;
 }
 
@@ -21,10 +23,13 @@ pub struct AuthCredentials {
 
 
 #[derive(Debug, Clone)]
-// #[derive(Debug)]
-// #[derive(Clone)]
 pub struct AuthBackend {
-    // db: SqlitePool,
+    state: Arc<AuthBackendState>,
+}
+
+
+#[derive(Debug)]
+struct AuthBackendState {
     user_provider: Arc<dyn Oauth2UserProvider<User = auth_user::AuthUser> + Send + Sync>,
     client: oauth2::basic::BasicClient,
 }
@@ -51,15 +56,17 @@ struct UserInfo {
 
 impl AuthBackend {
     pub fn new(
-        // db: SqlitePool,
         user_provider: Arc<dyn Oauth2UserProvider<User = auth_user::AuthUser> + Send + Sync>,
         client: oauth2::basic::BasicClient,
     ) -> Self {
-        Self { user_provider, client }
+        AuthBackend { state: Arc::new(AuthBackendState {
+            user_provider: Arc::clone(&user_provider),
+            client: client.clone(),
+        }) }
     }
 
     pub fn authorize_url(&self) -> (oauth2::url::Url, oauth2::CsrfToken) {
-        self.client.authorize_url(oauth2::CsrfToken::new_random).url()
+        self.state.client.authorize_url(oauth2::CsrfToken::new_random).url()
     }
 }
 
@@ -81,7 +88,7 @@ impl axum_login::AuthnBackend for AuthBackend {
         };
 
         // Process authorization code, expecting a token response back.
-        let token_res = self
+        let token_res = self.state
             .client
             .exchange_code(oauth2::AuthorizationCode::new(creds.code))
             .request_async(async_http_client)
@@ -101,7 +108,7 @@ impl axum_login::AuthnBackend for AuthBackend {
             .await
             .map_err(Self::Error::Reqwest)?;
 
-        let user_res = self.user_provider.update_user_access_token(
+        let user_res = self.state.user_provider.update_user_access_token(
             user_info.login.as_str(), token_res.access_token().secret().as_str())
             .await
             .map_err(From::<AuthUserProviderError>::from);
@@ -109,6 +116,68 @@ impl axum_login::AuthnBackend for AuthBackend {
     }
 
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
-        self.user_provider.get_user_by_id(user_id).await.map_err(From::<AuthUserProviderError>::from)
+        self.state.user_provider.get_user_by_id(user_id).await.map_err(From::<AuthUserProviderError>::from)
+    }
+}
+
+
+pub fn create_basic_client(config: &Oauth2Config) -> Result<oauth2::basic::BasicClient, AuthBackendError> {
+
+    let orig_config = config;
+    let config = config.clone();
+
+    use oauth2::{AuthUrl, ClientId, ClientSecret, TokenUrl};
+    use oauth2::basic::BasicClient;
+
+    let client_id = ClientId::new(config.client_id);
+    let client_secret = ClientSecret::new(config.client_secret);
+    let auth_url = AuthUrl::new(config.auth_url)
+        .map_err(|_|AuthBackendError::ConfigError(anyhow::anyhow!("Incorrect auth_url [{}]", orig_config.auth_url))) ?;
+    let token_url = TokenUrl::new(config.token_url)
+        .map_err(|_|AuthBackendError::ConfigError(anyhow::anyhow!("Incorrect token_url [{}]", orig_config.token_url))) ?;
+
+    Ok(BasicClient::new(client_id, Some(client_secret), auth_url, Some(token_url)))
+}
+
+
+#[derive(Clone)]
+pub struct Oauth2Config {
+    pub client_id: String,
+    pub client_secret: String,
+    pub auth_url: String,
+    pub token_url: String,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum Oauth2ConfigError {
+    #[error("Oauth2ConfigError({0})")]
+    Error(&'static str),
+}
+
+impl Oauth2Config {
+    pub fn git_from_env() -> Result<Option<Oauth2Config>, Oauth2ConfigError> {
+        let client_id_env = std::env::var("CLIENT_ID");
+        let client_secret_env = std::env::var("CLIENT_SECRET");
+
+        let no_client_id_env = client_id_env.err() == Some(VarError::NotPresent);
+        let no_client_secret_env = client_secret_env.err() == Some(VarError::NotPresent);
+        if no_client_id_env && no_client_secret_env {
+            return Ok(None);
+        }
+
+        let client_id = std::env::var("CLIENT_ID")
+            .map_err(|_|Oauth2ConfigError::Error("CLIENT_ID should be provided.")) ?;
+        let client_secret = std::env::var("CLIENT_SECRET")
+            .map_err(|_|Oauth2ConfigError::Error("CLIENT_SECRET should be provided")) ?;
+
+        let auth_url = "https://github.com/login/oauth/authorize".to_string();
+        let token_url = "https://github.com/login/oauth/access_token".to_string();
+
+        Ok(Some(Oauth2Config {
+            client_id,
+            client_secret,
+            auth_url,
+            token_url,
+        }))
     }
 }

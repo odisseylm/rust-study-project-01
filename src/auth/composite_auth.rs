@@ -1,4 +1,7 @@
 use std::sync::Arc;
+use axum_extra::headers::authorization::Basic;
+use axum_extra::headers::Authorization as AuthorizationHeader;
+use axum_extra::TypedHeader;
 
 use axum_login::UserId;
 use oauth2::basic::BasicClient;
@@ -9,6 +12,31 @@ use super::error::AuthBackendError;
 use super::oauth2_auth;
 use super::psw::PlainPasswordComparator;
 use super::mem_user_provider::InMemAuthUserProvider;
+
+
+// TODO: configure it in some way??
+static USE_HTTP_BASIC_AUTH: bool = true;
+
+pub async fn is_authenticated (
+    auth_session: AuthSession,
+    basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
+) -> bool {
+    if auth_session.user.is_some() {
+        return true;
+    }
+
+    if USE_HTTP_BASIC_AUTH {
+        use crate::auth::psw_auth::AuthCredentials as PswAuthCredentials;
+
+        if let Some(TypedHeader(AuthorizationHeader(ref creds))) = basic_auth_creds {
+            let creds = PswAuthCredentials { username: creds.username().to_string(), password: creds.password().to_string(), next: None };
+            let is_auth_res = auth_session.authenticate(AuthCredentials::Password(creds)).await;
+            return is_auth_res.is_ok()
+        }
+    };
+
+    return false;
+}
 
 
 /*
@@ -92,40 +120,25 @@ pub fn auth_manager_layer() -> axum_login::AuthManagerLayer<AuthnBackend, axum_l
 
 // #[derive(Clone)]
 pub struct AuthnBackend <
-    // UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
     > {
     psw_backend: Option<psw_auth::AuthBackend<PlainPasswordComparator>>,
     oauth2_backend: Option<oauth2_auth::AuthBackend>,
 }
 
 impl AuthnBackend {
-    async fn test_users() -> Result<AuthnBackend, anyhow::Error> {
-        /*
-        use oauth2::{ ClientId, ClientSecret, AuthUrl, TokenUrl };
-
-        let client_id = std::env::var("CLIENT_ID")
-            .map(ClientId::new)
-            .expect("CLIENT_ID should be provided.");
-        let client_secret = std::env::var("CLIENT_SECRET")
-            .map(ClientSecret::new)
-            .expect("CLIENT_SECRET should be provided");
-
-        let auth_url = AuthUrl::new("https://github.com/login/oauth/authorize".to_string())?;
-        let token_url = TokenUrl::new("https://github.com/login/oauth/access_token".to_string())?;
-        let basic_client = BasicClient::new(client_id, Some(client_secret), auth_url, Some(token_url));
-
-        // let db = SqlitePool::connect(":memory:").await?;
-        // sqlx::migrate!().run(&db).await?;
-        */
-
+    pub async fn test_users() -> Result<AuthnBackend, anyhow::Error> { // TODO: try to remove async from there
         Ok(AuthnBackend {
             psw_backend: Some(
                 psw_auth::AuthBackend::new(
                     Arc::new(InMemAuthUserProvider::new()))),
             oauth2_backend: None,
-            // oauth2_backend: Some(
-            //     oauth2_auth::Backend::new(todo!(), basic_client)),
         })
+    }
+    pub fn new_raw(
+        psw_backend: Option<psw_auth::AuthBackend<PlainPasswordComparator>>,
+        oauth2_backend: Option<oauth2_auth::AuthBackend>,
+    ) -> AuthnBackend {
+        AuthnBackend { psw_backend, oauth2_backend }
     }
 }
 

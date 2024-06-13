@@ -44,6 +44,7 @@ impl InMemAuthUserProvider {
         }
     }
 
+    // TODO: try to remove async from there
     pub async fn with_users(users: Vec<AuthUser>) -> Result<InMemAuthUserProvider, AuthUserProviderError> {
         let in_memory_state = {
             let in_memory_state = Arc::new(RwLock::<InMemoryState>::new(InMemoryState::with_capacity(users.len())));
@@ -68,7 +69,8 @@ impl InMemAuthUserProvider {
         })
     }
 
-    async fn test_users() -> Result<InMemAuthUserProvider, AuthUserProviderError> {
+    // TODO: try to remove async from there
+    pub async fn test_users() -> Result<InMemAuthUserProvider, AuthUserProviderError> {
         Self::with_users(vec!(AuthUser::new(1, "vovan", "qwerty"))).await
     }
 }

@@ -28,6 +28,9 @@ pub enum AuthBackendError {
 
     #[error(transparent)]
     TaskJoin(#[from] tokio::task::JoinError),
+
+    #[error("ConfigError({0})")]
+    ConfigError(anyhow::Error),
 }
 
 impl From<AuthUserProviderError> for AuthBackendError {

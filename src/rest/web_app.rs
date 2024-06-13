@@ -5,7 +5,7 @@ use tower_http::trace::TraceLayer;
 use crate::database::DatabaseConnection;
 use crate::rest::account_rest::{ AccountRest, accounts_rest_router };
 use crate::rest::app_dependencies::Dependencies;
-use crate::rest::auth::auth_manager_layer;
+use crate::rest::auth::{auth_manager_layer, AuthnBackend};
 use crate::service::account_service::AccountServiceImpl;
 
 
@@ -23,7 +23,7 @@ fn create_prod_dependencies() -> Dependencies<AccountServiceImpl> {
 }
 
 
-pub async fn web_app_main() {
+pub async fn web_app_main() -> Result<(), anyhow::Error> {
 
     // // Set environment for logging configuration
     // if std::env::var("RUST_LOG").is_err() {
@@ -72,7 +72,7 @@ pub async fn web_app_main() {
     log::info!("Hello from [web_app_main]");
 
     let dependencies = create_prod_dependencies();
-    let auth_layer = auth_manager_layer();
+    let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, axum_login::tower_sessions::MemoryStore> = auth_manager_layer().await ?;
 
     let app_router = Router::new()
         .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))
@@ -86,8 +86,9 @@ pub async fn web_app_main() {
         );
 
     // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app_router).await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await ?;
+    axum::serve(listener, app_router).await ?;
+    Ok(())
 }
 
 
