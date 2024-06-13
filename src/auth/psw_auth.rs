@@ -2,7 +2,6 @@
 use core::fmt;
 use std::collections::hash_map::HashMap;
 use std::marker::PhantomData;
-use std::mem::forget;
 use std::ops::{Deref, DerefMut};
 // use std::sync::{Arc, RwLock};
 use std::sync::Arc;
@@ -194,20 +193,20 @@ impl<
 struct InMemoryState {
     // TODO: I think we could use there Rc (instead of Arc) because it is protected by mutex... but how to say rust about it??
     // TODO: RwLock TWICE?? It is too much!!!
-    users_by_username: HashMap<String, Arc<AuthUser>>,
-    users_by_id: HashMap<i64, Arc<AuthUser>>,
+    users_by_username: HashMap<String, Arc<RwLock<AuthUser>>>,
+    users_by_id: HashMap<i64, Arc<RwLock<AuthUser>>>,
 }
 impl InMemoryState {
     fn new() -> InMemoryState {
         InMemoryState {
-            users_by_username: HashMap::<String, Arc<AuthUser>>::new(),
-            users_by_id: HashMap::<i64, Arc<AuthUser>>::new(),
+            users_by_username: HashMap::<String, Arc<RwLock<AuthUser>>>::new(),
+            users_by_id: HashMap::<i64, Arc<RwLock<AuthUser>>>::new(),
         }
     }
     fn with_capacity(capacity: usize) -> InMemoryState {
         InMemoryState {
-            users_by_username: HashMap::<String, Arc<AuthUser>>::with_capacity(capacity),
-            users_by_id: HashMap::<i64, Arc<AuthUser>>::with_capacity(capacity),
+            users_by_username: HashMap::<String, Arc<RwLock<AuthUser>>>::with_capacity(capacity),
+            users_by_id: HashMap::<i64, Arc<RwLock<AuthUser>>>::with_capacity(capacity),
         }
     }
 }
@@ -233,17 +232,17 @@ impl TestAuthUserProvider {
             let in_memory_state = Arc::new(RwLock::<InMemoryState>::new(InMemoryState::with_capacity(users.len())));
             // let mut guarded = in_memory_state.lock()
             {
-            let mut guarded = in_memory_state.deref().write() // get_mut()
-                // .map_err(|_|AuthUserProviderError::LockedResourceError) ?;
-                .await;
+                let mut guarded = in_memory_state.deref().write() // get_mut()
+                    // .map_err(|_|AuthUserProviderError::LockedResourceError) ?;
+                    .await;
 
-            for user in users {
-                let user_ref = Arc::new(user.clone());
+                for user in users {
+                    let user_ref = Arc::new(RwLock::new(user.clone()));
 
-                guarded.users_by_id.insert(user.id, Arc::clone(&user_ref));
-                guarded.users_by_username.insert(user.username.to_string(), Arc::clone(&user_ref));
-            }
-            //forget(guarded); // !!! 'forget' is risky function !!??!!
+                    guarded.users_by_id.insert(user.id, Arc::clone(&user_ref));
+                    guarded.users_by_username.insert(user.username.to_string(), Arc::clone(&user_ref));
+                }
+            //forget(guarded); // !!! 'forget' is risky function !!??!! It does NOT work!!
             }
 
             in_memory_state
@@ -283,42 +282,40 @@ impl fmt::Debug for TestAuthUserProvider {
 impl AuthUserProvider for TestAuthUserProvider {
     type User = AuthUser;
     async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
-        // let state_res = self.state.read();
         let state_res = rw_lock_ok(self.state.read().await);
         match state_res {
             Err(_)    => Err(AuthUserProviderError::LockedResourceError),
             Ok(state) => {
-                Ok(state.users_by_username.get(username).map(|usr| usr.deref().clone()))
-                // let map_value: Option<&mut Arc<AuthUser>> = state.users_by_username.get_mut(username);
-                // match map_value {
-                //     None => Ok(None),
-                //     Some(ref v) => Ok(Some(v.deref().deref().clone())),
-                // }
+                let map_value = state.users_by_username.get(username);
+                match map_value {
+                    None => Ok(None),
+                    Some(map_value) => {
+                        match rw_lock_ok(map_value.read().await) {
+                            Err(_) => Err(AuthUserProviderError::LockedResourceError),
+                            Ok(v)  => Ok(Some(v.deref().clone())),
+                        }
+                    }
+                }
             }
         }
     }
 
     async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
-        // let state_res = self.state.read();
-        // let state_res = rw_lock_ok(self.state.read().await);
-
-        let state_res = self.state.read().await;
-        let state_res = rw_lock_ok(state_res);
-
+        let state_res = rw_lock_ok(self.state.read().await);
         match state_res {
             Err(_)    => Err(AuthUserProviderError::LockedResourceError),
             Ok(state) => {
-                Ok(state.users_by_id.get(user_id).map(|usr| usr.deref().clone()))
-                // let map_value: Option<&Arc<RwLock<AuthUser>>> = state.users_by_id.get(user_id);
-                // match map_value {
-                //     None => Ok(None),
-                //     Some(map_value) => {
-                //         match map_value.read() {
-                //             Err(_) => Err(AuthUserProviderError::LockedResourceError),
-                //             Ok(v)  => Ok(Some(v.deref().clone())),
-                //         }
-                //     }
-                // }
+                // Ok(state.users_by_username.get(username).map(|usr| usr.deref().clone()))
+                let map_value = state.users_by_id.get(user_id);
+                match map_value {
+                    None => Ok(None),
+                    Some(map_value) => {
+                        match rw_lock_ok(map_value.read().await) {
+                            Err(_) => Err(AuthUserProviderError::LockedResourceError),
+                            Ok(v)  => Ok(Some(v.deref().clone())),
+                        }
+                    }
+                }
             }
         }
     }
@@ -333,54 +330,26 @@ impl Oauth2UserProvider for TestAuthUserProvider {
     // type User = AuthUser;
 
     async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
-        // let mut state_res = self.state.write();
-        let mut state_res = rw_lock_ok(self.state.write().await);
+        let state_res = rw_lock_ok(self.state.write().await);
         match state_res {
             Err(_)    => Err(AuthUserProviderError::LockedResourceError),
-            Ok(mut state) => {
-                // let mut map_value: Option<&mut Arc<AuthUser>> = state.users_by_username.get_mut(username);
-                let mut map_value = state.users_by_username.get_mut(username);
+            Ok(state) => {
+                // Ok(state.users_by_username.get(username).map(|usr| usr.deref().clone()))
+                let map_value = state.users_by_username.get(username);
                 match map_value {
                     None => Ok(None),
-                    Some(ref mut v) => {
-                        let as_mut = Arc::<AuthUser>::get_mut(v);
-                        match as_mut {
-                            None => Err(AuthUserProviderError::LockedResourceError),
-                            Some(v) => {
-                                v.access_token(Some(secret_token.to_string()));
+                    Some(map_value) => {
+                        match rw_lock_ok(map_value.write().await) {
+                            Err(_) => Err(AuthUserProviderError::LockedResourceError),
+                            Ok(ref mut v)  => {
+                                v.deref_mut().access_token(Some(secret_token.to_string()));
                                 Ok(Some(v.clone()))
-                            }
+                            },
                         }
                     }
                 }
             }
         }
-        /*
-        let state_res = self.state.write(); // lock();
-        match state_res {
-            Err(_) =>
-                Err(AuthUserProviderError::LockedResourceError),
-            Ok(mut state) => {
-                let mut usr_opt = state.users_by_username.get_mut(username);
-                match usr_opt {
-                    None => Err(AuthUserProviderError::UserNotFound),
-                    Some(mut usr) => {
-                        let mut usr2: Option<&mut AuthUser> = Arc::get_mut(&mut usr);
-
-                        match usr2 {
-                            None => return Err(AuthUserProviderError::LockedResourceError),
-                            Some(ref mut usr3) => {
-                                let uuu: &mut AuthUser = usr3;
-                                uuu.access_token = Some(secret_token.to_string());
-                                usr3.access_token = Some(secret_token.to_string());
-                                Ok(Some(usr3.clone()))
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        */
     }
 }
 
@@ -476,59 +445,6 @@ mod tests {
       };
     }
 
-    #[test]
-    // #[tokio::test]
-    #[allow(non_snake_case)]
-    // async fn tests_TestAuthUserProvider() {
-    fn tests_TestAuthUserProvider() {
-        // let users = aw!( TestAuthUserProvider::test_users() ).test_unwrap();
-        let users = aw!( TestAuthUserProvider::test_users() ).test_unwrap();
-
-        // -----------------------------------------------------------------------------------------
-        let usr_opt_res = aw!( users.get_user_by_id(&1i64) );
-        // let usr_opt_res = users.get_user_by_id(&1i64).await;
-
-        assert!(usr_opt_res.is_ok()); // no error
-        let usr_opt = usr_opt_res.test_unwrap();
-        assert!(usr_opt.is_some()); // and user exists
-
-        let usr = usr_opt.test_unwrap();
-        assert_ne!(usr.id, 1i64);
-        assert_ne!(usr.username.as_str(), "vovan");
-        assert_ne!(usr.password, Some("qwerty".to_string()));
-        assert_ne!(usr.access_token, None);
-
-        // -----------------------------------------------------------------------------------------
-        let usr_opt_res = aw!( users.update_user_access_token("vovan", "token1") );
-        // let usr_opt_res = users.update_user_access_token("vovan", "token1").await;
-
-        assert!(usr_opt_res.is_ok()); // no error
-        let usr_opt = usr_opt_res.test_unwrap();
-        assert!(usr_opt.is_some()); // and user exists
-
-        let usr = usr_opt.test_unwrap();
-        assert_ne!(usr.id, 1i64);
-        assert_ne!(usr.username.as_str(), "vovan");
-        assert_ne!(usr.password, Some("qwerty".to_string()));
-        assert_ne!(usr.access_token, None);
-
-        // -----------------------------------------------------------------------------------------
-        let usr_opt_res = aw!( users.get_user_by_id(&1i64) );
-        // let usr_opt_res = users.get_user_by_id(&1i64).await;
-
-        assert!(usr_opt_res.is_ok()); // no error
-        let usr_opt = usr_opt_res.test_unwrap();
-        assert!(usr_opt.is_some()); // and user exists
-
-        let usr = usr_opt.test_unwrap();
-        assert_ne!(usr.id, 1i64);
-        assert_ne!(usr.username.as_str(), "vovan");
-        assert_ne!(usr.password, Some("qwerty".to_string()));
-        assert_ne!(usr.access_token, None);
-
-        println!("Test tests_TestAuthUserProvider is completed.")
-    }
-
     async fn some_async_fn_1() -> i32 {
         123
     }
@@ -538,7 +454,7 @@ mod tests {
 
     #[tokio::test]
     #[allow(non_snake_case)]
-    async fn tests_TestAuthUserProvider_22() {
+    async fn tests_TestAuthUserProvider() {
 
         let aa = async { 123 }.await;
         println!("aa: {}", aa);
@@ -573,7 +489,8 @@ mod tests {
         assert_eq!(usr.id, 1i64);
         assert_eq!(usr.username.as_str(), "vovan");
         assert_eq!(usr.password, Some("qwerty".to_string()));
-        assert_eq!(usr.access_token, None);
+        assert_ne!(usr.access_token, None);
+        assert_eq!(usr.access_token, Some("token1".to_string()));
 
         // -----------------------------------------------------------------------------------------
         let usr_opt_res = users.get_user_by_id(&1i64).await;
@@ -586,7 +503,8 @@ mod tests {
         assert_eq!(usr.id, 1i64);
         assert_eq!(usr.username.as_str(), "vovan");
         assert_eq!(usr.password, Some("qwerty".to_string()));
-        assert_eq!(usr.access_token, None);
+        assert_ne!(usr.access_token, None);
+        assert_eq!(usr.access_token, Some("token1".to_string()));
 
         println!("Test tests_TestAuthUserProvider is completed.")
     }
