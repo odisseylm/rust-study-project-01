@@ -9,10 +9,10 @@ pub trait Oauth2UserProvider: AuthUserProvider {
 }
 
 
-pub type AuthSession = axum_login::AuthSession<Backend>;
+pub type AuthSession = axum_login::AuthSession<AuthBackend>;
 
 #[derive(Debug, Clone, serde::Deserialize)]
-pub struct Credentials {
+pub struct AuthCredentials {
     pub code: String,
     pub old_state: oauth2::CsrfToken,
     pub new_state: oauth2::CsrfToken,
@@ -22,7 +22,7 @@ pub struct Credentials {
 #[derive(Debug, Clone)]
 // #[derive(Debug)]
 // #[derive(Clone)]
-pub struct Backend {
+pub struct AuthBackend {
     // db: SqlitePool,
     user_provider: Arc<dyn Oauth2UserProvider<User = auth_user::AuthUser> + Send + Sync>,
     client: oauth2::basic::BasicClient,
@@ -48,7 +48,7 @@ struct UserInfo {
     login: String,
 }
 
-impl Backend {
+impl AuthBackend {
     pub fn new(
         // db: SqlitePool,
         user_provider: Arc<dyn Oauth2UserProvider<User = auth_user::AuthUser> + Send + Sync>,
@@ -63,9 +63,9 @@ impl Backend {
 }
 
 #[axum::async_trait]
-impl axum_login::AuthnBackend for Backend {
+impl axum_login::AuthnBackend for AuthBackend {
     type User = auth_user::AuthUser;
-    type Credentials = Credentials;
+    type Credentials = AuthCredentials;
     type Error = AuthBackendError;
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {

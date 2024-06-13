@@ -40,7 +40,8 @@ mod post {
 
     pub(super) mod login {
         use crate::auth::temp::{ AuthSession };
-        use crate::auth::composite_auth::{ PasswordCreds };
+        // use crate::auth::oauth2_auth::AuthCredentials as OAuthCreds;
+        use crate::auth::psw_auth::AuthCredentials as PasswordCreds;
         use crate::auth::composite_auth::AuthCredentials as Credentials;
         use crate::rest::oauth::CSRF_STATE_KEY;
         use super::*;

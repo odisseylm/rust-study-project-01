@@ -92,7 +92,7 @@ pub struct AuthnBackend <
     // UsrProvider: AuthUserProvider<User = auth_user::AuthUser> + Sync + Send, // + Clone + Sync + Send,
     > {
     psw_backend: Option<psw_auth::AuthBackend<PlainPasswordComparator>>,
-    oauth2_backend: Option<oauth2_auth::Backend>,
+    oauth2_backend: Option<oauth2_auth::AuthBackend>,
 }
 
 impl AuthnBackend {
@@ -197,11 +197,8 @@ impl axum_login::AuthnBackend for AuthnBackend {
 pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
 
 
-pub type OAuthCreds = oauth2_auth::Credentials;
-pub type PasswordCreds = psw_auth::AuthCredentials;
-
 #[derive(Debug, Clone, serde::Deserialize)]
 pub enum AuthCredentials {
-    Password(PasswordCreds),
-    OAuth(OAuthCreds),
+    Password(psw_auth::AuthCredentials),
+    OAuth(oauth2_auth::AuthCredentials),
 }

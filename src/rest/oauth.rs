@@ -25,7 +25,7 @@ pub fn router() -> Router<()> {
 }
 
 mod get {
-    use crate::auth::oauth2_auth::{ Credentials as OAuthCreds, AuthSession };
+    use crate::auth::oauth2_auth::{ AuthCredentials as OAuthCreds, AuthSession };
     use super::*;
 
     pub async fn callback(
