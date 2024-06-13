@@ -4,7 +4,7 @@ use axum_extra::TypedHeader;
 use axum_extra::headers::Authorization as AuthorizationHeader;
 use axum_extra::headers::authorization::Basic;
 use oauth2::basic::BasicClient;
-use crate::auth::{ InMemAuthUserProvider, PlainPasswordComparator, wrap_static_arc_auth_user_provider };
+use crate::auth::{ InMemAuthUserProvider, PlainPasswordComparator, wrap_static_ptr_auth_user_provider };
 use crate::auth::oauth2_auth::Oauth2Config;
 use crate::auth::oauth2_auth;
 
@@ -80,7 +80,7 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
 
     let usr_provider: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::test_users().await ?);
     let usr_provider2 = Arc::clone(&usr_provider);
-    let usr_provider3: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = wrap_static_arc_auth_user_provider(usr_provider2);
+    let usr_provider3: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = wrap_static_ptr_auth_user_provider(usr_provider2);
     let usr_provider2: Arc<dyn crate::auth::Oauth2UserProvider<User = AuthUser> + Sync + Send> = usr_provider;
 
     let config = Oauth2Config::git_from_env() ?;
