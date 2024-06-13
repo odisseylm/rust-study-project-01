@@ -6,8 +6,7 @@ use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
 
 
 #[axum::async_trait]
-// pub trait Oauth2UserProvider<'a>: AuthUserProvider + Into<&'a dyn AuthUserProvider> {
-pub trait Oauth2UserProvider: AuthUserProvider /*+ Into<&dyn AuthUserProvider>*/ {
+pub trait Oauth2UserStore: AuthUserProvider {
     async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError>;
 }
 
@@ -30,7 +29,7 @@ pub struct AuthBackend {
 
 #[derive(Debug)]
 struct AuthBackendState {
-    user_provider: Arc<dyn Oauth2UserProvider<User = auth_user::AuthUser> + Send + Sync>,
+    user_provider: Arc<dyn Oauth2UserStore<User = auth_user::AuthUser> + Send + Sync>,
     client: oauth2::basic::BasicClient,
 }
 
@@ -56,7 +55,7 @@ struct UserInfo {
 
 impl AuthBackend {
     pub fn new(
-        user_provider: Arc<dyn Oauth2UserProvider<User = auth_user::AuthUser> + Send + Sync>,
+        user_provider: Arc<dyn Oauth2UserStore<User = auth_user::AuthUser> + Send + Sync>,
         client: oauth2::basic::BasicClient,
     ) -> Self {
         AuthBackend { state: Arc::new(AuthBackendState {

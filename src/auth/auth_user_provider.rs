@@ -60,6 +60,7 @@ pub fn wrap_static_ptr_auth_user_provider<
     casted_ptr
 }
 
+#[allow(dead_code)]
 fn compile_test() {
     use std::sync::Arc;
     use crate::auth::InMemAuthUserProvider;

@@ -7,7 +7,7 @@ use tokio::sync::RwLock;
 
 use super::auth_user::AuthUser;
 use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
-use super::oauth2_auth::Oauth2UserProvider;
+use super::oauth2_auth::Oauth2UserStore;
 
 
 struct InMemoryState {
@@ -113,7 +113,7 @@ impl AuthUserProvider for InMemAuthUserProvider {
 }
 
 #[axum::async_trait]
-impl Oauth2UserProvider for InMemAuthUserProvider {
+impl Oauth2UserStore for InMemAuthUserProvider {
     async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
         let state = self.state.write().await;
         let map_value = state.users_by_username.get(username);

@@ -1,7 +1,7 @@
 use sqlx::SqlitePool;
 use crate::auth::auth_user::AuthUser;
 use crate::auth::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
-use crate::auth::oauth2_auth::Oauth2UserProvider;
+use crate::auth::oauth2_auth::Oauth2UserStore;
 
 
 #[derive(Debug)]
@@ -36,7 +36,7 @@ impl AuthUserProvider for SqlUserProvider {
 
 
 #[axum::async_trait]
-impl Oauth2UserProvider for SqlUserProvider {
+impl Oauth2UserStore for SqlUserProvider {
 
     async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
         // Persist user in our database, so we can use `get_user`.

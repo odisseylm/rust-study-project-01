@@ -78,21 +78,21 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     // This combines the session layer with our backend to establish the auth
     // service which will provide the auth session as a request extension.
 
-    let usr_provider: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::test_users().await ?);
-    let usr_provider2 = Arc::clone(&usr_provider);
-    let usr_provider3: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = wrap_static_ptr_auth_user_provider(usr_provider2);
-    let usr_provider2: Arc<dyn crate::auth::Oauth2UserProvider<User = AuthUser> + Sync + Send> = usr_provider;
+    let usr_provider_impl: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::test_users().await ?);
+    // Rust does not support casting dyn sub-trait to dyn super-trait :-(
+    let std_usr_provider: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = wrap_static_ptr_auth_user_provider(Arc::clone(&usr_provider_impl));
+    let oauth2_usr_store: Arc<dyn crate::auth::Oauth2UserStore<User = AuthUser> + Sync + Send> = usr_provider_impl;
 
     let config = Oauth2Config::git_from_env() ?;
     let oauth2_backend: Option<oauth2_auth::AuthBackend> = match config {
         None => None,
         Some(config) => {
             let oauth2_basic_client: BasicClient = oauth2_auth::create_basic_client(&config) ?;
-            Some(oauth2_auth::AuthBackend::new(Arc::clone(&usr_provider2), oauth2_basic_client))
+            Some(oauth2_auth::AuthBackend::new(Arc::clone(&oauth2_usr_store), oauth2_basic_client))
         }
     };
 
-    let psw_auth_backend = crate::auth::PswAuthBackend::<PlainPasswordComparator>::new(usr_provider3);
+    let psw_auth_backend = crate::auth::PswAuthBackend::<PlainPasswordComparator>::new(std_usr_provider);
 
     let backend = AuthnBackend::new_raw(Some(psw_auth_backend), oauth2_backend);
     let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, MemoryStore> = AuthManagerLayerBuilder::new(backend, session_layer).build();
