@@ -46,11 +46,23 @@ pub fn accounts_rest_router<
         .route("/api/account/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
             state.get_user_account(id).to_json().await
         }))
+        .route("/api/account/:dd8811/:dd99", get(|State(state): State<Arc<AccountRest<AccountS>>>, pp: Path<PathParams>| async move {
+            state.get_user_account(pp.dd88.clone()).to_json().await
+            // state.get_user_account("gdgfdgfd".to_string()).to_json().await
+        }))
         .with_state(shared_state.clone())
         .auth_required()
         ;
 
     accounts_router
+}
+
+// path-name-safe way to pass params.
+#[derive(Debug, serde::Deserialize)]
+#[allow(unused_variables, dead_code)]
+struct PathParams {
+    dd88: String,
+    dd99: String,
 }
 
 // #[static_init::constructor]
