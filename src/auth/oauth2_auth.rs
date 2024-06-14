@@ -1,5 +1,6 @@
 use std::env::VarError;
 use std::sync::Arc;
+use crate::rest::auth::AuthUser;
 use super::auth_user;
 use super::error::AuthBackendError;
 use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
@@ -66,6 +67,10 @@ impl AuthBackend {
 
     pub fn authorize_url(&self) -> (oauth2::url::Url, oauth2::CsrfToken) {
         self.state.client.authorize_url(oauth2::CsrfToken::new_random).url()
+    }
+
+    pub async fn is_authenticated (&self, auth_session_user: &Option<AuthUser>) -> bool {
+        auth_session_user.is_some()
     }
 }
 

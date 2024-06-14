@@ -5,6 +5,8 @@ use axum_extra::TypedHeader;
 
 use axum_login::UserId;
 use oauth2::basic::BasicClient;
+use crate::auth::psw_auth::{BasicAuthMode, LoginFormMode};
+use crate::rest::auth::AuthUser;
 
 use super::psw_auth;
 use super::auth_user;
@@ -14,106 +16,12 @@ use super::psw::PlainPasswordComparator;
 use super::mem_user_provider::InMemAuthUserProvider;
 
 
-// TODO: configure it in some way??
-static USE_HTTP_BASIC_AUTH: bool = true;
-
+/*
 pub async fn is_authenticated (
     auth_session: AuthSession,
     basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
 ) -> bool {
-    if auth_session.user.is_some() {
-        return true;
-    }
-
-    if USE_HTTP_BASIC_AUTH {
-        use crate::auth::psw_auth::AuthCredentials as PswAuthCredentials;
-
-        if let Some(TypedHeader(AuthorizationHeader(ref creds))) = basic_auth_creds {
-            let creds = PswAuthCredentials { username: creds.username().to_string(), password: creds.password().to_string(), next: None };
-            let is_auth_res = auth_session.authenticate(AuthCredentials::Password(creds)).await;
-            return is_auth_res.is_ok()
-        }
-    };
-
-    return false;
-}
-
-
-/*
-async fn is_authenticated(
-    auth_session: AuthSession,
-    basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
-    ) -> bool
-{
-    if auth_session.user.is_some() {
-        return true;
-    }
-
-    if let Some(TypedHeader(AuthorizationHeader(ref creds))) = basic_auth_creds {
-        // T O D O: avoid to_string()
-        let is_auth_res = auth_session.authenticate(AuthCredentials { username: creds.username().to_string(), password: creds.password().to_string() }).await;
-        is_auth_res.is_ok()
-    }
-    else { false }
-}
-
-
-#[inline]
-pub async fn validate_auth_temp(
-    auth_session: AuthSession, basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
-    req: axum::extract::Request, next: axum::middleware::Next) -> axum::http::Response<Body> {
-    validate_auth(auth_session, basic_auth_creds, req, next).await
-}
-
-pub async fn validate_auth(
-    auth_session: AuthSession,
-    basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
-    req: axum::extract::Request,
-    next: axum::middleware::Next
-) -> axum::http::Response<Body> {
-    if is_authenticated(auth_session, basic_auth_creds).await {
-        next.run(req).await
-    } else {
-        // or redirect to login page
-        // should be configurable outside: dev or prod
-        super::error_rest::unauthenticated_401_response()
-    }
-}
-
-#[extension_trait::extension_trait]
-pub impl<S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for axum::Router<S> {
-    // #[inline] // warning: `#[inline]` is ignored on function prototypes
-    #[track_caller]
-    fn auth_required(self) -> Self {
-        self.route_layer(axum::middleware::from_fn(validate_auth))
-    }
-}
-
-pub fn auth_manager_layer() -> axum_login::AuthManagerLayer<AuthnBackend, axum_login::tower_sessions::MemoryStore> {
-
-    use axum_login::{
-        // login_required,
-        tower_sessions::{cookie::SameSite, Expiry, MemoryStore, SessionManagerLayer},
-        AuthManagerLayerBuilder,
-    };
-    use time::Duration;
-
-    // This uses `tower-sessions` to establish a layer that will provide the session
-    // as a request extension.
-    //
-    let session_store = MemoryStore::default();
-    let session_layer = SessionManagerLayer::new(session_store)
-        .with_secure(false)
-        .with_same_site(SameSite::Lax) // Ensure we send the cookie from the OAuth redirect.
-        .with_expiry(Expiry::OnInactivity(Duration::days(1)));
-
-    // Auth service.
-    //
-    // This combines the session layer with our backend to establish the auth
-    // service which will provide the auth session as a request extension.
-    let backend = AuthnBackend::new();
-    let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, MemoryStore> = AuthManagerLayerBuilder::new(backend, session_layer).build();
-    auth_layer
+    auth_session.backend.is_authenticated(&auth_session.user, &basic_auth_creds)
 }
 */
 
@@ -130,7 +38,7 @@ impl AuthnBackend {
         Ok(AuthnBackend {
             psw_backend: Some(
                 psw_auth::AuthBackend::new(
-                    Arc::new(InMemAuthUserProvider::new()))),
+                    Arc::new(InMemAuthUserProvider::new()), BasicAuthMode::BasicAuthProposed, LoginFormMode::LoginFormSupported)),
             oauth2_backend: None,
         })
     }
@@ -140,6 +48,28 @@ impl AuthnBackend {
     ) -> AuthnBackend {
         AuthnBackend { psw_backend, oauth2_backend }
     }
+
+    pub async fn is_authenticated (
+        &self,
+        auth_session_user: &Option<AuthUser>,
+        basic_auth_creds: &Option<TypedHeader<AuthorizationHeader<Basic>>>,
+    ) -> bool {
+
+        if let Some(ref psw_backend) = self.psw_backend {
+            if psw_backend.is_authenticated(&auth_session_user, &basic_auth_creds).await {
+                return true;
+            }
+        }
+
+        if let Some(ref oauth2_backend) = self.oauth2_backend {
+            if oauth2_backend.is_authenticated(&auth_session_user).await {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 }
 
 

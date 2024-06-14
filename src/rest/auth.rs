@@ -7,6 +7,7 @@ use oauth2::basic::BasicClient;
 use crate::auth::{ InMemAuthUserProvider, PlainPasswordComparator };
 use crate::auth::oauth2_auth::Oauth2Config;
 use crate::auth::oauth2_auth;
+use crate::auth::psw_auth::{BasicAuthMode, LoginFormMode};
 
 
 pub type AuthUser = crate::auth::AuthUser;
@@ -19,7 +20,7 @@ async fn is_authenticated (
     auth_session: AuthSession,
     basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
 ) -> bool {
-    crate::auth::composite_auth::is_authenticated(auth_session, basic_auth_creds).await
+    auth_session.backend.is_authenticated(&auth_session.user, &basic_auth_creds).await
 }
 
 
@@ -98,7 +99,13 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
         }
     };
 
-    let psw_auth_backend = crate::auth::PswAuthBackend::<PlainPasswordComparator>::new(std_usr_provider);
+    let psw_auth_backend = crate::auth::PswAuthBackend::<PlainPasswordComparator>::new(
+        std_usr_provider,
+        // It makes sense for pure server SOA
+        BasicAuthMode::BasicAuthProposed,
+        // It makes sense for web-app
+        LoginFormMode::LoginFormProposed { login_form_url: "login" }
+    );
 
     let backend = AuthnBackend::new_raw(Some(psw_auth_backend), oauth2_backend);
     let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, MemoryStore> = AuthManagerLayerBuilder::new(backend, session_layer).build();
