@@ -43,7 +43,8 @@ mod post {
         use log::error;
         use crate::auth::psw_auth::AuthCredentials as PasswordCreds;
         use crate::auth::composite_auth::AuthCredentials as Credentials;
-        use crate::rest::auth::{ AuthUser, AuthnBackend, AuthSession, AuthBackendError };
+        // use crate::rest::auth::{ AuthUser, AuthnBackend, AuthSession, AuthBackendError };
+        use crate::rest::auth::{ AuthSession, AuthBackendError };
         use crate::rest::oauth::CSRF_STATE_KEY; // TODO: from another package
         use super::*;
 

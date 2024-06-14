@@ -62,10 +62,18 @@ impl AuthnBackend {
                 Some(psw_backend.is_authenticated(&auth_session_user, &original_uri, &basic_auth_creds).await)
             } else { None };
 
-        let oauth2_res_opt: Option<Result<(), UnauthenticatedAction>> = // TODO: do not call if prev is success
+        if is_opt_res_ok(&psw_aut_res_opt) {
+            return Ok(());
+        }
+
+        let oauth2_res_opt: Option<Result<(), UnauthenticatedAction>> =
             if let Some(ref oauth2_backend) = self.oauth2_backend {
                 Some(oauth2_backend.is_authenticated(&auth_session_user, &original_uri).await)
             } else { None };
+
+        if is_opt_res_ok(&oauth2_res_opt) {
+            return Ok(());
+        }
 
         // in reverse order to use cheap safe 'pop' method later
         let as_vec = vec!(oauth2_res_opt, psw_aut_res_opt);
@@ -83,28 +91,15 @@ impl AuthnBackend {
 
 }
 
-/*
-#[inline]
-fn is_any_opt_res_ok2 <
-    T1, E1, T2, E2,
-    >(r1: &Option<Result<T1,E1>>, r2: &Option<Result<T1,E1>>) -> bool {
-    is_opt_res_ok(r1) || is_opt_res_ok(r2)
-}
 #[inline]
 fn is_opt_res_ok<T, E>(r_opt: &Option<Result<T,E>>) -> bool {
+    // r_opt.as_ref().map(|v|v.is_ok()).unwrap_or(false)
     match r_opt {
         None => false,
         Some(ref v) => v.is_ok()
     }
 }
 
-#[inline(always)]
-fn first_any_opt_res_err2 <T, E> (r1: Option<Result<T,E>>, r2: &Option<Result<T,E>>) -> bool {
-    if !is_opt_res_ok(&r1) {
-        r1.
-    }
-}
-*/
 
 impl AuthnBackend {
 
@@ -113,7 +108,7 @@ impl AuthnBackend {
     }
 
     pub fn authorize_url(&self) -> Result<(oauth2::url::Url, oauth2::CsrfToken), AuthBackendError> {
-        match self.oauth2_backend { // TODO: simplify
+        match self.oauth2_backend {
             None => Err(AuthBackendError::NoRequestedBackend),
             Some(ref oauth2_backend) => Ok(oauth2_backend.authorize_url()),
         }

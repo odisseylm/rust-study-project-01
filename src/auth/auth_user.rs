@@ -23,10 +23,8 @@ impl AuthUser {
     pub fn has_password<PswComparator: PasswordComparator>(&self, cred_psw: &str) -> bool {
         match self.password {
             None => false,
-            Some(ref usr_psw) => {
-                // usr_psw == cred_psw
-                 PswComparator::passwords_equal(usr_psw, cred_psw)
-            },
+            Some(ref usr_psw) =>
+                 PswComparator::passwords_equal(usr_psw, cred_psw),
         }
     }
 }
