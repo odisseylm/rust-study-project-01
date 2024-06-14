@@ -9,7 +9,7 @@ use crate::util::UncheckedResultUnwrap;
 use crate::entities::entity;
 use crate::rest::app_dependencies::Dependencies;
 use crate::rest::dto;
-use crate::rest::error_rest::{authenticate, RestAppError};
+use crate::rest::error_rest::{authenticate_basic, RestAppError};
 use crate::rest::auth::RequiredAuthenticationExtension;
 use crate::service::account_service::{ AccountService };
 
@@ -26,21 +26,13 @@ pub fn accounts_rest_router<
     use axum::extract::{ Path, State };
     use std::sync::Arc;
     use super::utils::RestFutureToJson;
-    //use axum_extra::extract::
-    use axum_extra::{
-        headers::{authorization::Basic, Authorization},
-        TypedHeader,
-    };
+    use axum_extra::{ headers::{authorization::Basic, Authorization}, TypedHeader };
 
     let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
 
     // let accounts_router: Router<_> = Router::new()
     let accounts_router = Router::new()
-        .route("/api/account/all", get(|State(state): State<Arc<AccountRest<AccountS>>>,
-                                        creds: Option<TypedHeader<Authorization<Basic>>>,
-        | async move {
-            authenticate(&creds) ?;
-
+        .route("/api/account/all", get(|State(state): State<Arc<AccountRest<AccountS>>>| async move {
             state.get_current_user_accounts().to_json().await
         }))
         .route("/api/account/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
@@ -48,6 +40,14 @@ pub fn accounts_rest_router<
         }))
         .with_state(shared_state.clone())
         .auth_required()
+        //
+        .route("/api/manual_auth", get(|State(state): State<Arc<AccountRest<AccountS>>>,
+                                        creds: Option<TypedHeader<Authorization<Basic>>>,
+        | async move {
+            authenticate_basic(&creds) ?;
+            state.get_current_user_accounts().to_json().await
+        }))
+        .with_state(shared_state.clone())
         ;
 
     accounts_router

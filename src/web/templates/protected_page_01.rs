@@ -7,8 +7,10 @@ struct ProtectedTemplate<'a> {
     username: &'a str,
 }
 
-pub fn router() -> Router<()> {
-    Router::new().route("/", GET(get::protected_page_01))
+pub fn protected_page_01_router() -> Router<()> {
+    Router::new()
+        .route("/protected-01", GET(get::protected_page_01))
+        .route_layer(axum_login::login_required!(crate::rest::auth::AuthnBackend, login_url = "/login"))
 }
 
 mod get {

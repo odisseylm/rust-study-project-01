@@ -21,6 +21,7 @@ pub(crate) mod temp;
 
 pub use auth_user::AuthUser;
 pub use error::AuthBackendError;
+pub use error::UnauthenticatedAction;
 
 pub use auth_user_provider::AuthUserProvider;
 pub use auth_user_provider::AuthUserProviderError;

@@ -103,6 +103,7 @@ impl AuthUserProvider for InMemAuthUserProvider {
     type User = AuthUser;
     async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
         let state = self.state.read().await;
+        // TODO: use case-insensitive username comparing
         extract_cloned_user(state.users_by_username.get(username)).await
     }
 

@@ -1,13 +1,16 @@
 use core::fmt;
 use core::marker::PhantomData;
 use std::sync::Arc;
+use askama_axum::IntoResponse;
 
 use axum_login;
 use axum_login::tower_sessions;
 use axum::body::Body;
+use axum::extract::OriginalUri;
 use axum_extra::TypedHeader;
 use axum_extra::headers::Authorization as AuthorizationHeader;
 use axum_extra::headers::authorization::Basic;
+use crate::auth::UnauthenticatedAction;
 
 use super::error::AuthBackendError;
 use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
@@ -20,9 +23,10 @@ async fn is_authenticated <
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > (
     auth_session: AuthSession<PswComparator>,
+    original_uri: OriginalUri,
     basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
-) -> bool {
-    auth_session.backend.is_authenticated(&auth_session.user, &basic_auth_creds).await
+) -> Result<(), UnauthenticatedAction> {
+    auth_session.backend.is_authenticated(&auth_session.user, &original_uri, &basic_auth_creds).await
 }
 
 
@@ -30,9 +34,10 @@ async fn is_authenticated <
 pub async fn validate_auth_temp <
     PC: PasswordComparator + Clone + Sync + Send,
     > (
-    auth_session: AuthSession<PC>, basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
+    auth_session: AuthSession<PC>, original_uri: OriginalUri,
+    basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
     req: axum::extract::Request, next: axum::middleware::Next) -> http::Response<Body> {
-    validate_auth_by_password(auth_session, basic_auth_creds, req, next).await
+    validate_auth_by_password(auth_session, original_uri, basic_auth_creds, req, next).await
 }
 
 
@@ -40,17 +45,16 @@ pub async fn validate_auth_by_password<
     PC: PasswordComparator + Clone + Sync + Send,
     >(
     auth_session: AuthSession<PC>,
+    original_uri: OriginalUri,
     basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
     req: axum::extract::Request,
     next: axum::middleware::Next
     ) -> http::Response<Body> {
 
-    if is_authenticated(auth_session, basic_auth_creds).await {
-        next.run(req).await
-    } else {
-        // or redirect to login page
-        // should be configurable outside: dev or prod
-        crate::rest::error_rest::unauthenticated_401_response()
+    let is_auth_res = is_authenticated(auth_session, original_uri, basic_auth_creds).await;
+    match is_auth_res {
+        Ok(_) => next.run(req).await,
+        Err(action) => action.into_response()
     }
 }
 
@@ -114,7 +118,7 @@ impl BasicAuthMode {
 pub enum LoginFormMode {
     LoginFormIgnored,
     LoginFormSupported,
-    LoginFormProposed { login_form_url: &'static str },
+    LoginFormProposed { login_form_url: Option<&'static str> },
 }
 impl LoginFormMode {
     pub fn ignored(&self)->bool {
@@ -141,12 +145,9 @@ impl  <
     pub async fn is_authenticated (
         &self,
         auth_session_user: &Option<AuthUser>,
+        original_uri: &OriginalUri,
         basic_auth_creds: &Option<TypedHeader<AuthorizationHeader<Basic>>>,
-    ) -> bool {
-
-        if !self.login_form_mode.ignored() && auth_session_user.is_some() {
-            return true;
-        }
+    ) -> Result<(), UnauthenticatedAction> {
 
         if !self.basic_auth_mode.ignored() {
             if let Some(TypedHeader(AuthorizationHeader(ref creds))) = basic_auth_creds {
@@ -158,11 +159,22 @@ impl  <
                     next: None,
                 }).await;
 
-                return is_auth_res.is_ok();
+                if is_auth_res.is_ok() { return Ok(()) }
             }
         };
 
-        return false;
+        if !self.login_form_mode.ignored() && auth_session_user.is_some() {
+            return Ok(());
+        }
+
+        if let BasicAuthMode::BasicAuthProposed = self.basic_auth_mode {
+            return Err(UnauthenticatedAction::ProposeBase64)
+        };
+        if let LoginFormMode::LoginFormProposed { login_form_url } = self.login_form_mode {
+            return Err(UnauthenticatedAction::ProposeLoginForm { login_form_url, initial_url: Some(original_uri.to_string()) })
+        };
+
+        return Err(UnauthenticatedAction::NoAction)
     }
 }
 
@@ -223,6 +235,7 @@ impl<
             Some(usr) => {
                 let usr_psw = usr.password.as_ref().map(|s|s.as_str()).unwrap_or("");
                 // if usr.username == creds.username && usr.psw == creds.password {
+                // TODO: use case-insensitive username comparing
                 if usr.username == creds.username &&
                     PswComparator::passwords_equal(usr_psw, creds.password.as_str()) {
                     Ok(Some(usr.clone()))
@@ -234,7 +247,7 @@ impl<
     }
 
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
-        // TODO: what is UserId there???
+        // T O D O: what is UserId there???
         let usr_opt_res = self.users_provider.get_user_by_id(user_id).await
             .map_err(From::<AuthUserProviderError>::from);
         usr_opt_res

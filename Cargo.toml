@@ -150,12 +150,19 @@ http = "1.1.0"
 # http library
 hyper = "1.3.1"
 reqwest = { version = "0.12.4", features = ["json"] }
+url = "2.5.1"
 
 sqlx = { version = "0.7.4", features = ["sqlite", "time", "runtime-tokio"] }
 
 
 askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.4.0"
+
+#inline-xml = "0.3.2"
+## similars
+#xml-macro = "0.2.0"
+#quick-xml = "0.32.0"
+
 
 # unused manifest key: tests
 #[test]

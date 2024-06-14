@@ -27,7 +27,7 @@ pub struct NextUrl {
     next: Option<String>,
 }
 
-pub fn router() -> Router<()> {
+pub fn login_router() -> Router<()> {
     Router::new()
         .route("/login/password", POST(post::login::password))
         .route("/login/oauth", POST(post::login::oauth))
@@ -39,20 +39,25 @@ mod post {
     use super::*;
 
     pub(super) mod login {
-        use crate::auth::temp::{ AuthSession };
-        // use crate::auth::oauth2_auth::AuthCredentials as OAuthCreds;
+        use axum_login::Error;
+        use log::error;
         use crate::auth::psw_auth::AuthCredentials as PasswordCreds;
         use crate::auth::composite_auth::AuthCredentials as Credentials;
-        use crate::rest::oauth::CSRF_STATE_KEY;
+        use crate::rest::auth::{ AuthUser, AuthnBackend, AuthSession, AuthBackendError };
+        use crate::rest::oauth::CSRF_STATE_KEY; // TODO: from another package
         use super::*;
 
         pub async fn password(
             mut auth_session: AuthSession,
             Form(creds): Form<PasswordCreds>,
         ) -> impl IntoResponse {
-            let auth_res = auth_session.authenticate(Credentials::Password(creds.clone())).await;
+            let auth_res: Result<Option<crate::auth::AuthUser>, axum_login::Error<crate::auth::composite_auth::AuthnBackend>> = auth_session.authenticate(
+                Credentials::Password(creds.clone())).await;
+            // let auth_res: Result<Option<AuthUser>, axum_login::Error<AuthBackendError>> = auth_session.authenticate(
+            //     Credentials::Password(creds.clone())).await;
             let user = match auth_res {
                 Ok(Some(user)) => user,
+                // Ok(None) | Err(AuthBackendError::NoUser) => {
                 Ok(None) => {
                     return LoginTemplate {
                         message: Some("Invalid credentials.".to_string()),
@@ -60,7 +65,40 @@ mod post {
                     }
                     .into_response()
                 }
-                Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+                Err(err) => {
+                    match err {
+                        Error::Session(err) => {
+                            let err2 = err.to_string();
+                            println!("{}", err2);
+                            error!("Authentication session error [{}]", err)
+                        }
+                        Error::Backend(err) => {
+                            let err2 = err.to_string();
+                            println!("{}", err2);
+                            match err {
+                                AuthBackendError::NoUser | AuthBackendError::IncorrectUsernameOrPsw => {
+                                    return LoginTemplate {
+                                        message: Some("Invalid credentials.".to_string()),
+                                        next: creds.next,
+                                    }
+                                    .into_response()
+                                }
+                                // AuthBackendError::UserProviderError(_) => {}
+                                // AuthBackendError::Sqlx(_) => {}
+                                // AuthBackendError::Reqwest(_) => {}
+                                // AuthBackendError::OAuth2(_) => {}
+                                // AuthBackendError::NoRequestedBackend => {}
+                                // AuthBackendError::TaskJoin(_) => {}
+                                // AuthBackendError::ConfigError(_) => {}
+                                err => {
+                                    error!("Authentication backend error [{}]", err)
+                                }
+                            }
+                        }
+                    }
+                    return StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                },
+                // Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
             };
 
             if auth_session.login(&user).await.is_err() {

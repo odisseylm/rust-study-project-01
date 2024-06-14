@@ -1,6 +1,14 @@
 use super::auth_user_provider::AuthUserProviderError;
 
 
+#[derive(Debug)]
+pub enum UnauthenticatedAction {
+    NoAction,
+    ProposeBase64,
+    ProposeLoginForm { login_form_url: Option<&'static str>, initial_url: Option<String> },
+}
+
+
 // This enum contains ALL possible errors for ANY auth Backend.
 // Initially every impl had each own error enum... but I tired to convert them :-)
 #[derive(Debug, thiserror::Error)]

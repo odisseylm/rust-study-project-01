@@ -7,6 +7,8 @@ use crate::rest::account_rest::{ AccountRest, accounts_rest_router };
 use crate::rest::app_dependencies::Dependencies;
 use crate::rest::auth::{auth_manager_layer, AuthnBackend};
 use crate::service::account_service::AccountServiceImpl;
+use crate::web::auth::login_router;
+use crate::web::templates::protected_page_01::protected_page_01_router;
 
 
 fn create_prod_dependencies() -> Dependencies<AccountServiceImpl> {
@@ -75,6 +77,8 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, axum_login::tower_sessions::MemoryStore> = auth_manager_layer().await ?;
 
     let app_router = Router::new()
+        .merge(login_router())
+        .merge(protected_page_01_router())
         .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))
         .layer(
             ServiceBuilder::new()

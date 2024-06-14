@@ -1,10 +1,12 @@
 use std::sync::Arc;
 use axum::body::Body;
+use axum::extract::OriginalUri;
+use axum::response::IntoResponse;
 use axum_extra::TypedHeader;
 use axum_extra::headers::Authorization as AuthorizationHeader;
 use axum_extra::headers::authorization::Basic;
 use oauth2::basic::BasicClient;
-use crate::auth::{ InMemAuthUserProvider, PlainPasswordComparator };
+use crate::auth::{InMemAuthUserProvider, PlainPasswordComparator, UnauthenticatedAction};
 use crate::auth::oauth2_auth::Oauth2Config;
 use crate::auth::oauth2_auth;
 use crate::auth::psw_auth::{BasicAuthMode, LoginFormMode};
@@ -14,35 +16,39 @@ pub type AuthUser = crate::auth::AuthUser;
 pub type AuthCredentials = crate::auth::composite_auth::AuthCredentials;
 pub type AuthnBackend = crate::auth::composite_auth::AuthnBackend;
 pub type AuthSession = crate::auth::composite_auth::AuthSession;
+pub type AuthBackendError = crate::auth::AuthBackendError;
 
 
 async fn is_authenticated (
     auth_session: AuthSession,
+    original_uri: OriginalUri,
     basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
-) -> bool {
-    auth_session.backend.is_authenticated(&auth_session.user, &basic_auth_creds).await
+) -> Result<(), UnauthenticatedAction> {
+    auth_session.backend.is_authenticated(&auth_session.user, &original_uri, &basic_auth_creds).await
 }
 
 
 #[inline]
 pub async fn validate_auth_temp(
-    auth_session: AuthSession, basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
+    auth_session: AuthSession,
+    original_uri: OriginalUri,
+    basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
     req: axum::extract::Request, next: axum::middleware::Next) -> http::Response<Body> {
-    validate_auth(auth_session, basic_auth_creds, req, next).await
+    validate_auth(auth_session, original_uri, basic_auth_creds, req, next).await
 }
 
-pub async fn validate_auth(
+pub async fn validate_auth (
     auth_session: AuthSession,
+    original_uri: OriginalUri,
     basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
     req: axum::extract::Request,
     next: axum::middleware::Next
 ) -> http::Response<Body> {
-    if is_authenticated(auth_session, basic_auth_creds).await {
-        next.run(req).await
-    } else {
-        // or redirect to login page
-        // should be configurable outside: dev or prod
-        super::error_rest::unauthenticated_401_response()
+
+    let is_auth_res = is_authenticated(auth_session, original_uri, basic_auth_creds).await;
+    match is_auth_res {
+        Ok(_) => next.run(req).await,
+        Err(action) => action.into_response()
     }
 }
 
@@ -102,9 +108,10 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     let psw_auth_backend = crate::auth::PswAuthBackend::<PlainPasswordComparator>::new(
         std_usr_provider,
         // It makes sense for pure server SOA
-        BasicAuthMode::BasicAuthProposed,
+        // BasicAuthMode::BasicAuthProposed,
+        BasicAuthMode::BasicAuthSupported,
         // It makes sense for web-app
-        LoginFormMode::LoginFormProposed { login_form_url: "login" }
+        LoginFormMode::LoginFormProposed { login_form_url: Some("/login") }
     );
 
     let backend = AuthnBackend::new_raw(Some(psw_auth_backend), oauth2_backend);

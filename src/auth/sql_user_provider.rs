@@ -15,8 +15,10 @@ impl AuthUserProvider for SqlUserProvider {
     type User = AuthUser;
 
     async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
-        sqlx::query_as("select * from users where username = ?")
-            .bind(username)
+        // TODO: use case-insensitive username comparing
+        let username_lc = username.to_lowercase();
+        sqlx::query_as("select * from users where lowercase(username) = ?")
+            .bind(username_lc)
             .fetch_optional(&self.db)
             .await
             // .map_err(Self::Error::Sqlx)?)
@@ -40,6 +42,7 @@ impl OAuth2UserStore for SqlUserProvider {
 
     async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
         // Persist user in our database, so we can use `get_user`.
+        // TODO: use case-insensitive username comparing
         let user: AuthUser = sqlx::query_as(
                 r#"
                 insert into users (username, access_token)

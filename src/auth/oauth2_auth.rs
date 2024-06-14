@@ -1,7 +1,8 @@
 use std::env::VarError;
 use std::sync::Arc;
+use axum::extract::OriginalUri;
 use crate::rest::auth::AuthUser;
-use super::auth_user;
+use super::{auth_user, UnauthenticatedAction};
 use super::error::AuthBackendError;
 use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
 
@@ -69,8 +70,9 @@ impl AuthBackend {
         self.state.client.authorize_url(oauth2::CsrfToken::new_random).url()
     }
 
-    pub async fn is_authenticated (&self, auth_session_user: &Option<AuthUser>) -> bool {
-        auth_session_user.is_some()
+    pub async fn is_authenticated (&self, auth_session_user: &Option<AuthUser>, original_uri: &OriginalUri,) -> Result<(), UnauthenticatedAction> {
+        if auth_session_user.is_some() { Ok(()) }
+        else { Err(UnauthenticatedAction::ProposeLoginForm { login_form_url: None, initial_url: Some(original_uri.to_string()) }) }
     }
 }
 
