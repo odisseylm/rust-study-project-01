@@ -1,20 +1,17 @@
 use assertables::{ assert_contains, assert_contains_as_result };
-// use axum::body::{ BodyDataStream, Bytes };
-// use axum::Json;
-// use axum::response::{ IntoResponse, Response };
 use bigdecimal::BigDecimal;
-use chrono::{FixedOffset, Utc};
+use chrono::{ FixedOffset, Utc };
 use indoc::indoc;
-use project01::entities::account::{ self, Account, new, };
+use project01::entities::account::{ self, Account };
 use project01::entities::amount::Amount;
-use project01::entities::id::Id;
+use project01::entities::prelude::{ AccountId, UserId };
 use project01::util::{ TestResultUnwrap };
 use project01::util::test_unwrap::{ TestResultDebugErrOps, TestResultDisplayErrOps };
 
 
 #[test]
 // #[allow(unused_mut)]
-fn test_to_json() { // TODO: split to several tests or use soft assertions
+fn test_to_json() { // T O D O: split to several tests or use soft assertions
     // let as_json_obj = Json(account_01());
     // let aa: String = as_json_obj.into();
     // assert_eq!("gfgfg", aa);
@@ -91,7 +88,7 @@ fn test_to_json() { // TODO: split to several tests or use soft assertions
 
 
     let account33 = account_01();
-    let account1 = Account::new(new::Args {
+    let account1 = Account::new(account::new::Args {
         id: account33.id.clone(),
         user_id: account33.user_id.clone(),
         amount: Amount::from_str("123.55555555555555555666666666666666677777 EUR").test_unwrap(),
@@ -147,8 +144,8 @@ fn test_to_json() { // TODO: split to several tests or use soft assertions
     let account = r.test_unwrap();
     println!("### r: {:?}", account);
 
-    assert_eq!(account.id, Id::from_str("1").test_unwrap());
-    assert_eq!(account.user_id, Id::from_str("2").test_unwrap());
+    assert_eq!(account.id, AccountId::from_str("1").test_unwrap());
+    assert_eq!(account.user_id, UserId::from_str("2").test_unwrap());
     assert_eq!(account.amount, Amount::from_str("123.44 USD").test_unwrap());
     // created_at: datetime_from_str("2022-05-31 10:29:30 +02:00"),
     // updated_at: datetime_from_str("2024-05-31 22:29:57 +02:00"),
@@ -166,8 +163,8 @@ fn test_to_json() { // TODO: split to several tests or use soft assertions
     let account = r.test_unwrap();
     println!("### r: {:?}", account);
 
-    assert_eq!(account.id, Id::from_str("1").test_unwrap());
-    assert_eq!(account.user_id, Id::from_str("2").test_unwrap());
+    assert_eq!(account.id, AccountId::from_str("1").test_unwrap());
+    assert_eq!(account.user_id, UserId::from_str("2").test_unwrap());
     assert_eq!(account.amount, Amount::from_str("123.44444444444444444444444444444444444333 USD").test_unwrap());
     // created_at: datetime_from_str("2022-05-31 10:29:30 +02:00"),
     // updated_at: datetime_from_str("2024-05-31 22:29:57 +02:00"),
@@ -282,7 +279,7 @@ fn readonly_field_test() {
     // let mut id = &account.id;
     // id.0 = "443";
 
-    let as_id: Result<&Id, _> = TryInto::<&Id>::try_into(&account.id);
+    let as_id: Result<&AccountId, _> = TryInto::<&AccountId>::try_into(&account.id);
     println!("### as_id: {:?}", as_id);
 
     // account.id = Id::from_str("54545").unwrap();
@@ -311,8 +308,8 @@ fn readonly_field_test() {
 fn account_01() -> Account {
     let account = Account::new(account::new::Args {
         // id:
-        id: Id::from_str("1").test_unwrap(),
-        user_id: Id::from_str("2").test_unwrap(),
+        id: AccountId::from_str("1").test_unwrap(),
+        user_id: UserId::from_str("2").test_unwrap(),
         amount: Amount::from_str("123.44 USD").test_unwrap(),
         created_at: datetime_from_str("2022-05-31 10:29:30 +02:00"),
         updated_at: datetime_from_str("2024-05-31 22:29:57 +02:00"),

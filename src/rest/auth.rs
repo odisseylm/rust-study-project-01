@@ -85,7 +85,7 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     // This combines the session layer with our backend to establish the auth
     // service which will provide the auth session as a request extension.
 
-    let usr_provider_impl: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::test_users().await ?);
+    let usr_provider_impl: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::test_users() ?);
 
     // Rust does not support casting dyn sub-trait to dyn super-trait :-(
     // let std_usr_provider: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = wrap_static_ptr_auth_user_provider(Arc::clone(&usr_provider_impl));

@@ -73,7 +73,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_wrap_authn_backend_as_dyn() {
-        let test_users = Arc::new(InMemAuthUserProvider::test_users().await.test_unwrap());
+        let test_users = Arc::new(InMemAuthUserProvider::test_users().test_unwrap());
         let psw_auth = psw_auth::AuthBackend::<PlainPasswordComparator>::new(test_users, BasicAuthMode::BasicAuthSupported, LoginFormMode::LoginFormSupported);
 
         let r = psw_auth.authenticate(psw_auth::AuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;

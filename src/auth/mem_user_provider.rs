@@ -44,34 +44,23 @@ impl InMemAuthUserProvider {
         }
     }
 
-    // TODO: try to remove async from there
-    pub async fn with_users(users: Vec<AuthUser>) -> Result<InMemAuthUserProvider, AuthUserProviderError> {
-        let in_memory_state = {
-            let in_memory_state = Arc::new(RwLock::<InMemoryState>::new(InMemoryState::with_capacity(users.len())));
-            {
-                let mut guarded = in_memory_state.deref().write()
-                    .await;
+    pub fn with_users(users: Vec<AuthUser>) -> Result<InMemAuthUserProvider, AuthUserProviderError> {
 
-                for user in users {
-                    let user_ref = Arc::new(RwLock::new(user.clone()));
+        let mut in_memory_state = InMemoryState::with_capacity(users.len());
+        for user in users {
+            let user_ref = Arc::new(RwLock::new(user.clone()));
 
-                    guarded.users_by_id.insert(user.id, Arc::clone(&user_ref));
-                    guarded.users_by_username.insert(user.username.to_string(), Arc::clone(&user_ref));
-                }
-                //forget(guarded); // !!! 'forget' is risky function !!??!! It does NOT work!!
-            }
-
-            in_memory_state
-        };
+            in_memory_state.users_by_id.insert(user.id, Arc::clone(&user_ref));
+            in_memory_state.users_by_username.insert(user.username.to_lowercase(), Arc::clone(&user_ref));
+        }
 
         Ok(InMemAuthUserProvider {
-            state: in_memory_state,
+            state: Arc::new(RwLock::<InMemoryState>::new(in_memory_state)),
         })
     }
 
-    // TODO: try to remove async from there
-    pub async fn test_users() -> Result<InMemAuthUserProvider, AuthUserProviderError> {
-        Self::with_users(vec!(AuthUser::new(1, "vovan", "qwerty"))).await
+    pub fn test_users() -> Result<InMemAuthUserProvider, AuthUserProviderError> {
+        Self::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
     }
 }
 
@@ -103,8 +92,8 @@ impl AuthUserProvider for InMemAuthUserProvider {
     type User = AuthUser;
     async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
         let state = self.state.read().await;
-        // TODO: use case-insensitive username comparing
-        extract_cloned_user(state.users_by_username.get(username)).await
+        let username_lc = username.to_lowercase();
+        extract_cloned_user(state.users_by_username.get(username_lc.as_str())).await
     }
 
     async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
@@ -157,7 +146,7 @@ mod tests {
         let bb = some_async_fn_2().await;
         println!("bb: {}", bb);
 
-        let users = InMemAuthUserProvider::test_users().await.test_unwrap();
+        let users = InMemAuthUserProvider::test_users().test_unwrap();
 
         // -----------------------------------------------------------------------------------------
         let usr_opt_res = users.get_user_by_id(&1i64).await;
