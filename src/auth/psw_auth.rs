@@ -30,17 +30,6 @@ async fn is_authenticated <
 }
 
 
-#[inline] // TODO: remove from there
-pub async fn validate_auth_temp <
-    PC: PasswordComparator + Clone + Sync + Send,
-    > (
-    auth_session: AuthSession<PC>, original_uri: OriginalUri,
-    basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
-    req: axum::extract::Request, next: axum::middleware::Next) -> http::Response<Body> {
-    validate_auth_by_password(auth_session, original_uri, basic_auth_creds, req, next).await
-}
-
-
 pub async fn validate_auth_by_password<
     PC: PasswordComparator + Clone + Sync + Send,
     >(
@@ -145,8 +134,8 @@ impl  <
     pub async fn is_authenticated (
         &self,
         auth_session_user: &Option<AuthUser>,
-        original_uri: &OriginalUri,
-        basic_auth_creds: &Option<TypedHeader<AuthorizationHeader<Basic>>>,
+        original_uri: &OriginalUri, // TODO: try to remove
+        basic_auth_creds: &Option<TypedHeader<AuthorizationHeader<Basic>>>, // TODO: try to remove
     ) -> Result<(), UnauthenticatedAction> {
 
         if !self.basic_auth_mode.ignored() {
@@ -234,10 +223,7 @@ impl<
             None => Err(Self::Error::NoUser),
             Some(usr) => {
                 let usr_psw = usr.password.as_ref().map(|s|s.as_str()).unwrap_or("");
-                // if usr.username == creds.username && usr.psw == creds.password {
-                // TODO: use case-insensitive username comparing
-                if usr.username == creds.username &&
-                    PswComparator::passwords_equal(usr_psw, creds.password.as_str()) {
+                if !usr_psw.is_empty() && PswComparator::passwords_equal(usr_psw, creds.password.as_str()) {
                     Ok(Some(usr.clone()))
                 } else {
                     Err(Self::Error::IncorrectUsernameOrPsw)

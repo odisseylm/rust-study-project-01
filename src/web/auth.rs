@@ -39,13 +39,11 @@ mod post {
     use super::*;
 
     pub(super) mod login {
-        use axum_login::Error;
         use log::error;
         use crate::auth::psw_auth::AuthCredentials as PasswordCreds;
         use crate::auth::composite_auth::AuthCredentials as Credentials;
-        // use crate::rest::auth::{ AuthUser, AuthnBackend, AuthSession, AuthBackendError };
         use crate::rest::auth::{ AuthSession, AuthBackendError };
-        use crate::rest::oauth::CSRF_STATE_KEY; // TODO: from another package
+        use crate::rest::oauth::CSRF_STATE_KEY;
         use super::*;
 
         pub async fn password(
@@ -54,35 +52,32 @@ mod post {
         ) -> impl IntoResponse {
             let auth_res: Result<Option<crate::auth::AuthUser>, axum_login::Error<crate::auth::composite_auth::AuthnBackend>> = auth_session.authenticate(
                 Credentials::Password(creds.clone())).await;
-            // let auth_res: Result<Option<AuthUser>, axum_login::Error<AuthBackendError>> = auth_session.authenticate(
-            //     Credentials::Password(creds.clone())).await;
             let user = match auth_res {
                 Ok(Some(user)) => user,
-                // Ok(None) | Err(AuthBackendError::NoUser) => {
                 Ok(None) => {
                     return LoginTemplate {
-                        message: Some("Invalid credentials.".to_string()),
-                        next: creds.next,
-                    }
-                    .into_response()
+                            message: Some("Invalid credentials.".to_string()),
+                            next: creds.next,
+                        }
+                        .into_response()
                 }
                 Err(err) => {
                     match err {
-                        Error::Session(err) => {
+                        axum_login::Error::Session(err) => {
                             let err2 = err.to_string();
                             println!("{}", err2);
                             error!("Authentication session error [{}]", err)
                         }
-                        Error::Backend(err) => {
+                        axum_login::Error::Backend(err) => {
                             let err2 = err.to_string();
                             println!("{}", err2);
                             match err {
                                 AuthBackendError::NoUser | AuthBackendError::IncorrectUsernameOrPsw => {
                                     return LoginTemplate {
-                                        message: Some("Invalid credentials.".to_string()),
-                                        next: creds.next,
-                                    }
-                                    .into_response()
+                                            message: Some("Invalid credentials.".to_string()),
+                                            next: creds.next,
+                                        }
+                                        .into_response()
                                 }
                                 // AuthBackendError::UserProviderError(_) => {}
                                 // AuthBackendError::Sqlx(_) => {}
@@ -137,7 +132,7 @@ mod post {
 }
 
 mod get {
-    use crate::auth::temp::AuthSession;
+    use crate::auth::composite_auth::AuthSession;
     use super::*;
 
     pub async fn login(Query(NextUrl { next }): Query<NextUrl>) -> LoginTemplate {

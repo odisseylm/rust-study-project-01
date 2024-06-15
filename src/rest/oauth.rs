@@ -3,11 +3,10 @@ use axum::{
     extract::Query,
     http::StatusCode,
     response::{IntoResponse, Redirect},
-    routing::get,
+    routing::get as GET,
     Router,
 };
 use axum_login::tower_sessions::Session;
-//use oauth2::CsrfToken;
 use serde::Deserialize;
 
 use crate::web::auth::{ LoginTemplate, NEXT_URL_KEY };
@@ -21,7 +20,7 @@ pub struct AuthzResp {
 }
 
 pub fn router() -> Router<()> {
-    Router::new().route("/oauth/callback", get(self::get::callback))
+    Router::new().route("/oauth/callback", GET(get::callback))
 }
 
 mod get {
@@ -40,12 +39,7 @@ mod get {
             return StatusCode::BAD_REQUEST.into_response();
         };
 
-        // let creds = AuthCredentials::OAuth(OAuthCreds {
-        let creds = OAuthCreds {
-            code,
-            old_state,
-            new_state,
-        };
+        let creds = OAuthCreds { code, old_state, new_state, };
 
         let user = match auth_session.authenticate(creds).await {
             Ok(Some(user)) => user,
