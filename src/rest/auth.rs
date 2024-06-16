@@ -1,19 +1,18 @@
 use std::sync::Arc;
 use axum::body::Body;
 use axum::extract::Request;
-use axum::response::{IntoResponse, Response};
-use oauth2::basic::BasicClient;
+use axum::response::{ IntoResponse, Response };
 use oauth2_auth::OAuth2AuthBackend;
-use crate::auth::{HttpBasicAuthMode, InMemAuthUserProvider, LoginFormAuthMode, PlainPasswordComparator };
+use crate::auth::{AuthBackendMode, InMemAuthUserProvider, LoginFormAuthConfig, PlainPasswordComparator};
 use crate::auth::composite_auth::CompositeAuthnBackend;
-use crate::auth::oauth2_auth::Oauth2Config;
+use crate::auth::oauth2_auth::OAuth2Config;
 use crate::auth::oauth2_auth;
 
 
 pub type AuthUser = crate::auth::AuthUser;
 pub type AuthCredentials = crate::auth::composite_auth::CompositeAuthCredentials;
-pub type AuthnBackend = crate::auth::composite_auth::CompositeAuthnBackend;
-pub type AuthSession = axum_login::AuthSession<CompositeAuthnBackend>;
+pub type AuthnBackend = CompositeAuthnBackend;
+pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
 pub type AuthBackendError = crate::auth::AuthBackendError;
 
 
@@ -75,11 +74,9 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
         .with_same_site(SameSite::Lax) // Ensure we send the cookie from the OAuth redirect.
         .with_expiry(Expiry::OnInactivity(Duration::days(1)));
 
-    // Auth service.
+    // This combines the session layer with our backend to establish the auth service
+    // which will provide the auth session as a request extension.
     //
-    // This combines the session layer with our backend to establish the auth
-    // service which will provide the auth session as a request extension.
-
     let usr_provider: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::test_users() ?);
 
     // Rust does not support casting dyn sub-trait to dyn super-trait :-(
@@ -88,33 +85,35 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     // but we need to use usr_provider_impl.clone(), NOT Arc::clone(&usr_provider_impl) !!!
     // !!! With Arc::clone(&usr_provider_impl) auto casting does NOT work !!!
     //
-    // let std_usr_provider: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = usr_provider_impl.clone();
-    // let oauth2_usr_store: Arc<dyn crate::auth::OAuth2UserStore<User = AuthUser> + Sync + Send> = usr_provider_impl; // or .clone();
-
-    let config = Oauth2Config::git_from_env() ?;
+    let config = OAuth2Config::git_from_env() ?;
     let oauth2_backend_opt: Option<OAuth2AuthBackend> = match config {
         None => None,
         Some(config) => {
-            let oauth2_basic_client: BasicClient = oauth2_auth::create_basic_client(&config) ?;
+            let mut config = config.clone();
+            // config.auth_mode = AuthBackendMode::AuthProposed;
+            config.login_url = "/login";
+
             Some(OAuth2AuthBackend::new(
                 usr_provider.clone(),
                 usr_provider.clone(), // it is automatically cast to another 'dyn' object. It should be done THERE!
-                LoginFormAuthMode::LoginFormAuthProposed { login_form_url: Some("/login") },
-                oauth2_basic_client,
-            ))
+                config,
+                None, // oauth2_basic_client,
+            ) ?)
         }
     };
 
     let http_basic_auth_backend = crate::auth::HttpBasicAuthBackend::<PlainPasswordComparator>::new(
         usr_provider.clone(),
-        // It makes sense for pure server SOA
-        // BasicAuthMode::BasicAuthProposed,
-        HttpBasicAuthMode::BasicAuthSupported,
+        // AuthBackendMode::AuthProposed, // It makes sense for pure server SOA (especially for testing)
+        AuthBackendMode::AuthSupported,
     );
     let login_form_auth_backend = crate::auth::LoginFormAuthBackend::<PlainPasswordComparator>::new(
         usr_provider.clone(),
         // It makes sense for web-app
-        LoginFormAuthMode::LoginFormAuthProposed { login_form_url: Some("/login") }
+        LoginFormAuthConfig {
+            auth_mode: AuthBackendMode::AuthProposed,
+            login_url: "/login",
+        },
     );
 
     let backend = AuthnBackend::new_raw(

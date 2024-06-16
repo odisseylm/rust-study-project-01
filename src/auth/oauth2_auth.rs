@@ -1,8 +1,9 @@
 use std::env::VarError;
 use std::sync::Arc;
 use axum::extract::OriginalUri;
+use oauth2::basic::BasicClient;
 use crate::auth::auth_backend::AuthnBackendAttributes;
-use super::{ auth_user, LoginFormAuthMode};
+use super::{auth_user, AuthBackendMode};
 use super::error::AuthBackendError;
 use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
 
@@ -12,8 +13,6 @@ pub trait OAuth2UserStore: AuthUserProvider {
     async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError>;
 }
 
-
-// pub type OAuth2AuthSession = axum_login::AuthSession<OAuth2AuthBackend>;
 
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct OAuth2AuthCredentials {
@@ -27,7 +26,6 @@ pub struct OAuth2AuthCredentials {
 #[readonly::make]
 pub struct OAuth2AuthBackend {
     state: Arc<AuthBackendState>,
-    pub login_from_auth_mode: LoginFormAuthMode,
 }
 
 
@@ -35,23 +33,10 @@ pub struct OAuth2AuthBackend {
 struct AuthBackendState {
     user_provider: Arc<dyn AuthUserProvider<User = auth_user::AuthUser> + Send + Sync>,
     oauth2_user_store: Arc<dyn OAuth2UserStore<User = auth_user::AuthUser> + Send + Sync>,
-    client: oauth2::basic::BasicClient,
+    config: OAuth2Config,
+    client: BasicClient,
 }
 
-/*
-impl Clone for Backend {
-    fn clone(&self) -> Self {
-        Backend {
-            user_provider: self.user_provider.clone(),
-            client: self.client.clone(),
-        }
-    }
-    fn clone_from(&mut self, source: &Self) {
-        self.user_provider = source.user_provider.clone();
-        self.client = source.client.clone();
-    }
-}
-*/
 
 #[derive(Debug, serde::Deserialize)]
 struct UserInfo {
@@ -62,29 +47,33 @@ impl OAuth2AuthBackend {
     pub fn new(
         user_provider: Arc<dyn AuthUserProvider<User = auth_user::AuthUser> + Send + Sync>,
         oauth2_user_store: Arc<dyn OAuth2UserStore<User = auth_user::AuthUser> + Send + Sync>,
-        login_form_auth_mode: LoginFormAuthMode,
-        client: oauth2::basic::BasicClient,
-    ) -> Self {
-        OAuth2AuthBackend { state: Arc::new(AuthBackendState {
-            user_provider: Arc::clone(&user_provider),
-            oauth2_user_store: Arc::clone(&oauth2_user_store),
-            client: client.clone(),
-        },), login_from_auth_mode: login_form_auth_mode }
+        config: OAuth2Config,
+        client: Option<BasicClient>,
+    ) -> Result<Self, AuthBackendError> {
+
+        // ?? Strange... no Option.or_else_res() function.
+        // let client: Result<BasicClient,AuthBackendError> = client.clone()
+        //     .ok_or_else(||AuthBackendError::NoRequestedBackend)
+        //     .or_else(|_| create_basic_client(&config));
+
+        let client: BasicClient = match client {
+            None => create_basic_client(&config) ?,
+            Some(client) => client,
+        };
+        Ok(OAuth2AuthBackend {
+            state: Arc::new(AuthBackendState {
+                user_provider: Arc::clone(&user_provider),
+                oauth2_user_store: Arc::clone(&oauth2_user_store),
+                config,
+                client,
+            })
+        })
     }
 
     #[allow(unused_qualifications)]
     pub fn authorize_url(&self) -> (oauth2::url::Url, oauth2::CsrfToken) {
         self.state.client.authorize_url(oauth2::CsrfToken::new_random).url()
     }
-
-    /*
-    pub async fn is_authenticated (&self, auth_session_user: &Option<AuthUser>, original_uri: &OriginalUri,) -> Result<(), UnauthenticatedAction> {
-        if auth_session_user.is_some() { Ok(()) }
-        // else { Err(UnauthenticatedAction::ProposeLoginForm { login_form_url: None, initial_url: Some(original_uri.to_string()) }) }
-        // TODO: retest using initial URL. It should work without that.
-        else { Err(UnauthenticatedAction::ProposeLoginForm { login_form_url: None, initial_url: None, }) }
-    }
-    */
 }
 
 #[axum::async_trait]
@@ -113,8 +102,9 @@ impl axum_login::AuthnBackend for OAuth2AuthBackend {
             .map_err(Self::Error::OAuth2) ?;
 
         // Use access token to request user info.
+        let config = &self.state.config;
         let user_info = reqwest::Client::new()
-            .get("https://api.github.com/user") // TODO: move to config
+            .get(config.get_auth_user_url.as_str())
             // See: https://docs.github.com/en/rest/overview/resources-in-the-rest-api?apiVersion=2022-11-28#user-agent-required
             .header(USER_AGENT.as_str(), "axum-login")
             .header(AUTHORIZATION.as_str(), format!("Bearer {}", token_res.access_token().secret()))
@@ -138,7 +128,7 @@ impl axum_login::AuthnBackend for OAuth2AuthBackend {
 }
 
 
-pub fn create_basic_client(config: &Oauth2Config) -> Result<oauth2::basic::BasicClient, AuthBackendError> {
+pub fn create_basic_client(config: &OAuth2Config) -> Result<BasicClient, AuthBackendError> {
 
     let orig_config = config;
     let config = config.clone();
@@ -157,8 +147,13 @@ pub fn create_basic_client(config: &Oauth2Config) -> Result<oauth2::basic::Basic
 }
 
 
-#[derive(Clone)]
-pub struct Oauth2Config {
+#[derive(Debug, Clone)]
+pub struct OAuth2Config {
+    pub auth_mode: AuthBackendMode,
+    pub login_url: &'static str,
+
+    // Get the authenticated user. See https://docs.github.com/en/rest/users/users?apiVersion=2022-11-28#get-the-authenticated-user
+    pub get_auth_user_url: String,
     pub client_id: String,
     pub client_secret: String,
     pub auth_url: String,
@@ -171,8 +166,8 @@ pub enum Oauth2ConfigError {
     Error(&'static str),
 }
 
-impl Oauth2Config {
-    pub fn git_from_env() -> Result<Option<Oauth2Config>, Oauth2ConfigError> {
+impl OAuth2Config {
+    pub fn git_from_env() -> Result<Option<OAuth2Config>, Oauth2ConfigError> {
         let client_id_env = std::env::var("CLIENT_ID");
         let client_secret_env = std::env::var("CLIENT_SECRET");
 
@@ -189,8 +184,12 @@ impl Oauth2Config {
 
         let auth_url = "https://github.com/login/oauth/authorize".to_string();
         let token_url = "https://github.com/login/oauth/access_token".to_string();
+        let get_auth_user_url = "https://api.github.com/user".to_string();
 
-        Ok(Some(Oauth2Config {
+        Ok(Some(OAuth2Config {
+            auth_mode: AuthBackendMode::AuthSupported,
+            login_url: "/oauth2/login",
+            get_auth_user_url,
             client_id,
             client_secret,
             auth_url,
@@ -210,6 +209,6 @@ impl AuthnBackendAttributes for OAuth2AuthBackend {
     fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {
         // TODO: add simple oauth2 login form
         let initial_uri: Option<String> = req.extensions().get::<OriginalUri>().map(|uri|uri.to_string());
-        Some(super::login_form_auth::ProposeLoginFormAuthAction { login_form_url: Some("/oauth2/login"), initial_url: initial_uri })
+        Some(super::login_form_auth::ProposeLoginFormAuthAction { login_url: Some(self.state.config.login_url), initial_url: initial_uri })
     }
 }

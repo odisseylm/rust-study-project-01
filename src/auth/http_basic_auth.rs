@@ -7,18 +7,11 @@ use crate::auth::http::http_unauthenticated_401_response;
 use crate::auth::psw_auth::PswAuthBackendImpl;
 
 use super::psw_auth;
-use super::auth_backend::{ AuthnBackendAttributes, RequestUserAuthnBackend };
+use super::auth_backend::{AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend};
 use super::error::AuthBackendError;
 use super::auth_user_provider::AuthUserProvider;
 use super::auth_user::AuthUser;
 use super::psw::PasswordComparator;
-
-
-#[derive(Copy, Clone, Debug)]
-pub enum HttpBasicAuthMode { // TODO: probably we can remove it, or replace with something more abstract ???
-    BasicAuthSupported,
-    BasicAuthProposed,
-}
 
 
 #[derive(Clone)]
@@ -27,7 +20,7 @@ pub struct HttpBasicAuthBackend <
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > {
     psw_backend: PswAuthBackendImpl<PswComparator>,
-    pub basic_auth_mode: HttpBasicAuthMode,
+    pub auth_mode: AuthBackendMode,
 }
 
 
@@ -36,18 +29,17 @@ impl <
 > HttpBasicAuthBackend<PswComparator> {
     pub fn new(
         users_provider: Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send>,
-        basic_auth_mode: HttpBasicAuthMode,
+        auth_mode: AuthBackendMode,
     ) -> HttpBasicAuthBackend<PswComparator> {
         HttpBasicAuthBackend::<PswComparator> {
             psw_backend: PswAuthBackendImpl::new(users_provider.clone()),
-            basic_auth_mode,
+            auth_mode,
         }
     }
 }
 
 
 #[axum::async_trait]
-// #[inherent::inherent]
 impl<
     PswComparator: PasswordComparator + Clone + Sync + Send,
     > axum_login::AuthnBackend for HttpBasicAuthBackend<PswComparator> {
@@ -71,7 +63,6 @@ impl<
 
 
 #[axum::async_trait]
-// #[inherent::inherent]
 impl <
     PswComparator: PasswordComparator + Clone + Sync + Send,
     > AuthnBackendAttributes for HttpBasicAuthBackend<PswComparator> {
@@ -81,7 +72,7 @@ impl <
         self.psw_backend.users_provider()
     }
     fn propose_authentication_action(&self, _: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {
-        if let HttpBasicAuthMode::BasicAuthProposed = self.basic_auth_mode
+        if let AuthBackendMode::AuthProposed = self.auth_mode
         { Some(ProposeHttpBasicAuthAction) } else { None }
     }
 }
@@ -110,9 +101,7 @@ impl fmt::Debug for BasicAuthCreds {
 }
 
 #[async_trait::async_trait]
-// #[inherent::inherent]
 impl<S> axum::extract::FromRequestParts<S> for BasicAuthCreds where S: Send + Sync {
-    // type Rejection = core::convert::Infallible; // TODO: put this kind of error to my docs
     type Rejection = TypedHeaderRejection;
 
     async fn from_request_parts(parts: &mut http::request::Parts, state: &S) -> Result<Self, Self::Rejection> {
@@ -128,7 +117,6 @@ impl<S> axum::extract::FromRequestParts<S> for BasicAuthCreds where S: Send + Sy
 
 
 #[axum::async_trait]
-// #[inherent::inherent]
 impl <
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > RequestUserAuthnBackend for HttpBasicAuthBackend<PswComparator> {

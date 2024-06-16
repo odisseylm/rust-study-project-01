@@ -3,6 +3,13 @@ use async_trait::async_trait;
 use crate::auth::{AuthUser, AuthUserProvider};
 
 
+#[derive(Debug, Copy, Clone)]
+pub enum AuthBackendMode {
+    AuthSupported,
+    AuthProposed,
+}
+
+
 /// In case of
 /// * HTTP Basic authentication it is sending corresponding HTTP header
 /// * Login form authentication it is redirecting to HTML form
@@ -57,5 +64,3 @@ pub trait RequestUserAuthnBackend : axum_login::AuthnBackend + Clone + Send + Sy
     }
 
 }
-
-

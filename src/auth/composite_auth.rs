@@ -8,11 +8,11 @@ use axum_login::UserId;
 use log::{ error };
 use oauth2::basic::BasicClient;
 use psw_auth::PswAuthCredentials;
-use crate::auth::auth_backend::{ AuthnBackendAttributes, RequestUserAuthnBackend };
-use crate::auth::http_basic_auth::{HttpBasicAuthMode, HttpBasicAuthBackend};
-use crate::auth::login_form_auth::{LoginFormAuthBackend, LoginFormAuthMode};
+use crate::auth::auth_backend::{ AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend };
+use crate::auth::http_basic_auth::HttpBasicAuthBackend;
+use crate::auth::login_form_auth::LoginFormAuthBackend;
 
-use super::{AuthUserProvider, OAuth2AuthBackend, OAuth2AuthCredentials, psw_auth };
+use super::{AuthUserProvider, LoginFormAuthConfig, OAuth2AuthBackend, OAuth2AuthCredentials, psw_auth};
 use super::auth_user::AuthUser;
 use super::error::AuthBackendError;
 use super::psw::PlainPasswordComparator;
@@ -33,8 +33,11 @@ impl CompositeAuthnBackend {
     pub fn test_users() -> Result<CompositeAuthnBackend, anyhow::Error> {
         let user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> = Arc::new(InMemAuthUserProvider::test_users() ?);
         Ok(CompositeAuthnBackend {
-            http_basic_auth_backend: Some(HttpBasicAuthBackend::new(user_provider.clone(), HttpBasicAuthMode::BasicAuthProposed)),
-            login_form_auth_backend: Some(LoginFormAuthBackend::new(user_provider.clone(), LoginFormAuthMode::LoginFormAuthSupported)),
+            http_basic_auth_backend: Some(HttpBasicAuthBackend::new(user_provider.clone(), AuthBackendMode::AuthProposed)),
+            login_form_auth_backend: Some(LoginFormAuthBackend::new(user_provider.clone(), LoginFormAuthConfig {
+                auth_mode: AuthBackendMode::AuthSupported,
+                login_url: "/form/login",
+            })),
             users_provider: user_provider,
             oauth2_backend: None,
         })
@@ -170,8 +173,6 @@ impl axum_login::AuthnBackend for CompositeAuthnBackend {
         self.users_provider.get_user_by_id(user_id).await.map_err(From::from)
     }
 }
-
-// pub type AuthSession = axum_login::AuthSession<CompositeAuthnBackend>;
 
 
 #[derive(Debug, Clone, serde::Deserialize)]

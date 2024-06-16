@@ -3,26 +3,21 @@ use axum::body::Body;
 use axum::extract::OriginalUri;
 use axum::http::StatusCode;
 use psw_auth::PswAuthCredentials;
-use crate::auth::auth_backend::{AuthnBackendAttributes, ProposeAuthAction};
-use crate::auth::http::url_encode;
+use crate::auth::AuthBackendMode;
 
-use super::psw_auth;
-use super::psw_auth::PswAuthBackendImpl;
+use super::auth_backend::{ AuthnBackendAttributes, ProposeAuthAction };
+use super::http::url_encode;
+use super::psw_auth::{ self, PswAuthBackendImpl };
 use super::error::AuthBackendError;
 use super::auth_user_provider::AuthUserProvider;
 use super::auth_user::AuthUser;
 use super::psw::PasswordComparator;
 
 
-// pub type LoginFormAuthAuthSession <
-//     PswComparator, // : PasswordComparator + Clone + Sync + Send,
-// > = axum_login::AuthSession<LoginFormAuthBackend<PswComparator>>;
-
-
-#[derive(Copy, Clone, Debug)]
-pub enum LoginFormAuthMode { // TODO: probably we can remove it, or replace with something more abstract ???
-    LoginFormAuthSupported,
-    LoginFormAuthProposed { login_form_url: Option<&'static str> },
+#[derive(Debug, Clone)]
+pub struct LoginFormAuthConfig {
+    pub auth_mode: AuthBackendMode,
+    pub login_url: &'static str,
 }
 
 
@@ -32,7 +27,7 @@ pub struct LoginFormAuthBackend <
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > {
     psw_backend: PswAuthBackendImpl<PswComparator>,
-    pub login_from_auth_mode: LoginFormAuthMode,
+    pub config: LoginFormAuthConfig,
 }
 
 impl <
@@ -40,11 +35,11 @@ impl <
 > LoginFormAuthBackend<PswComparator> {
     pub fn new(
         users_provider: Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send>,
-        login_from_auth_mode: LoginFormAuthMode,
+        config: LoginFormAuthConfig,
     ) -> LoginFormAuthBackend<PswComparator> {
         LoginFormAuthBackend::<PswComparator> {
             psw_backend: PswAuthBackendImpl::new(users_provider.clone()),
-            login_from_auth_mode,
+            config,
         }
     }
 }
@@ -82,15 +77,15 @@ impl <
         self.psw_backend.users_provider()
     }
     fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {
-        if let LoginFormAuthMode::LoginFormAuthProposed { login_form_url } = self.login_from_auth_mode {
-            let initial_uri: Option<String> = req.extensions().get::<OriginalUri>().map(|uri|uri.to_string());
-            Some(ProposeLoginFormAuthAction { login_form_url, initial_url: initial_uri })
+        if let AuthBackendMode::AuthProposed = self.config.auth_mode {
+            let initial_url: Option<String> = req.extensions().get::<OriginalUri>().map(|uri|uri.to_string());
+            Some(ProposeLoginFormAuthAction { login_url: Some(self.config.login_url), initial_url })
         } else { None }
     }
 }
 
 pub struct ProposeLoginFormAuthAction {
-    pub login_form_url: Option<&'static str>,
+    pub login_url: Option<&'static str>,
     pub initial_url: Option<String>,
 }
 impl ProposeAuthAction for ProposeLoginFormAuthAction { }
@@ -98,7 +93,7 @@ impl ProposeAuthAction for ProposeLoginFormAuthAction { }
 impl axum::response::IntoResponse for ProposeLoginFormAuthAction {
     #[allow(dead_code)] // !! It is really used IMPLICITLY !!
     pub fn into_response(self) -> axum::response::Response<Body> {
-        let login_url = self.login_form_url.unwrap_or("/login");
+        let login_url = self.login_url.unwrap_or("/login");
         let login_url = match self.initial_url {
             None => login_url.to_string(),
             Some(ref initial_url) => format!("{}?next={}", login_url, url_encode(initial_url.as_str())),
