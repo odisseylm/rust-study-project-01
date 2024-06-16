@@ -303,6 +303,12 @@ impl <
             _pd: PhantomData,
         }
     }
+    pub(crate) fn users_provider(&self) -> Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send> {
+        self.users_provider.clone()
+    }
+    // pub(crate) fn users_provider_ref(&self) -> &dyn AuthUserProvider<User = AuthUser> {
+    //     self.users_provider.deref()
+    // }
 }
 
 
@@ -323,13 +329,14 @@ impl<
         };
 
         match usr_opt {
-            None => Err(Self::Error::NoUser),
+            // None => Err(Self::Error::NoUser),
+            None => Ok(None),
             Some(usr) => {
                 let usr_psw = usr.password.as_ref().map(|s|s.as_str()).unwrap_or("");
                 if !usr_psw.is_empty() && PswComparator::passwords_equal(usr_psw, creds.password.as_str()) {
                     Ok(Some(usr.clone()))
                 } else {
-                    Err(Self::Error::IncorrectUsernameOrPsw)
+                    Ok(None)
                 }
             }
         }

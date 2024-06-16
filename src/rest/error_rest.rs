@@ -1,5 +1,5 @@
-
 use core::fmt;
+use askama_axum::Response;
 use axum::body::Body;
 use axum::http::StatusCode;
 use axum::Json;
@@ -8,7 +8,6 @@ use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Basic;
 use axum_extra::TypedHeader;
 use serde_json::Value;
-use crate::auth::UnauthenticatedAction;
 
 
 // Error processing:
@@ -21,8 +20,12 @@ use crate::auth::UnauthenticatedAction;
 #[derive(Debug)]
 pub enum RestAppError {
     AnyhowError(anyhow::Error),
-    Unauthenticated(UnauthenticatedAction),
+
+    // TODO: Do I need them???
+    Unauthenticated, //(UnauthenticatedAction),
     Unauthorized,
+    JsonResultError(Response),
+
     IllegalArgument(anyhow::Error),
     // ...
     // other errors if it is needed
@@ -33,8 +36,9 @@ impl fmt::Display for RestAppError {
         match self {
             RestAppError::AnyhowError(ref anyhow_err) => { write!(f, "AnyhowError: {}", anyhow_err) }
             RestAppError::Unauthorized => { write!(f, "NotAuthorized") }
-            RestAppError::Unauthenticated(_) => { write!(f, "NotAuthenticated") }
+            RestAppError::Unauthenticated => { write!(f, "NotAuthenticated") }
             RestAppError::IllegalArgument(ref anyhow_err) => { write!(f, "AnyhowError: {}", anyhow_err) }
+            RestAppError::JsonResultError(_) => { write!(f, "JsonResultError") }
         }
     }
 }
@@ -42,20 +46,26 @@ impl fmt::Display for RestAppError {
 
 // Tell axum how to convert `AppError` into a response.
 impl IntoResponse for RestAppError {
-    fn into_response(self) -> axum::response::Response {
+    fn into_response(self) -> Response {
         match self {
             RestAppError::AnyhowError(ref err) =>
                 ( StatusCode::INTERNAL_SERVER_ERROR, format!("Internal error: {}", err) ).into_response(),
-            RestAppError::Unauthenticated(propose_action) =>
-                propose_action.into_response(),
+
+            // TODO: Do we need it???
+            RestAppError::Unauthenticated =>
+                StatusCode::UNAUTHORIZED.into_response(),
+            // RestAppError::Unauthenticated(propose_action) =>
+            //     propose_action.into_response(),
             RestAppError::Unauthorized =>
                 ( StatusCode::FORBIDDEN, "Unauthorized".to_string() ).into_response(),
             RestAppError::IllegalArgument(ref err) =>
                 ( StatusCode::BAD_REQUEST, format!("Illegal arguments: {}", err) ).into_response(),
+            RestAppError::JsonResultError(response) => response,
         }
     }
 }
 
+/*
 impl IntoResponse for UnauthenticatedAction {
     fn into_response(self) -> askama_axum::Response {
         match self {
@@ -109,6 +119,7 @@ static REDIRECT_LOGIN_PAGE_CONTENT: &'static str = r#"
   </body>
 </html>
 "#;
+*/
 
 /*
 // I do not want to add additional lib only for this html block.
@@ -174,14 +185,20 @@ impl<E> From<E> for RestAppError where E: Into<anyhow::Error> {
 }
 
 
-pub fn authenticate_basic(creds: &Option<TypedHeader<Authorization<Basic>>>) -> Result<(), RestAppError> {
+pub fn test_authenticate_basic(creds: &Option<TypedHeader<Authorization<Basic>>>) -> Result<(), RestAppError> {
+    let err_response: Response = Response::builder()
+            .status(StatusCode::UNAUTHORIZED)
+            .header("WWW-Authenticate", "Basic")
+            .body(Body::from("Unauthenticated")) // or Body::empty() // Json(json!({"error": "Unauthorized"}))
+            .unwrap_or_else(|_err| StatusCode::UNAUTHORIZED.into_response());
+
     match creds {
-        None => return Err(RestAppError::Unauthenticated(UnauthenticatedAction::ProposeBase64)),
+        None => return Err(RestAppError::JsonResultError(err_response)),
         Some(TypedHeader(Authorization(ref creds))) => {
             let usr = creds.username();
             let psw = creds.password();
             if usr != "vovan" || psw != "qwerty" {
-                return Err(RestAppError::Unauthorized)
+                return Err(RestAppError::JsonResultError(err_response));
             }
         }
     }

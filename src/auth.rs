@@ -26,7 +26,6 @@ mod login_form_auth;
 
 pub use auth_user::AuthUser;
 pub use error::AuthBackendError;
-pub use error::UnauthenticatedAction;
 
 pub use auth_user_provider::AuthUserProvider;
 pub use auth_user_provider::AuthUserProviderError;
@@ -46,7 +45,7 @@ pub use http_basic_auth::HttpBasicAuthMode;
 // pub use http_basic_auth::BasicAuthCreds;
 
 pub use login_form_auth::LoginFormAuthBackend;
-pub use login_form_auth::LoginFormAuthAuthSession;
+// pub use login_form_auth::LoginFormAuthAuthSession;
 pub use login_form_auth::LoginFormAuthMode;
 
 pub use oauth2_auth::{ OAuth2AuthBackend, OAuth2AuthCredentials };

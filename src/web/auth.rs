@@ -42,7 +42,7 @@ mod post {
         use log::error;
         use crate::auth::psw_auth::PswAuthCredentials as PasswordCreds;
         use crate::auth::composite_auth::{CompositeAuthCredentials as Credentials, CompositeAuthnBackend};
-        use crate::rest::auth::{ AuthSession, AuthBackendError };
+        use crate::rest::auth::AuthSession;
         use crate::rest::oauth::CSRF_STATE_KEY;
         use super::*;
 
@@ -72,13 +72,13 @@ mod post {
                             let err2 = err.to_string();
                             println!("{}", err2);
                             match err {
-                                AuthBackendError::NoUser | AuthBackendError::IncorrectUsernameOrPsw => {
-                                    return LoginTemplate {
-                                            message: Some("Invalid credentials.".to_string()),
-                                            next: creds.next,
-                                        }
-                                        .into_response()
-                                }
+                                // AuthBackendError::NoUser | AuthBackendError::IncorrectUsernameOrPsw => {
+                                //     return LoginTemplate {
+                                //             message: Some("Invalid credentials.".to_string()),
+                                //             next: creds.next,
+                                //         }
+                                //         .into_response()
+                                // }
                                 // AuthBackendError::UserProviderError(_) => {}
                                 // AuthBackendError::Sqlx(_) => {}
                                 // AuthBackendError::Reqwest(_) => {}

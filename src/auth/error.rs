@@ -1,27 +1,35 @@
 use super::auth_user_provider::AuthUserProviderError;
 
 
+/*
 #[derive(Debug)]
 pub enum UnauthenticatedAction {
     NoAction,
     ProposeBase64,
     ProposeLoginForm { login_form_url: Option<&'static str>, initial_url: Option<String> },
 }
+*/
 
 
 // This enum contains ALL possible errors for ANY auth Backend.
 // Initially every impl had each own error enum... but I tired to convert them :-)
 #[derive(Debug, thiserror::Error)]
 pub enum AuthBackendError {
-    #[error("NoUser")]
-    NoUser,
+    // axum-login treats these cases as Ok(None)
+    // We have to use the same approach in our code to conform idea.
+    //
+    // #[error("NoUser")]
+    // NoUser,
+    //
+    // #[error("NoCredentials")]
+    // NoCredentials,
+    //
+    // #[error("IncorrectUsernameOrPsw")]
+    // IncorrectUsernameOrPsw,
 
-    #[error("NoCredentials")]
-    NoCredentials,
-
-    #[error("IncorrectUsernameOrPsw")]
-    IncorrectUsernameOrPsw,
-
+    // ----------------------------------------------------------------------------
+    //                            Internal errors
+    //
     #[error("UserProviderError")]
     UserProviderError(AuthUserProviderError),
 

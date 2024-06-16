@@ -1,6 +1,7 @@
 use std::env::VarError;
 use std::sync::Arc;
-use super::{auth_user, LoginFormAuthMode};
+use crate::auth::auth_backend::AuthnBackendAttributes;
+use super::{ auth_user, LoginFormAuthMode};
 use super::error::AuthBackendError;
 use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
 
@@ -31,7 +32,8 @@ pub struct OAuth2AuthBackend {
 
 #[derive(Debug)]
 struct AuthBackendState {
-    user_provider: Arc<dyn OAuth2UserStore<User = auth_user::AuthUser> + Send + Sync>,
+    user_provider: Arc<dyn AuthUserProvider<User = auth_user::AuthUser> + Send + Sync>,
+    oauth2_user_store: Arc<dyn OAuth2UserStore<User = auth_user::AuthUser> + Send + Sync>,
     client: oauth2::basic::BasicClient,
 }
 
@@ -57,12 +59,14 @@ struct UserInfo {
 
 impl OAuth2AuthBackend {
     pub fn new(
-        user_provider: Arc<dyn OAuth2UserStore<User = auth_user::AuthUser> + Send + Sync>,
+        user_provider: Arc<dyn AuthUserProvider<User = auth_user::AuthUser> + Send + Sync>,
+        oauth2_user_store: Arc<dyn OAuth2UserStore<User = auth_user::AuthUser> + Send + Sync>,
         login_form_auth_mode: LoginFormAuthMode,
         client: oauth2::basic::BasicClient,
     ) -> Self {
         OAuth2AuthBackend { state: Arc::new(AuthBackendState {
             user_provider: Arc::clone(&user_provider),
+            oauth2_user_store: Arc::clone(&oauth2_user_store),
             client: client.clone(),
         },), login_from_auth_mode: login_form_auth_mode }
     }
@@ -120,7 +124,7 @@ impl axum_login::AuthnBackend for OAuth2AuthBackend {
             .await
             .map_err(Self::Error::Reqwest)?;
 
-        let user_res = self.state.user_provider.update_user_access_token(
+        let user_res = self.state.oauth2_user_store.update_user_access_token(
             user_info.login.as_str(), token_res.access_token().secret().as_str())
             .await
             .map_err(From::<AuthUserProviderError>::from);
@@ -191,5 +195,21 @@ impl Oauth2Config {
             auth_url,
             token_url,
         }))
+    }
+}
+
+
+#[axum::async_trait]
+impl AuthnBackendAttributes for OAuth2AuthBackend {
+    type ProposeAuthAction = super::login_form_auth::ProposeLoginFormAuthAction;
+
+    fn usr_provider(&self) -> Arc<dyn AuthUserProvider<User=auth_user::AuthUser> + Sync + Send> {
+        self.state.user_provider.clone()
+    }
+    fn propose_authentication_action(&self) -> Option<Self::ProposeAuthAction> {
+        // if let LoginFormAuthMode::LoginFormAuthProposed { login_form_url } = self.login_from_auth_mode
+        // { Some(ProposeLoginFormAuthAction { login_form_url, initial_url: None }) } else { None }
+        // TODO: add simple oauth2 login form
+        Some(super::login_form_auth::ProposeLoginFormAuthAction { login_form_url: Some("/oauth2/login"), initial_url: None })
     }
 }

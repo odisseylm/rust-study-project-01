@@ -9,7 +9,7 @@ use crate::util::UncheckedResultUnwrap;
 use crate::entities::entity;
 use crate::rest::app_dependencies::Dependencies;
 use crate::rest::dto;
-use crate::rest::error_rest::{authenticate_basic, RestAppError};
+use crate::rest::error_rest::{RestAppError, test_authenticate_basic};
 use crate::rest::auth::RequiredAuthenticationExtension;
 use crate::service::account_service::{ AccountService };
 
@@ -44,7 +44,7 @@ pub fn accounts_rest_router<
         .route("/api/manual_auth", get(|State(state): State<Arc<AccountRest<AccountS>>>,
                                         creds: Option<TypedHeader<Authorization<Basic>>>,
         | async move {
-            authenticate_basic(&creds) ?;
+            test_authenticate_basic(&creds) ?;
             state.get_current_user_accounts().to_json().await
         }))
         .with_state(shared_state.clone())

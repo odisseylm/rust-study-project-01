@@ -1,30 +1,23 @@
 use std::sync::Arc;
 use axum::extract::OriginalUri;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 
 use axum_login::UserId;
 use log::{ error };
 use oauth2::basic::BasicClient;
 use psw_auth::PswAuthCredentials;
-use crate::auth::auth_backend::RequestUserAuthnBackend;
+use crate::auth::auth_backend::{ AuthnBackendAttributes, RequestUserAuthnBackend };
 use crate::auth::http_basic_auth::{HttpBasicAuthMode, HttpBasicAuthBackend};
 use crate::auth::login_form_auth::{LoginFormAuthBackend, LoginFormAuthMode};
 use crate::rest::auth::AuthUser;
 
-use super::{AuthUserProvider, OAuth2AuthBackend, OAuth2AuthCredentials, psw_auth, UnauthenticatedAction};
+use super::{AuthUserProvider, OAuth2AuthBackend, OAuth2AuthCredentials, psw_auth };
 use super::auth_user;
 use super::error::AuthBackendError;
 use super::psw::PlainPasswordComparator;
 use super::mem_user_provider::InMemAuthUserProvider;
 
-
-/*
-pub async fn is_authenticated (
-    auth_session: AuthSession,
-    basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
-) -> bool {
-    auth_session.backend.is_authenticated(&auth_session.user, &basic_auth_creds)
-}
-*/
 
 
 // #[derive(Clone)]
@@ -73,7 +66,7 @@ impl CompositeAuthnBackend {
         &self,
         auth_session_user: &Option<AuthUser>,
         req: axum::extract::Request,
-    ) -> (axum::extract::Request, Result<(), UnauthenticatedAction>) {
+    ) -> (axum::extract::Request, Result<(), Response>) {
 
         use axum::extract::Request;
 
@@ -84,13 +77,13 @@ impl CompositeAuthnBackend {
         // TODO: move to map_auth_res_to_is_auth_res()
         let initial_uri: Option<String> = req.extensions().get::<OriginalUri>().map(|uri|uri.to_string());
 
-        let psw_aut_res_opt: (Request, Result<(), UnauthenticatedAction>) =
+        let psw_aut_res_opt: (Request, Result<(), Response>) =
             if let Some(ref backend) = self.http_basic_auth_backend {
                 let res: (Request, Result<Option<auth_user::AuthUser>, AuthBackendError>) = backend.call_authenticate_request::<()>(req).await;
                 let (req, res) = res;
-                let unauthenticated_action = map_auth_res_to_is_auth_res(&self, res, initial_uri);
-                (req, unauthenticated_action)
-            } else { (req, Err(UnauthenticatedAction::ProposeBase64)) };
+                let unauthenticated_action_response = map_auth_res_to_is_auth_res(&self, res, initial_uri);
+                (req, unauthenticated_action_response)
+            } else { (req, Err(StatusCode::UNAUTHORIZED.into_response())) };
 
         psw_aut_res_opt
     }
@@ -100,41 +93,22 @@ fn map_auth_res_to_is_auth_res(
     backend: &CompositeAuthnBackend,
     auth_res: Result<Option<auth_user::AuthUser>, AuthBackendError>,
     initial_uri: Option<String>,
-) -> Result<(), UnauthenticatedAction> {
+) -> Result<(), Response> {
 
-    // TODO: simplify
-    let action1: Option<UnauthenticatedAction> = backend.http_basic_auth_backend.as_ref()
-        .map(|b|b.basic_auth_mode)
-        .and_then(|b_m|if let HttpBasicAuthMode::BasicAuthProposed = b_m { Some(UnauthenticatedAction::ProposeBase64) } else { None });
-    let action2: Option<UnauthenticatedAction> = backend.login_form_auth_backend.as_ref()
-        .map(|b|b.login_from_auth_mode)
-        .and_then(|b_m|if let LoginFormAuthMode::LoginFormAuthProposed { login_form_url } = b_m { Some(UnauthenticatedAction::ProposeLoginForm { login_form_url, initial_url: initial_uri.clone() }) } else { None });
-    let action3: Option<UnauthenticatedAction> = backend.oauth2_backend.as_ref()
-        .map(|b|b.login_from_auth_mode)
-        .and_then(|b_m|if let LoginFormAuthMode::LoginFormAuthProposed { login_form_url } = b_m { Some(UnauthenticatedAction::ProposeLoginForm { login_form_url, initial_url: initial_uri }) } else { None });
+    let action1: Option<Response> = backend.http_basic_auth_backend.as_ref().and_then(|b|b.propose_authentication_action().map(|a|a.into_response()));
+    let action2: Option<Response> = backend.login_form_auth_backend.as_ref().and_then(|b|b.propose_authentication_action().map(|a|a.into_response()));
+    let action3: Option<Response> = backend.oauth2_backend.as_ref().and_then(|b|b.propose_authentication_action().map(|a|a.into_response()));
 
-    let action = action1.or(action2).or(action3).unwrap_or(UnauthenticatedAction::NoAction);
-    // let action = UnauthenticatedAction::ProposeBase64;
+    let action_response = action1.or(action2).or(action3).unwrap_or_else(|| StatusCode::UNAUTHORIZED.into_response());
 
     match auth_res {
-        Ok(None) => Err(action),
+        Ok(None) => Err(action_response),
         Ok(_) => Ok(()),
         Err(err) => {
-            // TODO: verify if corresponding backend is present
-            // let unauthenticated_action: UnauthenticatedAction =
-            //     match backend.basic_auth_mode {
-            //         HttpBasicAuthMode::BasicAuthProposed  => UnauthenticatedAction::ProposeBase64,
-            //         HttpBasicAuthMode::BasicAuthSupported => UnauthenticatedAction::NoAction,
-            //     };
-
             match err {
-                AuthBackendError::NoUser => Err(action),
-                AuthBackendError::NoCredentials => Err(action),
-                AuthBackendError::IncorrectUsernameOrPsw =>  Err(action),
-                other_err => {
-                    error!("Authentication error: {:?}", other_err);
-                    Err(UnauthenticatedAction::NoAction)
-                }
+                // AuthBackendError::NoUser => Err(action),
+                // AuthBackendError::NoCredentials => Err(action),
+                // AuthBackendError::IncorrectUsernameOrPsw =>  Err(action),
                 // AuthBackendError::UserProviderError(_) => {}
                 // AuthBackendError::Sqlx(_) => {}
                 // AuthBackendError::Reqwest(_) => {}
@@ -142,19 +116,14 @@ fn map_auth_res_to_is_auth_res(
                 // AuthBackendError::NoRequestedBackend => {}
                 // AuthBackendError::TaskJoin(_) => {}
                 // AuthBackendError::ConfigError(_) => {}
+                other_err => {
+                    error!("Authentication error: {:?}", other_err);
+                    Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
+                }
             }
         }
     }
 }
-
-
-// #[inline]
-// fn is_opt_res_ok<T, E>(r_opt: &Option<Result<T,E>>) -> bool {
-//     match r_opt {
-//         None => false,
-//         Some(ref v) => v.is_ok()
-//     }
-// }
 
 
 impl Clone for CompositeAuthnBackend {
