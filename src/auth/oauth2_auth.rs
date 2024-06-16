@@ -1,5 +1,6 @@
 use std::env::VarError;
 use std::sync::Arc;
+use axum::extract::OriginalUri;
 use crate::auth::auth_backend::AuthnBackendAttributes;
 use super::{ auth_user, LoginFormAuthMode};
 use super::error::AuthBackendError;
@@ -203,13 +204,12 @@ impl Oauth2Config {
 impl AuthnBackendAttributes for OAuth2AuthBackend {
     type ProposeAuthAction = super::login_form_auth::ProposeLoginFormAuthAction;
 
-    fn usr_provider(&self) -> Arc<dyn AuthUserProvider<User=auth_user::AuthUser> + Sync + Send> {
+    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=auth_user::AuthUser> + Sync + Send> {
         self.state.user_provider.clone()
     }
-    fn propose_authentication_action(&self) -> Option<Self::ProposeAuthAction> {
-        // if let LoginFormAuthMode::LoginFormAuthProposed { login_form_url } = self.login_from_auth_mode
-        // { Some(ProposeLoginFormAuthAction { login_form_url, initial_url: None }) } else { None }
+    fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {
         // TODO: add simple oauth2 login form
-        Some(super::login_form_auth::ProposeLoginFormAuthAction { login_form_url: Some("/oauth2/login"), initial_url: None })
+        let initial_uri: Option<String> = req.extensions().get::<OriginalUri>().map(|uri|uri.to_string());
+        Some(super::login_form_auth::ProposeLoginFormAuthAction { login_form_url: Some("/oauth2/login"), initial_url: initial_uri })
     }
 }

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use axum::body::Body;
+use axum::extract::OriginalUri;
 use axum::http::StatusCode;
 use psw_auth::PswAuthCredentials;
 use crate::auth::auth_backend::{AuthnBackendAttributes, ProposeAuthAction};
@@ -77,12 +78,14 @@ impl <
     > AuthnBackendAttributes for LoginFormAuthBackend<PswComparator> {
     type ProposeAuthAction = ProposeLoginFormAuthAction;
 
-    fn usr_provider(&self) -> Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> {
+    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> {
         self.psw_backend.users_provider()
     }
-    fn propose_authentication_action(&self) -> Option<Self::ProposeAuthAction> {
-        if let LoginFormAuthMode::LoginFormAuthProposed { login_form_url } = self.login_from_auth_mode
-        { Some(ProposeLoginFormAuthAction { login_form_url, initial_url: None }) } else { None }
+    fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {
+        if let LoginFormAuthMode::LoginFormAuthProposed { login_form_url } = self.login_from_auth_mode {
+            let initial_uri: Option<String> = req.extensions().get::<OriginalUri>().map(|uri|uri.to_string());
+            Some(ProposeLoginFormAuthAction { login_form_url, initial_url: initial_uri })
+        } else { None }
     }
 }
 
@@ -93,8 +96,8 @@ pub struct ProposeLoginFormAuthAction {
 impl ProposeAuthAction for ProposeLoginFormAuthAction { }
 #[inherent::inherent]
 impl axum::response::IntoResponse for ProposeLoginFormAuthAction {
+    #[allow(dead_code)] // !! It is really used IMPLICITLY !!
     pub fn into_response(self) -> axum::response::Response<Body> {
-        // http_basic_unauthenticated_401_response("Basic")
         let login_url = self.login_form_url.unwrap_or("/login");
         let login_url = match self.initial_url {
             None => login_url.to_string(),

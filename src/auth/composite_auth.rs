@@ -1,5 +1,6 @@
 use std::sync::Arc;
-use axum::extract::OriginalUri;
+
+use axum::extract::Request;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
@@ -10,10 +11,9 @@ use psw_auth::PswAuthCredentials;
 use crate::auth::auth_backend::{ AuthnBackendAttributes, RequestUserAuthnBackend };
 use crate::auth::http_basic_auth::{HttpBasicAuthMode, HttpBasicAuthBackend};
 use crate::auth::login_form_auth::{LoginFormAuthBackend, LoginFormAuthMode};
-use crate::rest::auth::AuthUser;
 
 use super::{AuthUserProvider, OAuth2AuthBackend, OAuth2AuthCredentials, psw_auth };
-use super::auth_user;
+use super::auth_user::AuthUser;
 use super::error::AuthBackendError;
 use super::psw::PlainPasswordComparator;
 use super::mem_user_provider::InMemAuthUserProvider;
@@ -23,15 +23,15 @@ use super::mem_user_provider::InMemAuthUserProvider;
 // #[derive(Clone)]
 pub struct CompositeAuthnBackend <
     > {
-    users_provider: Arc<dyn AuthUserProvider<User=super::AuthUser> + Sync + Send>,
+    users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>,
     http_basic_auth_backend: Option<HttpBasicAuthBackend<PlainPasswordComparator>>,
     login_form_auth_backend: Option<LoginFormAuthBackend<PlainPasswordComparator>>,
     oauth2_backend: Option<OAuth2AuthBackend>,
 }
 
 impl CompositeAuthnBackend {
-    pub fn test_users() -> Result<CompositeAuthnBackend, anyhow::Error> { // TODO: try to remove async from there
-        let user_provider: Arc<dyn AuthUserProvider<User=super::AuthUser> + Sync + Send> = Arc::new(InMemAuthUserProvider::test_users() ?);
+    pub fn test_users() -> Result<CompositeAuthnBackend, anyhow::Error> {
+        let user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> = Arc::new(InMemAuthUserProvider::test_users() ?);
         Ok(CompositeAuthnBackend {
             http_basic_auth_backend: Some(HttpBasicAuthBackend::new(user_provider.clone(), HttpBasicAuthMode::BasicAuthProposed)),
             login_form_auth_backend: Some(LoginFormAuthBackend::new(user_provider.clone(), LoginFormAuthMode::LoginFormAuthSupported)),
@@ -41,7 +41,7 @@ impl CompositeAuthnBackend {
     }
 
     pub fn new_raw(
-        users_provider: Arc<dyn AuthUserProvider<User=super::AuthUser> + Sync + Send>,
+        users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>,
         http_basic_auth_backend: Option<HttpBasicAuthBackend<PlainPasswordComparator>>,
         login_form_auth_backend: Option<LoginFormAuthBackend<PlainPasswordComparator>>,
         oauth2_backend: Option<OAuth2AuthBackend>,
@@ -65,8 +65,8 @@ impl CompositeAuthnBackend {
     pub async fn is_authenticated(
         &self,
         auth_session_user: &Option<AuthUser>,
-        req: axum::extract::Request,
-    ) -> (axum::extract::Request, Result<(), Response>) {
+        req: Request,
+    ) -> (Request, Result<(), Response>) {
 
         use axum::extract::Request;
 
@@ -74,14 +74,11 @@ impl CompositeAuthnBackend {
             return (req, Ok(()));
         }
 
-        // TODO: move to map_auth_res_to_is_auth_res()
-        let initial_uri: Option<String> = req.extensions().get::<OriginalUri>().map(|uri|uri.to_string());
-
         let psw_aut_res_opt: (Request, Result<(), Response>) =
             if let Some(ref backend) = self.http_basic_auth_backend {
-                let res: (Request, Result<Option<auth_user::AuthUser>, AuthBackendError>) = backend.call_authenticate_request::<()>(req).await;
+                let res: (Request, Result<Option<AuthUser>, AuthBackendError>) = backend.call_authenticate_request::<()>(req).await;
                 let (req, res) = res;
-                let unauthenticated_action_response = map_auth_res_to_is_auth_res(&self, res, initial_uri);
+                let unauthenticated_action_response = map_auth_res_to_is_auth_res(&self, &req, res);
                 (req, unauthenticated_action_response)
             } else { (req, Err(StatusCode::UNAUTHORIZED.into_response())) };
 
@@ -91,15 +88,15 @@ impl CompositeAuthnBackend {
 
 fn map_auth_res_to_is_auth_res(
     backend: &CompositeAuthnBackend,
-    auth_res: Result<Option<auth_user::AuthUser>, AuthBackendError>,
-    initial_uri: Option<String>,
+    req: &Request,
+    auth_res: Result<Option<AuthUser>, AuthBackendError>,
 ) -> Result<(), Response> {
 
-    let action1: Option<Response> = backend.http_basic_auth_backend.as_ref().and_then(|b|b.propose_authentication_action().map(|a|a.into_response()));
-    let action2: Option<Response> = backend.login_form_auth_backend.as_ref().and_then(|b|b.propose_authentication_action().map(|a|a.into_response()));
-    let action3: Option<Response> = backend.oauth2_backend.as_ref().and_then(|b|b.propose_authentication_action().map(|a|a.into_response()));
-
-    let action_response = action1.or(action2).or(action3).unwrap_or_else(|| StatusCode::UNAUTHORIZED.into_response());
+    let action_response: Response =
+        backend_propose_auth_action(&backend.http_basic_auth_backend, req)
+        .or_else(|| backend_propose_auth_action(&backend.login_form_auth_backend, req))
+        .or_else(|| backend_propose_auth_action(&backend.oauth2_backend, req))
+        .unwrap_or_else(|| StatusCode::UNAUTHORIZED.into_response());
 
     match auth_res {
         Ok(None) => Err(action_response),
@@ -125,6 +122,12 @@ fn map_auth_res_to_is_auth_res(
     }
 }
 
+fn backend_propose_auth_action <
+    B: AuthnBackendAttributes,
+> (backend: &Option<B>, req: &Request) -> Option<Response> {
+    backend.as_ref().and_then(|b|b.propose_authentication_action(req).map(|a|a.into_response()))
+}
+
 
 impl Clone for CompositeAuthnBackend {
     fn clone(&self) -> Self {
@@ -144,7 +147,7 @@ impl Clone for CompositeAuthnBackend {
 
 #[axum::async_trait]
 impl axum_login::AuthnBackend for CompositeAuthnBackend {
-    type User = auth_user::AuthUser;
+    type User = AuthUser;
     type Credentials = CompositeAuthCredentials;
     type Error = AuthBackendError;
 

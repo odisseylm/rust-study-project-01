@@ -77,10 +77,10 @@ impl <
     > AuthnBackendAttributes for HttpBasicAuthBackend<PswComparator> {
     type ProposeAuthAction = ProposeHttpBasicAuthAction;
 
-    fn usr_provider(&self) -> Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> {
+    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> {
         self.psw_backend.users_provider()
     }
-    fn propose_authentication_action(&self) -> Option<Self::ProposeAuthAction> {
+    fn propose_authentication_action(&self, _: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {
         if let HttpBasicAuthMode::BasicAuthProposed = self.basic_auth_mode
         { Some(ProposeHttpBasicAuthAction) } else { None }
     }
@@ -90,6 +90,7 @@ pub struct ProposeHttpBasicAuthAction;
 impl crate::auth::auth_backend::ProposeAuthAction for ProposeHttpBasicAuthAction { }
 #[inherent::inherent]
 impl axum::response::IntoResponse for ProposeHttpBasicAuthAction {
+    #[allow(dead_code)] // !! It is really used IMPLICITLY !!
     pub fn into_response(self) -> axum::response::Response<axum::body::Body> {
         http_unauthenticated_401_response("Basic")
     }

@@ -8,6 +8,7 @@ use crate::auth::{AuthUser, AuthUserProvider};
 /// * Login form authentication it is redirecting to HTML form
 /// * OAuth also redirecting to form page
 ///
+#[allow(dead_code)] // It is used as type marker (we could directly use IntoResponse, but...)
 pub trait ProposeAuthAction : axum::response::IntoResponse {
 }
 
@@ -15,8 +16,8 @@ pub trait ProposeAuthAction : axum::response::IntoResponse {
 #[async_trait]
 pub trait AuthnBackendAttributes : axum_login::AuthnBackend + Clone + Send + Sync {
     type ProposeAuthAction: ProposeAuthAction;
-    fn usr_provider(&self) -> Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send>;
-    fn propose_authentication_action(&self) -> Option<Self::ProposeAuthAction>;
+    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send>;
+    fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction>;
 }
 
 
@@ -34,7 +35,6 @@ pub trait RequestUserAuthnBackend : axum_login::AuthnBackend + Clone + Send + Sy
     /// future compilation error, we will extract required request data and pass it to authenticate_request.
     async fn authenticate_request<S>(
         &self,
-        // creds: Self::Credentials,
         auth_request_data: Self::AuthRequestData,
     ) -> Result<Option<Self::User>, Self::Error>;
 
@@ -50,7 +50,6 @@ pub trait RequestUserAuthnBackend : axum_login::AuthnBackend + Clone + Send + Sy
         let auth_req_data: Option<&Self::AuthRequestData> = req.extensions().get::<Self::AuthRequestData>();
         let auth_res: Result<Option<Self::User>, Self::Error> =
             if let Some(auth_req_data) = auth_req_data {
-                // TODO: try to avoid 'clone'
                 self.authenticate_request::<S>(auth_req_data.clone()).await
             } else { Ok(None) };
 
