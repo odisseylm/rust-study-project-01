@@ -10,6 +10,7 @@ use axum_login::tower_sessions::Session;
 use serde::Deserialize;
 
 use crate::web::auth::{ LoginTemplate, NEXT_URL_KEY };
+// use super::auth::AuthSession;
 
 pub const CSRF_STATE_KEY: &str = "oauth.csrf-state";
 
@@ -24,10 +25,14 @@ pub fn router() -> Router<()> {
 }
 
 mod get {
-    use crate::auth::oauth2_auth::{ AuthCredentials as OAuthCreds, AuthSession };
+    use crate::auth::composite_auth::CompositeAuthCredentials;
+    // use axum_login::AuthSession;
+    use super::super::auth::AuthSession;
+    use crate::auth::oauth2_auth::{ OAuth2AuthCredentials as OAuthCreds };
     use super::*;
 
-    pub async fn callback(
+    pub async fn callback /*<B: axum_login::AuthnBackend>*/ (
+        // mut auth_session: AuthSession<B>,
         mut auth_session: AuthSession,
         session: Session,
         Query(AuthzResp {
@@ -41,7 +46,7 @@ mod get {
 
         let creds = OAuthCreds { code, old_state, new_state, };
 
-        let user = match auth_session.authenticate(creds).await {
+        let user = match auth_session.authenticate(CompositeAuthCredentials::OAuth(creds)).await {
             Ok(Some(user)) => user,
             Ok(None) => {
                 return (

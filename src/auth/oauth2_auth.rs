@@ -1,8 +1,6 @@
 use std::env::VarError;
 use std::sync::Arc;
-use axum::extract::OriginalUri;
-use crate::rest::auth::AuthUser;
-use super::{auth_user, UnauthenticatedAction};
+use super::{auth_user, LoginFormAuthMode};
 use super::error::AuthBackendError;
 use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
 
@@ -13,10 +11,10 @@ pub trait OAuth2UserStore: AuthUserProvider {
 }
 
 
-pub type AuthSession = axum_login::AuthSession<AuthBackend>;
+// pub type OAuth2AuthSession = axum_login::AuthSession<OAuth2AuthBackend>;
 
 #[derive(Debug, Clone, serde::Deserialize)]
-pub struct AuthCredentials {
+pub struct OAuth2AuthCredentials {
     pub code: String,
     pub old_state: oauth2::CsrfToken,
     pub new_state: oauth2::CsrfToken,
@@ -24,8 +22,10 @@ pub struct AuthCredentials {
 
 
 #[derive(Debug, Clone)]
-pub struct AuthBackend {
+#[readonly::make]
+pub struct OAuth2AuthBackend {
     state: Arc<AuthBackendState>,
+    pub login_from_auth_mode: LoginFormAuthMode,
 }
 
 
@@ -55,31 +55,37 @@ struct UserInfo {
     login: String,
 }
 
-impl AuthBackend {
+impl OAuth2AuthBackend {
     pub fn new(
         user_provider: Arc<dyn OAuth2UserStore<User = auth_user::AuthUser> + Send + Sync>,
+        login_form_auth_mode: LoginFormAuthMode,
         client: oauth2::basic::BasicClient,
     ) -> Self {
-        AuthBackend { state: Arc::new(AuthBackendState {
+        OAuth2AuthBackend { state: Arc::new(AuthBackendState {
             user_provider: Arc::clone(&user_provider),
             client: client.clone(),
-        }) }
+        },), login_from_auth_mode: login_form_auth_mode }
     }
 
+    #[allow(unused_qualifications)]
     pub fn authorize_url(&self) -> (oauth2::url::Url, oauth2::CsrfToken) {
         self.state.client.authorize_url(oauth2::CsrfToken::new_random).url()
     }
 
+    /*
     pub async fn is_authenticated (&self, auth_session_user: &Option<AuthUser>, original_uri: &OriginalUri,) -> Result<(), UnauthenticatedAction> {
         if auth_session_user.is_some() { Ok(()) }
-        else { Err(UnauthenticatedAction::ProposeLoginForm { login_form_url: None, initial_url: Some(original_uri.to_string()) }) }
+        // else { Err(UnauthenticatedAction::ProposeLoginForm { login_form_url: None, initial_url: Some(original_uri.to_string()) }) }
+        // TODO: retest using initial URL. It should work without that.
+        else { Err(UnauthenticatedAction::ProposeLoginForm { login_form_url: None, initial_url: None, }) }
     }
+    */
 }
 
 #[axum::async_trait]
-impl axum_login::AuthnBackend for AuthBackend {
+impl axum_login::AuthnBackend for OAuth2AuthBackend {
     type User = auth_user::AuthUser;
-    type Credentials = AuthCredentials;
+    type Credentials = OAuth2AuthCredentials;
     type Error = AuthBackendError;
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
@@ -103,7 +109,7 @@ impl axum_login::AuthnBackend for AuthBackend {
 
         // Use access token to request user info.
         let user_info = reqwest::Client::new()
-            .get("https://api.github.com/user")
+            .get("https://api.github.com/user") // TODO: move to config
             // See: https://docs.github.com/en/rest/overview/resources-in-the-rest-api?apiVersion=2022-11-28#user-agent-required
             .header(USER_AGENT.as_str(), "axum-login")
             .header(AUTHORIZATION.as_str(), format!("Bearer {}", token_res.access_token().secret()))

@@ -40,8 +40,8 @@ mod post {
 
     pub(super) mod login {
         use log::error;
-        use crate::auth::psw_auth::AuthCredentials as PasswordCreds;
-        use crate::auth::composite_auth::AuthCredentials as Credentials;
+        use crate::auth::psw_auth::PswAuthCredentials as PasswordCreds;
+        use crate::auth::composite_auth::{CompositeAuthCredentials as Credentials, CompositeAuthnBackend};
         use crate::rest::auth::{ AuthSession, AuthBackendError };
         use crate::rest::oauth::CSRF_STATE_KEY;
         use super::*;
@@ -50,7 +50,7 @@ mod post {
             mut auth_session: AuthSession,
             Form(creds): Form<PasswordCreds>,
         ) -> impl IntoResponse {
-            let auth_res: Result<Option<crate::auth::AuthUser>, axum_login::Error<crate::auth::composite_auth::AuthnBackend>> = auth_session.authenticate(
+            let auth_res: Result<Option<crate::auth::AuthUser>, axum_login::Error<CompositeAuthnBackend>> = auth_session.authenticate(
                 Credentials::Password(creds.clone())).await;
             let user = match auth_res {
                 Ok(Some(user)) => user,
@@ -132,7 +132,8 @@ mod post {
 }
 
 mod get {
-    use crate::auth::composite_auth::AuthSession;
+    use crate::rest::auth::AuthSession;
+    // use super::super::super::rest::auth::AuthSession;
     use super::*;
 
     pub async fn login(Query(NextUrl { next }): Query<NextUrl>) -> LoginTemplate {

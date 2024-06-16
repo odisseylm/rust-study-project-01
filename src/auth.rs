@@ -18,6 +18,10 @@ mod psw;
 
 // pub(crate) mod temp;
 mod auth_user_provider_wrap;
+mod http;
+mod auth_backend;
+mod http_basic_auth;
+mod login_form_auth;
 
 
 pub use auth_user::AuthUser;
@@ -36,5 +40,13 @@ pub use sql_user_provider::SqlUserProvider;
 pub use psw::PasswordComparator;
 pub use psw::PlainPasswordComparator;
 
-pub use psw_auth::{ AuthBackend as PswAuthBackend, AuthCredentials as PswAuthCredentials, AuthSession as PswAuthSession };
-pub use oauth2_auth::{ AuthBackend as OAuth2AuthBackend, AuthCredentials as OAuth2AuthCredentials, AuthSession as OAuth2AuthSession };
+pub use http_basic_auth::HttpBasicAuthBackend;
+// pub use http_basic_auth::HttpBasicAuthSession;
+pub use http_basic_auth::HttpBasicAuthMode;
+// pub use http_basic_auth::BasicAuthCreds;
+
+pub use login_form_auth::LoginFormAuthBackend;
+pub use login_form_auth::LoginFormAuthAuthSession;
+pub use login_form_auth::LoginFormAuthMode;
+
+pub use oauth2_auth::{ OAuth2AuthBackend, OAuth2AuthCredentials };

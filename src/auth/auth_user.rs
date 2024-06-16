@@ -62,3 +62,36 @@ impl axum_login::AuthUser for AuthUser {
         &[]
     }
 }
+
+/*
+#[derive(Debug, Clone)]
+struct AuthRequestData {
+    original_uri: Option<axum::extract::OriginalUri>,
+    basic_auth: Option<axum_extra::headers::authorization::Basic>,
+}
+
+#[async_trait::async_trait]
+impl<S> axum::extract::FromRequestParts<S> for AuthRequestData where S: Send + Sync {
+    type Rejection = core::convert::Infallible;
+
+    async fn from_request_parts(parts: &mut http::request::Parts, state: &S) -> Result<Self, Self::Rejection> {
+        use axum::extract::OriginalUri;
+        use axum_extra:: { TypedHeader, typed_header::TypedHeaderRejection, headers::{ Authorization, authorization::Basic } };
+
+        let original_uri: Option<OriginalUri> = OriginalUri::from_request_parts(parts, state).await.ok();
+
+        let basic_auth: Result<TypedHeader<Authorization<Basic>>, TypedHeaderRejection> =
+            TypedHeader::<Authorization::<Basic>>::from_request_parts(parts, state).await;
+        let basic_auth: Option<Basic> =
+            if let Ok(TypedHeader(Authorization(basic_auth))) = basic_auth { Some(basic_auth) }
+            else { None };
+
+        Ok(AuthRequestData {
+            original_uri,
+            basic_auth,
+        })
+
+        // let extracted_basic_ath = req.extensions().get::<TypedHeader<AuthorizationHeader<Basic>>>();
+    }
+}
+*/

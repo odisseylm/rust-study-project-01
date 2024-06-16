@@ -16,6 +16,9 @@ pub enum AuthBackendError {
     #[error("NoUser")]
     NoUser,
 
+    #[error("NoCredentials")]
+    NoCredentials,
+
     #[error("IncorrectUsernameOrPsw")]
     IncorrectUsernameOrPsw,
 

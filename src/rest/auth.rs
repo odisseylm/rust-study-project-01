@@ -1,51 +1,46 @@
 use std::sync::Arc;
 use axum::body::Body;
-use axum::extract::OriginalUri;
+use axum::extract::Request;
 use axum::response::IntoResponse;
-use axum_extra::TypedHeader;
-use axum_extra::headers::Authorization as AuthorizationHeader;
-use axum_extra::headers::authorization::Basic;
 use oauth2::basic::BasicClient;
-use crate::auth::{InMemAuthUserProvider, PlainPasswordComparator, UnauthenticatedAction};
+use oauth2_auth::OAuth2AuthBackend;
+use crate::auth::{HttpBasicAuthMode, InMemAuthUserProvider, LoginFormAuthMode, PlainPasswordComparator, UnauthenticatedAction};
+use crate::auth::composite_auth::CompositeAuthnBackend;
 use crate::auth::oauth2_auth::Oauth2Config;
 use crate::auth::oauth2_auth;
-use crate::auth::psw_auth::{BasicAuthMode, LoginFormMode};
 
 
 pub type AuthUser = crate::auth::AuthUser;
-pub type AuthCredentials = crate::auth::composite_auth::AuthCredentials;
-pub type AuthnBackend = crate::auth::composite_auth::AuthnBackend;
-pub type AuthSession = crate::auth::composite_auth::AuthSession;
+pub type AuthCredentials = crate::auth::composite_auth::CompositeAuthCredentials;
+pub type AuthnBackend = crate::auth::composite_auth::CompositeAuthnBackend;
+pub type AuthSession = axum_login::AuthSession<CompositeAuthnBackend>;
 pub type AuthBackendError = crate::auth::AuthBackendError;
 
 
 async fn is_authenticated (
     auth_session: AuthSession,
-    original_uri: OriginalUri,
-    basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
-) -> Result<(), UnauthenticatedAction> {
-    auth_session.backend.is_authenticated(&auth_session.user, &original_uri, &basic_auth_creds).await
+    req: Request,
+) -> (Request, Result<(), UnauthenticatedAction>) {
+    auth_session.backend.is_authenticated(&auth_session.user, req).await
 }
 
 
 #[inline]
 pub async fn validate_auth_temp(
     auth_session: AuthSession,
-    original_uri: OriginalUri,
-    basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
-    req: axum::extract::Request, next: axum::middleware::Next) -> http::Response<Body> {
-    validate_auth(auth_session, original_uri, basic_auth_creds, req, next).await
+    req: Request,
+    next: axum::middleware::Next,
+) -> http::Response<Body> {
+    validate_auth_chain(auth_session, req, next).await
 }
 
-pub async fn validate_auth (
+pub async fn validate_auth_chain (
     auth_session: AuthSession,
-    original_uri: OriginalUri,
-    basic_auth_creds: Option<TypedHeader<AuthorizationHeader<Basic>>>,
-    req: axum::extract::Request,
-    next: axum::middleware::Next
+    req: Request,
+    next: axum::middleware::Next,
 ) -> http::Response<Body> {
 
-    let is_auth_res = is_authenticated(auth_session, original_uri, basic_auth_creds).await;
+    let (req, is_auth_res) = is_authenticated(auth_session, req).await;
     match is_auth_res {
         Ok(_) => next.run(req).await,
         Err(action) => action.into_response()
@@ -58,7 +53,7 @@ pub impl<S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for a
     // #[inline] // warning: `#[inline]` is ignored on function prototypes
     #[track_caller]
     fn auth_required(self) -> Self {
-        self.route_layer(axum::middleware::from_fn(validate_auth))
+        self.route_layer(axum::middleware::from_fn(validate_auth_chain))
     }
 }
 
@@ -97,24 +92,33 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     let oauth2_usr_store: Arc<dyn crate::auth::OAuth2UserStore<User = AuthUser> + Sync + Send> = usr_provider_impl; // or .clone();
 
     let config = Oauth2Config::git_from_env() ?;
-    let oauth2_backend: Option<oauth2_auth::AuthBackend> = match config {
+    let oauth2_backend_opt: Option<OAuth2AuthBackend> = match config {
         None => None,
         Some(config) => {
             let oauth2_basic_client: BasicClient = oauth2_auth::create_basic_client(&config) ?;
-            Some(oauth2_auth::AuthBackend::new(Arc::clone(&oauth2_usr_store), oauth2_basic_client))
+            Some(OAuth2AuthBackend::new(
+                Arc::clone(&oauth2_usr_store),
+                LoginFormAuthMode::LoginFormAuthProposed { login_form_url: Some("/login") },
+                oauth2_basic_client,
+            ))
         }
     };
 
-    let psw_auth_backend = crate::auth::PswAuthBackend::<PlainPasswordComparator>::new(
-        std_usr_provider,
+    let http_basic_auth_backend = crate::auth::HttpBasicAuthBackend::<PlainPasswordComparator>::new(
+        std_usr_provider.clone(),
         // It makes sense for pure server SOA
         // BasicAuthMode::BasicAuthProposed,
-        BasicAuthMode::BasicAuthSupported,
+        HttpBasicAuthMode::BasicAuthSupported,
+    );
+    let login_form_auth_backend = crate::auth::LoginFormAuthBackend::<PlainPasswordComparator>::new(
+        std_usr_provider.clone(),
         // It makes sense for web-app
-        LoginFormMode::LoginFormProposed { login_form_url: Some("/login") }
+        LoginFormAuthMode::LoginFormAuthProposed { login_form_url: Some("/login") }
     );
 
-    let backend = AuthnBackend::new_raw(Some(psw_auth_backend), oauth2_backend);
+    let backend = AuthnBackend::new_raw(
+        std_usr_provider.clone(),
+        Some(http_basic_auth_backend), Some(login_form_auth_backend), oauth2_backend_opt);
     let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, MemoryStore> = AuthManagerLayerBuilder::new(backend, session_layer).build();
     Ok(auth_layer)
 }
