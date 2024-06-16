@@ -2,12 +2,10 @@ use core::fmt;
 use askama_axum::Response;
 use axum::body::Body;
 use axum::http::StatusCode;
-use axum::Json;
 use axum::response::IntoResponse;
 use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Basic;
 use axum_extra::TypedHeader;
-use serde_json::Value;
 
 
 // Error processing:
@@ -21,24 +19,35 @@ use serde_json::Value;
 pub enum RestAppError {
     AnyhowError(anyhow::Error),
 
-    // TODO: Do I need them???
-    Unauthenticated, //(UnauthenticatedAction),
+    // Ideally it should not be used in normal app flow.
+    // Authentication should be performed on axum route layer.
+    //
+    // #[deprecated(note = "mainly for internal/automatic usage in macro when container is cloned.")]
+    #[allow(unused_attributes)]
+    #[must_use = "Mainly for xxx usage."]
+    Unauthenticated,
+
     Unauthorized,
-    JsonResultError(Response),
+    HttpResponseResultError(Response),
 
     IllegalArgument(anyhow::Error),
     // ...
-    // other errors if it is needed
+    // Add other errors if it is needed.
 }
 
 impl fmt::Display for RestAppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RestAppError::AnyhowError(ref anyhow_err) => { write!(f, "AnyhowError: {}", anyhow_err) }
-            RestAppError::Unauthorized => { write!(f, "NotAuthorized") }
-            RestAppError::Unauthenticated => { write!(f, "NotAuthenticated") }
-            RestAppError::IllegalArgument(ref anyhow_err) => { write!(f, "AnyhowError: {}", anyhow_err) }
-            RestAppError::JsonResultError(_) => { write!(f, "JsonResultError") }
+            RestAppError::AnyhowError(ref anyhow_err) =>
+                write!(f, "AnyhowError: {}", anyhow_err),
+            RestAppError::Unauthorized =>
+                write!(f, "NotAuthorized"),
+            RestAppError::Unauthenticated =>
+                write!(f, "NotAuthenticated"),
+            RestAppError::IllegalArgument(ref anyhow_err) =>
+                write!(f, "AnyhowError: {}", anyhow_err),
+            RestAppError::HttpResponseResultError(ref _r) =>
+                write!(f, "JsonResultError"),
         }
     }
 }
@@ -50,130 +59,16 @@ impl IntoResponse for RestAppError {
         match self {
             RestAppError::AnyhowError(ref err) =>
                 ( StatusCode::INTERNAL_SERVER_ERROR, format!("Internal error: {}", err) ).into_response(),
-
-            // TODO: Do we need it???
             RestAppError::Unauthenticated =>
                 StatusCode::UNAUTHORIZED.into_response(),
-            // RestAppError::Unauthenticated(propose_action) =>
-            //     propose_action.into_response(),
             RestAppError::Unauthorized =>
                 ( StatusCode::FORBIDDEN, "Unauthorized".to_string() ).into_response(),
             RestAppError::IllegalArgument(ref err) =>
                 ( StatusCode::BAD_REQUEST, format!("Illegal arguments: {}", err) ).into_response(),
-            RestAppError::JsonResultError(response) => response,
+            RestAppError::HttpResponseResultError(response) => response,
         }
     }
 }
-
-/*
-impl IntoResponse for UnauthenticatedAction {
-    fn into_response(self) -> askama_axum::Response {
-        match self {
-            UnauthenticatedAction::NoAction =>
-                StatusCode::UNAUTHORIZED.into_response(),
-
-            UnauthenticatedAction::ProposeBase64 =>
-                axum::response::Response::builder()
-                    .status(StatusCode::UNAUTHORIZED)
-                    .header("WWW-Authenticate", "Basic")
-                    .body(Body::empty())
-                    .unwrap_or_else(|_err| StatusCode::UNAUTHORIZED.into_response()),
-
-            UnauthenticatedAction::ProposeLoginForm { login_form_url, initial_url } => {
-                let login_url = login_form_url.unwrap_or("/login");
-                let login_url = match initial_url {
-                    None => login_url.to_string(),
-                    Some(ref initial_url) => format!("{}?next={}", login_url, url_encode(initial_url.as_str())),
-                };
-                axum::response::Response::builder()
-                    // .status(StatusCode::UNAUTHORIZED)
-                    // .status(StatusCode::FOUND) // redirect
-                    .status(StatusCode::UNAUTHORIZED) // redirect
-                    .header("Location", login_url.clone())
-                    .header("Content-Type", "text/html; charset=utf-8")
-                    .body(Body::from(REDIRECT_LOGIN_PAGE_CONTENT.replace("{login_url}", login_url.as_str())))
-                    .unwrap_or_else(|_err| StatusCode::UNAUTHORIZED.into_response())
-            }
-        }
-    }
-}
-
-fn url_encode(string: &str) -> String {
-    url::form_urlencoded::Serializer::new(String::new())
-        .append_key_only(string)
-        // .append_pair("foo", "bar & baz")
-        // .append_pair("saison", "Été+hiver")
-        .finish()
-}
-
-static REDIRECT_LOGIN_PAGE_CONTENT: &'static str = r#"
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="refresh" content="0; url={login_url}">
-    <title>User is not athenticated</title>
-  </head>
-  <body>
-    <a href="{login_url}">Login</a>
-  </body>
-</html>
-"#;
-*/
-
-/*
-// I do not want to add additional lib only for this html block.
-#[static_init::dynamic]
-static REDIRECT_LOGIN_PAGE_CONTENT_XML: inline_xml::Xml = inline_xml::xml!(
-    // <!doctype html> // !!! It is not supported by inline_xml
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <meta http-equiv="refresh" content="300; url=/login?next={redirect}" />
-        <title>User is not authenticated</title>
-      </head>
-      <body>
-        <a href="/login?next={redirect}">Login</a>
-      </body>
-    </html>
-);
-*/
-/*
-fn aa() {
-    let event: quick_xml::events::Event = xml_macro::xml!(<person name="Josh"
-                         occupation={
-                             let arr = ["a", "b", "c"];
-                             arr[2]
-                         }>);
-}
-
-// static REDIRECT_LOGIN_PAGE_CONTENT_XML2: &'static str = xml_macro::xml!(
-static REDIRECT_LOGIN_PAGE_CONTENT_XML2: quick_xml::events::Event = xml_macro::xml!(
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <meta http-equiv="refresh" content="300; url=/login?redirect={redirect}" />
-        <title>User is not athenticated</title>
-      </head>
-      <body>
-        <a href="/login?redirect={redirect}">Login</a>
-      </body>
-    </html>
-);
-*/
-
-/*
-pub fn unauthenticated_401_response() -> Response<Body> {
-    axum::response::Response::builder()
-        .status(StatusCode::UNAUTHORIZED)
-        // To show user dialog in web-browser; can be removed in prod.
-        // Also, other auth schemas can be there (Bearer, Digest, OAuth, PrivateToken, etc.)
-        //   See https://www.iana.org/assignments/http-authschemes/http-authschemes.xhtml
-        .header("WWW-Authenticate", "Basic")
-        .body(Body::from("Unauthenticated")) // or Body::empty() // Json(json!({"error": "Unauthorized"}))
-        .unwrap_or_else(|_err| StatusCode::UNAUTHORIZED.into_response())
-}
-*/
 
 
 // This enables using `?` on functions that return `Result<_, anyhow::Error>` to turn them into
@@ -193,17 +88,23 @@ pub fn test_authenticate_basic(creds: &Option<TypedHeader<Authorization<Basic>>>
             .unwrap_or_else(|_err| StatusCode::UNAUTHORIZED.into_response());
 
     match creds {
-        None => return Err(RestAppError::JsonResultError(err_response)),
+        None => return Err(RestAppError::HttpResponseResultError(err_response)),
         Some(TypedHeader(Authorization(ref creds))) => {
             let usr = creds.username();
             let psw = creds.password();
             if usr != "vovan" || psw != "qwerty" {
-                return Err(RestAppError::JsonResultError(err_response));
+                return Err(RestAppError::HttpResponseResultError(err_response));
             }
         }
     }
     return Ok(());
 }
+
+
+/*
+
+use axum::Json;
+use serde_json::Value;
 
 
 const SECRET_SIGNING_KEY: &[u8] = b"keep_th1s_@_secret";
@@ -228,7 +129,6 @@ impl OurJwtPayload {
     }
 }
 
-// pub fn verify_jwt<C:Credentials>(creds: &C) {
 pub fn verify_jwt(creds: &Basic) -> Result<(), (StatusCode, Json<Value>)> {
     use serde_json::json;
     use axum::Json;
@@ -247,3 +147,4 @@ pub fn verify_jwt(creds: &Basic) -> Result<(), (StatusCode, Json<Value>)> {
         ))
     }
 }
+*/
