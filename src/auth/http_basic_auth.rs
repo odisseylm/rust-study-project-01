@@ -8,14 +8,16 @@ use crate::auth::psw_auth::PswAuthBackendImpl;
 
 use super::psw_auth;
 use super::auth_backend::{AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend};
-use super::error::AuthBackendError;
 use super::auth_user_provider::AuthUserProvider;
 use super::auth_user::AuthUser;
 use super::psw::PasswordComparator;
 
+use axum_login::AuthnBackend;
+use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
 
-#[derive(Clone)]
-#[readonly::make]
+#[derive(Clone, ambassador::Delegate)]
+#[readonly::make] // should be after 'derive'
+#[delegate(axum_login::AuthnBackend, target = "psw_backend")]
 pub struct HttpBasicAuthBackend <
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > {
@@ -39,6 +41,7 @@ impl <
 }
 
 
+/*
 #[axum::async_trait]
 impl<
     PswComparator: PasswordComparator + Clone + Sync + Send,
@@ -48,18 +51,15 @@ impl<
     type Error = AuthBackendError;
 
     #[inline]
-    //noinspection DuplicatedCode
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
         self.psw_backend.authenticate(creds).await
     }
-
     #[inline]
-    //noinspection DuplicatedCode
-    // TODO: try to remove duplicates using Deref, so on.
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         self.psw_backend.get_user(user_id).await
     }
 }
+*/
 
 
 #[axum::async_trait]

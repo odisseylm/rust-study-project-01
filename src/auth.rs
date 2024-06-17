@@ -25,6 +25,8 @@ mod login_form_auth;
 mod auth_backend_delegate;
 pub mod composite_util;
 
+pub mod axum_login_delegatable;
+
 
 pub use auth_user::AuthUser;
 pub use auth_backend::{ AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend, ProposeAuthAction };

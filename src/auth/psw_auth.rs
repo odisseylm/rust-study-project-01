@@ -2,8 +2,6 @@ use core::fmt;
 use core::marker::PhantomData;
 use std::sync::Arc;
 
-use axum_login;
-
 use super::error::AuthBackendError;
 use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
 use super::auth_user::AuthUser;

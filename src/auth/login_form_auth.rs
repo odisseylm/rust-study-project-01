@@ -2,13 +2,11 @@ use std::sync::Arc;
 use axum::body::Body;
 use axum::extract::OriginalUri;
 use axum::http::StatusCode;
-use psw_auth::PswAuthCredentials;
 use crate::auth::AuthBackendMode;
 
 use super::auth_backend::{ AuthnBackendAttributes, ProposeAuthAction };
 use super::http::url_encode;
-use super::psw_auth::{ self, PswAuthBackendImpl };
-use super::error::AuthBackendError;
+use super::psw_auth::PswAuthBackendImpl;
 use super::auth_user_provider::AuthUserProvider;
 use super::auth_user::AuthUser;
 use super::psw::PasswordComparator;
@@ -21,8 +19,12 @@ pub struct LoginFormAuthConfig {
 }
 
 
-#[derive(Clone)]
-#[readonly::make]
+use axum_login::AuthnBackend;
+use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
+
+#[derive(Clone, ambassador::Delegate)]
+#[readonly::make] // should be after 'derive'
+#[delegate(axum_login::AuthnBackend, target = "psw_backend")]
 pub struct LoginFormAuthBackend <
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > {
@@ -70,7 +72,8 @@ impl <
 */
 
 
-// TODO: how to avoid duplicating this code?
+/*
+// T O D O: how to avoid duplicating this code?
 //       Deref/Borrow do not work because they use 'dyn' and axum_login::AuthnBackend
 //       requires Clone which can NOT be used with as 'dyn'.
 #[axum::async_trait]
@@ -82,17 +85,15 @@ impl <
     type Error = AuthBackendError;
 
     #[inline]
-    //noinspection DuplicatedCode
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
         self.psw_backend.authenticate(creds).await
     }
-
     #[inline]
-    //noinspection DuplicatedCode
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         self.psw_backend.get_user(user_id).await
     }
 }
+*/
 
 
 #[axum::async_trait]
