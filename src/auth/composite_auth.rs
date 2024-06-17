@@ -1,3 +1,4 @@
+use std::ops::Deref;
 use std::sync::Arc;
 
 use axum::extract::Request;
@@ -5,6 +6,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
 use axum_login::UserId;
+use itertools::Itertools;
 use log::{ error };
 use oauth2::basic::BasicClient;
 use psw_auth::PswAuthCredentials;
@@ -52,11 +54,38 @@ impl CompositeAuthnBackend {
         CompositeAuthnBackend { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend }
     }
 
-    pub fn oath2_only(_client: BasicClient) -> CompositeAuthnBackend {
-        todo!()
+    pub fn with_backends(
+        http_basic_auth_backend: Option<HttpBasicAuthBackend<PlainPasswordComparator>>,
+        login_form_auth_backend: Option<LoginFormAuthBackend<PlainPasswordComparator>>,
+        oauth2_backend: Option<OAuth2AuthBackend>,
+    ) -> Result<CompositeAuthnBackend, AuthBackendError> {
+
+        use super::auth_backend::AuthnBackendAttributes;
+
+        let all_user_providers: Vec<Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>> =
+            vec!(
+                http_basic_auth_backend.as_ref().map(|b|b.user_provider()),
+                login_form_auth_backend.as_ref().map(|b|b.user_provider()),
+                oauth2_backend.as_ref().map(|b|b.user_provider()),
+            )
+            .into_iter()
+            .flat_map(|v|v)
+            .collect::<Vec<_>>();
+
+        let users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> = all_user_providers
+            .first()
+            .map(|arc|arc.clone())
+            .ok_or_else(||AuthBackendError::NoUserProvider) ?;
+
+        let user_providers_count = all_user_providers.into_iter().map(|arc|Arc::into_raw(arc)).unique().count();
+        if user_providers_count > 1 {
+            return Err(AuthBackendError::DifferentUserProviders)
+        }
+
+        Ok(CompositeAuthnBackend { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend })
     }
 
-    // TODO: Do we need redirection there??
+    // T O D O: Do we need redirection there??
     #[allow(unused_qualifications)]
     pub fn authorize_url(&self) -> Result<(oauth2::url::Url, oauth2::CsrfToken), AuthBackendError> {
         match self.oauth2_backend {

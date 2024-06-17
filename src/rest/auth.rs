@@ -116,9 +116,8 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
         },
     );
 
-    let backend = AuthnBackend::new_raw(
-        usr_provider.clone(),
-        Some(http_basic_auth_backend), Some(login_form_auth_backend), oauth2_backend_opt);
+    let backend = AuthnBackend::with_backends(
+        Some(http_basic_auth_backend), Some(login_form_auth_backend), oauth2_backend_opt) ?;
     let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, MemoryStore> = AuthManagerLayerBuilder::new(backend, session_layer).build();
     Ok(auth_layer)
 }

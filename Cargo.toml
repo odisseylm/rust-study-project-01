@@ -163,6 +163,9 @@ askama_axum = "0.4.0"
 #xml-macro = "0.2.0"
 #quick-xml = "0.32.0"
 
+itertools = "0.13.0"
+by_address = "1.2.1"
+
 
 # unused manifest key: tests
 #[test]

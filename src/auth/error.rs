@@ -45,6 +45,12 @@ pub enum AuthBackendError {
     #[error("NoRequestedBackend")]
     NoRequestedBackend,
 
+    #[error("NoUserProvider")]
+    NoUserProvider,
+
+    #[error("DifferentUserProviders")]
+    DifferentUserProviders,
+
     #[error(transparent)]
     TaskJoin(#[from] tokio::task::JoinError),
 
