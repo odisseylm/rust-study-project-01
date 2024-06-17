@@ -132,3 +132,28 @@ impl <
         }).await
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    /*
+    use std::sync::Arc;
+    // use axum_login::AuthUser;
+    use super::AuthUser;
+    use crate::auth::{AuthBackendError, AuthBackendMode, BasicAuthCreds, HttpBasicAuthBackend, InMemAuthUserProvider, PlainPasswordComparator, RequestUserAuthnBackend};
+    use crate::auth::psw_auth::PswAuthCredentials;
+
+    #[test]
+    fn aa() {
+        let users = Arc::new(InMemAuthUserProvider::test_users());
+        let basic_auth = HttpBasicAuthBackend::<PlainPasswordComparator>::new(users, AuthBackendMode::AuthSupported);
+
+        use RequestUserAuthnBackend;
+
+        // let aa: Option<dyn RequestUserAuthnBackend<PlainPasswordComparator>> = basic_auth.try_into();
+        let as_req_user_auth_backend: Result<dyn RequestUserAuthnBackend<User=AuthUser, Credentials=PswAuthCredentials, Error=AuthBackendError, AuthRequestData=BasicAuthCreds>, _> =
+            basic_auth.try_into();
+        println!("### as_req_user_auth_backend: {:?}", as_req_user_auth_backend)
+    }
+    */
+}

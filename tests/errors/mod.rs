@@ -12,6 +12,7 @@ pub struct Entity1 {
     pub int_field: i32,
     // #[serde_as(as = "stringField")]
     #[serde(alias="stringField")]
+    #[allow(dead_code)]
     pub string_field: String,
 }
 
