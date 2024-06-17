@@ -44,7 +44,35 @@ impl <
     }
 }
 
-// TODO: how to avoid duplicating this code? (probably Deref or something like that)
+/*
+#[axum::async_trait]
+impl <
+    PswComparator: PasswordComparator + Clone + Sync + Send,
+> core::borrow::Borrow<dyn axum_login::AuthnBackend<User=AuthUser,Credentials=PswAuthCredentials,Error=AuthBackendError>>
+for LoginFormAuthBackend<PswComparator> {
+    fn borrow(&self) -> &dyn axum_login::AuthnBackend<User=AuthUser,Credentials=PswAuthCredentials,Error=AuthBackendError> {
+        &self.psw_backend
+    }
+}
+*/
+/*
+#[axum::async_trait]
+impl <
+    PswComparator: PasswordComparator + Clone + Sync + Send,
+> core::ops::Deref for LoginFormAuthBackend<PswComparator> {
+    type Target = dyn axum_login::AuthnBackend<User=AuthUser,Credentials=PswAuthCredentials,Error=AuthBackendError>;
+    // type Target = dyn axum_login::AuthnBackend;
+
+    fn deref(&self) -> &Self::Target {
+        &self.psw_backend
+    }
+}
+*/
+
+
+// TODO: how to avoid duplicating this code?
+//       Deref/Borrow do not work because they use 'dyn' and axum_login::AuthnBackend
+//       requires Clone which can NOT be used with as 'dyn'.
 #[axum::async_trait]
 impl <
     PswComparator: PasswordComparator + Clone + Sync + Send,
