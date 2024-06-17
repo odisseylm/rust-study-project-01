@@ -23,6 +23,7 @@ mod auth_backend;
 mod http_basic_auth;
 mod login_form_auth;
 mod auth_backend_delegate;
+pub mod composite_util;
 
 
 pub use auth_user::AuthUser;

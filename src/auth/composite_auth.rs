@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use std::sync::Arc;
 
 use axum::extract::Request;
@@ -6,11 +5,10 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 
 use axum_login::UserId;
-use itertools::Itertools;
 use log::{ error };
-use oauth2::basic::BasicClient;
 use psw_auth::PswAuthCredentials;
-use crate::auth::auth_backend::{ AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend };
+use crate::auth::auth_backend::{ AuthBackendMode, RequestUserAuthnBackend };
+use crate::auth::composite_util::{ get_user_provider3, unauthenticated_response3 };
 use crate::auth::http_basic_auth::HttpBasicAuthBackend;
 use crate::auth::login_form_auth::LoginFormAuthBackend;
 
@@ -22,7 +20,7 @@ use super::mem_user_provider::InMemAuthUserProvider;
 
 
 
-// #[derive(Clone)]
+#[derive(Clone)]
 pub struct CompositeAuthnBackend <
     > {
     users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>,
@@ -59,29 +57,7 @@ impl CompositeAuthnBackend {
         login_form_auth_backend: Option<LoginFormAuthBackend<PlainPasswordComparator>>,
         oauth2_backend: Option<OAuth2AuthBackend>,
     ) -> Result<CompositeAuthnBackend, AuthBackendError> {
-
-        use super::auth_backend::AuthnBackendAttributes;
-
-        let all_user_providers: Vec<Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>> =
-            vec!(
-                http_basic_auth_backend.as_ref().map(|b|b.user_provider()),
-                login_form_auth_backend.as_ref().map(|b|b.user_provider()),
-                oauth2_backend.as_ref().map(|b|b.user_provider()),
-            )
-            .into_iter()
-            .flat_map(|v|v)
-            .collect::<Vec<_>>();
-
-        let users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> = all_user_providers
-            .first()
-            .map(|arc|arc.clone())
-            .ok_or_else(||AuthBackendError::NoUserProvider) ?;
-
-        let user_providers_count = all_user_providers.into_iter().map(|arc|Arc::into_raw(arc)).unique().count();
-        if user_providers_count > 1 {
-            return Err(AuthBackendError::DifferentUserProviders)
-        }
-
+        let users_provider = get_user_provider3(&http_basic_auth_backend, &login_form_auth_backend, &oauth2_backend) ?;
         Ok(CompositeAuthnBackend { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend })
     }
 
@@ -99,8 +75,6 @@ impl CompositeAuthnBackend {
         auth_session_user: &Option<AuthUser>,
         req: Request,
     ) -> (Request, Result<(), Response>) {
-
-        use axum::extract::Request;
 
         if auth_session_user.is_some() {
             return (req, Ok(()));
@@ -124,58 +98,23 @@ fn map_auth_res_to_is_auth_res(
     auth_res: Result<Option<AuthUser>, AuthBackendError>,
 ) -> Result<(), Response> {
 
-    let action_response: Response =
-        backend_propose_auth_action(&backend.http_basic_auth_backend, req)
-        .or_else(|| backend_propose_auth_action(&backend.login_form_auth_backend, req))
-        .or_else(|| backend_propose_auth_action(&backend.oauth2_backend, req))
-        .unwrap_or_else(|| StatusCode::UNAUTHORIZED.into_response());
+    let action_response: Response = unauthenticated_response3(
+        req,
+        &backend.http_basic_auth_backend,
+        &backend.login_form_auth_backend,
+        &backend.oauth2_backend
+    ).unwrap_or_else(|| StatusCode::UNAUTHORIZED.into_response());
 
     match auth_res {
         Ok(None) => Err(action_response),
         Ok(_) => Ok(()),
         Err(err) => {
-            match err {
-                // AuthBackendError::NoUser => Err(action),
-                // AuthBackendError::NoCredentials => Err(action),
-                // AuthBackendError::IncorrectUsernameOrPsw =>  Err(action),
-                // AuthBackendError::UserProviderError(_) => {}
-                // AuthBackendError::Sqlx(_) => {}
-                // AuthBackendError::Reqwest(_) => {}
-                // AuthBackendError::OAuth2(_) => {}
-                // AuthBackendError::NoRequestedBackend => {}
-                // AuthBackendError::TaskJoin(_) => {}
-                // AuthBackendError::ConfigError(_) => {}
-                other_err => {
-                    error!("Authentication error: {:?}", other_err);
-                    Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
-                }
-            }
+            error!("Authentication error: {:?}", err);
+            Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
         }
     }
 }
 
-fn backend_propose_auth_action <
-    B: AuthnBackendAttributes,
-> (backend: &Option<B>, req: &Request) -> Option<Response> {
-    backend.as_ref().and_then(|b|b.propose_authentication_action(req).map(|a|a.into_response()))
-}
-
-
-impl Clone for CompositeAuthnBackend {
-    fn clone(&self) -> Self {
-        CompositeAuthnBackend {
-            users_provider: self.users_provider.clone(),
-            http_basic_auth_backend: self.http_basic_auth_backend.clone(),
-            login_form_auth_backend: self.login_form_auth_backend.clone(),
-            oauth2_backend: self.oauth2_backend.clone(),
-        }
-    }
-    fn clone_from(&mut self, source: &Self) {
-        self.http_basic_auth_backend = source.http_basic_auth_backend.clone();
-        self.login_form_auth_backend = source.login_form_auth_backend.clone();
-        self.oauth2_backend = source.oauth2_backend.clone();
-    }
-}
 
 #[axum::async_trait]
 impl axum_login::AuthnBackend for CompositeAuthnBackend {
