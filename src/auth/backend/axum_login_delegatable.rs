@@ -1,6 +1,7 @@
 
 // use axum_login::AuthnBackend;
 
+/*
 #[axum::async_trait]
 #[ambassador::delegatable_trait_remote]
 pub trait AuthnBackend: Clone + Send + Sync {
@@ -14,3 +15,4 @@ pub trait AuthnBackend: Clone + Send + Sync {
 
 // This is currently necessary to allow access in other modules
 pub use ambassador_impl_AuthnBackend;
+*/

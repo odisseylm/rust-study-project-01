@@ -3,13 +3,19 @@
 use std::sync::Arc;
 use axum::extract::Request;
 use axum::response::{ IntoResponse, Response };
-use crate::auth::{ AuthBackendError, AuthnBackendAttributes, AuthUser, AuthUserProvider };
+use super::super::{
+    error::AuthBackendError,
+    auth_backend::{ AuthnBackendAttributes},
+    auth_user_provider::AuthUserProvider,
+    auth_user::AuthUser,
+};
 
 
 #[inline(always)]
 pub fn get_user_provider2 <
-    B1: AuthnBackendAttributes,
-    B2: AuthnBackendAttributes,
+    C1, C2,
+    B1: AuthnBackendAttributes<User=AuthUser,Credentials=C1,Error=AuthBackendError>,
+    B2: AuthnBackendAttributes<User=AuthUser,Credentials=C2,Error=AuthBackendError>,
 >(
     backend1: &Option<B1>,
     backend2: &Option<B2>,
@@ -21,16 +27,20 @@ pub fn get_user_provider2 <
 }
 
 #[inline(always)]
-pub fn usr_prov <B: AuthnBackendAttributes> (backend: &Option<B>)
+pub fn usr_prov <
+    C,
+    B: AuthnBackendAttributes<User=AuthUser,Credentials=C,Error=AuthBackendError>,
+> (backend: &Option<B>)
     -> Option<Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>> {
     backend.as_ref().map(|b|b.user_provider())
 }
 
 #[inline(always)]
 pub fn get_user_provider3 <
-    B1: AuthnBackendAttributes,
-    B2: AuthnBackendAttributes,
-    B3: AuthnBackendAttributes,
+    C1, C2, C3,
+    B1: AuthnBackendAttributes<User=AuthUser,Credentials=C1,Error=AuthBackendError>,
+    B2: AuthnBackendAttributes<User=AuthUser,Credentials=C2,Error=AuthBackendError>,
+    B3: AuthnBackendAttributes<User=AuthUser,Credentials=C3,Error=AuthBackendError>,
 >(
     backend1: &Option<B1>,
     backend2: &Option<B2>,
@@ -43,6 +53,7 @@ pub fn get_user_provider3 <
     ))
 }
 
+/*
 #[inline(always)]
 pub fn get_user_provider4 <
     B1: AuthnBackendAttributes,
@@ -111,6 +122,7 @@ pub fn get_user_provider6 <
         usr_prov(backend6),
     ))
 }
+*/
 
 pub fn get_user_provider_u(
     possible_user_providers: &Vec<Option<Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>>>

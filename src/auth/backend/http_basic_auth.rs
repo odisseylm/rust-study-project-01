@@ -11,11 +11,12 @@ use super::super::auth_user_provider::AuthUserProvider;
 use super::super::psw::PasswordComparator;
 
 use axum_login::AuthnBackend;
-use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
+// use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
 
-#[derive(Clone, ambassador::Delegate)]
+#[derive(Clone)]
+// #[derive(Clone, ambassador::Delegate)]
 #[readonly::make] // should be after 'derive'
-#[delegate(axum_login::AuthnBackend, target = "psw_backend")]
+// #[delegate(axum_login::AuthnBackend, target = "psw_backend")]
 pub struct HttpBasicAuthBackend <
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > {
@@ -39,25 +40,25 @@ impl <
 }
 
 
-/*
 #[axum::async_trait]
 impl<
     PswComparator: PasswordComparator + Clone + Sync + Send,
-    > axum_login::AuthnBackend for HttpBasicAuthBackend<PswComparator> {
+    > AuthnBackend for HttpBasicAuthBackend<PswComparator> {
     type User = AuthUser;
     type Credentials = PswAuthCredentials;
     type Error = AuthBackendError;
 
     #[inline]
+    //noinspection DuplicatedCode
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
         self.psw_backend.authenticate(creds).await
     }
     #[inline]
+    //noinspection DuplicatedCode
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         self.psw_backend.get_user(user_id).await
     }
 }
-*/
 
 
 #[axum::async_trait]
@@ -76,7 +77,7 @@ impl <
 }
 
 pub struct ProposeHttpBasicAuthAction;
-impl crate::auth::auth_backend::ProposeAuthAction for ProposeHttpBasicAuthAction { }
+impl super::super::auth_backend::ProposeAuthAction for ProposeHttpBasicAuthAction { }
 #[inherent::inherent]
 impl axum::response::IntoResponse for ProposeHttpBasicAuthAction {
     #[allow(dead_code)] // !! It is really used IMPLICITLY !!
@@ -132,7 +133,7 @@ impl <
 }
 
 /*
-use crate::auth::authn_backend_dyn_wrap::AuthnBackendDynWrapper;
+use super::super::auth::authn_backend_dyn_wrap::AuthnBackendDynWrapper;
 
 impl <
     PswComparator: PasswordComparator + Clone + Sync + Send,
@@ -198,6 +199,8 @@ for Arc<dyn RequestUserAuthnBackendDyn> {
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
+    use crate::util::TestResultUnwrap;
+
     use super::*;
     use super::super::super::{
         auth_backend::{ AuthBackendMode },
@@ -205,7 +208,6 @@ mod tests {
         user_provider::{ InMemAuthUserProvider },
         psw::{ PlainPasswordComparator },
     };
-    use crate::util::TestResultUnwrap;
 
     #[test]
     fn test_try_into_when_impl() {
@@ -219,7 +221,7 @@ mod tests {
     /*
     #[test]
     fn test_try_into_when_no_impl() {
-        use crate::auth::{ LoginFormAuthBackend, LoginFormAuthConfig };
+        use super::super::auth::{ LoginFormAuthBackend, LoginFormAuthConfig };
 
         let users = Arc::new(InMemAuthUserProvider::test_users().test_unwrap());
         let users: Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send> = users;
@@ -234,8 +236,8 @@ mod tests {
     use std::sync::Arc;
     // use axum_login::AuthUser;
     use super::AuthUser;
-    use crate::auth::{AuthBackendError, AuthBackendMode, BasicAuthCreds, HttpBasicAuthBackend, InMemAuthUserProvider, PlainPasswordComparator, RequestUserAuthnBackend};
-    use crate::auth::psw_auth::PswAuthCredentials;
+    use super::super::auth::{AuthBackendError, AuthBackendMode, BasicAuthCreds, HttpBasicAuthBackend, InMemAuthUserProvider, PlainPasswordComparator, RequestUserAuthnBackend};
+    use super::super::auth::psw_auth::PswAuthCredentials;
 
     #[test]
     fn aa() {

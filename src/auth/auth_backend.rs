@@ -1,6 +1,10 @@
 use std::sync::Arc;
+
 use async_trait::async_trait;
-use crate::auth::{ AuthUser, AuthUserProvider };
+
+use super::{
+    auth_user_provider::AuthUserProvider,
+};
 
 
 #[derive(Debug, Copy, Clone)]
@@ -23,7 +27,7 @@ pub trait ProposeAuthAction : axum::response::IntoResponse {
 #[async_trait]
 pub trait AuthnBackendAttributes : axum_login::AuthnBackend + Clone + Send + Sync {
     type ProposeAuthAction: ProposeAuthAction;
-    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send>;
+    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User = Self::User> + Sync + Send>;
     fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction>;
 }
 

@@ -68,11 +68,17 @@ impl  <
 
 #[cfg(test)]
 mod tests {
-    use super::{ AuthnBackendDynWrapperImpl, AuthnBackendDynWrapper, wrap_authn_backend_as_dyn };
     use std::sync::Arc;
-    use crate::auth::user_provider::{ InMemAuthUserProvider };
-    use crate::auth::{ self, AuthBackendMode, PlainPasswordComparator };
-    use crate::auth::backend::{ LoginFormAuthBackend, LoginFormAuthConfig, psw_auth::PswAuthCredentials };
+
+    use super::{ AuthnBackendDynWrapperImpl, AuthnBackendDynWrapper, wrap_authn_backend_as_dyn };
+    use super::super::super::{
+        auth_user as auth,
+        error::AuthBackendError,
+        auth_backend::AuthBackendMode,
+        psw::PlainPasswordComparator,
+        user_provider::InMemAuthUserProvider,
+        backend::{ LoginFormAuthBackend, LoginFormAuthConfig, psw_auth::PswAuthCredentials },
+    };
     use crate::util::TestResultUnwrap;
 
     #[tokio::test]
@@ -85,12 +91,12 @@ mod tests {
         let r = psw_auth.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());
 
-        let as_dyn: Arc<AuthnBackendDynWrapperImpl<auth::AuthUser, PswAuthCredentials, auth::AuthBackendError, LoginFormAuthBackend<PlainPasswordComparator>>> =
+        let as_dyn: Arc<AuthnBackendDynWrapperImpl<auth::AuthUser, PswAuthCredentials, AuthBackendError, LoginFormAuthBackend<PlainPasswordComparator>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
         let r = as_dyn.authn_backend.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());
 
-        let as_dyn: Arc<dyn AuthnBackendDynWrapper<User = auth::AuthUser, Credentials=PswAuthCredentials, Error=auth::AuthBackendError, RealAuthnBackend=LoginFormAuthBackend<PlainPasswordComparator>>> =
+        let as_dyn: Arc<dyn AuthnBackendDynWrapper<User = auth::AuthUser, Credentials=PswAuthCredentials, Error=AuthBackendError, RealAuthnBackend=LoginFormAuthBackend<PlainPasswordComparator>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
         let r = as_dyn.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());

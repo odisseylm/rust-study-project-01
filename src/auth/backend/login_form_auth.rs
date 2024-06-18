@@ -2,14 +2,15 @@ use std::sync::Arc;
 use axum::body::Body;
 use axum::extract::OriginalUri;
 use axum::http::StatusCode;
-use crate::auth::AuthBackendMode;
 
-use super::super::auth_backend::{ AuthnBackendAttributes, ProposeAuthAction };
-use super::super::util::http::url_encode;
-use super::psw_auth::PswAuthBackendImpl;
-use super::super::auth_user_provider::AuthUserProvider;
-use super::super::auth_user::AuthUser;
-use super::super::psw::PasswordComparator;
+use super::{ psw_auth::PswAuthBackendImpl };
+use super::super::{
+    auth_user::AuthUser,
+    auth_backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction },
+    auth_user_provider::AuthUserProvider,
+    psw::PasswordComparator,
+    util::http::url_encode,
+};
 
 
 #[derive(Debug, Clone)]
@@ -20,11 +21,12 @@ pub struct LoginFormAuthConfig {
 
 
 use axum_login::AuthnBackend;
-use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
+// use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
 
-#[derive(Clone, ambassador::Delegate)]
+#[derive(Clone)]
+// #[derive(Clone, ambassador::Delegate)]
 #[readonly::make] // should be after 'derive'
-#[delegate(axum_login::AuthnBackend, target = "psw_backend")]
+// #[delegate(axum_login::AuthnBackend, target = "psw_backend")]
 pub struct LoginFormAuthBackend <
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > {
@@ -72,28 +74,28 @@ impl <
 */
 
 
-/*
 // T O D O: how to avoid duplicating this code?
 //       Deref/Borrow do not work because they use 'dyn' and axum_login::AuthnBackend
 //       requires Clone which can NOT be used with as 'dyn'.
 #[axum::async_trait]
 impl <
     PswComparator: PasswordComparator + Clone + Sync + Send,
-> axum_login::AuthnBackend for LoginFormAuthBackend<PswComparator> {
+> AuthnBackend for LoginFormAuthBackend<PswComparator> {
     type User = AuthUser;
-    type Credentials = PswAuthCredentials;
-    type Error = AuthBackendError;
+    type Credentials = super::psw_auth::PswAuthCredentials;
+    type Error = super::super::error::AuthBackendError;
 
     #[inline]
+    //noinspection DuplicatedCode
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
         self.psw_backend.authenticate(creds).await
     }
     #[inline]
+    //noinspection DuplicatedCode
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         self.psw_backend.get_user(user_id).await
     }
 }
-*/
 
 
 #[axum::async_trait]

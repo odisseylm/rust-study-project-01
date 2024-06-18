@@ -6,13 +6,22 @@ use axum::response::{ IntoResponse, Response };
 
 use axum_login::UserId;
 use log::{ error };
-use crate::auth::auth_backend::{ AuthBackendMode, RequestUserAuthnBackend };
-use crate::auth::{ AuthBackendError, AuthUser, AuthUserProvider, PlainPasswordComparator };
-use crate::auth::util::composite_util::{ get_user_provider3, unauthenticated_response3 };
-use crate::auth::backend::{ HttpBasicAuthBackend, LoginFormAuthBackend, LoginFormAuthConfig, OAuth2AuthBackend, OAuth2AuthCredentials };
-use crate::auth::backend::psw_auth::PswAuthCredentials;
-use crate::auth::user_provider::InMemAuthUserProvider;
 
+use super::{
+    http_basic_auth::HttpBasicAuthBackend,
+    login_form_auth::{ LoginFormAuthBackend, LoginFormAuthConfig },
+    oauth2_auth::{ OAuth2AuthBackend, OAuth2AuthCredentials },
+    psw_auth::PswAuthCredentials,
+};
+use super::super::{
+    auth_backend::{ AuthBackendMode, RequestUserAuthnBackend },
+    error::AuthBackendError,
+    auth_user::AuthUser,
+    auth_user_provider::AuthUserProvider,
+    psw::PlainPasswordComparator,
+    util::composite_util::{ get_user_provider3, unauthenticated_response3 },
+    user_provider::InMemAuthUserProvider,
+};
 
 #[derive(Clone)]
 pub struct CompositeAuthnBackend < // TODO: Rename to example
