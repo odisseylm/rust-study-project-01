@@ -2,15 +2,13 @@ use std::sync::Arc;
 use axum::body::Body;
 use axum::extract::Request;
 use axum::response::{ IntoResponse, Response };
-use oauth2_auth::OAuth2AuthBackend;
-use crate::auth::{AuthBackendMode, InMemAuthUserProvider, LoginFormAuthConfig, PlainPasswordComparator};
-use crate::auth::composite_auth::CompositeAuthnBackend;
-use crate::auth::oauth2_auth::OAuth2Config;
-use crate::auth::oauth2_auth;
+use crate::auth::{ AuthBackendMode, PlainPasswordComparator };
+use crate::auth::user_provider::{ InMemAuthUserProvider };
+use crate::auth::backend::{ LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config, CompositeAuthnBackend };
 
 
 pub type AuthUser = crate::auth::AuthUser;
-pub type AuthCredentials = crate::auth::composite_auth::CompositeAuthCredentials;
+pub type AuthCredentials = crate::auth::backend::CompositeAuthCredentials;
 pub type AuthnBackend = CompositeAuthnBackend;
 pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
 pub type AuthBackendError = crate::auth::AuthBackendError;
@@ -102,12 +100,12 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
         }
     };
 
-    let http_basic_auth_backend = crate::auth::HttpBasicAuthBackend::<PlainPasswordComparator>::new(
+    let http_basic_auth_backend = crate::auth::backend::HttpBasicAuthBackend::<PlainPasswordComparator>::new(
         usr_provider.clone(),
         // AuthBackendMode::AuthProposed, // It makes sense for pure server SOA (especially for testing)
         AuthBackendMode::AuthSupported,
     );
-    let login_form_auth_backend = crate::auth::LoginFormAuthBackend::<PlainPasswordComparator>::new(
+    let login_form_auth_backend = crate::auth::backend::LoginFormAuthBackend::<PlainPasswordComparator>::new(
         usr_provider.clone(),
         // It makes sense for web-app
         LoginFormAuthConfig {

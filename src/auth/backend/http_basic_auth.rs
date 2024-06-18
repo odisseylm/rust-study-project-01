@@ -2,15 +2,13 @@ use core::fmt;
 use std::sync::Arc;
 
 use axum_extra::typed_header::TypedHeaderRejection;
-use psw_auth::PswAuthCredentials;
-use crate::auth::http::http_unauthenticated_401_response;
-use crate::auth::psw_auth::PswAuthBackendImpl;
 
-use super::psw_auth;
-use super::auth_backend::{AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend};
-use super::auth_user_provider::AuthUserProvider;
-use super::auth_user::AuthUser;
-use super::psw::PasswordComparator;
+use super::psw_auth::{ PswAuthBackendImpl, PswAuthCredentials };
+use super::super::util::http::http_unauthenticated_401_response;
+use super::super::auth_user::AuthUser;
+use super::super::auth_backend::{ AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend };
+use super::super::auth_user_provider::AuthUserProvider;
+use super::super::psw::PasswordComparator;
 
 use axum_login::AuthnBackend;
 use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
@@ -166,7 +164,7 @@ impl<
 }
 
 use axum::extract::Request;
-use super::AuthBackendError;
+use super::super::error::AuthBackendError;
 
 impl <
     PswComparator: PasswordComparator + Clone + Sync + Send + 'static,
@@ -200,8 +198,13 @@ for Arc<dyn RequestUserAuthnBackendDyn> {
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
-    use super::{ AuthUser, RequestUserAuthnBackendDyn };
-    use crate::auth::{ AuthBackendMode, AuthUserProvider, HttpBasicAuthBackend, InMemAuthUserProvider, PlainPasswordComparator };
+    use super::*;
+    use super::super::super::{
+        auth_backend::{ AuthBackendMode },
+        auth_user_provider::AuthUserProvider,
+        user_provider::{ InMemAuthUserProvider },
+        psw::{ PlainPasswordComparator },
+    };
     use crate::util::TestResultUnwrap;
 
     #[test]

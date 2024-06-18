@@ -1,4 +1,3 @@
-use super::auth_user;
 
 
 /// It is impossible to put impl of axum_impl::AuthBackend to pointer (Box/Rc/Arc)
@@ -8,43 +7,48 @@ use super::auth_user;
 #[axum::async_trait]
 #[allow(dead_code)]
 pub trait AuthnBackendDynWrapper: Send + Sync {
+    type User: axum_login::AuthUser;
     type Credentials: Send + Sync;
     type Error: std::error::Error + Send + Sync;
-    type RealAuthnBackend: axum_login::AuthnBackend<User = auth_user::AuthUser, Credentials = Self::Credentials, Error = Self::Error>; // + Send + Sync;
+    type RealAuthnBackend: axum_login::AuthnBackend<User = Self::User, Credentials = Self::Credentials, Error = Self::Error>; // + Send + Sync;
 
     fn backend(&self) -> &Self::RealAuthnBackend;
 
-    async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<auth_user::AuthUser>, Self::Error>;
-    async fn get_user(&self, user_id: &axum_login::UserId<Self::RealAuthnBackend>) -> Result<Option<auth_user::AuthUser>, Self::Error>;
+    async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error>;
+    async fn get_user(&self, user_id: &axum_login::UserId<Self::RealAuthnBackend>) -> Result<Option<Self::User>, Self::Error>;
 }
 
 
 pub struct AuthnBackendDynWrapperImpl <
+    User: axum_login::AuthUser,
     Credentials: Send + Sync,
     Error: std::error::Error + Send + Sync,
-    RealAuthnBackend: axum_login::AuthnBackend<User = auth_user::AuthUser, Credentials = Credentials, Error = Error>, // + Send + Sync,
+    RealAuthnBackend: axum_login::AuthnBackend<User = User, Credentials = Credentials, Error = Error>, // + Send + Sync,
     > {
     authn_backend: RealAuthnBackend,
 }
 
 #[allow(dead_code)]
 pub fn wrap_authn_backend_as_dyn<
+    User: axum_login::AuthUser,
     Credentials: Send + Sync,
     Error: std::error::Error + Send + Sync,
-    RealAuthnBackend: axum_login::AuthnBackend<User = auth_user::AuthUser, Credentials = Credentials, Error = Error>, // + Send + Sync,
-    > (authn_backend: RealAuthnBackend) -> AuthnBackendDynWrapperImpl<Credentials, Error, RealAuthnBackend> {
-    AuthnBackendDynWrapperImpl::<Credentials, Error, RealAuthnBackend> { authn_backend }
+    RealAuthnBackend: axum_login::AuthnBackend<User = User, Credentials = Credentials, Error = Error>, // + Send + Sync,
+    > (authn_backend: RealAuthnBackend) -> AuthnBackendDynWrapperImpl<User, Credentials, Error, RealAuthnBackend> {
+    AuthnBackendDynWrapperImpl::<User, Credentials, Error, RealAuthnBackend> { authn_backend }
 }
 
 #[axum::async_trait]
 impl  <
+    User: axum_login::AuthUser,
     Credentials: Send + Sync,
     Error: std::error::Error + Send + Sync,
-    RealAuthnBackend: axum_login::AuthnBackend<User = auth_user::AuthUser, Credentials = Credentials, Error = Error>, // + Send + Sync,
+    RealAuthnBackend: axum_login::AuthnBackend<User = User, Credentials = Credentials, Error = Error>, // + Send + Sync,
     >
     AuthnBackendDynWrapper //<Credentials = Credentials, Error = Error, RealAuthnBackend = RealAuthnBackend>
-    for AuthnBackendDynWrapperImpl<Credentials, Error, RealAuthnBackend> {
+    for AuthnBackendDynWrapperImpl<User, Credentials, Error, RealAuthnBackend> {
 
+    type User = User;
     type Credentials = Credentials;
     type Error = Error;
     type RealAuthnBackend = RealAuthnBackend;
@@ -53,10 +57,10 @@ impl  <
         &self.authn_backend
     }
 
-    async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<auth_user::AuthUser>, Self::Error> {
+    async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
         self.authn_backend.authenticate(creds).await
     }
-    async fn get_user(&self, user_id: &axum_login::UserId<Self::RealAuthnBackend>) -> Result<Option<auth_user::AuthUser>, Self::Error> {
+    async fn get_user(&self, user_id: &axum_login::UserId<Self::RealAuthnBackend>) -> Result<Option<Self::User>, Self::Error> {
         self.authn_backend.get_user(user_id).await
     }
 }
@@ -66,8 +70,9 @@ impl  <
 mod tests {
     use super::{ AuthnBackendDynWrapperImpl, AuthnBackendDynWrapper, wrap_authn_backend_as_dyn };
     use std::sync::Arc;
-    use crate::auth::{ self, AuthBackendMode, InMemAuthUserProvider, PlainPasswordComparator, LoginFormAuthBackend, LoginFormAuthConfig };
-    use crate::auth::psw_auth::PswAuthCredentials;
+    use crate::auth::user_provider::{ InMemAuthUserProvider };
+    use crate::auth::{ self, AuthBackendMode, PlainPasswordComparator };
+    use crate::auth::backend::{ LoginFormAuthBackend, LoginFormAuthConfig, psw_auth::PswAuthCredentials };
     use crate::util::TestResultUnwrap;
 
     #[tokio::test]
@@ -80,12 +85,12 @@ mod tests {
         let r = psw_auth.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());
 
-        let as_dyn: Arc<AuthnBackendDynWrapperImpl<PswAuthCredentials, auth::AuthBackendError, LoginFormAuthBackend<PlainPasswordComparator>>> =
+        let as_dyn: Arc<AuthnBackendDynWrapperImpl<auth::AuthUser, PswAuthCredentials, auth::AuthBackendError, LoginFormAuthBackend<PlainPasswordComparator>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
         let r = as_dyn.authn_backend.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());
 
-        let as_dyn: Arc<dyn AuthnBackendDynWrapper<Credentials=PswAuthCredentials, Error=auth::AuthBackendError, RealAuthnBackend=LoginFormAuthBackend<PlainPasswordComparator>>> =
+        let as_dyn: Arc<dyn AuthnBackendDynWrapper<User = auth::AuthUser, Credentials=PswAuthCredentials, Error=auth::AuthBackendError, RealAuthnBackend=LoginFormAuthBackend<PlainPasswordComparator>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
         let r = as_dyn.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());

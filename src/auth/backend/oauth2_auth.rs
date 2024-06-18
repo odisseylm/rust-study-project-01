@@ -2,10 +2,12 @@ use std::env::VarError;
 use std::sync::Arc;
 use axum::extract::OriginalUri;
 use oauth2::basic::BasicClient;
-use crate::auth::auth_backend::AuthnBackendAttributes;
-use super::{auth_user, AuthBackendMode};
-use super::error::AuthBackendError;
-use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
+
+use super::super::{
+    auth_user, AuthBackendMode, error::AuthBackendError,
+    auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
+    auth_backend::AuthnBackendAttributes,
+};
 
 
 #[axum::async_trait]

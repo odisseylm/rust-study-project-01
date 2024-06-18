@@ -2,10 +2,12 @@ use core::fmt;
 use core::marker::PhantomData;
 use std::sync::Arc;
 
-use super::error::AuthBackendError;
-use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
-use super::auth_user::AuthUser;
-use super::psw::PasswordComparator;
+use super::super::{
+    error::AuthBackendError,
+    auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
+    auth_user::AuthUser,
+    psw::PasswordComparator,
+};
 
 
 // #[derive(Clone)]

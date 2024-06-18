@@ -54,7 +54,7 @@ pub fn wrap_static_ptr_auth_user_provider<
 #[allow(dead_code)]
 fn compile_test() {
     use std::sync::Arc;
-    use crate::auth::InMemAuthUserProvider;
+    use crate::auth::user_provider::InMemAuthUserProvider;
 
     let a1: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::new());
     let _a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(InMemAuthUserProvider::new());
@@ -125,7 +125,7 @@ mod tests {
     #[allow(dead_code, unused_variables)]
     fn compilation_arc_test() {
         use std::sync::Arc;
-        use crate::auth::InMemAuthUserProvider;
+        use crate::auth::user_provider::InMemAuthUserProvider;
 
         let a1: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::new());
         let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(InMemAuthUserProvider::new());
@@ -156,7 +156,7 @@ mod tests {
     #[allow(dead_code, unused_variables)]
     fn compilation_box_test() {
         use std::sync::Arc;
-        use crate::auth::InMemAuthUserProvider;
+        use crate::auth::user_provider::InMemAuthUserProvider;
 
         let a1: Box<InMemAuthUserProvider> = Box::new(InMemAuthUserProvider::new());
         let a2: Box<dyn AuthUserProvider<User=AuthUser>> = Box::new(InMemAuthUserProvider::new());

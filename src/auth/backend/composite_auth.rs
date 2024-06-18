@@ -2,26 +2,20 @@ use std::sync::Arc;
 
 use axum::extract::Request;
 use axum::http::StatusCode;
-use axum::response::{IntoResponse, Response};
+use axum::response::{ IntoResponse, Response };
 
 use axum_login::UserId;
 use log::{ error };
-use psw_auth::PswAuthCredentials;
 use crate::auth::auth_backend::{ AuthBackendMode, RequestUserAuthnBackend };
-use crate::auth::composite_util::{ get_user_provider3, unauthenticated_response3 };
-use crate::auth::http_basic_auth::HttpBasicAuthBackend;
-use crate::auth::login_form_auth::LoginFormAuthBackend;
-
-use super::{AuthUserProvider, LoginFormAuthConfig, OAuth2AuthBackend, OAuth2AuthCredentials, psw_auth};
-use super::auth_user::AuthUser;
-use super::error::AuthBackendError;
-use super::psw::PlainPasswordComparator;
-use super::mem_user_provider::InMemAuthUserProvider;
-
+use crate::auth::{ AuthBackendError, AuthUser, AuthUserProvider, PlainPasswordComparator };
+use crate::auth::util::composite_util::{ get_user_provider3, unauthenticated_response3 };
+use crate::auth::backend::{ HttpBasicAuthBackend, LoginFormAuthBackend, LoginFormAuthConfig, OAuth2AuthBackend, OAuth2AuthCredentials };
+use crate::auth::backend::psw_auth::PswAuthCredentials;
+use crate::auth::user_provider::InMemAuthUserProvider;
 
 
 #[derive(Clone)]
-pub struct CompositeAuthnBackend <
+pub struct CompositeAuthnBackend < // TODO: Rename to example
     > {
     users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>,
     http_basic_auth_backend: Option<HttpBasicAuthBackend<PlainPasswordComparator>>,

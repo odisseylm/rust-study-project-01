@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use async_trait::async_trait;
-use crate::auth::{AuthUser, AuthUserProvider};
+use crate::auth::{ AuthUser, AuthUserProvider };
 
 
 #[derive(Debug, Copy, Clone)]

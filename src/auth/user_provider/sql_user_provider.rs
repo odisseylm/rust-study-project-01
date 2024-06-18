@@ -1,7 +1,10 @@
 use sqlx::SqlitePool;
-use crate::auth::auth_user::AuthUser;
-use crate::auth::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
-use crate::auth::oauth2_auth::OAuth2UserStore;
+
+use super::super::{
+    auth_user::AuthUser,
+    auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
+    backend::oauth2_auth::OAuth2UserStore,
+};
 
 
 #[derive(Debug)]

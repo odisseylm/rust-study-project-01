@@ -7,7 +7,7 @@ use super::psw::PasswordComparator;
 #[derive(sqlx::FromRow)]
 #[readonly::make]
 pub struct AuthUser {
-    pub id: i64,
+    pub id: i64, // TODO: replace by enum
     pub username: String,
     pub password: Option<String>,
     pub access_token: Option<String>,

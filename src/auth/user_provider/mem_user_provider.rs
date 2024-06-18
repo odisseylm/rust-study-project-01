@@ -5,9 +5,11 @@ use std::sync::Arc;
 
 use tokio::sync::RwLock;
 
-use super::auth_user::AuthUser;
-use super::auth_user_provider::{ AuthUserProvider, AuthUserProviderError };
-use super::oauth2_auth::OAuth2UserStore;
+use super::super::{
+    auth_user::AuthUser,
+    auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
+    backend::oauth2_auth::OAuth2UserStore
+};
 
 
 struct InMemoryState {
