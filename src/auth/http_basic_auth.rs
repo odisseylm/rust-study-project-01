@@ -71,7 +71,7 @@ impl <
     fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> {
         self.psw_backend.users_provider()
     }
-    fn propose_authentication_action(&self, _: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {
+    fn propose_authentication_action(&self, _: &Request) -> Option<Self::ProposeAuthAction> {
         if let AuthBackendMode::AuthProposed = self.auth_mode
         { Some(ProposeHttpBasicAuthAction) } else { None }
     }
@@ -133,9 +133,100 @@ impl <
     }
 }
 
+/*
+use crate::auth::authn_backend_dyn_wrap::AuthnBackendDynWrapper;
+
+impl <
+    PswComparator: PasswordComparator + Clone + Sync + Send,
+> TryFrom<HttpBasicAuthBackend<PswComparator>>
+for Box<dyn AuthnBackendDynWrapper<Credentials=PswAuthCredentials, Error=AuthBackendError, RealAuthnBackend=HttpBasicAuthBackend<PswComparator>>> {
+    type Error = AuthBackendError;
+
+    fn try_from(value: HttpBasicAuthBackend<PswComparator>) -> Result<Self, Self::Error> {
+        t o d o!()
+    }
+}
+*/
+
+
+// TEMP, investigation
+#[axum::async_trait]
+pub trait RequestUserAuthnBackendDyn : Send + Sync {
+    async fn is_req_authenticated(&self, req: Request) -> (Request, Result<Option<AuthUser>, AuthBackendError>);
+}
+
+#[axum::async_trait]
+impl<
+    PswComparator: PasswordComparator + Clone + Sync + Send,
+> RequestUserAuthnBackendDyn for HttpBasicAuthBackend<PswComparator> {
+    async fn is_req_authenticated(&self, req: Request) -> (Request, Result<Option<AuthUser>, AuthBackendError>) {
+        let res = self.call_authenticate_request::<PswComparator>(req).await;
+        res
+    }
+}
+
+use axum::extract::Request;
+use super::AuthBackendError;
+
+impl <
+    PswComparator: PasswordComparator + Clone + Sync + Send + 'static,
+> TryFrom<HttpBasicAuthBackend<PswComparator>>
+for Arc<dyn RequestUserAuthnBackendDyn> {
+    type Error = AuthBackendError;
+    fn try_from(value: HttpBasicAuthBackend<PswComparator>) -> Result<Arc<dyn RequestUserAuthnBackendDyn>, Self::Error> {
+        let as_dyn: Arc<dyn RequestUserAuthnBackendDyn> = Arc::new(value);
+        Ok(as_dyn)
+    }
+}
+
+// // Compilation error: error[E0210]: type parameter `A` must be used as the type parameter for some local type (e.g., `MyStruct<A>`)
+// impl <
+//     A: axum_login::AuthnBackend<User=AuthUser, Credentials=PswAuthCredentials, Error=AuthBackendError>,
+// > TryFrom<A>
+// for Arc<dyn RequestUserAuthnBackendDyn> {
+//     type Error = AuthBackendError;
+//     fn try_from(value: &A) -> Result<Arc<dyn RequestUserAuthnBackendDyn>, Self::Error> {
+//         Err(AuthBackendError::NoRequestedBackend)
+//     }
+// }
+// impl<T> TryFrom <T>
+// for Arc<dyn RequestUserAuthnBackendDyn> {
+//     type Error = AuthBackendError;
+//     fn try_from(value: T) -> Result<Arc<dyn RequestUserAuthnBackendDyn>, Self::Error> {
+//         Err(AuthBackendError::NoRequestedBackend)
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+    use super::{ AuthUser, RequestUserAuthnBackendDyn };
+    use crate::auth::{ AuthBackendMode, AuthUserProvider, HttpBasicAuthBackend, InMemAuthUserProvider, PlainPasswordComparator };
+    use crate::util::TestResultUnwrap;
+
+    #[test]
+    fn test_try_into_when_impl() {
+        let users = Arc::new(InMemAuthUserProvider::test_users().test_unwrap());
+        let users: Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send> = users;
+        let basic_auth = HttpBasicAuthBackend::<PlainPasswordComparator>::new(users, AuthBackendMode::AuthSupported);
+
+        let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn>, _> =  basic_auth.try_into();
+    }
+
+    /*
+    #[test]
+    fn test_try_into_when_no_impl() {
+        use crate::auth::{ LoginFormAuthBackend, LoginFormAuthConfig };
+
+        let users = Arc::new(InMemAuthUserProvider::test_users().test_unwrap());
+        let users: Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send> = users;
+        let basic_auth = LoginFormAuthBackend::<PlainPasswordComparator>::new(
+            users, LoginFormAuthConfig { login_url: "/login", auth_mode: AuthBackendMode::AuthSupported });
+
+        let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn>, _> =  basic_auth.try_into();
+    }
+    */
+
     /*
     use std::sync::Arc;
     // use axum_login::AuthUser;
