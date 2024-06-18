@@ -1,7 +1,19 @@
 use core::fmt;
-use super::backend::{ oauth2_auth::OAuth2User, psw_auth::PswUser };
-use super::psw::PasswordComparator;
 
+use super::super::{
+    backend::{ oauth2_auth::OAuth2User, psw_auth::PswUser },
+    psw::PasswordComparator,
+};
+
+/*
+#[derive(Debug, Clone)]
+pub enum AuthUserId {
+    Int(i64),
+    String(String),
+    // TODO: use feature param
+    // UUID(uuid::Uuid),
+}
+*/
 
 #[derive(Clone)]
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -25,7 +37,7 @@ impl AuthUser {
         match self.password {
             None => false,
             Some(ref usr_psw) =>
-                 PswComparator::passwords_equal(usr_psw, cred_psw),
+                PswComparator::passwords_equal(usr_psw, cred_psw),
         }
     }
 }
@@ -82,35 +94,7 @@ impl OAuth2User for AuthUser {
     }
 }
 
-/*
-#[derive(Debug, Clone)]
-struct AuthRequestData {
-    original_uri: Option<axum::extract::OriginalUri>,
-    basic_auth: Option<axum_extra::headers::authorization::Basic>,
-}
 
-#[async_trait::async_trait]
-impl<S> axum::extract::FromRequestParts<S> for AuthRequestData where S: Send + Sync {
-    type Rejection = core::convert::Infallible;
-
-    async fn from_request_parts(parts: &mut http::request::Parts, state: &S) -> Result<Self, Self::Rejection> {
-        use axum::extract::OriginalUri;
-        use axum_extra:: { TypedHeader, typed_header::TypedHeaderRejection, headers::{ Authorization, authorization::Basic } };
-
-        let original_uri: Option<OriginalUri> = OriginalUri::from_request_parts(parts, state).await.ok();
-
-        let basic_auth: Result<TypedHeader<Authorization<Basic>>, TypedHeaderRejection> =
-            TypedHeader::<Authorization::<Basic>>::from_request_parts(parts, state).await;
-        let basic_auth: Option<Basic> =
-            if let Ok(TypedHeader(Authorization(basic_auth))) = basic_auth { Some(basic_auth) }
-            else { None };
-
-        Ok(AuthRequestData {
-            original_uri,
-            basic_auth,
-        })
-
-        // let extracted_basic_ath = req.extensions().get::<TypedHeader<AuthorizationHeader<Basic>>>();
-    }
-}
-*/
+// pub fn test_users() -> Result<InMemAuthUserProvider<AuthUser>, AuthUserProviderError> {
+//     InMemAuthUserProvider::<AuthUser>::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
+// }

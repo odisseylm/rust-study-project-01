@@ -6,8 +6,9 @@ use axum::response::{ IntoResponse, Response };
 
 use axum_login::UserId;
 use log::{ error };
+use crate::auth::AuthUserProviderError;
 
-use super::{
+use super::super::backend::{
     http_basic_auth::HttpBasicAuthBackend,
     login_form_auth::{ LoginFormAuthBackend, LoginFormAuthConfig },
     oauth2_auth::{ OAuth2AuthBackend, OAuth2AuthCredentials },
@@ -32,9 +33,13 @@ pub struct CompositeAuthnBackend < // TODO: Rename to example
     oauth2_backend: Option<OAuth2AuthBackend>,
 }
 
+pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<crate::rest::auth::AuthUser>, AuthUserProviderError> {
+    InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
+}
+
 impl CompositeAuthnBackend {
     pub fn test_users() -> Result<CompositeAuthnBackend, anyhow::Error> {
-        let user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> = Arc::new(InMemAuthUserProvider::test_users() ?);
+        let user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> = Arc::new(in_memory_test_users() ?);
         Ok(CompositeAuthnBackend {
             http_basic_auth_backend: Some(HttpBasicAuthBackend::new(user_provider.clone(), AuthBackendMode::AuthProposed)),
             login_form_auth_backend: Some(LoginFormAuthBackend::new(user_provider.clone(), LoginFormAuthConfig {

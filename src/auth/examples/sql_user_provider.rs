@@ -17,6 +17,7 @@ pub struct SqlUserProvider {
 impl AuthUserProvider for SqlUserProvider {
     type User = AuthUser;
 
+    /*
     async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
         // TODO: use case-insensitive username comparing
         let username_lc = username.to_lowercase();
@@ -37,13 +38,28 @@ impl AuthUserProvider for SqlUserProvider {
             // .map_err(From::<sqlx::Error>::from)
         ?)
     }
+    */
+    async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
+        // TODO: use case-insensitive username comparing
+        let username_lc = user_id.to_lowercase();
+        sqlx::query_as("select * from users where lowercase(username) = ?")
+            .bind(username_lc)
+            .fetch_optional(&self.db)
+            .await
+            // .map_err(Self::Error::Sqlx)?)
+            .map_err(From::<sqlx::Error>::from)
+    }
 }
 
 
 #[axum::async_trait]
 impl OAuth2UserStore for SqlUserProvider {
 
-    async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
+    // async fn update_user_access_token22(&self, username: &String, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
+    async fn update_user_access_token(&self, user_principal_id: <<Self as AuthUserProvider>::User as axum_login::AuthUser>::Id, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
+
+        let user_principal_id = user_principal_id.to_lowercase();
+
         // Persist user in our database, so we can use `get_user`.
         // TODO: use case-insensitive username comparing
         let user: AuthUser = sqlx::query_as(
@@ -55,7 +71,7 @@ impl OAuth2UserStore for SqlUserProvider {
                 returning *
                 "#,
             )
-            .bind(username)
+            .bind(user_principal_id)
             .bind(secret_token)
             .fetch_one(&self.db)
             .await

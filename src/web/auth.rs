@@ -41,7 +41,7 @@ mod post {
     pub(super) mod login {
         use log::error;
         use crate::auth::backend::PswAuthCredentials as PasswordCreds;
-        use crate::auth::backend::{ CompositeAuthCredentials as Credentials, CompositeAuthnBackend };
+        use crate::auth::examples::composite_auth::{ CompositeAuthCredentials as Credentials, CompositeAuthnBackend };
         use crate::rest::auth::AuthSession;
         use crate::rest::oauth::CSRF_STATE_KEY;
         use super::*;

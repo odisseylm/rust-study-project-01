@@ -69,6 +69,8 @@ impl  <
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
+    use crate::auth::AuthUserProviderError;
+    use crate::rest::auth::AuthUser;
 
     use super::{ AuthnBackendDynWrapperImpl, AuthnBackendDynWrapper, wrap_authn_backend_as_dyn };
     use super::super::super::{
@@ -81,9 +83,13 @@ mod tests {
     };
     use crate::util::TestResultUnwrap;
 
+    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser>, AuthUserProviderError> {
+        InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
+    }
+
     #[tokio::test]
     async fn test_wrap_authn_backend_as_dyn() {
-        let test_users = Arc::new(InMemAuthUserProvider::test_users().test_unwrap());
+        let test_users = Arc::new(in_memory_test_users().test_unwrap());
         let psw_auth = LoginFormAuthBackend::<PlainPasswordComparator>::new(
             test_users, LoginFormAuthConfig { auth_mode: AuthBackendMode::AuthSupported, login_url: "/login" });
 

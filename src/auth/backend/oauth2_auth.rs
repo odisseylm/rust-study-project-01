@@ -9,10 +9,15 @@ use super::super::{
     auth_backend::AuthnBackendAttributes,
 };
 
+pub trait OAuth2User {
+    fn access_token(&self) -> Option<String>;
+    fn access_token_mut(&mut self, access_token: Option<String>);
+}
 
 #[axum::async_trait]
 pub trait OAuth2UserStore: AuthUserProvider {
-    async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError>;
+    // async fn update_user_access_token(&self, user_principal_id: Self::User::Id, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError>;
+    async fn update_user_access_token(&self, user_principal_id: <<Self as AuthUserProvider>::User as axum_login::AuthUser>::Id, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError>;
 }
 
 
@@ -118,7 +123,7 @@ impl axum_login::AuthnBackend for OAuth2AuthBackend {
             .map_err(Self::Error::Reqwest)?;
 
         let user_res = self.state.oauth2_user_store.update_user_access_token(
-            user_info.login.as_str(), token_res.access_token().secret().as_str())
+            user_info.login.clone(), token_res.access_token().secret().as_str())
             .await
             .map_err(From::<AuthUserProviderError>::from);
         user_res

@@ -6,29 +6,35 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use super::super::{
-    auth_user::AuthUser,
     auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
-    backend::oauth2_auth::OAuth2UserStore
+    backend::oauth2_auth::{ OAuth2UserStore, OAuth2User },
 };
 
 
-struct InMemoryState {
+struct InMemoryState <
+    User: axum_login::AuthUser,
+> {
     // T O D O: I think we could use there Rc (instead of Arc) because it is protected by mutex... but how to say rust about it??
     // T O D O: RwLock TWICE?? It is too much... but without unsafe it is only one accessible approach.
-    users_by_username: HashMap<String, Arc<RwLock<AuthUser>>>,
-    users_by_id: HashMap<i64, Arc<RwLock<AuthUser>>>,
+    // users_by_username: HashMap<String, Arc<RwLock<User>>>,
+    // users_by_id: HashMap<i64, Arc<RwLock<User>>>,
+    users_by_principal_id: HashMap<User::Id, Arc<RwLock<User>>>,
 }
-impl InMemoryState {
-    fn new() -> InMemoryState {
+impl <
+    User: axum_login::AuthUser,
+> InMemoryState<User> {
+    fn new() -> InMemoryState<User> {
         InMemoryState {
-            users_by_username: HashMap::<String, Arc<RwLock<AuthUser>>>::new(),
-            users_by_id: HashMap::<i64, Arc<RwLock<AuthUser>>>::new(),
+            // users_by_username: HashMap::<String, Arc<RwLock<User>>>::new(),
+            // users_by_id: HashMap::<i64, Arc<RwLock<User>>>::new(),
+            users_by_principal_id: HashMap::<User::Id, Arc<RwLock<User>>>::new(),
         }
     }
-    fn with_capacity(capacity: usize) -> InMemoryState {
+    fn with_capacity(capacity: usize) -> InMemoryState<User> {
         InMemoryState {
-            users_by_username: HashMap::<String, Arc<RwLock<AuthUser>>>::with_capacity(capacity),
-            users_by_id: HashMap::<i64, Arc<RwLock<AuthUser>>>::with_capacity(capacity),
+            // users_by_username: HashMap::<String, Arc<RwLock<User>>>::with_capacity(capacity),
+            // users_by_id: HashMap::<i64, Arc<RwLock<User>>>::with_capacity(capacity),
+            users_by_principal_id: HashMap::<User::Id, Arc<RwLock<User>>>::with_capacity(capacity),
         }
     }
 }
@@ -36,38 +42,46 @@ impl InMemoryState {
 
 // #[derive(Clone, Debug)]
 #[derive(Clone)]
-pub struct InMemAuthUserProvider {
-    state: Arc<RwLock<InMemoryState>>,
+pub struct InMemAuthUserProvider <
+    User: axum_login::AuthUser,
+> {
+    state: Arc<RwLock<InMemoryState<User>>>,
 }
-impl InMemAuthUserProvider {
-    pub fn new() -> InMemAuthUserProvider {
+impl <
+    User: axum_login::AuthUser,
+> InMemAuthUserProvider<User> where User::Id : core::hash::Hash + Eq {
+    pub fn new() -> InMemAuthUserProvider<User> {
         InMemAuthUserProvider {
-            state: Arc::new(RwLock::<InMemoryState>::new(InMemoryState::new())),
+            state: Arc::new(RwLock::<InMemoryState<User>>::new(InMemoryState::new())),
         }
     }
 
-    pub fn with_users(users: Vec<AuthUser>) -> Result<InMemAuthUserProvider, AuthUserProviderError> {
+    pub fn with_users(users: Vec<User>) -> Result<InMemAuthUserProvider<User>, AuthUserProviderError> {
 
         let mut in_memory_state = InMemoryState::with_capacity(users.len());
         for user in users {
             let user_ref = Arc::new(RwLock::new(user.clone()));
 
-            in_memory_state.users_by_id.insert(user.id, Arc::clone(&user_ref));
-            in_memory_state.users_by_username.insert(user.username.to_lowercase(), Arc::clone(&user_ref));
+            // in_memory_state.users_by_id.insert(user.id, Arc::clone(&user_ref));
+            // in_memory_state.users_by_username.insert(user.username.to_lowercase(), Arc::clone(&user_ref));
+            // in_memory_state.users_by_principal_id.insert(user.id().to_lowercase(), Arc::clone(&user_ref));
+            in_memory_state.users_by_principal_id.insert(user.id(), Arc::clone(&user_ref));
         }
 
         Ok(InMemAuthUserProvider {
-            state: Arc::new(RwLock::<InMemoryState>::new(in_memory_state)),
+            state: Arc::new(RwLock::<InMemoryState<User>>::new(in_memory_state)),
         })
     }
 
-    pub fn test_users() -> Result<InMemAuthUserProvider, AuthUserProviderError> {
-        Self::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
-    }
+    // pub fn test_users() -> Result<InMemAuthUserProvider<User>, AuthUserProviderError> {
+    //     Self::with_users(vec!(User::new(1, "vovan", "qwerty")))
+    // }
 }
 
 
-impl fmt::Debug for InMemAuthUserProvider {
+impl <
+    User: axum_login::AuthUser,
+> fmt::Debug for InMemAuthUserProvider<User> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // T O D O: how to write it with full state for async ??
         write!(f, "InMemAuthUserProvider {{ ... }}")
@@ -85,35 +99,50 @@ async fn extract_cloned_value<T: Clone, E>(map_value: Option<&Arc<RwLock<T>>>) -
     }
 }
 #[inline(always)]
-async fn extract_cloned_user(map_value: Option<&Arc<RwLock<AuthUser>>>) -> Result<Option<AuthUser>, AuthUserProviderError> {
-    extract_cloned_value::<AuthUser, AuthUserProviderError>(map_value).await
+async fn extract_cloned_user <
+    User: axum_login::AuthUser,
+>(map_value: Option<&Arc<RwLock<User>>>) -> Result<Option<User>, AuthUserProviderError> {
+    extract_cloned_value::<User, AuthUserProviderError>(map_value).await
 }
 
 #[axum::async_trait]
-impl AuthUserProvider for InMemAuthUserProvider {
-    type User = AuthUser;
-    async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
+impl <
+    User: axum_login::AuthUser,
+> AuthUserProvider for InMemAuthUserProvider<User> where User::Id : core::hash::Hash + Eq {
+    type User = User;
+    // async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
+    //     let state = self.state.read().await;
+    //     let username_lc = username.to_lowercase();
+    //     extract_cloned_user(state.users_by_username.get(username_lc.as_str())).await
+    // }
+    //
+    // async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
+    //     let state = self.state.read().await;
+    //     extract_cloned_user(state.users_by_id.get(user_id)).await
+    // }
+    async fn get_user_by_id(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
         let state = self.state.read().await;
-        let username_lc = username.to_lowercase();
-        extract_cloned_user(state.users_by_username.get(username_lc.as_str())).await
-    }
+        // let username_lc = user_id.to_lowercase();
+        // // extract_cloned_user(state.users_by_username.get(username_lc.as_str())).await
+        // extract_cloned_user(state.users_by_principal_id.get(username_lc.as_str())).await
 
-    async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
-        let state = self.state.read().await;
-        extract_cloned_user(state.users_by_id.get(user_id)).await
+        extract_cloned_user(state.users_by_principal_id.get(&user_id)).await
     }
 }
 
 #[axum::async_trait]
-impl OAuth2UserStore for InMemAuthUserProvider {
-    async fn update_user_access_token(&self, username: &str, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
+impl <
+    User: axum_login::AuthUser + OAuth2User,
+> OAuth2UserStore for InMemAuthUserProvider<User> where User::Id : core::hash::Hash + Eq {
+    async fn update_user_access_token(&self, user_principal_id: User::Id, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
         let state = self.state.write().await;
-        let map_value = state.users_by_username.get(username);
+        // let map_value = state.users_by_username.get(username);
+        let map_value = state.users_by_principal_id.get(&user_principal_id.clone());
         match map_value {
             None => Ok(None),
             Some(map_value) => {
                 let mut v = map_value.write().await;
-                v.deref_mut().access_token(Some(secret_token.to_string()));
+                v.deref_mut().access_token_mut(Some(secret_token.to_string()));
                 Ok(Some(v.deref().clone()))
             }
         }
@@ -122,8 +151,13 @@ impl OAuth2UserStore for InMemAuthUserProvider {
 
 #[cfg(test)]
 mod tests {
+    use crate::rest::auth::AuthUser;
     use crate::util::{TestOptionUnwrap, TestResultUnwrap};
     use super::*;
+
+    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser>, AuthUserProviderError> {
+        InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
+    }
 
     // macro_rules! aw {
     //   ($e:expr) => {
@@ -148,10 +182,11 @@ mod tests {
         let bb = some_async_fn_2().await;
         println!("bb: {}", bb);
 
-        let users = InMemAuthUserProvider::test_users().test_unwrap();
+        let users = in_memory_test_users().test_unwrap();
 
         // -----------------------------------------------------------------------------------------
-        let usr_opt_res = users.get_user_by_id(&1i64).await;
+        // let usr_opt_res = users.get_user_by_id(&1i64).await;
+        let usr_opt_res = users.get_user_by_id(&"vovan".to_string()).await;
 
         assert!(usr_opt_res.is_ok()); // no error
         let usr_opt = usr_opt_res.test_unwrap();
@@ -164,7 +199,7 @@ mod tests {
         assert_eq!(usr.access_token, None);
 
         // -----------------------------------------------------------------------------------------
-        let usr_opt_res = users.update_user_access_token("vovan", "token1").await;
+        let usr_opt_res = users.update_user_access_token("vovan".to_string(), "token1").await;
         println!("### usr_opt_res: {:?}", usr_opt_res);
 
         assert!(usr_opt_res.is_ok()); // no error
@@ -179,7 +214,8 @@ mod tests {
         assert_eq!(usr.access_token, Some("token1".to_string()));
 
         // -----------------------------------------------------------------------------------------
-        let usr_opt_res = users.get_user_by_id(&1i64).await;
+        // let usr_opt_res = users.get_user_by_id(&1i64).await;
+        let usr_opt_res = users.get_user_by_id(&"vovan".to_string()).await;
 
         assert!(usr_opt_res.is_ok()); // no error
         let usr_opt = usr_opt_res.test_unwrap();

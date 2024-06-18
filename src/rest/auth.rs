@@ -2,14 +2,14 @@ use std::sync::Arc;
 use axum::body::Body;
 use axum::extract::Request;
 use axum::response::{ IntoResponse, Response };
-use crate::auth::{ AuthBackendMode, PlainPasswordComparator };
+use crate::auth::{AuthBackendMode, AuthUserProviderError, PlainPasswordComparator};
 use crate::auth::user_provider::{ InMemAuthUserProvider };
-use crate::auth::backend::{ LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config, CompositeAuthnBackend };
+use crate::auth::backend::{ LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config };
 
 
 pub type AuthUser = crate::auth::AuthUser;
-pub type AuthCredentials = crate::auth::backend::CompositeAuthCredentials;
-pub type AuthnBackend = CompositeAuthnBackend;
+pub type AuthCredentials = crate::auth::examples::composite_auth::CompositeAuthCredentials;
+pub type AuthnBackend = crate::auth::examples::composite_auth::CompositeAuthnBackend;
 pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
 pub type AuthBackendError = crate::auth::AuthBackendError;
 
@@ -75,7 +75,8 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     // This combines the session layer with our backend to establish the auth service
     // which will provide the auth session as a request extension.
     //
-    let usr_provider: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::test_users() ?);
+    // let usr_provider: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::test_users() ?);
+    let usr_provider: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(in_memory_test_users() ?);
 
     // Rust does not support casting dyn sub-trait to dyn super-trait :-(
     // let std_usr_provider: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = wrap_static_ptr_auth_user_provider(Arc::clone(&usr_provider_impl));
@@ -118,4 +119,8 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
         Some(http_basic_auth_backend), Some(login_form_auth_backend), oauth2_backend_opt) ?;
     let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, MemoryStore> = AuthManagerLayerBuilder::new(backend, session_layer).build();
     Ok(auth_layer)
+}
+
+pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser>, AuthUserProviderError> {
+    InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
 }

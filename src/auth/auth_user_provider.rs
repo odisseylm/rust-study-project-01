@@ -1,12 +1,11 @@
 use core::fmt;
-use super::auth_user::AuthUser;
 
 
 #[axum::async_trait]
 pub trait AuthUserProvider : fmt::Debug {
     type User: axum_login::AuthUser;
-    async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError>;
-    async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError>;
+    // TODO: rename to 'get_user_by_principal_identity'
+    async fn get_user_by_id(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError>;
 }
 
 

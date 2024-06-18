@@ -10,6 +10,12 @@ use super::super::{
 };
 
 
+pub trait PswUser {
+    fn password(&self) -> Option<String>;
+    fn password_mut(&mut self, password: Option<String>);
+}
+
+
 // #[derive(Clone)]
 pub struct PswAuthBackendImpl <
     PswComparator: PasswordComparator + Clone + Sync + Send,
@@ -63,7 +69,7 @@ impl<
     type Error = AuthBackendError;
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
-        let usr_res = self.users_provider.get_user_by_name(creds.username.as_str()).await;
+        let usr_res = self.users_provider.get_user_by_id(&creds.username.clone()).await;
 
         let usr_opt = match usr_res {
             Ok(usr_opt) => usr_opt,

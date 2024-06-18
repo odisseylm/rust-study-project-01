@@ -31,11 +31,11 @@ impl <
         UsrProviderDelegatePtr: fmt::Debug,
 {
     type User = User;
-    async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
-        self.delegate.get_user_by_name(username).await
-    }
+    // async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
+    //     self.delegate.get_user_by_name(username).await
+    // }
     //noinspection DuplicatedCode
-    async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
+    async fn get_user_by_id(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
         self.delegate.get_user_by_id(user_id).await
     }
 }
@@ -60,24 +60,25 @@ pub fn wrap_static_ptr_auth_user_provider<
 fn compile_test() {
     use std::sync::Arc;
 
-    let a1: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::new());
+
+    let a1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
     let _a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(InMemAuthUserProvider::new());
     let _a3: Arc<dyn AuthUserProvider<User=AuthUser>> = a1;
 
-    let arc1: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::new());
+    let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
     let _a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(AuthUserProviderStaticTypePtrWrapper { delegate: arc1 });
 
-    let arc1: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::new());
+    let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
     let _a2: Arc<dyn AuthUserProvider<User=AuthUser>> = wrap_static_ptr_auth_user_provider(arc1);
 
-    let a1: Box<InMemAuthUserProvider> = Box::new(InMemAuthUserProvider::new());
+    let a1: Box<InMemAuthUserProvider<AuthUser>> = Box::new(InMemAuthUserProvider::new());
     let _a2: Box<dyn AuthUserProvider<User=AuthUser>> = Box::new(InMemAuthUserProvider::new());
     let _a3: Box<dyn AuthUserProvider<User=AuthUser>> = a1;
 
-    let arc1: Box<InMemAuthUserProvider> = Box::new(InMemAuthUserProvider::new());
+    let arc1: Box<InMemAuthUserProvider<AuthUser>> = Box::new(InMemAuthUserProvider::new());
     let _a2: Box<dyn AuthUserProvider<User=AuthUser>> = Box::new(AuthUserProviderStaticTypePtrWrapper { delegate: arc1 });
 
-    let arc1: Box<InMemAuthUserProvider> = Box::new(InMemAuthUserProvider::new());
+    let arc1: Box<InMemAuthUserProvider<AuthUser>> = Box::new(InMemAuthUserProvider::new());
     let _a2: Arc<dyn AuthUserProvider<User=AuthUser>> = wrap_static_ptr_auth_user_provider(arc1);
 }
 
@@ -103,10 +104,10 @@ mod tests {
         UsrProviderDelegate: AuthUserProvider<User=User> + Send + Sync,
     > AuthUserProvider for AuthUserProviderStaticTypeArcWrapper<User,UsrProviderDelegate> {
         type User = User;
-        async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
-            self.delegate.get_user_by_name(username).await
-        }
-        async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
+        // async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
+        //     self.delegate.get_user_by_name(username).await
+        // }
+        async fn get_user_by_id(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
             self.delegate.get_user_by_id(user_id).await
         }
     }
@@ -130,7 +131,7 @@ mod tests {
     fn compilation_arc_test() {
         use std::sync::Arc;
 
-        let a1: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::new());
+        let a1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
         let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(InMemAuthUserProvider::new());
         let a3: Arc<dyn AuthUserProvider<User=AuthUser>> = a1;
 
@@ -139,19 +140,19 @@ mod tests {
         let arc1 = Arc::new(InMemAuthUserProvider::new());
         let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(AuthUserProviderStaticTypeArcWrapper { delegate: arc1 });
 
-        let arc1: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::new());
+        let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
         let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(AuthUserProviderStaticTypeArcWrapper { delegate: arc1 });
 
-        let arc1: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::new());
+        let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
         let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = f2(arc1);
 
-        let arc1: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::new());
+        let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
         let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = wrap_static_arc_auth_user_provider(arc1);
 
-        let arc1: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::new());
+        let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
         let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(AuthUserProviderStaticTypePtrWrapper { delegate: arc1 });
 
-        let arc1: Arc<InMemAuthUserProvider> = Arc::new(InMemAuthUserProvider::new());
+        let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
         let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = wrap_static_ptr_auth_user_provider(arc1);
     }
 
@@ -160,14 +161,14 @@ mod tests {
     fn compilation_box_test() {
         use std::sync::Arc;
 
-        let a1: Box<InMemAuthUserProvider> = Box::new(InMemAuthUserProvider::new());
+        let a1: Box<InMemAuthUserProvider<AuthUser>> = Box::new(InMemAuthUserProvider::new());
         let a2: Box<dyn AuthUserProvider<User=AuthUser>> = Box::new(InMemAuthUserProvider::new());
         let a3: Box<dyn AuthUserProvider<User=AuthUser>> = a1;
 
-        let arc1: Box<InMemAuthUserProvider> = Box::new(InMemAuthUserProvider::new());
+        let arc1: Box<InMemAuthUserProvider<AuthUser>> = Box::new(InMemAuthUserProvider::new());
         let a2: Box<dyn AuthUserProvider<User=AuthUser>> = Box::new(AuthUserProviderStaticTypePtrWrapper { delegate: arc1 });
 
-        let arc1: Box<InMemAuthUserProvider> = Box::new(InMemAuthUserProvider::new());
+        let arc1: Box<InMemAuthUserProvider<AuthUser>> = Box::new(InMemAuthUserProvider::new());
         let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = wrap_static_ptr_auth_user_provider(arc1);
     }
 }
