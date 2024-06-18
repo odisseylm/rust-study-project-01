@@ -5,7 +5,6 @@ use axum::http::StatusCode;
 
 use super::{ psw_auth::PswAuthBackendImpl };
 use super::super::{
-    auth_user::AuthUser,
     auth_backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction },
     auth_user_provider::AuthUserProvider,
     psw::PasswordComparator,
@@ -21,6 +20,7 @@ pub struct LoginFormAuthConfig {
 
 
 use axum_login::AuthnBackend;
+use crate::auth::backend::psw_auth::PswUser;
 // use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
 
 #[derive(Clone)]
@@ -28,20 +28,23 @@ use axum_login::AuthnBackend;
 #[readonly::make] // should be after 'derive'
 // #[delegate(axum_login::AuthnBackend, target = "psw_backend")]
 pub struct LoginFormAuthBackend <
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > {
-    psw_backend: PswAuthBackendImpl<PswComparator>,
+    psw_backend: PswAuthBackendImpl<User,PswComparator>,
     pub config: LoginFormAuthConfig,
 }
 
 impl <
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
-> LoginFormAuthBackend<PswComparator> {
+> LoginFormAuthBackend<User,PswComparator> {
     pub fn new(
-        users_provider: Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send>,
+        users_provider: Arc<dyn AuthUserProvider<User=User> + Sync + Send>,
         config: LoginFormAuthConfig,
-    ) -> LoginFormAuthBackend<PswComparator> {
-        LoginFormAuthBackend::<PswComparator> {
+    ) -> LoginFormAuthBackend<User,PswComparator> {
+        LoginFormAuthBackend::<User,PswComparator> {
+            // psw_backend: PswAuthBackendImpl::<User,PswComparator>::new(users_provider.clone()),
             psw_backend: PswAuthBackendImpl::new(users_provider.clone()),
             config,
         }
@@ -79,9 +82,12 @@ impl <
 //       requires Clone which can NOT be used with as 'dyn'.
 #[axum::async_trait]
 impl <
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
-> AuthnBackend for LoginFormAuthBackend<PswComparator> {
-    type User = AuthUser;
+> AuthnBackend for LoginFormAuthBackend<User,PswComparator>
+    where User: axum_login::AuthUser<Id = String>,
+{
+    type User = User;
     type Credentials = super::psw_auth::PswAuthCredentials;
     type Error = super::super::error::AuthBackendError;
 
@@ -100,11 +106,14 @@ impl <
 
 #[axum::async_trait]
 impl <
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
-    > AuthnBackendAttributes for LoginFormAuthBackend<PswComparator> {
+> AuthnBackendAttributes for LoginFormAuthBackend<User,PswComparator>
+    where User: axum_login::AuthUser<Id = String>,
+{
     type ProposeAuthAction = ProposeLoginFormAuthAction;
 
-    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> {
+    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=User> + Sync + Send> {
         self.psw_backend.users_provider()
     }
     fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {

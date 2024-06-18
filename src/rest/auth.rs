@@ -101,12 +101,12 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
         }
     };
 
-    let http_basic_auth_backend = crate::auth::backend::HttpBasicAuthBackend::<PlainPasswordComparator>::new(
+    let http_basic_auth_backend = crate::auth::backend::HttpBasicAuthBackend::<AuthUser,PlainPasswordComparator>::new(
         usr_provider.clone(),
         // AuthBackendMode::AuthProposed, // It makes sense for pure server SOA (especially for testing)
         AuthBackendMode::AuthSupported,
     );
-    let login_form_auth_backend = crate::auth::backend::LoginFormAuthBackend::<PlainPasswordComparator>::new(
+    let login_form_auth_backend = crate::auth::backend::LoginFormAuthBackend::<AuthUser,PlainPasswordComparator>::new(
         usr_provider.clone(),
         // It makes sense for web-app
         LoginFormAuthConfig {

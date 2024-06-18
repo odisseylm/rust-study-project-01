@@ -3,12 +3,13 @@ use std::sync::Arc;
 
 use axum_extra::typed_header::TypedHeaderRejection;
 
-use super::psw_auth::{ PswAuthBackendImpl, PswAuthCredentials };
-use super::super::util::http::http_unauthenticated_401_response;
-use super::super::auth_user::AuthUser;
-use super::super::auth_backend::{ AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend };
-use super::super::auth_user_provider::AuthUserProvider;
-use super::super::psw::PasswordComparator;
+use super::psw_auth::{ PswAuthBackendImpl, PswAuthCredentials, PswUser };
+use super::super::{
+    util::http::http_unauthenticated_401_response,
+    auth_backend::{AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend},
+    auth_user_provider::AuthUserProvider,
+    psw::PasswordComparator,
+};
 
 use axum_login::AuthnBackend;
 // use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
@@ -18,21 +19,25 @@ use axum_login::AuthnBackend;
 #[readonly::make] // should be after 'derive'
 // #[delegate(axum_login::AuthnBackend, target = "psw_backend")]
 pub struct HttpBasicAuthBackend <
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > {
-    psw_backend: PswAuthBackendImpl<PswComparator>,
+    psw_backend: PswAuthBackendImpl<User,PswComparator>,
     pub auth_mode: AuthBackendMode,
 }
 
 
 impl <
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
-> HttpBasicAuthBackend<PswComparator> {
+> HttpBasicAuthBackend<User,PswComparator>
+    where User: axum_login::AuthUser<Id = String>,
+{
     pub fn new(
-        users_provider: Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send>,
+        users_provider: Arc<dyn AuthUserProvider<User=User> + Sync + Send>,
         auth_mode: AuthBackendMode,
-    ) -> HttpBasicAuthBackend<PswComparator> {
-        HttpBasicAuthBackend::<PswComparator> {
+    ) -> HttpBasicAuthBackend<User,PswComparator> {
+        HttpBasicAuthBackend::<User,PswComparator> {
             psw_backend: PswAuthBackendImpl::new(users_provider.clone()),
             auth_mode,
         }
@@ -42,9 +47,12 @@ impl <
 
 #[axum::async_trait]
 impl<
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
-    > AuthnBackend for HttpBasicAuthBackend<PswComparator> {
-    type User = AuthUser;
+> AuthnBackend for HttpBasicAuthBackend<User,PswComparator>
+    where User: axum_login::AuthUser<Id = String>,
+{
+    type User = User;
     type Credentials = PswAuthCredentials;
     type Error = AuthBackendError;
 
@@ -63,11 +71,14 @@ impl<
 
 #[axum::async_trait]
 impl <
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
-    > AuthnBackendAttributes for HttpBasicAuthBackend<PswComparator> {
+> AuthnBackendAttributes for HttpBasicAuthBackend<User,PswComparator>
+    where User: axum_login::AuthUser<Id = String>,
+{
     type ProposeAuthAction = ProposeHttpBasicAuthAction;
 
-    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> {
+    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=User> + Sync + Send> {
         self.psw_backend.users_provider()
     }
     fn propose_authentication_action(&self, _: &Request) -> Option<Self::ProposeAuthAction> {
@@ -117,8 +128,11 @@ impl<S> axum::extract::FromRequestParts<S> for BasicAuthCreds where S: Send + Sy
 
 #[axum::async_trait]
 impl <
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
-> RequestUserAuthnBackend for HttpBasicAuthBackend<PswComparator> {
+> RequestUserAuthnBackend for HttpBasicAuthBackend<User,PswComparator>
+    where User: axum_login::AuthUser<Id = String>,
+{
     type AuthRequestData = BasicAuthCreds;
 
     async fn authenticate_request<S>(&self, auth_request_data: Self::AuthRequestData) -> Result<Option<Self::User>, Self::Error> {
@@ -151,14 +165,19 @@ for Box<dyn AuthnBackendDynWrapper<Credentials=PswAuthCredentials, Error=AuthBac
 // TEMP, investigation
 #[axum::async_trait]
 pub trait RequestUserAuthnBackendDyn : Send + Sync {
-    async fn is_req_authenticated(&self, req: Request) -> (Request, Result<Option<AuthUser>, AuthBackendError>);
+    type User: axum_login::AuthUser;
+    async fn is_req_authenticated(&self, req: Request) -> (Request, Result<Option<Self::User>, AuthBackendError>);
 }
 
 #[axum::async_trait]
 impl<
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
-> RequestUserAuthnBackendDyn for HttpBasicAuthBackend<PswComparator> {
-    async fn is_req_authenticated(&self, req: Request) -> (Request, Result<Option<AuthUser>, AuthBackendError>) {
+> RequestUserAuthnBackendDyn for HttpBasicAuthBackend<User,PswComparator>
+    where User: axum_login::AuthUser<Id = String>,
+{
+    type User = User;
+    async fn is_req_authenticated(&self, req: Request) -> (Request, Result<Option<Self::User>, AuthBackendError>) {
         let res = self.call_authenticate_request::<PswComparator>(req).await;
         res
     }
@@ -168,12 +187,15 @@ use axum::extract::Request;
 use super::super::error::AuthBackendError;
 
 impl <
+    User: axum_login::AuthUser + PswUser + 'static,
     PswComparator: PasswordComparator + Clone + Sync + Send + 'static,
-> TryFrom<HttpBasicAuthBackend<PswComparator>>
-for Arc<dyn RequestUserAuthnBackendDyn> {
+> TryFrom<HttpBasicAuthBackend<User,PswComparator>>
+for Arc<dyn RequestUserAuthnBackendDyn<User=User>>
+    where User: axum_login::AuthUser<Id = String>,
+{
     type Error = AuthBackendError;
-    fn try_from(value: HttpBasicAuthBackend<PswComparator>) -> Result<Arc<dyn RequestUserAuthnBackendDyn>, Self::Error> {
-        let as_dyn: Arc<dyn RequestUserAuthnBackendDyn> = Arc::new(value);
+    fn try_from(value: HttpBasicAuthBackend<User,PswComparator>) -> Result<Arc<dyn RequestUserAuthnBackendDyn<User=User>>, Self::Error> {
+        let as_dyn: Arc<dyn RequestUserAuthnBackendDyn<User=User>> = Arc::new(value);
         Ok(as_dyn)
     }
 }
@@ -204,6 +226,7 @@ mod tests {
 
     use super::*;
     use super::super::super::{
+        auth_user::AuthUser,
         auth_backend::{ AuthBackendMode },
         auth_user_provider::AuthUserProvider,
         user_provider::{ InMemAuthUserProvider },
@@ -218,9 +241,9 @@ mod tests {
     fn test_try_into_when_impl() {
         let users = Arc::new(in_memory_test_users().test_unwrap());
         let users: Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send> = users;
-        let basic_auth = HttpBasicAuthBackend::<PlainPasswordComparator>::new(users, AuthBackendMode::AuthSupported);
+        let basic_auth = HttpBasicAuthBackend::<AuthUser,PlainPasswordComparator>::new(users, AuthBackendMode::AuthSupported);
 
-        let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn>, _> =  basic_auth.try_into();
+        let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn<User=AuthUser>>, _> =  basic_auth.try_into();
     }
 
     /*

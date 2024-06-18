@@ -28,8 +28,8 @@ use super::super::{
 pub struct CompositeAuthnBackend < // TODO: Rename to example
     > {
     users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>,
-    http_basic_auth_backend: Option<HttpBasicAuthBackend<PlainPasswordComparator>>,
-    login_form_auth_backend: Option<LoginFormAuthBackend<PlainPasswordComparator>>,
+    http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,PlainPasswordComparator>>,
+    login_form_auth_backend: Option<LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>,
     oauth2_backend: Option<OAuth2AuthBackend>,
 }
 
@@ -53,16 +53,16 @@ impl CompositeAuthnBackend {
 
     pub fn new_raw(
         users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>,
-        http_basic_auth_backend: Option<HttpBasicAuthBackend<PlainPasswordComparator>>,
-        login_form_auth_backend: Option<LoginFormAuthBackend<PlainPasswordComparator>>,
+        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,PlainPasswordComparator>>,
+        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>,
         oauth2_backend: Option<OAuth2AuthBackend>,
     ) -> CompositeAuthnBackend {
         CompositeAuthnBackend { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend }
     }
 
     pub fn with_backends(
-        http_basic_auth_backend: Option<HttpBasicAuthBackend<PlainPasswordComparator>>,
-        login_form_auth_backend: Option<LoginFormAuthBackend<PlainPasswordComparator>>,
+        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,PlainPasswordComparator>>,
+        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>,
         oauth2_backend: Option<OAuth2AuthBackend>,
     ) -> Result<CompositeAuthnBackend, AuthBackendError> {
         let users_provider = get_user_provider3(&http_basic_auth_backend, &login_form_auth_backend, &oauth2_backend) ?;

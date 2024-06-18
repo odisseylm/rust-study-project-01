@@ -5,7 +5,6 @@ use std::sync::Arc;
 use super::super::{
     error::AuthBackendError,
     auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
-    auth_user::AuthUser,
     psw::PasswordComparator,
 };
 
@@ -18,18 +17,20 @@ pub trait PswUser {
 
 // #[derive(Clone)]
 pub struct PswAuthBackendImpl <
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > {
-    users_provider: Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send>,
+    users_provider: Arc<dyn AuthUserProvider<User=User> + Sync + Send>,
     _pd: PhantomData<PswComparator>,
 }
 
 
 impl <
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
-> Clone for PswAuthBackendImpl<PswComparator> {
+> Clone for PswAuthBackendImpl<User,PswComparator> {
     fn clone(&self) -> Self {
-        PswAuthBackendImpl::<PswComparator> {
+        PswAuthBackendImpl::<User,PswComparator> {
             users_provider: self.users_provider.clone(),
             _pd: PhantomData,
         }
@@ -41,17 +42,18 @@ impl <
 
 
 impl <
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
-> PswAuthBackendImpl<PswComparator> {
+> PswAuthBackendImpl<User,PswComparator> {
     pub fn new(
-        users_provider: Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send>,
-    ) -> PswAuthBackendImpl<PswComparator> {
-        PswAuthBackendImpl::<PswComparator> {
+        users_provider: Arc<dyn AuthUserProvider<User=User> + Sync + Send>,
+    ) -> PswAuthBackendImpl<User,PswComparator> {
+        PswAuthBackendImpl::<User,PswComparator> {
             users_provider: users_provider.clone(),
             _pd: PhantomData,
         }
     }
-    pub(crate) fn users_provider(&self) -> Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send> {
+    pub(crate) fn users_provider(&self) -> Arc<dyn AuthUserProvider<User=User> + Sync + Send> {
         self.users_provider.clone()
     }
     // pub(crate) fn users_provider_ref(&self) -> &dyn AuthUserProvider<User = AuthUser> {
@@ -62,9 +64,14 @@ impl <
 
 #[axum::async_trait]
 impl<
+    User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
-> axum_login::AuthnBackend for PswAuthBackendImpl<PswComparator> {
-    type User = AuthUser;
+> axum_login::AuthnBackend for PswAuthBackendImpl<User,PswComparator>
+    // where <User as axum_login::AuthUser>::Id : String,
+    where User: axum_login::AuthUser<Id = String>,
+    // where User::Id : ToString
+{
+    type User = User;
     type Credentials = PswAuthCredentials;
     type Error = AuthBackendError;
 
@@ -79,8 +86,9 @@ impl<
         match usr_opt {
             None => Ok(None),
             Some(usr) => {
-                let usr_psw = usr.password.as_ref().map(|s|s.as_str()).unwrap_or("");
-                if !usr_psw.is_empty() && PswComparator::passwords_equal(usr_psw, creds.password.as_str()) {
+                // let usr_psw = usr.password().as_ref().map(|s|s.as_str()).unwrap_or("");
+                let usr_psw = usr.password().unwrap_or("".to_string());
+                if !usr_psw.is_empty() && PswComparator::passwords_equal(usr_psw.as_str(), creds.password.as_str()) {
                     Ok(Some(usr.clone()))
                 } else {
                     Ok(None)
