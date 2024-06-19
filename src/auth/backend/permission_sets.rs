@@ -1,29 +1,62 @@
 use std::collections::HashSet;
 use std::hash::Hash;
+use num::{ Integer, PrimInt };
 use super::authz_backend::PermissionSet;
 
 
-pub trait AsBitMask <IntType> {
+pub trait AsBitMask <IntType: Integer> {
     fn as_bit(&self) -> IntType;
 }
 
 
-pub struct BitsPermissionSet(u32);
+trait BitCounts {
+    fn call_count_ones(self) -> u32;
+}
 
-impl PermissionSet for BitsPermissionSet {
-    type Permission = u32;
+impl BitCounts for u32 {
+    #[inline]
+    fn call_count_ones(self) -> u32 {
+        // core::num::Wrapping  core::num::bignum::
+        self.count_ones()
+    }
+}
+impl BitCounts for u64 {
+    #[inline]
+    fn call_count_ones(self) -> u32 {
+        // core::num::Wrapping  core::num::bignum::
+        self.count_ones()
+    }
+}
+
+
+// pub struct BitsPermissionSet<P: Integer + BitAnd + BitOr + BitCounts + Copy + Clone + Eq + Hash + Sync + Send>(P);
+pub struct BitsPermissionSet<P: PrimInt + Hash + Sync + Send>(P);
+
+// impl<P: Integer + BitAnd + BitOr + BitCounts + Copy + Clone + Eq + Hash + Sync + Send> PermissionSet for BitsPermissionSet<P>
+impl<P: PrimInt + Hash + Sync + Send> PermissionSet for BitsPermissionSet<P>
+    // where <P as BitAnd>::Output: PartialEq<P>,
+{
+    type Permission = P;
 
     #[inline]
     fn has_permission(&self, permission: &Self::Permission) -> bool {
-        self.0 & permission != 0
+        self.0 & *permission != P::zero()
+
+        // let v1: P = self.0;
+        // let v2: P = *permission;
+        // let zero: P = P::zero();
+        //
+        // let and_res = v1 & v2;
+        // let is_ok = !(and_res == zero);
+        // is_ok
     }
 
     fn to_hash_set(&self) -> HashSet<Self::Permission> {
         use core::mem::size_of;
         let mut as_set = HashSet::<Self::Permission>::with_capacity(self.0.count_ones() as usize);
         for i in 0..size_of::<Self::Permission>()*8 {
-            let as_bit = 1 << i;
-            if (as_bit & self.0) != 0 {
+            let as_bit = P::one() << i;
+            if (as_bit & self.0) != P::zero() {
                 as_set.insert(as_bit as Self::Permission);
             }
         }
@@ -32,7 +65,7 @@ impl PermissionSet for BitsPermissionSet {
 
     #[inline]
     fn new() -> Self {
-        BitsPermissionSet(0)
+        BitsPermissionSet(P::zero())
     }
 
     #[inline]
@@ -42,19 +75,19 @@ impl PermissionSet for BitsPermissionSet {
 
     #[inline]
     fn from_permission2(perm1: Self::Permission, perm2: Self::Permission) -> Self {
-        let res: Self::Permission = perm1 + perm2;
+        let res: Self::Permission = perm1 | perm2;
         BitsPermissionSet(res)
     }
 
     #[inline]
     fn from_permission3(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission) -> Self {
-        let res: Self::Permission = perm1 + perm2 + perm3;
+        let res: Self::Permission = perm1 | perm2 | perm3;
         BitsPermissionSet(res)
     }
 
     #[inline]
     fn from_permission4(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission, perm4: Self::Permission) -> Self {
-        let res: Self::Permission = perm1 + perm2 + perm3 + perm4;
+        let res: Self::Permission = perm1 | perm2 | perm3 | perm4;
         BitsPermissionSet(res)
     }
 
@@ -153,17 +186,19 @@ mod tests {
     #[test]
     fn bits_permission_set_for_u32() {
 
-        let ps = BitsPermissionSet::new();
+        let ps = BitsPermissionSet::<u32>::new();
         assert!(!ps.has_permission(&1));
         assert!(!ps.has_permission(&2));
         assert!(!ps.has_permission(&4));
+        assert_eq!(ps.0.count_ones(), 0);
 
-        let ps = BitsPermissionSet::from_permission(2);
+        let ps = BitsPermissionSet::<u64>::from_permission(2);
         assert!(!ps.has_permission(&1));
         assert!(ps.has_permission(&2));
         assert!(!ps.has_permission(&4));
+        assert_eq!(ps.0.count_ones(), 1);
 
-        let ps = BitsPermissionSet::merge(BitsPermissionSet::from_permission(2), BitsPermissionSet::from_permission(8));
+        let ps = BitsPermissionSet::<u32>::merge(BitsPermissionSet::<u32>::from_permission(2), BitsPermissionSet::<u32>::from_permission(8));
         assert!(!ps.has_permission(&1));
         assert!(ps.has_permission(&2));
         assert!(!ps.has_permission(&4));

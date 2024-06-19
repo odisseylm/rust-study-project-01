@@ -93,8 +93,10 @@ dotenv = "0.15.0"
 inherent = "1.0.11"
 readonly = "0.2.12"
 extension-trait = "1.0.2"
-nutype = "0.4.2"
 ambassador = "0.3.6"
+
+num = "0.4.3"
+nutype = "0.4.2"
 
 chrono = {  version = "0.4.38", features = ["default", "serde"] }
 chrono-tz = "0.9.0"
