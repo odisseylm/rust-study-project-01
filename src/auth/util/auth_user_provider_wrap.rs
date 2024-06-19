@@ -2,7 +2,6 @@ use core::fmt;
 use std::sync::Arc;
 
 use super::super::{
-    auth_user::AuthUser,
     auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
     user_provider::InMemAuthUserProvider,
 };
@@ -59,6 +58,7 @@ pub fn wrap_static_ptr_auth_user_provider<
 #[allow(dead_code)]
 fn compile_test() {
     use std::sync::Arc;
+    use crate::auth::examples::auth_user::AuthUser;
 
 
     let a1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
@@ -88,6 +88,7 @@ mod tests {
     use super::*;
     // use super::super::{ AuthUser, AuthUserProvider };
     // use super::{ AuthUserProviderStaticTypeArcWrapper, AuthUserProviderStaticTypePtrWrapper, f2, wrap_static_arc_auth_user_provider};
+    use crate::auth::examples::auth_user::AuthUser;
 
     #[derive(Debug)]
     struct AuthUserProviderStaticTypeArcWrapper<

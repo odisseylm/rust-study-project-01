@@ -226,7 +226,7 @@ mod tests {
 
     use super::*;
     use super::super::super::{
-        auth_user::AuthUser,
+        examples::auth_user::AuthUser,
         auth_backend::{ AuthBackendMode },
         auth_user_provider::AuthUserProvider,
         user_provider::{ InMemAuthUserProvider },

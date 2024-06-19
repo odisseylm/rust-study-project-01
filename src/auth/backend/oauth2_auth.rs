@@ -4,7 +4,7 @@ use axum::extract::OriginalUri;
 use oauth2::basic::BasicClient;
 
 use super::super::{
-    auth_user, AuthBackendMode, error::AuthBackendError,
+    AuthBackendMode, error::AuthBackendError,
     auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
     auth_backend::AuthnBackendAttributes,
 };
@@ -31,15 +31,15 @@ pub struct OAuth2AuthCredentials {
 
 #[derive(Debug, Clone)]
 #[readonly::make]
-pub struct OAuth2AuthBackend {
-    state: Arc<AuthBackendState>,
+pub struct OAuth2AuthBackend <User: OAuth2User + Send + Sync> {
+    state: Arc<AuthBackendState<User>>,
 }
 
 
 #[derive(Debug)]
-struct AuthBackendState {
-    user_provider: Arc<dyn AuthUserProvider<User = auth_user::AuthUser> + Send + Sync>,
-    oauth2_user_store: Arc<dyn OAuth2UserStore<User = auth_user::AuthUser> + Send + Sync>,
+struct AuthBackendState <User: OAuth2User + Send + Sync> {
+    user_provider: Arc<dyn AuthUserProvider<User = User> + Send + Sync>,
+    oauth2_user_store: Arc<dyn OAuth2UserStore<User = User> + Send + Sync>,
     config: OAuth2Config,
     client: BasicClient,
 }
@@ -50,10 +50,10 @@ struct UserInfo {
     login: String,
 }
 
-impl OAuth2AuthBackend {
+impl<User: OAuth2User + Send + Sync> OAuth2AuthBackend<User> {
     pub fn new(
-        user_provider: Arc<dyn AuthUserProvider<User = auth_user::AuthUser> + Send + Sync>,
-        oauth2_user_store: Arc<dyn OAuth2UserStore<User = auth_user::AuthUser> + Send + Sync>,
+        user_provider: Arc<dyn AuthUserProvider<User=User> + Send + Sync>,
+        oauth2_user_store: Arc<dyn OAuth2UserStore<User=User> + Send + Sync>,
         config: OAuth2Config,
         client: Option<BasicClient>,
     ) -> Result<Self, AuthBackendError> {
@@ -84,8 +84,10 @@ impl OAuth2AuthBackend {
 }
 
 #[axum::async_trait]
-impl axum_login::AuthnBackend for OAuth2AuthBackend {
-    type User = auth_user::AuthUser;
+impl<User: axum_login::AuthUser + OAuth2User + Send + Sync> axum_login::AuthnBackend for OAuth2AuthBackend<User>
+    where User: axum_login::AuthUser<Id = String>,
+{
+    type User = User;
     type Credentials = OAuth2AuthCredentials;
     type Error = AuthBackendError;
 
@@ -207,10 +209,12 @@ impl OAuth2Config {
 
 
 #[axum::async_trait]
-impl AuthnBackendAttributes for OAuth2AuthBackend {
+impl <User: axum_login::AuthUser + OAuth2User + Send + Sync> AuthnBackendAttributes for OAuth2AuthBackend<User>
+    where User: axum_login::AuthUser<Id = String>,
+{
     type ProposeAuthAction = super::login_form_auth::ProposeLoginFormAuthAction;
 
-    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=auth_user::AuthUser> + Sync + Send> {
+    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=User> + Sync + Send> {
         self.state.user_provider.clone()
     }
     fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {

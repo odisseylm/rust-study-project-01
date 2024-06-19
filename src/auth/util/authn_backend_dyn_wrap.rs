@@ -70,11 +70,10 @@ impl  <
 mod tests {
     use std::sync::Arc;
     use crate::auth::AuthUserProviderError;
-    use crate::rest::auth::AuthUser;
 
     use super::{ AuthnBackendDynWrapperImpl, AuthnBackendDynWrapper, wrap_authn_backend_as_dyn };
     use super::super::super::{
-        auth_user as auth,
+        examples::auth_user::AuthUser,
         error::AuthBackendError,
         auth_backend::AuthBackendMode,
         psw::PlainPasswordComparator,
@@ -97,7 +96,7 @@ mod tests {
         let r = psw_auth.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());
 
-        let as_dyn: Arc<AuthnBackendDynWrapperImpl<auth::AuthUser, PswAuthCredentials, AuthBackendError, LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>> =
+        let as_dyn: Arc<AuthnBackendDynWrapperImpl<AuthUser, PswAuthCredentials, AuthBackendError, LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
         let r = as_dyn.authn_backend.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());

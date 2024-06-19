@@ -1,3 +1,4 @@
+/*
 use core::fmt;
 use super::backend::{ oauth2_auth::OAuth2User, psw_auth::PswUser };
 use super::psw::PasswordComparator;
@@ -81,6 +82,7 @@ impl OAuth2User for AuthUser {
         self.access_token = access_token.clone()
     }
 }
+*/
 
 /*
 #[derive(Debug, Clone)]

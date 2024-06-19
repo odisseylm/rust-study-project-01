@@ -1,7 +1,7 @@
 use sqlx::SqlitePool;
 
 use super::super::{
-    auth_user::AuthUser,
+    examples::auth_user::AuthUser,
     auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
     backend::oauth2_auth::OAuth2UserStore,
 };

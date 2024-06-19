@@ -16,7 +16,6 @@ pub mod user_provider;
 pub mod examples;
 
 
-pub use auth_user::AuthUser;
 pub use auth_backend::{AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction, RequestUserAuthnBackend};
 pub use error::AuthBackendError;
 

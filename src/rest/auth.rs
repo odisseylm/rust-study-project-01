@@ -7,7 +7,7 @@ use crate::auth::user_provider::{ InMemAuthUserProvider };
 use crate::auth::backend::{ LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config };
 
 
-pub type AuthUser = crate::auth::AuthUser;
+pub type AuthUser = crate::auth::examples::auth_user::AuthUser;
 pub type AuthCredentials = crate::auth::examples::composite_auth::CompositeAuthCredentials;
 pub type AuthnBackend = crate::auth::examples::composite_auth::CompositeAuthnBackend;
 pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
@@ -85,7 +85,7 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     // !!! With Arc::clone(&usr_provider_impl) auto casting does NOT work !!!
     //
     let config = OAuth2Config::git_from_env() ?;
-    let oauth2_backend_opt: Option<OAuth2AuthBackend> = match config {
+    let oauth2_backend_opt: Option<OAuth2AuthBackend<AuthUser>> = match config {
         None => None,
         Some(config) => {
             let mut config = config.clone();
