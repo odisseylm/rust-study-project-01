@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use super::super::{
     error::AuthBackendError,
-    auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
+    user_provider::{ AuthUserProvider, AuthUserProviderError },
     psw::PasswordComparator,
 };
 
@@ -56,9 +56,6 @@ impl <
     pub(crate) fn users_provider(&self) -> Arc<dyn AuthUserProvider<User=User> + Sync + Send> {
         self.users_provider.clone()
     }
-    // pub(crate) fn users_provider_ref(&self) -> &dyn AuthUserProvider<User = AuthUser> {
-    //     self.users_provider.deref()
-    // }
 }
 
 
@@ -67,16 +64,14 @@ impl<
     User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Clone + Sync + Send,
 > axum_login::AuthnBackend for PswAuthBackendImpl<User,PswComparator>
-    // where <User as axum_login::AuthUser>::Id : String,
     where User: axum_login::AuthUser<Id = String>,
-    // where User::Id : ToString
 {
     type User = User;
     type Credentials = PswAuthCredentials;
     type Error = AuthBackendError;
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
-        let usr_res = self.users_provider.get_user_by_id(&creds.username.clone()).await;
+        let usr_res = self.users_provider.get_user_by_principal_identity(&creds.username.clone()).await;
 
         let usr_opt = match usr_res {
             Ok(usr_opt) => usr_opt,
@@ -86,7 +81,6 @@ impl<
         match usr_opt {
             None => Ok(None),
             Some(usr) => {
-                // let usr_psw = usr.password().as_ref().map(|s|s.as_str()).unwrap_or("");
                 let usr_psw = usr.password().unwrap_or("".to_string());
                 if !usr_psw.is_empty() && PswComparator::passwords_equal(usr_psw.as_str(), creds.password.as_str()) {
                     Ok(Some(usr.clone()))
@@ -99,7 +93,7 @@ impl<
 
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         // T O D O: what is UserId there???
-        let usr_opt_res = self.users_provider.get_user_by_id(user_id).await
+        let usr_opt_res = self.users_provider.get_user_by_principal_identity(user_id).await
             .map_err(From::<AuthUserProviderError>::from);
         usr_opt_res
     }

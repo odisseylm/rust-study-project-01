@@ -8,6 +8,7 @@ use axum_login::UserId;
 use log::{ error };
 use crate::auth::AuthUserProviderError;
 
+use super::auth_user::AuthUser;
 use super::super::backend::{
     http_basic_auth::HttpBasicAuthBackend,
     login_form_auth::{ LoginFormAuthBackend, LoginFormAuthConfig },
@@ -17,12 +18,12 @@ use super::super::backend::{
 use super::super::{
     auth_backend::{ AuthBackendMode, RequestUserAuthnBackend },
     error::AuthBackendError,
-    auth_user::AuthUser,
-    auth_user_provider::AuthUserProvider,
+    user_provider::AuthUserProvider,
     psw::PlainPasswordComparator,
     util::composite_util::{ get_user_provider3, unauthenticated_response3 },
     user_provider::InMemAuthUserProvider,
 };
+
 
 #[derive(Clone)]
 pub struct CompositeAuthnBackend < // TODO: Rename to example
@@ -30,7 +31,7 @@ pub struct CompositeAuthnBackend < // TODO: Rename to example
     users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>,
     http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,PlainPasswordComparator>>,
     login_form_auth_backend: Option<LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>,
-    oauth2_backend: Option<OAuth2AuthBackend>,
+    oauth2_backend: Option<OAuth2AuthBackend<AuthUser>>,
 }
 
 pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<crate::rest::auth::AuthUser>, AuthUserProviderError> {
@@ -55,7 +56,7 @@ impl CompositeAuthnBackend {
         users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>,
         http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,PlainPasswordComparator>>,
         login_form_auth_backend: Option<LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>,
-        oauth2_backend: Option<OAuth2AuthBackend>,
+        oauth2_backend: Option<OAuth2AuthBackend<AuthUser>>,
     ) -> CompositeAuthnBackend {
         CompositeAuthnBackend { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend }
     }
@@ -63,7 +64,7 @@ impl CompositeAuthnBackend {
     pub fn with_backends(
         http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,PlainPasswordComparator>>,
         login_form_auth_backend: Option<LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>,
-        oauth2_backend: Option<OAuth2AuthBackend>,
+        oauth2_backend: Option<OAuth2AuthBackend<AuthUser>>,
     ) -> Result<CompositeAuthnBackend, AuthBackendError> {
         let users_provider = get_user_provider3(&http_basic_auth_backend, &login_form_auth_backend, &oauth2_backend) ?;
         Ok(CompositeAuthnBackend { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend })
@@ -146,7 +147,7 @@ impl axum_login::AuthnBackend for CompositeAuthnBackend {
     }
 
     async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
-        self.users_provider.get_user_by_id(user_id).await.map_err(From::from)
+        self.users_provider.get_user_by_principal_identity(user_id).await.map_err(From::from)
     }
 }
 

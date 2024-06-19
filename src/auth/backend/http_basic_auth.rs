@@ -7,7 +7,7 @@ use super::psw_auth::{ PswAuthBackendImpl, PswAuthCredentials, PswUser };
 use super::super::{
     util::http::http_unauthenticated_401_response,
     auth_backend::{AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend},
-    auth_user_provider::AuthUserProvider,
+    user_provider::AuthUserProvider,
     psw::PasswordComparator,
 };
 
@@ -226,9 +226,9 @@ mod tests {
 
     use super::*;
     use super::super::super::{
-        auth_user::AuthUser,
+        examples::auth_user::AuthUser,
         auth_backend::{ AuthBackendMode },
-        auth_user_provider::AuthUserProvider,
+        user_provider::AuthUserProvider,
         user_provider::{ InMemAuthUserProvider },
         psw::{ PlainPasswordComparator },
     };

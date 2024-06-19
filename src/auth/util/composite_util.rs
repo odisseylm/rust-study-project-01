@@ -6,20 +6,20 @@ use axum::response::{ IntoResponse, Response };
 use super::super::{
     error::AuthBackendError,
     auth_backend::{ AuthnBackendAttributes},
-    auth_user_provider::AuthUserProvider,
-    auth_user::AuthUser,
+    user_provider::AuthUserProvider,
 };
 
 
 #[inline(always)]
 pub fn get_user_provider2 <
+    U: axum_login::AuthUser,
     C1, C2,
-    B1: AuthnBackendAttributes<User=AuthUser,Credentials=C1,Error=AuthBackendError>,
-    B2: AuthnBackendAttributes<User=AuthUser,Credentials=C2,Error=AuthBackendError>,
+    B1: AuthnBackendAttributes<User=U,Credentials=C1,Error=AuthBackendError>,
+    B2: AuthnBackendAttributes<User=U,Credentials=C2,Error=AuthBackendError>,
 >(
     backend1: &Option<B1>,
     backend2: &Option<B2>,
-) -> Result<Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>, AuthBackendError> {
+) -> Result<Arc<dyn AuthUserProvider<User=U> + Sync + Send>, AuthBackendError> {
     get_user_provider_u(&vec!(
         backend1.as_ref().map(|b|b.user_provider()),
         backend2.as_ref().map(|b|b.user_provider()),
@@ -28,24 +28,26 @@ pub fn get_user_provider2 <
 
 #[inline(always)]
 pub fn usr_prov <
+    U: axum_login::AuthUser,
     C,
-    B: AuthnBackendAttributes<User=AuthUser,Credentials=C,Error=AuthBackendError>,
+    B: AuthnBackendAttributes<User=U,Credentials=C,Error=AuthBackendError>,
 > (backend: &Option<B>)
-    -> Option<Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>> {
+    -> Option<Arc<dyn AuthUserProvider<User=U> + Sync + Send>> {
     backend.as_ref().map(|b|b.user_provider())
 }
 
 #[inline(always)]
 pub fn get_user_provider3 <
+    U: axum_login::AuthUser,
     C1, C2, C3,
-    B1: AuthnBackendAttributes<User=AuthUser,Credentials=C1,Error=AuthBackendError>,
-    B2: AuthnBackendAttributes<User=AuthUser,Credentials=C2,Error=AuthBackendError>,
-    B3: AuthnBackendAttributes<User=AuthUser,Credentials=C3,Error=AuthBackendError>,
+    B1: AuthnBackendAttributes<User=U,Credentials=C1,Error=AuthBackendError>,
+    B2: AuthnBackendAttributes<User=U,Credentials=C2,Error=AuthBackendError>,
+    B3: AuthnBackendAttributes<User=U,Credentials=C3,Error=AuthBackendError>,
 >(
     backend1: &Option<B1>,
     backend2: &Option<B2>,
     backend3: &Option<B3>,
-) -> Result<Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>, AuthBackendError> {
+) -> Result<Arc<dyn AuthUserProvider<User=U> + Sync + Send>, AuthBackendError> {
     get_user_provider_u(&vec!(
         usr_prov(backend1),
         usr_prov(backend2),
@@ -53,19 +55,20 @@ pub fn get_user_provider3 <
     ))
 }
 
-/*
 #[inline(always)]
 pub fn get_user_provider4 <
-    B1: AuthnBackendAttributes,
-    B2: AuthnBackendAttributes,
-    B3: AuthnBackendAttributes,
-    B4: AuthnBackendAttributes,
+    U: axum_login::AuthUser,
+    C1, C2, C3, C4,
+    B1: AuthnBackendAttributes<User=U,Credentials=C1,Error=AuthBackendError>,
+    B2: AuthnBackendAttributes<User=U,Credentials=C2,Error=AuthBackendError>,
+    B3: AuthnBackendAttributes<User=U,Credentials=C3,Error=AuthBackendError>,
+    B4: AuthnBackendAttributes<User=U,Credentials=C4,Error=AuthBackendError>,
 >(
     backend1: &Option<B1>,
     backend2: &Option<B2>,
     backend3: &Option<B3>,
     backend4: &Option<B4>,
-) -> Result<Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>, AuthBackendError> {
+) -> Result<Arc<dyn AuthUserProvider<User=U> + Sync + Send>, AuthBackendError> {
     get_user_provider_u(&vec!(
         usr_prov(backend1),
         usr_prov(backend2),
@@ -76,18 +79,20 @@ pub fn get_user_provider4 <
 
 #[inline(always)]
 pub fn get_user_provider5 <
-    B1: AuthnBackendAttributes,
-    B2: AuthnBackendAttributes,
-    B3: AuthnBackendAttributes,
-    B4: AuthnBackendAttributes,
-    B5: AuthnBackendAttributes,
+    U: axum_login::AuthUser,
+    C1, C2, C3, C4, C5,
+    B1: AuthnBackendAttributes<User=U,Credentials=C1,Error=AuthBackendError>,
+    B2: AuthnBackendAttributes<User=U,Credentials=C2,Error=AuthBackendError>,
+    B3: AuthnBackendAttributes<User=U,Credentials=C3,Error=AuthBackendError>,
+    B4: AuthnBackendAttributes<User=U,Credentials=C4,Error=AuthBackendError>,
+    B5: AuthnBackendAttributes<User=U,Credentials=C5,Error=AuthBackendError>,
 >(
     backend1: &Option<B1>,
     backend2: &Option<B2>,
     backend3: &Option<B3>,
     backend4: &Option<B4>,
     backend5: &Option<B5>,
-) -> Result<Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>, AuthBackendError> {
+) -> Result<Arc<dyn AuthUserProvider<User=U> + Sync + Send>, AuthBackendError> {
     get_user_provider_u(&vec!(
         usr_prov(backend1),
         usr_prov(backend2),
@@ -99,12 +104,14 @@ pub fn get_user_provider5 <
 
 #[inline(always)]
 pub fn get_user_provider6 <
-    B1: AuthnBackendAttributes,
-    B2: AuthnBackendAttributes,
-    B3: AuthnBackendAttributes,
-    B4: AuthnBackendAttributes,
-    B5: AuthnBackendAttributes,
-    B6: AuthnBackendAttributes,
+    U: axum_login::AuthUser,
+    C1, C2, C3, C4, C5, C6,
+    B1: AuthnBackendAttributes<User=U,Credentials=C1,Error=AuthBackendError>,
+    B2: AuthnBackendAttributes<User=U,Credentials=C2,Error=AuthBackendError>,
+    B3: AuthnBackendAttributes<User=U,Credentials=C3,Error=AuthBackendError>,
+    B4: AuthnBackendAttributes<User=U,Credentials=C4,Error=AuthBackendError>,
+    B5: AuthnBackendAttributes<User=U,Credentials=C5,Error=AuthBackendError>,
+    B6: AuthnBackendAttributes<User=U,Credentials=C6,Error=AuthBackendError>,
 >(
     backend1: &Option<B1>,
     backend2: &Option<B2>,
@@ -112,7 +119,7 @@ pub fn get_user_provider6 <
     backend4: &Option<B4>,
     backend5: &Option<B5>,
     backend6: &Option<B6>,
-) -> Result<Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>, AuthBackendError> {
+) -> Result<Arc<dyn AuthUserProvider<User=U> + Sync + Send>, AuthBackendError> {
     get_user_provider_u(&vec!(
         usr_prov(backend1),
         usr_prov(backend2),
@@ -122,16 +129,17 @@ pub fn get_user_provider6 <
         usr_prov(backend6),
     ))
 }
-*/
 
-pub fn get_user_provider_u(
-    possible_user_providers: &Vec<Option<Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>>>
-) -> Result<Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>, AuthBackendError> {
+pub fn get_user_provider_u <
+    User: axum_login::AuthUser,
+>(
+    possible_user_providers: &Vec<Option<Arc<dyn AuthUserProvider<User=User> + Sync + Send>>>
+) -> Result<Arc<dyn AuthUserProvider<User=User> + Sync + Send>, AuthBackendError> {
 
-    let all_user_providers: Vec<&Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>> =
+    let all_user_providers: Vec<&Arc<dyn AuthUserProvider<User=User> + Sync + Send>> =
         possible_user_providers.iter().flat_map(|v|v).collect::<Vec<_>>();
 
-    let users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> = all_user_providers
+    let users_provider: Arc<dyn AuthUserProvider<User=User> + Sync + Send> = all_user_providers
         .first()
         .map(|arc|Arc::clone(arc))
         .ok_or_else(||AuthBackendError::NoUserProvider) ?;

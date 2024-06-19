@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 use super::{ psw_auth::PswAuthBackendImpl };
 use super::super::{
     auth_backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction },
-    auth_user_provider::AuthUserProvider,
+    user_provider::AuthUserProvider,
     psw::PasswordComparator,
     util::http::url_encode,
 };
@@ -44,37 +44,11 @@ impl <
         config: LoginFormAuthConfig,
     ) -> LoginFormAuthBackend<User,PswComparator> {
         LoginFormAuthBackend::<User,PswComparator> {
-            // psw_backend: PswAuthBackendImpl::<User,PswComparator>::new(users_provider.clone()),
             psw_backend: PswAuthBackendImpl::new(users_provider.clone()),
             config,
         }
     }
 }
-
-/*
-#[axum::async_trait]
-impl <
-    PswComparator: PasswordComparator + Clone + Sync + Send,
-> core::borrow::Borrow<dyn axum_login::AuthnBackend<User=AuthUser,Credentials=PswAuthCredentials,Error=AuthBackendError>>
-for LoginFormAuthBackend<PswComparator> {
-    fn borrow(&self) -> &dyn axum_login::AuthnBackend<User=AuthUser,Credentials=PswAuthCredentials,Error=AuthBackendError> {
-        &self.psw_backend
-    }
-}
-*/
-/*
-#[axum::async_trait]
-impl <
-    PswComparator: PasswordComparator + Clone + Sync + Send,
-> core::ops::Deref for LoginFormAuthBackend<PswComparator> {
-    type Target = dyn axum_login::AuthnBackend<User=AuthUser,Credentials=PswAuthCredentials,Error=AuthBackendError>;
-    // type Target = dyn axum_login::AuthnBackend;
-
-    fn deref(&self) -> &Self::Target {
-        &self.psw_backend
-    }
-}
-*/
 
 
 // T O D O: how to avoid duplicating this code?

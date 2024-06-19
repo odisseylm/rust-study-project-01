@@ -6,7 +6,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 
 use super::super::{
-    auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
+    user_provider::{ AuthUserProvider, AuthUserProviderError },
     backend::oauth2_auth::{ OAuth2UserStore, OAuth2User },
 };
 
@@ -16,7 +16,6 @@ struct InMemoryState <
 > {
     // T O D O: I think we could use there Rc (instead of Arc) because it is protected by mutex... but how to say rust about it??
     // T O D O: RwLock TWICE?? It is too much... but without unsafe it is only one accessible approach.
-    // users_by_username: HashMap<String, Arc<RwLock<User>>>,
     // users_by_id: HashMap<i64, Arc<RwLock<User>>>,
     users_by_principal_id: HashMap<User::Id, Arc<RwLock<User>>>,
 }
@@ -25,14 +24,12 @@ impl <
 > InMemoryState<User> {
     fn new() -> InMemoryState<User> {
         InMemoryState {
-            // users_by_username: HashMap::<String, Arc<RwLock<User>>>::new(),
             // users_by_id: HashMap::<i64, Arc<RwLock<User>>>::new(),
             users_by_principal_id: HashMap::<User::Id, Arc<RwLock<User>>>::new(),
         }
     }
     fn with_capacity(capacity: usize) -> InMemoryState<User> {
         InMemoryState {
-            // users_by_username: HashMap::<String, Arc<RwLock<User>>>::with_capacity(capacity),
             // users_by_id: HashMap::<i64, Arc<RwLock<User>>>::with_capacity(capacity),
             users_by_principal_id: HashMap::<User::Id, Arc<RwLock<User>>>::with_capacity(capacity),
         }
@@ -63,8 +60,6 @@ impl <
             let user_ref = Arc::new(RwLock::new(user.clone()));
 
             // in_memory_state.users_by_id.insert(user.id, Arc::clone(&user_ref));
-            // in_memory_state.users_by_username.insert(user.username.to_lowercase(), Arc::clone(&user_ref));
-            // in_memory_state.users_by_principal_id.insert(user.id().to_lowercase(), Arc::clone(&user_ref));
             in_memory_state.users_by_principal_id.insert(user.id(), Arc::clone(&user_ref));
         }
 
@@ -72,10 +67,6 @@ impl <
             state: Arc::new(RwLock::<InMemoryState<User>>::new(in_memory_state)),
         })
     }
-
-    // pub fn test_users() -> Result<InMemAuthUserProvider<User>, AuthUserProviderError> {
-    //     Self::with_users(vec!(User::new(1, "vovan", "qwerty")))
-    // }
 }
 
 
@@ -110,20 +101,9 @@ impl <
     User: axum_login::AuthUser,
 > AuthUserProvider for InMemAuthUserProvider<User> where User::Id : core::hash::Hash + Eq {
     type User = User;
-    // async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
-    //     let state = self.state.read().await;
-    //     let username_lc = username.to_lowercase();
-    //     extract_cloned_user(state.users_by_username.get(username_lc.as_str())).await
-    // }
-    //
-    // async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
-    //     let state = self.state.read().await;
-    //     extract_cloned_user(state.users_by_id.get(user_id)).await
-    // }
-    async fn get_user_by_id(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
+    async fn get_user_by_principal_identity(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
         let state = self.state.read().await;
         // let username_lc = user_id.to_lowercase();
-        // // extract_cloned_user(state.users_by_username.get(username_lc.as_str())).await
         // extract_cloned_user(state.users_by_principal_id.get(username_lc.as_str())).await
 
         extract_cloned_user(state.users_by_principal_id.get(&user_id)).await
@@ -136,7 +116,6 @@ impl <
 > OAuth2UserStore for InMemAuthUserProvider<User> where User::Id : core::hash::Hash + Eq {
     async fn update_user_access_token(&self, user_principal_id: User::Id, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
         let state = self.state.write().await;
-        // let map_value = state.users_by_username.get(username);
         let map_value = state.users_by_principal_id.get(&user_principal_id.clone());
         match map_value {
             None => Ok(None),
@@ -186,7 +165,7 @@ mod tests {
 
         // -----------------------------------------------------------------------------------------
         // let usr_opt_res = users.get_user_by_id(&1i64).await;
-        let usr_opt_res = users.get_user_by_id(&"vovan".to_string()).await;
+        let usr_opt_res = users.get_user_by_principal_identity(&"vovan".to_string()).await;
 
         assert!(usr_opt_res.is_ok()); // no error
         let usr_opt = usr_opt_res.test_unwrap();
@@ -215,7 +194,7 @@ mod tests {
 
         // -----------------------------------------------------------------------------------------
         // let usr_opt_res = users.get_user_by_id(&1i64).await;
-        let usr_opt_res = users.get_user_by_id(&"vovan".to_string()).await;
+        let usr_opt_res = users.get_user_by_principal_identity(&"vovan".to_string()).await;
 
         assert!(usr_opt_res.is_ok()); // no error
         let usr_opt = usr_opt_res.test_unwrap();

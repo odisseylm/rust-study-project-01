@@ -1,8 +1,8 @@
 use sqlx::SqlitePool;
 
 use super::super::{
-    auth_user::AuthUser,
-    auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
+    examples::auth_user::AuthUser,
+    user_provider::{ AuthUserProvider, AuthUserProviderError },
     backend::oauth2_auth::OAuth2UserStore,
 };
 
@@ -18,16 +18,6 @@ impl AuthUserProvider for SqlUserProvider {
     type User = AuthUser;
 
     /*
-    async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
-        // TODO: use case-insensitive username comparing
-        let username_lc = username.to_lowercase();
-        sqlx::query_as("select * from users where lowercase(username) = ?")
-            .bind(username_lc)
-            .fetch_optional(&self.db)
-            .await
-            // .map_err(Self::Error::Sqlx)?)
-            .map_err(From::<sqlx::Error>::from)
-    }
     async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
         Ok(sqlx::query_as("select * from users where id = ?")
             .bind(user_id)
@@ -39,7 +29,7 @@ impl AuthUserProvider for SqlUserProvider {
         ?)
     }
     */
-    async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
+    async fn get_user_by_principal_identity(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
         // TODO: use case-insensitive username comparing
         let username_lc = user_id.to_lowercase();
         sqlx::query_as("select * from users where lowercase(username) = ?")

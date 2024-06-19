@@ -1,4 +1,4 @@
-use super::auth_user_provider::AuthUserProviderError;
+use super::user_provider::AuthUserProviderError;
 
 
 // This enum contains ALL possible errors for ANY auth Backend.

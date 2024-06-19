@@ -2,8 +2,7 @@ use core::fmt;
 use std::sync::Arc;
 
 use super::super::{
-    auth_user::AuthUser,
-    auth_user_provider::{ AuthUserProvider, AuthUserProviderError },
+    user_provider::{ AuthUserProvider, AuthUserProviderError },
     user_provider::InMemAuthUserProvider,
 };
 
@@ -31,12 +30,9 @@ impl <
         UsrProviderDelegatePtr: fmt::Debug,
 {
     type User = User;
-    // async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
-    //     self.delegate.get_user_by_name(username).await
-    // }
     //noinspection DuplicatedCode
-    async fn get_user_by_id(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
-        self.delegate.get_user_by_id(user_id).await
+    async fn get_user_by_principal_identity(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
+        self.delegate.get_user_by_principal_identity(user_id).await
     }
 }
 
@@ -59,6 +55,7 @@ pub fn wrap_static_ptr_auth_user_provider<
 #[allow(dead_code)]
 fn compile_test() {
     use std::sync::Arc;
+    use crate::auth::examples::auth_user::AuthUser;
 
 
     let a1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
@@ -88,6 +85,7 @@ mod tests {
     use super::*;
     // use super::super::{ AuthUser, AuthUserProvider };
     // use super::{ AuthUserProviderStaticTypeArcWrapper, AuthUserProviderStaticTypePtrWrapper, f2, wrap_static_arc_auth_user_provider};
+    use crate::auth::examples::auth_user::AuthUser;
 
     #[derive(Debug)]
     struct AuthUserProviderStaticTypeArcWrapper<
@@ -104,11 +102,8 @@ mod tests {
         UsrProviderDelegate: AuthUserProvider<User=User> + Send + Sync,
     > AuthUserProvider for AuthUserProviderStaticTypeArcWrapper<User,UsrProviderDelegate> {
         type User = User;
-        // async fn get_user_by_name(&self, username: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
-        //     self.delegate.get_user_by_name(username).await
-        // }
-        async fn get_user_by_id(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
-            self.delegate.get_user_by_id(user_id).await
+        async fn get_user_by_principal_identity(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
+            self.delegate.get_user_by_principal_identity(user_id).await
         }
     }
 

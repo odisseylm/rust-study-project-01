@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use super::{
-    auth_user_provider::AuthUserProvider,
+    user_provider::AuthUserProvider,
 };
 
 
@@ -36,10 +36,9 @@ pub trait AuthnBackendAttributes : axum_login::AuthnBackend + Clone + Send + Syn
 pub trait RequestUserAuthnBackend : axum_login::AuthnBackend + Clone + Send + Sync {
 
     // type AuthRequestData: axum::extract::FromRequestParts<_> + Clone + Send + Sync + 'static;
-    type AuthRequestData: Clone + Send + Sync + 'static;
-    //type AuthRequestDataExtractor<S>: axum::extract::FromRequestParts<S>; // where S + Sync + Send;
     // fn auth_request_data_extractor<S>() -> Self::AuthRequestDataExtractor<S>;
-    // fn auth_request_data_extractor22<S>() -> Self::AuthRequestData where Self::AuthRequestData: axum::extract::FromRequestParts<S>;
+
+    type AuthRequestData: Clone + Send + Sync + 'static;
 
     /// Authenticates the request credentials with the backend if it is present in request.
     /// Since we cannot pass Request (because we cannot clone it) and cannot pass &Request due to
@@ -49,7 +48,6 @@ pub trait RequestUserAuthnBackend : axum_login::AuthnBackend + Clone + Send + Sy
         auth_request_data: Self::AuthRequestData,
     ) -> Result<Option<Self::User>, Self::Error>;
 
-    // fn auth_request_data_extractor<S>() -> Self::AuthRequestDataExtractor<S>;
 
     // Workaround with returning moved request.
     // Probably not good approach... Hz...
