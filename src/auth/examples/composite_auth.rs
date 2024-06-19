@@ -16,7 +16,7 @@ use super::super::backend::{
     psw_auth::PswAuthCredentials,
 };
 use super::super::{
-    auth_backend::{ AuthBackendMode, RequestUserAuthnBackend },
+    backend::{ AuthBackendMode, RequestUserAuthnBackend },
     error::AuthBackendError,
     user_provider::AuthUserProvider,
     psw::PlainPasswordComparator,

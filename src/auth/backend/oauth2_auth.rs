@@ -5,9 +5,10 @@ use oauth2::basic::BasicClient;
 
 
 use super::super::{
-    AuthBackendMode, error::AuthBackendError,
+    backend::AuthBackendMode,
+    error::AuthBackendError,
     user_provider::{ AuthUserProvider, AuthUserProviderError },
-    auth_backend::AuthnBackendAttributes,
+    backend::AuthnBackendAttributes,
 };
 
 pub trait OAuth2User {

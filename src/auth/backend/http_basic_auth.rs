@@ -6,7 +6,7 @@ use axum_extra::typed_header::TypedHeaderRejection;
 use super::psw_auth::{ PswAuthBackendImpl, PswAuthCredentials, PswUser };
 use super::super::{
     util::http::http_unauthenticated_401_response,
-    auth_backend::{AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend},
+    backend::{ AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend },
     user_provider::AuthUserProvider,
     psw::PasswordComparator,
 };
@@ -88,7 +88,7 @@ impl <
 }
 
 pub struct ProposeHttpBasicAuthAction;
-impl super::super::auth_backend::ProposeAuthAction for ProposeHttpBasicAuthAction { }
+impl super::super::backend::ProposeAuthAction for ProposeHttpBasicAuthAction { }
 #[inherent::inherent]
 impl axum::response::IntoResponse for ProposeHttpBasicAuthAction {
     #[allow(dead_code)] // !! It is really used IMPLICITLY !!
@@ -227,7 +227,7 @@ mod tests {
     use super::*;
     use super::super::super::{
         examples::auth_user::AuthUser,
-        auth_backend::{ AuthBackendMode },
+        backend::{ AuthBackendMode },
         user_provider::AuthUserProvider,
         user_provider::{ InMemAuthUserProvider },
         psw::{ PlainPasswordComparator },

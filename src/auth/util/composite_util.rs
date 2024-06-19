@@ -5,7 +5,7 @@ use axum::extract::Request;
 use axum::response::{ IntoResponse, Response };
 use super::super::{
     error::AuthBackendError,
-    auth_backend::{ AuthnBackendAttributes},
+    backend::{ AuthnBackendAttributes},
     user_provider::AuthUserProvider,
 };
 

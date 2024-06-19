@@ -5,7 +5,7 @@ use axum::http::StatusCode;
 
 use super::{ psw_auth::PswAuthBackendImpl };
 use super::super::{
-    auth_backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction },
+    backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction },
     user_provider::AuthUserProvider,
     psw::PasswordComparator,
     util::http::url_encode,

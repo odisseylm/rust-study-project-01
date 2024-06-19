@@ -75,7 +75,7 @@ mod tests {
     use super::super::super::{
         examples::auth_user::AuthUser,
         error::AuthBackendError,
-        auth_backend::AuthBackendMode,
+        backend::AuthBackendMode,
         psw::PlainPasswordComparator,
         user_provider::InMemAuthUserProvider,
         backend::{ LoginFormAuthBackend, LoginFormAuthConfig, psw_auth::PswAuthCredentials },
