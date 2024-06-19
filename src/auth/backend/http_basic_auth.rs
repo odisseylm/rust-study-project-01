@@ -221,29 +221,30 @@ for Arc<dyn RequestUserAuthnBackendDyn<User=User>>
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
+    use super::super::super::examples::auth_user::AuthUserExample as AuthUser;
     use crate::auth::AuthUserProviderError;
     use crate::util::TestResultUnwrap;
 
     use super::*;
     use super::super::super::{
-        examples::auth_user::AuthUser,
+        examples::auth_user::AuthUserExample,
         backend::{ AuthBackendMode },
         user_provider::AuthUserProvider,
         user_provider::{ InMemAuthUserProvider },
         psw::{ PlainPasswordComparator },
     };
 
-    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<crate::rest::auth::AuthUser>, AuthUserProviderError> {
-        InMemAuthUserProvider::with_users(vec!(crate::rest::auth::AuthUser::new(1, "vovan", "qwerty")))
+    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser>, AuthUserProviderError> {
+        InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
     }
 
     #[test]
     fn test_try_into_when_impl() {
         let users = Arc::new(in_memory_test_users().test_unwrap());
-        let users: Arc<dyn AuthUserProvider<User = AuthUser> + Sync + Send> = users;
-        let basic_auth = HttpBasicAuthBackend::<AuthUser,PlainPasswordComparator>::new(users, AuthBackendMode::AuthSupported);
+        let users: Arc<dyn AuthUserProvider<User =AuthUserExample> + Sync + Send> = users;
+        let basic_auth = HttpBasicAuthBackend::<AuthUserExample,PlainPasswordComparator>::new(users, AuthBackendMode::AuthSupported);
 
-        let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn<User=AuthUser>>, _> =  basic_auth.try_into();
+        let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn<User=AuthUserExample>>, _> =  basic_auth.try_into();
     }
 
     /*

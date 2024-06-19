@@ -1,7 +1,7 @@
 use sqlx::SqlitePool;
 
 use super::super::{
-    examples::auth_user::AuthUser,
+    examples::auth_user::AuthUserExample,
     user_provider::{ AuthUserProvider, AuthUserProviderError },
     backend::oauth2_auth::OAuth2UserStore,
 };
@@ -15,7 +15,7 @@ pub struct SqlUserProvider {
 
 #[axum::async_trait]
 impl AuthUserProvider for SqlUserProvider {
-    type User = AuthUser;
+    type User = AuthUserExample;
 
     /*
     async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
@@ -29,7 +29,7 @@ impl AuthUserProvider for SqlUserProvider {
         ?)
     }
     */
-    async fn get_user_by_principal_identity(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
+    async fn get_user_by_principal_identity(&self, user_id: &<AuthUserExample as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
         // TODO: use case-insensitive username comparing
         let username_lc = user_id.to_lowercase();
         sqlx::query_as("select * from users where lowercase(username) = ?")
@@ -52,7 +52,7 @@ impl OAuth2UserStore for SqlUserProvider {
 
         // Persist user in our database, so we can use `get_user`.
         // TODO: use case-insensitive username comparing
-        let user: AuthUser = sqlx::query_as(
+        let user: AuthUserExample = sqlx::query_as(
                 r#"
                 insert into users (username, access_token)
                 values (?, ?)

@@ -42,7 +42,7 @@ mod post {
         use log::error;
         use crate::rest::auth::AuthUser;
         use crate::auth::backend::PswAuthCredentials as PasswordCreds;
-        use crate::auth::examples::composite_auth::{ CompositeAuthCredentials as Credentials, CompositeAuthnBackend };
+        use crate::auth::examples::composite_auth::{CompositeAuthCredentials as Credentials, CompositeAuthnBackendExample};
         use crate::rest::auth::AuthSession;
         use crate::rest::oauth::CSRF_STATE_KEY;
         use super::*;
@@ -51,7 +51,7 @@ mod post {
             mut auth_session: AuthSession,
             Form(creds): Form<PasswordCreds>,
         ) -> impl IntoResponse {
-            let auth_res: Result<Option<AuthUser>, axum_login::Error<CompositeAuthnBackend>> = auth_session.authenticate(
+            let auth_res: Result<Option<AuthUser>, axum_login::Error<CompositeAuthnBackendExample>> = auth_session.authenticate(
                 Credentials::Password(creds.clone())).await;
             let user = match auth_res {
                 Ok(Some(user)) => user,

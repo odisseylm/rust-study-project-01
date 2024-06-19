@@ -7,9 +7,9 @@ use crate::auth::user_provider::{ InMemAuthUserProvider };
 use crate::auth::backend::{ LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config };
 
 
-pub type AuthUser = crate::auth::examples::auth_user::AuthUser;
+pub type AuthUser = crate::auth::examples::auth_user::AuthUserExample;
 pub type AuthCredentials = crate::auth::examples::composite_auth::CompositeAuthCredentials;
-pub type AuthnBackend = crate::auth::examples::composite_auth::CompositeAuthnBackend;
+pub type AuthnBackend = crate::auth::examples::composite_auth::CompositeAuthnBackendExample;
 pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
 pub type AuthBackendError = crate::auth::AuthBackendError;
 

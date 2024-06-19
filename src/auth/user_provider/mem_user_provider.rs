@@ -130,7 +130,7 @@ impl <
 
 #[cfg(test)]
 mod tests {
-    use crate::rest::auth::AuthUser;
+    use super::super::super::examples::auth_user::AuthUserExample as AuthUser;
     use crate::util::{TestOptionUnwrap, TestResultUnwrap};
     use super::*;
 

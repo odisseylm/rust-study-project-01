@@ -8,7 +8,7 @@ use axum_login::UserId;
 use log::{ error };
 use crate::auth::AuthUserProviderError;
 
-use super::auth_user::AuthUser;
+use super::auth_user::AuthUserExample;
 use super::super::backend::{
     http_basic_auth::HttpBasicAuthBackend,
     login_form_auth::{ LoginFormAuthBackend, LoginFormAuthConfig },
@@ -26,22 +26,22 @@ use super::super::{
 
 
 #[derive(Clone)]
-pub struct CompositeAuthnBackend < // TODO: Rename to example
+pub struct CompositeAuthnBackendExample<
     > {
-    users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>,
-    http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,PlainPasswordComparator>>,
-    login_form_auth_backend: Option<LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>,
-    oauth2_backend: Option<OAuth2AuthBackend<AuthUser>>,
+    users_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send>,
+    http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator>>,
+    login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator>>,
+    oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample>>,
 }
 
-pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<crate::rest::auth::AuthUser>, AuthUserProviderError> {
-    InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
+pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample>, AuthUserProviderError> {
+    InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "vovan", "qwerty")))
 }
 
-impl CompositeAuthnBackend {
-    pub fn test_users() -> Result<CompositeAuthnBackend, anyhow::Error> {
-        let user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> = Arc::new(in_memory_test_users() ?);
-        Ok(CompositeAuthnBackend {
+impl CompositeAuthnBackendExample {
+    pub fn test_users() -> Result<CompositeAuthnBackendExample, anyhow::Error> {
+        let user_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send> = Arc::new(in_memory_test_users() ?);
+        Ok(CompositeAuthnBackendExample {
             http_basic_auth_backend: Some(HttpBasicAuthBackend::new(user_provider.clone(), AuthBackendMode::AuthProposed)),
             login_form_auth_backend: Some(LoginFormAuthBackend::new(user_provider.clone(), LoginFormAuthConfig {
                 auth_mode: AuthBackendMode::AuthSupported,
@@ -53,21 +53,21 @@ impl CompositeAuthnBackend {
     }
 
     pub fn new_raw(
-        users_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>,
-        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,PlainPasswordComparator>>,
-        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>,
-        oauth2_backend: Option<OAuth2AuthBackend<AuthUser>>,
-    ) -> CompositeAuthnBackend {
-        CompositeAuthnBackend { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend }
+        users_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send>,
+        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator>>,
+        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator>>,
+        oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample>>,
+    ) -> CompositeAuthnBackendExample {
+        CompositeAuthnBackendExample { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend }
     }
 
     pub fn with_backends(
-        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,PlainPasswordComparator>>,
-        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>,
-        oauth2_backend: Option<OAuth2AuthBackend<AuthUser>>,
-    ) -> Result<CompositeAuthnBackend, AuthBackendError> {
+        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator>>,
+        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator>>,
+        oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample>>,
+    ) -> Result<CompositeAuthnBackendExample, AuthBackendError> {
         let users_provider = get_user_provider3(&http_basic_auth_backend, &login_form_auth_backend, &oauth2_backend) ?;
-        Ok(CompositeAuthnBackend { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend })
+        Ok(CompositeAuthnBackendExample { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend })
     }
 
     // T O D O: Do we need redirection there??
@@ -81,7 +81,7 @@ impl CompositeAuthnBackend {
 
     pub async fn is_authenticated(
         &self,
-        auth_session_user: &Option<AuthUser>,
+        auth_session_user: &Option<AuthUserExample>,
         req: Request,
     ) -> (Request, Result<(), Response>) {
 
@@ -91,7 +91,7 @@ impl CompositeAuthnBackend {
 
         let psw_aut_res_opt: (Request, Result<(), Response>) =
             if let Some(ref backend) = self.http_basic_auth_backend {
-                let res: (Request, Result<Option<AuthUser>, AuthBackendError>) = backend.call_authenticate_request::<()>(req).await;
+                let res: (Request, Result<Option<AuthUserExample>, AuthBackendError>) = backend.call_authenticate_request::<()>(req).await;
                 let (req, res) = res;
                 let unauthenticated_action_response = map_auth_res_to_is_auth_res(&self, &req, res);
                 (req, unauthenticated_action_response)
@@ -102,9 +102,9 @@ impl CompositeAuthnBackend {
 }
 
 fn map_auth_res_to_is_auth_res(
-    backend: &CompositeAuthnBackend,
+    backend: &CompositeAuthnBackendExample,
     req: &Request,
-    auth_res: Result<Option<AuthUser>, AuthBackendError>,
+    auth_res: Result<Option<AuthUserExample>, AuthBackendError>,
 ) -> Result<(), Response> {
 
     let action_response: Response = unauthenticated_response3(
@@ -126,8 +126,8 @@ fn map_auth_res_to_is_auth_res(
 
 
 #[axum::async_trait]
-impl axum_login::AuthnBackend for CompositeAuthnBackend {
-    type User = AuthUser;
+impl axum_login::AuthnBackend for CompositeAuthnBackendExample {
+    type User = AuthUserExample;
     type Credentials = CompositeAuthCredentials;
     type Error = AuthBackendError;
 

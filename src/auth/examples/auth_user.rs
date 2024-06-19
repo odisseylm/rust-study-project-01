@@ -5,30 +5,21 @@ use super::super::{
     psw::PasswordComparator,
 };
 
-/*
-#[derive(Debug, Clone)]
-pub enum AuthUserId {
-    Int(i64),
-    String(String),
-    // TODO: use feature param
-    // UUID(uuid::Uuid),
-}
-*/
 
 #[derive(Clone)]
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(sqlx::FromRow)]
 #[readonly::make]
-pub struct AuthUser {
-    pub id: i64, // TODO: replace by enum
+pub struct AuthUserExample {
     pub username: String,
     pub password: Option<String>,
     pub access_token: Option<String>,
+    pub id: i64,
 }
 
-impl AuthUser {
-    pub fn new(id: i64, username: &'static str, password: &'static str) -> AuthUser {
-        AuthUser { id, username: username.to_string(), password: Some(password.to_string()), access_token: None }
+impl AuthUserExample {
+    pub fn new(id: i64, username: &'static str, password: &'static str) -> AuthUserExample {
+        AuthUserExample { id, username: username.to_string(), password: Some(password.to_string()), access_token: None }
     }
     pub fn access_token(&mut self, access_token: Option<String>) {
         self.access_token = access_token;
@@ -43,7 +34,7 @@ impl AuthUser {
 }
 
 
-impl fmt::Debug for AuthUser {
+impl fmt::Debug for AuthUserExample {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("User0")
             .field("username", &self.username)
@@ -53,7 +44,7 @@ impl fmt::Debug for AuthUser {
     }
 }
 
-impl axum_login::AuthUser for AuthUser {
+impl axum_login::AuthUser for AuthUserExample {
     type Id = String;
 
     fn id(&self) -> Self::Id {
@@ -76,7 +67,7 @@ impl axum_login::AuthUser for AuthUser {
     }
 }
 
-impl PswUser for AuthUser {
+impl PswUser for AuthUserExample {
     fn password(&self) -> Option<String> {
         self.password.clone()
     }
@@ -85,7 +76,7 @@ impl PswUser for AuthUser {
     }
 }
 
-impl OAuth2User for AuthUser {
+impl OAuth2User for AuthUserExample {
     fn access_token(&self) -> Option<String> {
         self.access_token.clone()
     }

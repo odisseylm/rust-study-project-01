@@ -73,7 +73,7 @@ mod tests {
 
     use super::{ AuthnBackendDynWrapperImpl, AuthnBackendDynWrapper, wrap_authn_backend_as_dyn };
     use super::super::super::{
-        examples::auth_user::AuthUser,
+        examples::auth_user::AuthUserExample,
         error::AuthBackendError,
         backend::AuthBackendMode,
         psw::PlainPasswordComparator,
@@ -82,26 +82,26 @@ mod tests {
     };
     use crate::util::TestResultUnwrap;
 
-    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser>, AuthUserProviderError> {
-        InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
+    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample>, AuthUserProviderError> {
+        InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "vovan", "qwerty")))
     }
 
     #[tokio::test]
     async fn test_wrap_authn_backend_as_dyn() {
         let test_users = Arc::new(in_memory_test_users().test_unwrap());
-        let psw_auth = LoginFormAuthBackend::<AuthUser,PlainPasswordComparator>::new(
+        let psw_auth = LoginFormAuthBackend::<AuthUserExample,PlainPasswordComparator>::new(
             test_users, LoginFormAuthConfig { auth_mode: AuthBackendMode::AuthSupported, login_url: "/login" });
 
         use axum_login::AuthnBackend;
         let r = psw_auth.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());
 
-        let as_dyn: Arc<AuthnBackendDynWrapperImpl<AuthUser, PswAuthCredentials, AuthBackendError, LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>> =
+        let as_dyn: Arc<AuthnBackendDynWrapperImpl<AuthUserExample, PswAuthCredentials, AuthBackendError, LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
         let r = as_dyn.authn_backend.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());
 
-        let as_dyn: Arc<dyn AuthnBackendDynWrapper<User=AuthUser, Credentials=PswAuthCredentials, Error=AuthBackendError, RealAuthnBackend=LoginFormAuthBackend<AuthUser,PlainPasswordComparator>>> =
+        let as_dyn: Arc<dyn AuthnBackendDynWrapper<User=AuthUserExample, Credentials=PswAuthCredentials, Error=AuthBackendError, RealAuthnBackend=LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
         let r = as_dyn.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());

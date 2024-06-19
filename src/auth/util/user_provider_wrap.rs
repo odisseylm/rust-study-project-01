@@ -55,28 +55,28 @@ pub fn wrap_static_ptr_auth_user_provider<
 #[allow(dead_code)]
 fn compile_test() {
     use std::sync::Arc;
-    use crate::auth::examples::auth_user::AuthUser;
+    use crate::auth::examples::auth_user::AuthUserExample;
 
 
-    let a1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
-    let _a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(InMemAuthUserProvider::new());
-    let _a3: Arc<dyn AuthUserProvider<User=AuthUser>> = a1;
+    let a1: Arc<InMemAuthUserProvider<AuthUserExample>> = Arc::new(InMemAuthUserProvider::new());
+    let _a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = Arc::new(InMemAuthUserProvider::new());
+    let _a3: Arc<dyn AuthUserProvider<User=AuthUserExample>> = a1;
 
-    let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
-    let _a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(AuthUserProviderStaticTypePtrWrapper { delegate: arc1 });
+    let arc1: Arc<InMemAuthUserProvider<AuthUserExample>> = Arc::new(InMemAuthUserProvider::new());
+    let _a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = Arc::new(AuthUserProviderStaticTypePtrWrapper { delegate: arc1 });
 
-    let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
-    let _a2: Arc<dyn AuthUserProvider<User=AuthUser>> = wrap_static_ptr_auth_user_provider(arc1);
+    let arc1: Arc<InMemAuthUserProvider<AuthUserExample>> = Arc::new(InMemAuthUserProvider::new());
+    let _a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = wrap_static_ptr_auth_user_provider(arc1);
 
-    let a1: Box<InMemAuthUserProvider<AuthUser>> = Box::new(InMemAuthUserProvider::new());
-    let _a2: Box<dyn AuthUserProvider<User=AuthUser>> = Box::new(InMemAuthUserProvider::new());
-    let _a3: Box<dyn AuthUserProvider<User=AuthUser>> = a1;
+    let a1: Box<InMemAuthUserProvider<AuthUserExample>> = Box::new(InMemAuthUserProvider::new());
+    let _a2: Box<dyn AuthUserProvider<User=AuthUserExample>> = Box::new(InMemAuthUserProvider::new());
+    let _a3: Box<dyn AuthUserProvider<User=AuthUserExample>> = a1;
 
-    let arc1: Box<InMemAuthUserProvider<AuthUser>> = Box::new(InMemAuthUserProvider::new());
-    let _a2: Box<dyn AuthUserProvider<User=AuthUser>> = Box::new(AuthUserProviderStaticTypePtrWrapper { delegate: arc1 });
+    let arc1: Box<InMemAuthUserProvider<AuthUserExample>> = Box::new(InMemAuthUserProvider::new());
+    let _a2: Box<dyn AuthUserProvider<User=AuthUserExample>> = Box::new(AuthUserProviderStaticTypePtrWrapper { delegate: arc1 });
 
-    let arc1: Box<InMemAuthUserProvider<AuthUser>> = Box::new(InMemAuthUserProvider::new());
-    let _a2: Arc<dyn AuthUserProvider<User=AuthUser>> = wrap_static_ptr_auth_user_provider(arc1);
+    let arc1: Box<InMemAuthUserProvider<AuthUserExample>> = Box::new(InMemAuthUserProvider::new());
+    let _a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = wrap_static_ptr_auth_user_provider(arc1);
 }
 
 
@@ -85,7 +85,7 @@ mod tests {
     use super::*;
     // use super::super::{ AuthUser, AuthUserProvider };
     // use super::{ AuthUserProviderStaticTypeArcWrapper, AuthUserProviderStaticTypePtrWrapper, f2, wrap_static_arc_auth_user_provider};
-    use crate::auth::examples::auth_user::AuthUser;
+    use crate::auth::examples::auth_user::AuthUserExample;
 
     #[derive(Debug)]
     struct AuthUserProviderStaticTypeArcWrapper<
@@ -115,9 +115,9 @@ mod tests {
         casted_ptr
     }
 
-    fn f2 <T: AuthUserProvider<User=AuthUser> + Send + Sync + 'static>
-    (arc1: Arc<T>) -> Arc<dyn AuthUserProvider<User=AuthUser>> {
-        let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(AuthUserProviderStaticTypeArcWrapper { delegate: arc1 });
+    fn f2 <T: AuthUserProvider<User=AuthUserExample> + Send + Sync + 'static>
+    (arc1: Arc<T>) -> Arc<dyn AuthUserProvider<User=AuthUserExample>> {
+        let a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = Arc::new(AuthUserProviderStaticTypeArcWrapper { delegate: arc1 });
         a2
     }
 
@@ -126,29 +126,29 @@ mod tests {
     fn compilation_arc_test() {
         use std::sync::Arc;
 
-        let a1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
-        let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(InMemAuthUserProvider::new());
-        let a3: Arc<dyn AuthUserProvider<User=AuthUser>> = a1;
+        let a1: Arc<InMemAuthUserProvider<AuthUserExample>> = Arc::new(InMemAuthUserProvider::new());
+        let a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = Arc::new(InMemAuthUserProvider::new());
+        let a3: Arc<dyn AuthUserProvider<User=AuthUserExample>> = a1;
 
-        let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(AuthUserProviderStaticTypeArcWrapper { delegate: Arc::new(InMemAuthUserProvider::new()) });
+        let a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = Arc::new(AuthUserProviderStaticTypeArcWrapper { delegate: Arc::new(InMemAuthUserProvider::new()) });
 
         let arc1 = Arc::new(InMemAuthUserProvider::new());
-        let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(AuthUserProviderStaticTypeArcWrapper { delegate: arc1 });
+        let a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = Arc::new(AuthUserProviderStaticTypeArcWrapper { delegate: arc1 });
 
-        let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
-        let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(AuthUserProviderStaticTypeArcWrapper { delegate: arc1 });
+        let arc1: Arc<InMemAuthUserProvider<AuthUserExample>> = Arc::new(InMemAuthUserProvider::new());
+        let a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = Arc::new(AuthUserProviderStaticTypeArcWrapper { delegate: arc1 });
 
-        let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
-        let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = f2(arc1);
+        let arc1: Arc<InMemAuthUserProvider<AuthUserExample>> = Arc::new(InMemAuthUserProvider::new());
+        let a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = f2(arc1);
 
-        let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
-        let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = wrap_static_arc_auth_user_provider(arc1);
+        let arc1: Arc<InMemAuthUserProvider<AuthUserExample>> = Arc::new(InMemAuthUserProvider::new());
+        let a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = wrap_static_arc_auth_user_provider(arc1);
 
-        let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
-        let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = Arc::new(AuthUserProviderStaticTypePtrWrapper { delegate: arc1 });
+        let arc1: Arc<InMemAuthUserProvider<AuthUserExample>> = Arc::new(InMemAuthUserProvider::new());
+        let a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = Arc::new(AuthUserProviderStaticTypePtrWrapper { delegate: arc1 });
 
-        let arc1: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::new());
-        let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = wrap_static_ptr_auth_user_provider(arc1);
+        let arc1: Arc<InMemAuthUserProvider<AuthUserExample>> = Arc::new(InMemAuthUserProvider::new());
+        let a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = wrap_static_ptr_auth_user_provider(arc1);
     }
 
     #[test]
@@ -156,14 +156,14 @@ mod tests {
     fn compilation_box_test() {
         use std::sync::Arc;
 
-        let a1: Box<InMemAuthUserProvider<AuthUser>> = Box::new(InMemAuthUserProvider::new());
-        let a2: Box<dyn AuthUserProvider<User=AuthUser>> = Box::new(InMemAuthUserProvider::new());
-        let a3: Box<dyn AuthUserProvider<User=AuthUser>> = a1;
+        let a1: Box<InMemAuthUserProvider<AuthUserExample>> = Box::new(InMemAuthUserProvider::new());
+        let a2: Box<dyn AuthUserProvider<User=AuthUserExample>> = Box::new(InMemAuthUserProvider::new());
+        let a3: Box<dyn AuthUserProvider<User=AuthUserExample>> = a1;
 
-        let arc1: Box<InMemAuthUserProvider<AuthUser>> = Box::new(InMemAuthUserProvider::new());
-        let a2: Box<dyn AuthUserProvider<User=AuthUser>> = Box::new(AuthUserProviderStaticTypePtrWrapper { delegate: arc1 });
+        let arc1: Box<InMemAuthUserProvider<AuthUserExample>> = Box::new(InMemAuthUserProvider::new());
+        let a2: Box<dyn AuthUserProvider<User=AuthUserExample>> = Box::new(AuthUserProviderStaticTypePtrWrapper { delegate: arc1 });
 
-        let arc1: Box<InMemAuthUserProvider<AuthUser>> = Box::new(InMemAuthUserProvider::new());
-        let a2: Arc<dyn AuthUserProvider<User=AuthUser>> = wrap_static_ptr_auth_user_provider(arc1);
+        let arc1: Box<InMemAuthUserProvider<AuthUserExample>> = Box::new(InMemAuthUserProvider::new());
+        let a2: Arc<dyn AuthUserProvider<User=AuthUserExample>> = wrap_static_ptr_auth_user_provider(arc1);
     }
 }
