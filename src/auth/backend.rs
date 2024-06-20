@@ -74,7 +74,7 @@ pub mod login_form_auth;
 pub mod oauth2_auth;
 pub mod psw_auth;
 pub mod axum_login_delegatable;
-mod authz_backend;
+pub(crate) mod authz_backend;
 mod std_authz_backend;
 mod permission_sets;
 

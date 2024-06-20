@@ -1,17 +1,69 @@
+use anyhow::anyhow;
+use crate::auth::backend::authz_backend::PermissionFormatError;
 use crate::auth::backend::permission_sets::AsBitMask;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Eq, PartialEq, Hash)]
 #[derive(serde::Serialize, serde::Deserialize)]
+#[derive(strum_macros::EnumIter, strum_macros::FromRepr)]
 // #[derive(sqlx::FromRow)]
 #[repr(u32)]
-enum Role {
-    Unknown   = 0,
+pub enum Role {
+    // Unknown   = 0,
     Anonymous = 1 << 0,
     Read      = 1 << 1,
     Write     = 1 << 2,
     User      = 1 << 3,
     Admin     = 1 << 4,
     SuperUser = 1 << 5,
+}
+
+// This trait is introduced only because 'only traits defined in the current crate can be implemented for types defined outside of the crate' :-(
+// pub trait IntoPermissionSet<T> {
+//     fn try_into_permission_set()
+// }
+
+/*
+pub trait Into<T>: Sized {
+    /// Converts this type into the (usually inferred) input type.
+    #[must_use]
+    #[stable(feature = "rust1", since = "1.0.0")]
+    fn into(self) -> T;
+}
+*/
+
+impl Into<u32> for Role {
+    #[inline(always)]
+    fn into(self) -> u32 { self as u32 }
+}
+// impl Into<u32> for [Role] {
+//     #[inline(always)]
+//     fn into(self) -> u32 { self as u32 }
+// }
+
+
+// It would be nice directly implement
+//  * impl TryInto<HashSet<Role>> for u32 { }
+//  * impl TryFrom<u32> for HashSet<Role> { }
+//
+// but out std rust error 'only traits defined in the current crate can be implemented for types defined outside of the crate' :-(
+
+/*
+impl TryInto<Role> for u32 {
+    type Error = AuthBackendError;
+    #[inline]
+    fn try_into(self) -> Result<Role, Self::Error> {
+        let as_role: Option<Role> = Role::from_repr(self);
+        as_role.ok_or_else(||AuthBackendError::RoleError(!anyhow!("No Role for [{}]", self)))
+    }
+}
+*/
+impl TryFrom<u32> for Role {
+    type Error = PermissionFormatError;
+    #[inline]
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        let as_role: Option<Role> = Role::from_repr(value);
+        as_role.ok_or_else(||PermissionFormatError::ConvertError(anyhow!("No Role for [{}]", value)))
+    }
 }
 
 

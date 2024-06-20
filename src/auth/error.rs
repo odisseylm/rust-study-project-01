@@ -1,5 +1,9 @@
 use super::user_provider::AuthUserProviderError;
 
+use super::{
+    backend::authz_backend::PermissionFormatError,
+};
+
 
 // This enum contains ALL possible errors for ANY auth Backend.
 // Initially every impl had each own error enum... but I tired to convert them :-)
@@ -46,6 +50,9 @@ pub enum AuthBackendError {
 
     #[error("ConfigError({0})")]
     ConfigError(anyhow::Error),
+
+    #[error("RoleError({0})")]
+    RoleError(PermissionFormatError),
 }
 
 impl From<AuthUserProviderError> for AuthBackendError {
@@ -53,9 +60,13 @@ impl From<AuthUserProviderError> for AuthBackendError {
         AuthBackendError::UserProviderError(value)
     }
 }
-
 impl From<sqlx::Error> for AuthBackendError {
     fn from(value: sqlx::Error) -> Self {
         AuthBackendError::Sqlx(value)
+    }
+}
+impl From<PermissionFormatError> for AuthBackendError {
+    fn from(value: PermissionFormatError) -> Self {
+        AuthBackendError::RoleError(value)
     }
 }

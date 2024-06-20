@@ -1,10 +1,25 @@
 use std::collections::HashSet;
+use std::convert::Infallible;
 use std::hash::Hash;
+use anyhow::anyhow;
+
 
 trait AuthzBackend : axum_login::AuthzBackend + Clone + Send + Sync {
     type Permission: Hash + Eq + Send + Sync;
 }
 
+
+#[derive(thiserror::Error, Debug)]
+pub enum PermissionFormatError {
+    #[error("ConvertError({0})")]
+    ConvertError(anyhow::Error)
+}
+
+impl From<Infallible> for PermissionFormatError {
+    fn from(_value: Infallible) -> Self {
+        PermissionFormatError::ConvertError(anyhow!("Internal error: Infallible"))
+    }
+}
 
 /*
 /// It is a copy of axum_login::AuthzBackend, but it does not require/depend on axum_login::AuthnBackend.
@@ -41,7 +56,7 @@ trait AxumLoginPermissionProvider: Clone + Send + Sync {
 pub trait PermissionSet : Sync + Send {
     type Permission: Hash + Eq + Send + Sync;
     fn has_permission(&self, permission: &Self::Permission) -> bool;
-    fn to_hash_set(&self) -> HashSet<Self::Permission>;
+    fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionFormatError>;
     fn new() -> Self;
     fn from_permission(permission: Self::Permission) -> Self;
     fn from_permission2(perm1: Self::Permission, perm2: Self::Permission) -> Self;
