@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::hash::Hash;
-use super::super::permission::{ PermissionSet, PermissionProcessError };
+use super::super::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError };
 
 #[derive(Clone, Debug)]
 pub struct HashPermissionSet<P: Clone + core::fmt::Debug + Eq + Hash>(HashSet<P>);
@@ -11,10 +11,6 @@ impl <P: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for H
     #[inline]
     fn has_permission(&self, permission: &Self::Permission) -> bool {
         self.0.contains(permission)
-    }
-
-    fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionProcessError> {
-        Ok(self.0.clone())
     }
 
     #[inline]
@@ -77,13 +73,20 @@ impl <P: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for H
 }
 
 
+impl <P: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionsToHashSet for HashPermissionSet<P> {
+    type Permission = P;
+    fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionProcessError> {
+        Ok(self.0.clone())
+    }
+}
+
 
 
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
     use crate::util::TestResultUnwrap;
-    use super::super::super::permission::{PermissionSet, predefined::Role };
+    use super::super::super::permission::{PermissionSet, PermissionsToHashSet, predefined::Role };
     use super::{ HashPermissionSet };
 
 

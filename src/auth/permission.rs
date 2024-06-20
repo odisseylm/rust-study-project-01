@@ -21,10 +21,11 @@ impl From<Infallible> for PermissionProcessError {
 }
 
 
+/// Comparing HashSet it does not require heap allocation.
+/// You can use bit-mask or some optimized third-party set impl.
 pub trait PermissionSet : Sync + Send {
     type Permission: Hash + Eq + Send + Sync;
     fn has_permission(&self, permission: &Self::Permission) -> bool;
-    fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionProcessError>;
     fn new() -> Self;
     fn from_permission(permission: Self::Permission) -> Self;
     fn from_permission2(perm1: Self::Permission, perm2: Self::Permission) -> Self;
@@ -35,8 +36,16 @@ pub trait PermissionSet : Sync + Send {
     fn merge(set1: Self, set2: Self) -> Self;
 }
 
+// It is optional trait for compatibility with axum_login::AuthzBackend
+pub trait PermissionsToHashSet : Sync + Send {
+    type Permission: Hash + Eq + Send + Sync;
+    fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionProcessError>;
+}
 
-/// It is a copy of axum_login::AuthzBackend, but it does not require/depend on axum_login::AuthnBackend.
+
+/// It is a copy of axum_login::AuthzBackend,
+/// but it does not require/depend on axum_login::AuthnBackend
+/// and does not require using HashSet (with heap allocation)
 trait PermissionProvider: Clone + Send + Sync {
     type User: axum_login::AuthUser;
     type Error: std::error::Error + Send + Sync;

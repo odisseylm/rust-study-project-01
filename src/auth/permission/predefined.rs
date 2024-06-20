@@ -1,11 +1,10 @@
 use anyhow::anyhow;
-use super::super::{
-    permission::{ PermissionProcessError },
-};
+use super::super::permission::{ PermissionProcessError };
+
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-#[derive(serde::Serialize, serde::Deserialize)]
-#[derive(strum_macros::EnumIter, strum_macros::FromRepr)]
+// #[derive(serde::Serialize, serde::Deserialize)]
+#[derive(strum_macros::FromRepr)]
 // #[derive(sqlx::FromRow)]
 #[repr(u32)]
 #[non_exhaustive]

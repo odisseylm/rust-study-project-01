@@ -3,7 +3,7 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 use num::PrimInt; // Integer
 // use num::Integer;
-use super::super::permission::{ PermissionSet, PermissionProcessError };
+use super::super::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError };
 
 
 /*
@@ -58,27 +58,6 @@ impl <
         self_value & perm_bit != P::zero()
     }
 
-    fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionProcessError> {
-        // use BitCounts;
-        let count = self.value.count_ones();
-        if count == 0 {
-            return Ok(HashSet::new())
-        }
-
-        use core::mem::size_of;
-        let value: P = self.value.into();
-
-        let mut as_set = HashSet::<Self::Permission>::with_capacity(count as usize);
-        for i in 0..size_of::<Self::Permission>()*8 {
-            let as_bit = P::one() << i;
-            if (as_bit & value) != P::zero() {
-                let bit_perm_obj: Self::Permission = Self::Permission::try_from(as_bit) ?;
-                as_set.insert(bit_perm_obj);
-            }
-        }
-        Ok(as_set)
-    }
-
     #[inline]
     fn new() -> Self {
         Self::new_raw(P::zero())
@@ -118,6 +97,36 @@ impl <
     }
 }
 
+impl <
+    P: PrimInt + Hash + Sync + Send,
+    WP: Into<P> + TryFrom<P,Error=CErr> + Copy + Clone + Eq + Hash + Sync + Send,
+    CErr: std::error::Error + Sync + Send,
+> PermissionsToHashSet for BitsPermissionSet<P,WP,CErr>
+    where PermissionProcessError: From<CErr> {
+    type Permission = WP;
+
+    fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionProcessError> {
+        // use BitCounts;
+        let count = self.value.count_ones();
+        if count == 0 {
+            return Ok(HashSet::new())
+        }
+
+        use core::mem::size_of;
+        let value: P = self.value.into();
+
+        let mut as_set = HashSet::<Self::Permission>::with_capacity(count as usize);
+        for i in 0..size_of::<Self::Permission>()*8 {
+            let as_bit = P::one() << i;
+            if (as_bit & value) != P::zero() {
+                let bit_perm_obj: Self::Permission = Self::Permission::try_from(as_bit) ?;
+                as_set.insert(bit_perm_obj);
+            }
+        }
+        Ok(as_set)
+    }
+}
+
 
 impl <
     P: PrimInt + Hash + Sync + Send,
@@ -142,7 +151,7 @@ mod tests {
     use std::convert::Infallible;
     use crate::util::TestResultUnwrap;
     use super::{ BitsPermissionSet };
-    use super::super::super::permission::{ PermissionSet, PermissionProcessError, predefined::Role };
+    use super::super::super::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError, predefined::Role };
 
 
     #[test]
