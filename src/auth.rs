@@ -8,11 +8,12 @@ pub mod backend;
 pub mod user_provider;
 
 pub mod examples;
+mod permission;
 
 
-pub use backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction, RequestUserAuthnBackend };
+pub use backend::{AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction, RequestUserAuthnBackend};
 pub use error::AuthBackendError;
 
-pub use user_provider::{ AuthUserProvider, AuthUserProviderError };
+pub use user_provider::{AuthUserProvider, AuthUserProviderError};
 
-pub use psw::{ PasswordComparator, PlainPasswordComparator };
+pub use psw::{PasswordComparator, PlainPasswordComparator};

@@ -1,12 +1,14 @@
 use anyhow::anyhow;
-use crate::auth::backend::authz_backend::PermissionFormatError;
-use crate::auth::backend::permission_sets::AsBitMask;
+use super::super::{
+    permission::{ PermissionProcessError },
+};
 
-#[derive(Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(strum_macros::EnumIter, strum_macros::FromRepr)]
 // #[derive(sqlx::FromRow)]
 #[repr(u32)]
+#[non_exhaustive]
 pub enum Role {
     // Unknown   = 0,
     Anonymous = 1 << 0,
@@ -15,64 +17,45 @@ pub enum Role {
     User      = 1 << 3,
     Admin     = 1 << 4,
     SuperUser = 1 << 5,
+    // !!! Other a few variants can appear in the future. !!!
+
+    //
+    // If you need 'match' (by some reason...) for this enum, please create your own enum
+    // and use it instead of this enum.
 }
 
-// This trait is introduced only because 'only traits defined in the current crate can be implemented for types defined outside of the crate' :-(
-// pub trait IntoPermissionSet<T> {
-//     fn try_into_permission_set()
-// }
-
-/*
-pub trait Into<T>: Sized {
-    /// Converts this type into the (usually inferred) input type.
-    #[must_use]
-    #[stable(feature = "rust1", since = "1.0.0")]
-    fn into(self) -> T;
-}
-*/
 
 impl Into<u32> for Role {
     #[inline(always)]
     fn into(self) -> u32 { self as u32 }
 }
-// impl Into<u32> for [Role] {
-//     #[inline(always)]
-//     fn into(self) -> u32 { self as u32 }
-// }
 
 
-// It would be nice directly implement
+// It would be nice to directly implement
 //  * impl TryInto<HashSet<Role>> for u32 { }
 //  * impl TryFrom<u32> for HashSet<Role> { }
 //
-// but out std rust error 'only traits defined in the current crate can be implemented for types defined outside of the crate' :-(
+// but our lovely std rust error 'only traits defined in the current crate can be implemented for types defined outside of the crate' :-(
 
-/*
-impl TryInto<Role> for u32 {
-    type Error = AuthBackendError;
-    #[inline]
-    fn try_into(self) -> Result<Role, Self::Error> {
-        let as_role: Option<Role> = Role::from_repr(self);
-        as_role.ok_or_else(||AuthBackendError::RoleError(!anyhow!("No Role for [{}]", self)))
-    }
-}
-*/
+
 impl TryFrom<u32> for Role {
-    type Error = PermissionFormatError;
+    type Error = PermissionProcessError;
     #[inline]
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         let as_role: Option<Role> = Role::from_repr(value);
-        as_role.ok_or_else(||PermissionFormatError::ConvertError(anyhow!("No Role for [{}]", value)))
+        as_role.ok_or_else(||PermissionProcessError::ConvertError(anyhow!("No Role for [{}]", value)))
     }
 }
 
 
+/*
 #[inherent::inherent]
 impl AsBitMask<u32> for Role {
     pub fn as_bit(&self) -> u32 {
         *self as u32
     }
 }
+*/
 
 
 /*

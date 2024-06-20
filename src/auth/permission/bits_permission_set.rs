@@ -1,15 +1,18 @@
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::marker::PhantomData;
-use num::{ Integer, PrimInt };
-use super::authz_backend::{PermissionFormatError, PermissionSet};
+use num::PrimInt; // Integer
+// use num::Integer;
+use super::super::permission::{ PermissionSet, PermissionProcessError };
 
 
+/*
 pub trait AsBitMask <IntType: Integer> {
     fn as_bit(&self) -> IntType;
 }
+*/
 
-
+/*
 trait BitCounts {
     fn call_count_ones(self) -> u32;
 }
@@ -28,13 +31,13 @@ impl BitCounts for u64 {
         self.count_ones()
     }
 }
-
+*/
 
 pub struct BitsPermissionSet < //
     P: PrimInt + Hash + Sync + Send,
     WP: Into<P> + TryFrom<P,Error=CErr> + Copy + Clone + Eq + Hash + Sync + Send,
     CErr: std::error::Error + Sync + Send,
-> where PermissionFormatError: From<CErr> {
+> where PermissionProcessError: From<CErr> {
     value: P,
     _pd: PhantomData<WP>,
 }
@@ -45,7 +48,7 @@ impl <
     WP: Into<P> + TryFrom<P,Error=CErr> + Copy + Clone + Eq + Hash + Sync + Send,
     CErr: std::error::Error + Sync + Send,
 > PermissionSet for BitsPermissionSet<P,WP,CErr>
-    where PermissionFormatError: From<CErr> {
+    where PermissionProcessError: From<CErr> {
     type Permission = WP;
 
     #[inline]
@@ -55,8 +58,8 @@ impl <
         self_value & perm_bit != P::zero()
     }
 
-    fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionFormatError> {
-        use BitCounts;
+    fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionProcessError> {
+        // use BitCounts;
         let count = self.value.count_ones();
         if count == 0 {
             return Ok(HashSet::new())
@@ -121,7 +124,7 @@ impl <
     WP: Into<P> + TryFrom<P,Error=CErr> + Copy + Clone + Eq + Hash + Sync + Send,
     CErr: std::error::Error + Sync + Send,
 > BitsPermissionSet<P,WP,CErr>
-    where PermissionFormatError: From<CErr> {
+    where PermissionProcessError: From<CErr> {
     fn new_perm(value: WP) -> BitsPermissionSet<P,WP,CErr> {
         BitsPermissionSet { value: value.into(), _pd: PhantomData }
     }
@@ -131,106 +134,37 @@ impl <
 }
 
 
-#[derive(Clone, Debug)]
-pub struct HashPermissionSet<P: Clone + core::fmt::Debug + Eq + Hash>(HashSet<P>);
-
-impl <P: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for HashPermissionSet<P> {
-    type Permission = P;
-
-    #[inline]
-    fn has_permission(&self, permission: &Self::Permission) -> bool {
-        self.0.contains(permission)
-    }
-
-    fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionFormatError> {
-        Ok(self.0.clone())
-    }
-
-    #[inline]
-    fn new() -> Self {
-        HashPermissionSet(HashSet::<P>::new())
-    }
-
-    #[inline]
-    fn from_permission(permission: Self::Permission) -> Self {
-        let mut set = HashSet::<P>::with_capacity(1);
-        set.insert(permission);
-        HashPermissionSet(set)
-    }
-
-    #[inline]
-    fn from_permission2(perm1: Self::Permission, perm2: Self::Permission) -> Self {
-        let mut set = HashSet::<P>::with_capacity(1);
-        set.insert(perm1);
-        set.insert(perm2);
-        HashPermissionSet(set)
-    }
-
-    #[inline]
-    fn from_permission3(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission) -> Self {
-        let mut set = HashSet::<P>::with_capacity(1);
-        set.insert(perm1);
-        set.insert(perm2);
-        set.insert(perm3);
-        HashPermissionSet(set)
-    }
-
-    #[inline]
-    fn from_permission4(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission, perm4: Self::Permission) -> Self {
-        let mut set = HashSet::<P>::with_capacity(1);
-        set.insert(perm1);
-        set.insert(perm2);
-        set.insert(perm3);
-        set.insert(perm4);
-        HashPermissionSet(set)
-    }
-
-    #[inline]
-    fn merge_with_mut(&mut self, another: Self) {
-        for perm in another.0 {
-            self.0.insert(perm);
-        }
-    }
-
-    #[inline]
-    fn merge(set1: Self, set2: Self) -> Self {
-        let mut set = HashSet::<P>::with_capacity(set1.0.len() + set2.0.len());
-        for perm in set1.0 {
-            set.insert(perm);
-        }
-        for perm in set2.0 {
-            set.insert(perm);
-        }
-        HashPermissionSet(set)
-    }
-}
 
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
     use std::convert::Infallible;
-    use crate::auth::backend::authz_backend::{PermissionFormatError, PermissionSet};
-    use crate::auth::backend::std_authz_backend::{ Role };
-    use super::{ BitsPermissionSet, HashPermissionSet };
+    use crate::util::TestResultUnwrap;
+    use super::{ BitsPermissionSet };
+    use super::super::super::permission::{ PermissionSet, PermissionProcessError, predefined::Role };
+
 
     #[test]
     fn bits_permission_set_for_u32() {
+        type U32BitsPermissionSet = BitsPermissionSet<u32, u32, Infallible>;
+        type U64BitsPermissionSet = BitsPermissionSet<u64, u64, Infallible>;
 
-        let ps = BitsPermissionSet::<u32,u32,Infallible>::new();
+        let ps = U32BitsPermissionSet::new();
         assert!(!ps.has_permission(&1));
         assert!(!ps.has_permission(&2));
         assert!(!ps.has_permission(&4));
         assert_eq!(ps.value.count_ones(), 0);
 
-        let ps = BitsPermissionSet::<u64,u64,Infallible>::from_permission(2);
+        let ps = U64BitsPermissionSet::from_permission(2);
         assert!(!ps.has_permission(&1));
         assert!(ps.has_permission(&2));
         assert!(!ps.has_permission(&4));
         assert_eq!(ps.value.count_ones(), 1);
 
-        let ps = BitsPermissionSet::<u32,u32,Infallible>::merge(
-            BitsPermissionSet::<u32,u32,Infallible>::from_permission(2),
-            BitsPermissionSet::<u32,u32,Infallible>::from_permission(8),
+        let ps = U32BitsPermissionSet::merge(
+            U32BitsPermissionSet::from_permission(2),
+            U32BitsPermissionSet::from_permission(8),
         );
         assert!(!ps.has_permission(&1));
         assert!(ps.has_permission(&2));
@@ -243,23 +177,25 @@ mod tests {
     #[test]
     fn bits_permission_set_for_enum() {
 
-        let ps = BitsPermissionSet::<u32, Role, PermissionFormatError>::new();
+        type RoleSet = BitsPermissionSet<u32, Role, PermissionProcessError>;
+
+        let ps = RoleSet::new();
         assert!(!ps.has_permission(&Role::Anonymous));
         assert!(!ps.has_permission(&Role::Read));
         assert!(!ps.has_permission(&Role::Write));
         let ps_as_bits: u32 = ps.value.into();
         assert_eq!(ps_as_bits.count_ones(), 0);
 
-        let ps = BitsPermissionSet::<u32, Role, PermissionFormatError>::from_permission(Role::Read);
+        let ps = RoleSet::from_permission(Role::Read);
         assert!(!ps.has_permission(&Role::Anonymous));
         assert!(ps.has_permission(&Role::Read));
         assert!(!ps.has_permission(&Role::Write));
         let ps_as_bits: u32 = ps.value.into();
         assert_eq!(ps_as_bits.count_ones(), 1);
 
-        let ps = BitsPermissionSet::<u32, Role, PermissionFormatError>::merge(
-            BitsPermissionSet::<u32, Role, PermissionFormatError>::from_permission(Role::Write),
-            BitsPermissionSet::<u32, Role, PermissionFormatError>::from_permission(Role::SuperUser),
+        let ps = RoleSet::merge(
+            RoleSet::from_permission(Role::Write),
+            RoleSet::from_permission(Role::SuperUser),
         );
         assert!(!ps.has_permission(&Role::Anonymous));
         assert!(!ps.has_permission(&Role::Read));
@@ -271,24 +207,66 @@ mod tests {
     }
 
     #[test]
-    fn hash_permission_set_for_u32() {
+    fn bits_permission_set_for_enum_2() {
 
-        let ps = HashPermissionSet::<u32>::new();
-        assert!(!ps.has_permission(&1));
-        assert!(!ps.has_permission(&2));
-        assert!(!ps.has_permission(&4));
+        type RoleSet = BitsPermissionSet<u32, Role, PermissionProcessError>;
 
-        let ps = HashPermissionSet::<u32>::from_permission(2);
-        assert!(!ps.has_permission(&1));
-        assert!(ps.has_permission(&2));
-        assert!(!ps.has_permission(&4));
+        let ps = RoleSet::from_permission(Role::Read);
+        assert!(!ps.has_permission(&Role::Anonymous));
+        assert!( ps.has_permission(&Role::Read));
+        assert!(!ps.has_permission(&Role::Write));
+        assert!(!ps.has_permission(&Role::User));
+        assert!(!ps.has_permission(&Role::Admin));
+        assert!(!ps.has_permission(&Role::SuperUser));
 
-        let ps = HashPermissionSet::<u32>::merge(HashPermissionSet::<u32>::from_permission(2), HashPermissionSet::<u32>::from_permission(8));
-        assert!(!ps.has_permission(&1));
-        assert!(ps.has_permission(&2));
-        assert!(!ps.has_permission(&4));
-        assert!(ps.has_permission(&8));
-        assert!(!ps.has_permission(&16));
-        assert_eq!(ps.0.len(), 2);
+        let ps = RoleSet::from_permission2(Role::Read, Role::Write);
+        assert!(!ps.has_permission(&Role::Anonymous));
+        assert!( ps.has_permission(&Role::Read));
+        assert!( ps.has_permission(&Role::Write));
+        assert!(!ps.has_permission(&Role::User));
+        assert!(!ps.has_permission(&Role::Admin));
+        assert!(!ps.has_permission(&Role::SuperUser));
+
+        let ps = RoleSet::from_permission3(Role::Read, Role::Write, Role::User);
+        assert!(!ps.has_permission(&Role::Anonymous));
+        assert!( ps.has_permission(&Role::Read));
+        assert!( ps.has_permission(&Role::Write));
+        assert!( ps.has_permission(&Role::User));
+        assert!(!ps.has_permission(&Role::Admin));
+        assert!(!ps.has_permission(&Role::SuperUser));
+
+        let ps = RoleSet::from_permission4(Role::Read, Role::Write, Role::User, Role::Admin);
+        assert!(!ps.has_permission(&Role::Anonymous));
+        assert!( ps.has_permission(&Role::Read));
+        assert!( ps.has_permission(&Role::Write));
+        assert!( ps.has_permission(&Role::User));
+        assert!( ps.has_permission(&Role::Admin));
+        assert!(!ps.has_permission(&Role::SuperUser));
+
+        let ps = RoleSet::merge(
+            RoleSet::from_permission(Role::Write),
+            RoleSet::from_permission(Role::Admin),
+        );
+        assert!(!ps.has_permission(&Role::Anonymous));
+        assert!(!ps.has_permission(&Role::Read));
+        assert!( ps.has_permission(&Role::Write));
+        assert!(!ps.has_permission(&Role::SuperUser));
+        assert!( ps.has_permission(&Role::Admin));
+        assert_eq!(ps.value.count_ones(), 2);
+
+        assert_eq!(ps.to_hash_set().test_unwrap(), vec!(Role::Write, Role::Admin).into_iter().collect::<HashSet<Role>>());
+        assert_eq!(ps.to_hash_set().test_unwrap(), HashSet::from_iter(vec!(Role::Write, Role::Admin).into_iter()));
+        assert_eq!(ps.to_hash_set().test_unwrap(), HashSet::from_iter(vec!(Role::Write, Role::Admin).iter().cloned()));
+        assert_eq!(ps.to_hash_set().test_unwrap(), HashSet::from_iter(vec!(Role::Write, Role::Admin)));
+
+        let mut ps = RoleSet::from_permission2(Role::Read, Role::Write);
+        ps.merge_with_mut(RoleSet::from_permission(Role::Admin));
+        assert!(!ps.has_permission(&Role::Anonymous));
+        assert!( ps.has_permission(&Role::Read));
+        assert!( ps.has_permission(&Role::Write));
+        assert!(!ps.has_permission(&Role::User));
+        assert!( ps.has_permission(&Role::Admin));
+        assert!(!ps.has_permission(&Role::SuperUser));
     }
+
 }
