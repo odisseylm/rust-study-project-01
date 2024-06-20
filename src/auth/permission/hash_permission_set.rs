@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::hash::Hash;
+use crate::auth::permission::VerifyRequiredPermissionsResult;
 use super::super::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError };
 
 #[derive(Clone, Debug)]
@@ -11,6 +12,10 @@ impl <P: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for H
     #[inline]
     fn has_permission(&self, permission: &Self::Permission) -> bool {
         self.0.contains(permission)
+    }
+
+    fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 
     #[inline]
@@ -69,6 +74,20 @@ impl <P: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for H
             set.insert(perm);
         }
         HashPermissionSet(set)
+    }
+
+    fn verify_required_permissions(&self, required_permissions: Self)
+        -> Result<VerifyRequiredPermissionsResult<Self::Permission,Self>, PermissionProcessError> {
+
+        let missed = required_permissions.0.into_iter()
+            .filter(|req|self.0.contains(&req))
+            .collect::<HashSet<Self::Permission>>();
+
+        if missed.is_empty() {
+            Ok(VerifyRequiredPermissionsResult::RequiredPermissionsArePresent)
+        } else {
+            Ok(VerifyRequiredPermissionsResult::NoPermissions(HashPermissionSet(missed)))
+        }
     }
 }
 

@@ -5,6 +5,7 @@ use axum::response::{ IntoResponse, Response };
 use crate::auth::{AuthBackendMode, AuthUserProviderError, PlainPasswordComparator};
 use crate::auth::user_provider::{ InMemAuthUserProvider };
 use crate::auth::backend::{ LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config };
+use crate::auth::permission::PermissionProvider;
 
 
 pub type AuthUser = crate::auth::examples::auth_user::AuthUserExample;
@@ -12,6 +13,8 @@ pub type AuthCredentials = crate::auth::examples::composite_auth::CompositeAuthC
 pub type AuthnBackend = crate::auth::examples::composite_auth::CompositeAuthnBackendExample;
 pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
 pub type AuthBackendError = crate::auth::AuthBackendError;
+pub type Role = crate::auth::permission::predefined::Role;
+pub type RolePermissionsSet = crate::auth::permission::predefined::RolePermissionsSet;
 
 
 async fn is_authenticated (
@@ -21,6 +24,23 @@ async fn is_authenticated (
     auth_session.backend.is_authenticated(&auth_session.user, req).await
 }
 
+/*
+async fn is_authorized (
+    auth_session: AuthSession,
+    req: Request,
+    role: Role,
+) -> (Request, Result<(), Response>) {
+    let (req, res) = auth_session.backend.is_authenticated(&auth_session.user, req).await;
+    if res.is_err() {
+        return (req, res);
+    };
+
+    auth_session.backend.is_authorized(&auth_session.user, req, role).await;
+    if res.is_err() {
+        return (req, res);
+    };
+}
+*/
 
 #[inline]
 pub async fn validate_auth_temp(
@@ -76,7 +96,8 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     // which will provide the auth session as a request extension.
     //
     // let usr_provider: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::test_users() ?);
-    let usr_provider: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(in_memory_test_users() ?);
+    let usr_provider: Arc<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet>> = Arc::new(in_memory_test_users() ?);
+    let permission_provider: Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet>> = usr_provider.clone();
 
     // Rust does not support casting dyn sub-trait to dyn super-trait :-(
     // let std_usr_provider: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = wrap_static_ptr_auth_user_provider(Arc::clone(&usr_provider_impl));
@@ -85,7 +106,7 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     // !!! With Arc::clone(&usr_provider_impl) auto casting does NOT work !!!
     //
     let config = OAuth2Config::git_from_env() ?;
-    let oauth2_backend_opt: Option<OAuth2AuthBackend<AuthUser>> = match config {
+    let oauth2_backend_opt: Option<OAuth2AuthBackend<AuthUser,Role,RolePermissionsSet>> = match config {
         None => None,
         Some(config) => {
             let mut config = config.clone();
@@ -97,22 +118,25 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
                 usr_provider.clone(), // it is automatically cast to another 'dyn' object. It should be done THERE!
                 config,
                 None, // oauth2_basic_client,
+                permission_provider.clone(),
             ) ?)
         }
     };
 
-    let http_basic_auth_backend = crate::auth::backend::HttpBasicAuthBackend::<AuthUser,PlainPasswordComparator>::new(
+    let http_basic_auth_backend = crate::auth::backend::HttpBasicAuthBackend::<AuthUser,PlainPasswordComparator,Role,RolePermissionsSet>::new(
         usr_provider.clone(),
         // AuthBackendMode::AuthProposed, // It makes sense for pure server SOA (especially for testing)
         AuthBackendMode::AuthSupported,
+        permission_provider.clone(),
     );
-    let login_form_auth_backend = crate::auth::backend::LoginFormAuthBackend::<AuthUser,PlainPasswordComparator>::new(
+    let login_form_auth_backend = crate::auth::backend::LoginFormAuthBackend::<AuthUser,PlainPasswordComparator,Role,RolePermissionsSet>::new(
         usr_provider.clone(),
         // It makes sense for web-app
         LoginFormAuthConfig {
             auth_mode: AuthBackendMode::AuthProposed,
             login_url: "/login",
         },
+        permission_provider.clone(),
     );
 
     let backend = AuthnBackend::with_backends(
@@ -121,6 +145,6 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     Ok(auth_layer)
 }
 
-pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser>, AuthUserProviderError> {
+pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet>, AuthUserProviderError> {
     InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
 }

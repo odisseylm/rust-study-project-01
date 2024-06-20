@@ -1,7 +1,11 @@
+use core::fmt;
+use core::fmt::{ Binary, Debug };
 use std::collections::HashSet;
+use std::convert::Infallible;
 use std::hash::Hash;
 use std::marker::PhantomData;
-use num::PrimInt; // Integer
+use num::PrimInt;
+use crate::auth::permission::VerifyRequiredPermissionsResult; // Integer
 // use num::Integer;
 use super::super::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError };
 
@@ -33,19 +37,59 @@ impl BitCounts for u64 {
 }
 */
 
+// bounds on generic parameters are not enforced in type aliases
+pub type IntegerBitsPermissionSet<IntType/*: PrimInt*/> = BitsPermissionSet<IntType, IntType, Infallible>;
+// pub type U32BitsPermissionSet = IntegerBitsPermissionSet<u32>;
+// pub type U64BitsPermissionSet = IntegerBitsPermissionSet<u64>;
+
+// #[derive(Debug)]
+// #[derive(Copy, Clone)]
+#[derive(Copy)]
 pub struct BitsPermissionSet < //
-    P: PrimInt + Hash + Sync + Send,
-    WP: Into<P> + TryFrom<P,Error=CErr> + Copy + Clone + Eq + Hash + Sync + Send,
+    P: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
+    WP: Into<P> + TryFrom<P,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
     CErr: std::error::Error + Sync + Send,
 > where PermissionProcessError: From<CErr> {
     value: P,
     _pd: PhantomData<WP>,
 }
 
+impl <
+    P: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
+    WP: Into<P> + TryFrom<P,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
+    CErr: std::error::Error + Sync + Send,
+> Clone for BitsPermissionSet<P,WP,CErr>
+    where PermissionProcessError: From<CErr> // Or Rust stupid or I am ??!! Why I have to add it there??
+{
+    fn clone(&self) -> Self {
+        Self { value: self.value, _pd: PhantomData }
+    }
+    fn clone_from(&mut self, source: &Self) {
+        self.value = source.value;
+    }
+}
 
 impl <
-    P: PrimInt + Hash + Sync + Send,
-    WP: Into<P> + TryFrom<P,Error=CErr> + Copy + Clone + Eq + Hash + Sync + Send,
+    P: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
+    WP: Into<P> + TryFrom<P,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
+    CErr: std::error::Error + Sync + Send,
+>  Debug for BitsPermissionSet<P,WP,CErr>
+    where PermissionProcessError: From<CErr> {
+
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // let as_bin = fmt::Binary::fmt(&self.value, f);
+        // write!(f, "BitsPermissionSet {{ {:b} }}", self.value)
+
+        let as_bin = format!("{:b}", self.value);
+        f.debug_struct("BitsPermissionSet")
+            .field("value",  &as_bin)
+            .finish()
+    }
+}
+
+impl <
+    P: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
+    WP: Into<P> + TryFrom<P,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
     CErr: std::error::Error + Sync + Send,
 > PermissionSet for BitsPermissionSet<P,WP,CErr>
     where PermissionProcessError: From<CErr> {
@@ -56,6 +100,10 @@ impl <
         let self_value: P = self.value.into();
         let perm_bit: P = (*permission).into();
         self_value & perm_bit != P::zero()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.value == P::zero()
     }
 
     #[inline]
@@ -95,11 +143,30 @@ impl <
     fn merge(set1: Self, set2: Self) -> Self {
         Self::new_raw(set1.value | set2.value)
     }
+
+    fn verify_required_permissions(&self, required_permissions: Self)
+        -> Result<VerifyRequiredPermissionsResult<Self::Permission,Self>, PermissionProcessError> {
+
+        let and_bits = self.value & required_permissions.value;
+        if and_bits == P::zero() {
+            return Ok(VerifyRequiredPermissionsResult::RequiredPermissionsArePresent);
+        }
+
+        let absent_bits = and_bits ^ required_permissions.value;
+
+        let absent = if absent_bits.count_zeros() == 1 {
+            let absent_perm = WP::try_from(absent_bits) ?;
+            VerifyRequiredPermissionsResult::NoPermission(absent_perm)
+        } else {
+            VerifyRequiredPermissionsResult::NoPermissions(BitsPermissionSet::<P,WP,CErr>::new_raw(absent_bits))
+        };
+        Ok(absent)
+    }
 }
 
 impl <
-    P: PrimInt + Hash + Sync + Send,
-    WP: Into<P> + TryFrom<P,Error=CErr> + Copy + Clone + Eq + Hash + Sync + Send,
+    P: PrimInt + Binary + Debug + Hash + Sync + Send,
+    WP: Into<P> + TryFrom<P,Error=CErr> + Debug + Copy + Clone + Eq + Hash + Sync + Send,
     CErr: std::error::Error + Sync + Send,
 > PermissionsToHashSet for BitsPermissionSet<P,WP,CErr>
     where PermissionProcessError: From<CErr> {
@@ -129,8 +196,8 @@ impl <
 
 
 impl <
-    P: PrimInt + Hash + Sync + Send,
-    WP: Into<P> + TryFrom<P,Error=CErr> + Copy + Clone + Eq + Hash + Sync + Send,
+    P: PrimInt + Binary + Debug + Hash + Sync + Send,
+    WP: Into<P> + TryFrom<P,Error=CErr> + Debug + Copy + Clone + Eq + Hash + Sync + Send,
     CErr: std::error::Error + Sync + Send,
 > BitsPermissionSet<P,WP,CErr>
     where PermissionProcessError: From<CErr> {

@@ -4,7 +4,7 @@ pub trait PasswordComparator {
 }
 
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct PlainPasswordComparator;
 impl PasswordComparator for PlainPasswordComparator {
     fn passwords_equal(user_password: &str, credentials_password: &str) -> bool {

@@ -1,4 +1,6 @@
 use core::fmt;
+use crate::auth::permission::PermissionSet;
+use crate::auth::permission::predefined::RolePermissionsSet;
 
 use super::super::{
     backend::{ oauth2_auth::OAuth2User, psw_auth::PswUser },
@@ -7,19 +9,24 @@ use super::super::{
 
 
 #[derive(Clone)]
-#[derive(serde::Serialize, serde::Deserialize)]
-#[derive(sqlx::FromRow)]
+// #[derive(serde::Serialize, serde::Deserialize)]
+// #[derive(sqlx::FromRow)]
 #[readonly::make]
 pub struct AuthUserExample {
     pub username: String,
     pub password: Option<String>,
     pub access_token: Option<String>,
     pub id: i64,
+    pub permissions: RolePermissionsSet,
 }
 
 impl AuthUserExample {
     pub fn new(id: i64, username: &'static str, password: &'static str) -> AuthUserExample {
-        AuthUserExample { id, username: username.to_string(), password: Some(password.to_string()), access_token: None }
+        AuthUserExample {
+            id, username: username.to_string(), password: Some(password.to_string()),
+            access_token: None,
+            permissions: RolePermissionsSet::new(),
+        }
     }
     pub fn access_token(&mut self, access_token: Option<String>) {
         self.access_token = access_token;

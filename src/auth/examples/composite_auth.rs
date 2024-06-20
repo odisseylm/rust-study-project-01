@@ -7,6 +7,9 @@ use axum::response::{ IntoResponse, Response };
 use axum_login::UserId;
 use log::{ error };
 use crate::auth::AuthUserProviderError;
+use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
+use crate::auth::permission::PermissionProvider;
+use crate::auth::util::composite_util::get_permission_provider3;
 
 use super::auth_user::AuthUserExample;
 use super::super::backend::{
@@ -24,50 +27,59 @@ use super::super::{
     user_provider::InMemAuthUserProvider,
 };
 
+pub type Role = crate::auth::permission::predefined::Role;
+pub type RolePermissionsSet = crate::auth::permission::predefined::RolePermissionsSet;
+
 
 #[derive(Clone)]
 pub struct CompositeAuthnBackendExample<
     > {
     users_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send>,
-    http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator>>,
-    login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator>>,
-    oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample>>,
+    permission_provider: Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send>,
+    http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
+    login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
+    oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,Role,RolePermissionsSet>>,
 }
 
-pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample>, AuthUserProviderError> {
+pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet>, AuthUserProviderError> {
     InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "vovan", "qwerty")))
 }
 
 impl CompositeAuthnBackendExample {
     pub fn test_users() -> Result<CompositeAuthnBackendExample, anyhow::Error> {
-        let user_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send> = Arc::new(in_memory_test_users() ?);
+        let in_mem_users = Arc::new(in_memory_test_users() ?);
+        let user_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send> = in_mem_users.clone();
+        let permission_provider: Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send> = in_mem_users.clone();
         Ok(CompositeAuthnBackendExample {
-            http_basic_auth_backend: Some(HttpBasicAuthBackend::new(user_provider.clone(), AuthBackendMode::AuthProposed)),
+            http_basic_auth_backend: Some(HttpBasicAuthBackend::new(user_provider.clone(), AuthBackendMode::AuthProposed, permission_provider.clone())),
             login_form_auth_backend: Some(LoginFormAuthBackend::new(user_provider.clone(), LoginFormAuthConfig {
                 auth_mode: AuthBackendMode::AuthSupported,
                 login_url: "/form/login",
-            })),
+            }, permission_provider.clone())),
             users_provider: user_provider,
+            permission_provider,
             oauth2_backend: None,
         })
     }
 
     pub fn new_raw(
         users_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send>,
-        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator>>,
-        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator>>,
-        oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample>>,
+        permission_provider: Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send>,
+        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
+        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
+        oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,Role,RolePermissionsSet>>,
     ) -> CompositeAuthnBackendExample {
-        CompositeAuthnBackendExample { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend }
+        CompositeAuthnBackendExample { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend, permission_provider }
     }
 
     pub fn with_backends(
-        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator>>,
-        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator>>,
-        oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample>>,
+        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
+        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
+        oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,Role,RolePermissionsSet>>,
     ) -> Result<CompositeAuthnBackendExample, AuthBackendError> {
         let users_provider = get_user_provider3(&http_basic_auth_backend, &login_form_auth_backend, &oauth2_backend) ?;
-        Ok(CompositeAuthnBackendExample { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend })
+        let permission_provider = get_permission_provider3(&http_basic_auth_backend, &login_form_auth_backend, &oauth2_backend) ?;
+        Ok(CompositeAuthnBackendExample { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend, permission_provider })
     }
 
     // T O D O: Do we need redirection there??
@@ -99,6 +111,16 @@ impl CompositeAuthnBackendExample {
 
         psw_aut_res_opt
     }
+
+    /*
+    pub async fn is_authorized(
+        &self,
+        auth_session_user: &Option<AuthUserExample>,
+        req: Request,
+        role: Role,
+    ) -> (Request, Result<(), Response>) {
+    }
+    */
 }
 
 fn map_auth_res_to_is_auth_res(
@@ -157,3 +179,20 @@ pub enum CompositeAuthCredentials {
     Password(PswAuthCredentials),
     OAuth(OAuth2AuthCredentials),
 }
+
+
+
+#[axum::async_trait]
+impl PermissionProviderSource for CompositeAuthnBackendExample {
+    type User = AuthUserExample;
+    type Permission = Role;
+    type PermissionSet = RolePermissionsSet;
+
+    #[inline]
+    //noinspection DuplicatedCode
+    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet>> {
+        self.permission_provider.clone()
+    }
+}
+#[axum::async_trait]
+impl AuthorizeBackend for CompositeAuthnBackendExample { }

@@ -1,7 +1,11 @@
+use core::fmt::Debug;
 use std::env::VarError;
+use std::hash::Hash;
 use std::sync::Arc;
 use axum::extract::OriginalUri;
 use oauth2::basic::BasicClient;
+use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
+use crate::auth::permission::{PermissionProvider, PermissionSet};
 
 
 use super::super::{
@@ -32,17 +36,26 @@ pub struct OAuth2AuthCredentials {
 
 #[derive(Debug, Clone)]
 #[readonly::make]
-pub struct OAuth2AuthBackend <User: OAuth2User + Send + Sync> {
-    state: Arc<AuthBackendState<User>>,
+pub struct OAuth2AuthBackend <
+    User: OAuth2User + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+> {
+    state: Arc<AuthBackendState<User,Perm,PermSet>>,
 }
 
 
 #[derive(Debug)]
-struct AuthBackendState <User: OAuth2User + Send + Sync> {
-    user_provider: Arc<dyn AuthUserProvider<User = User> + Send + Sync>,
-    oauth2_user_store: Arc<dyn OAuth2UserStore<User = User> + Send + Sync>,
+struct AuthBackendState <
+    User: OAuth2User + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+> {
+    user_provider: Arc<dyn AuthUserProvider<User=User> + Send + Sync>,
+    oauth2_user_store: Arc<dyn OAuth2UserStore<User=User> + Send + Sync>,
     config: OAuth2Config,
     client: BasicClient,
+    permission_provider: Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet>>,
 }
 
 
@@ -51,12 +64,17 @@ struct UserInfo {
     login: String,
 }
 
-impl<User: OAuth2User + Send + Sync> OAuth2AuthBackend<User> {
+impl <
+    User: OAuth2User + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+> OAuth2AuthBackend<User,Perm,PermSet> {
     pub fn new(
         user_provider: Arc<dyn AuthUserProvider<User=User> + Send + Sync>,
         oauth2_user_store: Arc<dyn OAuth2UserStore<User=User> + Send + Sync>,
         config: OAuth2Config,
         client: Option<BasicClient>,
+        permission_provider: Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet>>,
     ) -> Result<Self, AuthBackendError> {
 
         // ?? Strange... no Option.or_else_res() function.
@@ -74,6 +92,7 @@ impl<User: OAuth2User + Send + Sync> OAuth2AuthBackend<User> {
                 oauth2_user_store: Arc::clone(&oauth2_user_store),
                 config,
                 client,
+                permission_provider,
             })
         })
     }
@@ -85,7 +104,11 @@ impl<User: OAuth2User + Send + Sync> OAuth2AuthBackend<User> {
 }
 
 #[axum::async_trait]
-impl<User: axum_login::AuthUser + OAuth2User + Send + Sync> axum_login::AuthnBackend for OAuth2AuthBackend<User>
+impl <
+    User: OAuth2User + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+> axum_login::AuthnBackend for OAuth2AuthBackend<User,Perm,PermSet>
     where User: axum_login::AuthUser<Id = String>,
 {
     type User = User;
@@ -210,7 +233,11 @@ impl OAuth2Config {
 
 
 #[axum::async_trait]
-impl <User: axum_login::AuthUser + OAuth2User + Send + Sync> AuthnBackendAttributes for OAuth2AuthBackend<User>
+impl <
+    User: OAuth2User + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+> AuthnBackendAttributes for OAuth2AuthBackend<User,Perm,PermSet>
     where User: axum_login::AuthUser<Id = String>,
 {
     type ProposeAuthAction = super::login_form_auth::ProposeLoginFormAuthAction;
@@ -223,4 +250,31 @@ impl <User: axum_login::AuthUser + OAuth2User + Send + Sync> AuthnBackendAttribu
         let initial_uri: Option<String> = req.extensions().get::<OriginalUri>().map(|uri|uri.to_string());
         Some(super::login_form_auth::ProposeLoginFormAuthAction { login_url: Some(self.state.config.login_url), initial_url: initial_uri })
     }
+}
+
+#[axum::async_trait]
+impl<
+    User: OAuth2User + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
+> PermissionProviderSource for OAuth2AuthBackend<User,Perm,PermSet>
+    where User: axum_login::AuthUser<Id = String> {
+    type User = User;
+    type Permission = Perm;
+    type PermissionSet = PermSet;
+
+    #[inline]
+    //noinspection DuplicatedCode
+    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet>> {
+        self.state.permission_provider.clone()
+    }
+}
+#[axum::async_trait]
+impl<
+    User: OAuth2User + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
+> AuthorizeBackend for OAuth2AuthBackend<User,Perm,PermSet>
+    where User: axum_login::AuthUser<Id = String> {
+    //noinspection DuplicatedCode
 }

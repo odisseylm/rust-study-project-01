@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use crate::auth::permission::bits_permission_set::BitsPermissionSet;
 use super::super::permission::{ PermissionProcessError };
 
 
@@ -22,6 +23,11 @@ pub enum Role {
     // If you need 'match' (by some reason...) for this enum, please create your own enum
     // and use it instead of this enum.
 }
+
+// Actually it contains just roles, because it is expected there Permission=Role.
+// If you need more complicated behavior, please define your own separate types
+// for 'role', 'permission', and use BitsPermissionSet for permissions (or for 'role' too).
+pub type RolePermissionsSet = BitsPermissionSet<u32, Role, PermissionProcessError>;
 
 
 impl Into<u32> for Role {

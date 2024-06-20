@@ -70,6 +70,9 @@ impl  <
 mod tests {
     use std::sync::Arc;
     use crate::auth::AuthUserProviderError;
+    use crate::auth::permission::bits_permission_set::IntegerBitsPermissionSet;
+    use crate::auth::permission::empty_permission_provider::empty_perm_provider_arc;
+    use crate::auth::permission::predefined::{Role, RolePermissionsSet};
 
     use super::{ AuthnBackendDynWrapperImpl, AuthnBackendDynWrapper, wrap_authn_backend_as_dyn };
     use super::super::super::{
@@ -80,28 +83,33 @@ mod tests {
         user_provider::InMemAuthUserProvider,
         backend::{ LoginFormAuthBackend, LoginFormAuthConfig, psw_auth::PswAuthCredentials },
     };
+    type Perm = u32;
+    type PermSet = IntegerBitsPermissionSet<u32>;
     use crate::util::TestResultUnwrap;
 
-    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample>, AuthUserProviderError> {
+    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet>, AuthUserProviderError> {
         InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "vovan", "qwerty")))
     }
 
     #[tokio::test]
     async fn test_wrap_authn_backend_as_dyn() {
         let test_users = Arc::new(in_memory_test_users().test_unwrap());
-        let psw_auth = LoginFormAuthBackend::<AuthUserExample,PlainPasswordComparator>::new(
-            test_users, LoginFormAuthConfig { auth_mode: AuthBackendMode::AuthSupported, login_url: "/login" });
+        let psw_auth = LoginFormAuthBackend::<AuthUserExample,PlainPasswordComparator,Perm,PermSet>::new(
+            test_users,
+            LoginFormAuthConfig { auth_mode: AuthBackendMode::AuthSupported, login_url: "/login" },
+            empty_perm_provider_arc(),
+        );
 
         use axum_login::AuthnBackend;
         let r = psw_auth.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());
 
-        let as_dyn: Arc<AuthnBackendDynWrapperImpl<AuthUserExample, PswAuthCredentials, AuthBackendError, LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator>>> =
+        let as_dyn: Arc<AuthnBackendDynWrapperImpl<AuthUserExample, PswAuthCredentials, AuthBackendError, LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,Perm,PermSet>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
         let r = as_dyn.authn_backend.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());
 
-        let as_dyn: Arc<dyn AuthnBackendDynWrapper<User=AuthUserExample, Credentials=PswAuthCredentials, Error=AuthBackendError, RealAuthnBackend=LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator>>> =
+        let as_dyn: Arc<dyn AuthnBackendDynWrapper<User=AuthUserExample, Credentials=PswAuthCredentials, Error=AuthBackendError, RealAuthnBackend=LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,Perm,PermSet>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
         let r = as_dyn.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
         assert!(r.is_ok());

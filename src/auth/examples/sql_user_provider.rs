@@ -1,3 +1,4 @@
+/*
 use sqlx::SqlitePool;
 
 use super::super::{
@@ -69,3 +70,4 @@ impl OAuth2UserStore for SqlUserProvider {
         Ok(Some(user))
     }
 }
+*/

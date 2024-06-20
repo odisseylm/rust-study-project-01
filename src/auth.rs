@@ -8,7 +8,7 @@ pub mod backend;
 pub mod user_provider;
 
 pub mod examples;
-mod permission;
+pub mod permission;
 
 
 pub use backend::{AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction, RequestUserAuthnBackend};
