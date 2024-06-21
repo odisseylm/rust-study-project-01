@@ -16,32 +16,32 @@ pub fn empty_perm_provider_arc <
 
 
 pub fn always_allowed_perm_provider_arc <
-    Usr: axum_login::AuthUser + 'static,
+    User: axum_login::AuthUser + 'static,
     Perm: Clone + Debug + Hash + Eq + Send + Sync + 'static,
     PermSet: PermissionSet<Permission=Perm> + Clone + Debug + Send + Sync + 'static,
-> () -> Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet>> {
-    Arc::new(EmptyPermProvider::<Usr,Perm,PermSet,true> { _pd: PhantomData})
+> () -> Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet>> {
+    Arc::new(EmptyPermProvider::<User,Perm,PermSet,true> { _pd: PhantomData})
 }
 pub fn always_denied_perm_provider_arc <
-    Usr: axum_login::AuthUser + 'static,
+    User: axum_login::AuthUser + 'static,
     Perm: Clone + Debug + Hash + Eq + Send + Sync + 'static,
     PermSet: PermissionSet<Permission=Perm> + Clone + Debug + Send + Sync + 'static,
-> () -> Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet>> {
-    Arc::new(EmptyPermProvider::<Usr,Perm,PermSet,false> { _pd: PhantomData})
+> () -> Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet>> {
+    Arc::new(EmptyPermProvider::<User,Perm,PermSet,false> { _pd: PhantomData})
 }
 
 
 pub fn empty_always_allowed_perm_provider_arc <
-    Usr: axum_login::AuthUser + 'static,
+    User: axum_login::AuthUser + 'static,
     Perm: Clone + Debug + Hash + Eq + Send + Sync + 'static,
-> () -> Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=AlwaysAllowedPermSet<Perm>>> {
-    Arc::new(EmptyPermProvider::<Usr,Perm,AlwaysAllowedPermSet<Perm>,true> { _pd: PhantomData})
+> () -> Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=AlwaysAllowedPermSet<Perm>>> {
+    Arc::new(EmptyPermProvider::<User,Perm,AlwaysAllowedPermSet<Perm>,true> { _pd: PhantomData})
 }
 pub fn empty_always_denied_perm_provider_arc <
-    Usr: axum_login::AuthUser + 'static,
+    User: axum_login::AuthUser + 'static,
     Perm: Clone + Debug + Hash + Eq + Send + Sync + 'static,
-> () -> Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=AlwaysDeniedPermSet<Perm>>> {
-    Arc::new(EmptyPermProvider::<Usr,Perm,AlwaysDeniedPermSet<Perm>,false> { _pd: PhantomData})
+> () -> Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=AlwaysDeniedPermSet<Perm>>> {
+    Arc::new(EmptyPermProvider::<User,Perm,AlwaysDeniedPermSet<Perm>,false> { _pd: PhantomData})
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
@@ -49,13 +49,12 @@ pub struct EmptyPerm;
 
 #[derive(Debug)]
 struct EmptyPermProvider <
-    Usr: axum_login::AuthUser,
+    User: axum_login::AuthUser,
     Perm: Clone + Debug + Hash + Eq + Send + Sync,// = EmptyPerm,
     PermSet: PermissionSet<Permission=Perm> + Clone + Debug + Send + Sync,
-    const Allowed: bool,
-    // const Allowed: Option<bool>,
+    const ALLOWED: bool,
 > {
-    _pd: PhantomData<(Usr,Perm,PermSet)>,
+    _pd: PhantomData<(User, Perm, PermSet)>,
 }
 
 #[async_trait::async_trait]
@@ -63,8 +62,8 @@ impl <
     Usr: axum_login::AuthUser,
     Perm: Clone + Debug + Hash + Eq + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Clone + Debug + Send + Sync,
-    const Allowed: bool,
-> PermissionProvider for EmptyPermProvider<Usr,Perm,PermSet,Allowed> {
+    const ALLOWED: bool,
+> PermissionProvider for EmptyPermProvider<Usr,Perm,PermSet,ALLOWED> {
     type User = Usr;
     type Permission = Perm;
     type PermissionSet = PermSet;
@@ -99,14 +98,14 @@ impl <
         //let ps: Self::PermissionSet = PermissionSet::new();
         //let res: bool = ps.has_permission(&_perm);
         // Ok(res)
-        Ok(Allowed)
+        Ok(ALLOWED)
     }
 }
 
 
 #[derive(Debug, Clone)]
-pub struct AlwaysAllowedPermSet <P> {
-    _pd: PhantomData<P>,
+pub struct AlwaysAllowedPermSet <Perm> {
+    _pd: PhantomData<Perm>,
 }
 impl <
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
@@ -156,8 +155,8 @@ impl <
 
 
 #[derive(Debug, Clone)]
-pub struct AlwaysDeniedPermSet <P> {
-    _pd: PhantomData<P>,
+pub struct AlwaysDeniedPermSet <Perm> {
+    _pd: PhantomData<Perm>,
 }
 impl <
     Perm: Hash + Eq + Debug + Clone + Send + Sync,

@@ -1,7 +1,7 @@
-pub mod bits_permission_set;
-pub mod hash_permission_set;
+pub mod bits_perm_set;
+pub mod hash_perm_set;
 pub mod predefined;
-pub mod empty_permission_provider;
+pub mod empty_perm_provider;
 
 use core::fmt::Debug;
 use std::collections::HashSet;

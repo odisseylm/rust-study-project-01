@@ -6,7 +6,7 @@ use axum::extract::OriginalUri;
 use oauth2::basic::BasicClient;
 use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
 use crate::auth::permission::{PermissionProvider, PermissionSet};
-use crate::auth::permission::empty_permission_provider::{AlwaysAllowedPermSet, EmptyPerm};
+use crate::auth::permission::empty_perm_provider::{AlwaysAllowedPermSet, EmptyPerm};
 
 
 use super::super::{
@@ -66,16 +66,16 @@ struct UserInfo {
 }
 
 impl <
-    User: OAuth2User + Debug + Clone + Send + Sync,
+    Usr: OAuth2User + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> OAuth2AuthBackend<User,Perm,PermSet> {
+> OAuth2AuthBackend<Usr,Perm,PermSet> {
     pub fn new(
-        user_provider: Arc<dyn AuthUserProvider<User=User> + Send + Sync>,
-        oauth2_user_store: Arc<dyn OAuth2UserStore<User=User> + Send + Sync>,
+        user_provider: Arc<dyn AuthUserProvider<User=Usr> + Send + Sync>,
+        oauth2_user_store: Arc<dyn OAuth2UserStore<User=Usr> + Send + Sync>,
         config: OAuth2Config,
         client: Option<BasicClient>,
-        permission_provider: Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet>>,
+        permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet>>,
     ) -> Result<Self, AuthBackendError> {
 
         // ?? Strange... no Option.or_else_res() function.
@@ -106,13 +106,13 @@ impl <
 
 #[axum::async_trait]
 impl <
-    User: OAuth2User + Debug + Clone + Send + Sync,
+    Usr: OAuth2User + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> axum_login::AuthnBackend for OAuth2AuthBackend<User,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String>,
+> axum_login::AuthnBackend for OAuth2AuthBackend<Usr,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String>,
 {
-    type User = User;
+    type User = Usr;
     type Credentials = OAuth2AuthCredentials;
     type Error = AuthBackendError;
 
@@ -235,15 +235,15 @@ impl OAuth2Config {
 
 #[axum::async_trait]
 impl <
-    User: OAuth2User + Debug + Clone + Send + Sync,
+    Usr: OAuth2User + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> AuthnBackendAttributes for OAuth2AuthBackend<User,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String>,
+> AuthnBackendAttributes for OAuth2AuthBackend<Usr,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String>,
 {
     type ProposeAuthAction = super::login_form_auth::ProposeLoginFormAuthAction;
 
-    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=User> + Sync + Send> {
+    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=Usr> + Sync + Send> {
         self.state.user_provider.clone()
     }
     fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {
@@ -255,12 +255,12 @@ impl <
 
 #[axum::async_trait]
 impl<
-    User: OAuth2User + Debug + Clone + Send + Sync,
+    Usr: OAuth2User + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
-> PermissionProviderSource for OAuth2AuthBackend<User,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String> {
-    type User = User;
+> PermissionProviderSource for OAuth2AuthBackend<Usr,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String> {
+    type User = Usr;
     type Permission = Perm;
     type PermissionSet = PermSet;
 
@@ -272,10 +272,10 @@ impl<
 }
 #[axum::async_trait]
 impl<
-    User: OAuth2User + Debug + Clone + Send + Sync,
+    Usr: OAuth2User + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
-> AuthorizeBackend for OAuth2AuthBackend<User,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String> {
+> AuthorizeBackend for OAuth2AuthBackend<Usr,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String> {
     //noinspection DuplicatedCode
 }

@@ -23,15 +23,15 @@ struct AuthUserProviderStaticTypePtrWrapper<
 
 #[axum::async_trait]
 impl <
-    User: axum_login::AuthUser,
-    UsrProviderDelegate: AuthUserProvider<User=User> + Send + Sync,
-    UsrProviderDelegatePtr: core::ops::Deref<Target=UsrProviderDelegate> + Send + Sync,
-> AuthUserProvider for AuthUserProviderStaticTypePtrWrapper<User,UsrProviderDelegate,UsrProviderDelegatePtr>
+    Usr: axum_login::AuthUser,
+    UsrProvDelegate: AuthUserProvider<User=Usr> + Send + Sync,
+    UsrProvDelegatePtr: core::ops::Deref<Target=UsrProvDelegate> + Send + Sync,
+> AuthUserProvider for AuthUserProviderStaticTypePtrWrapper<Usr,UsrProvDelegate, UsrProvDelegatePtr>
     where
-        UsrProviderDelegate: fmt::Debug,
-        UsrProviderDelegatePtr: fmt::Debug,
+        UsrProvDelegate: fmt::Debug,
+        UsrProvDelegatePtr: fmt::Debug,
 {
-    type User = User;
+    type User = Usr;
     //noinspection DuplicatedCode
     async fn get_user_by_principal_identity(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
         self.delegate.get_user_by_principal_identity(user_id).await
@@ -103,10 +103,10 @@ mod tests {
     //noinspection DuplicatedCode
     #[axum::async_trait]
     impl <
-        User: axum_login::AuthUser,
-        UsrProviderDelegate: AuthUserProvider<User=User> + Send + Sync,
-    > AuthUserProvider for AuthUserProviderStaticTypeArcWrapper<User,UsrProviderDelegate> {
-        type User = User;
+        Usr: axum_login::AuthUser,
+        UsrProvDelegate: AuthUserProvider<User=Usr> + Send + Sync,
+    > AuthUserProvider for AuthUserProviderStaticTypeArcWrapper<Usr,UsrProvDelegate> {
+        type User = Usr;
         async fn get_user_by_principal_identity(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
             self.delegate.get_user_by_principal_identity(user_id).await
         }

@@ -39,18 +39,18 @@ pub fn wrap_authn_backend_as_dyn<
 }
 
 #[axum::async_trait]
-impl  <
-    User: axum_login::AuthUser,
-    Credentials: Send + Sync,
-    Error: std::error::Error + Send + Sync,
-    RealAuthnBackend: axum_login::AuthnBackend<User = User, Credentials = Credentials, Error = Error>, // + Send + Sync,
+impl <
+    Usr: axum_login::AuthUser,
+    Cred: Send + Sync,
+    Err: std::error::Error + Send + Sync,
+    RealAuthnBackend: axum_login::AuthnBackend<User=Usr,Credentials=Cred,Error=Err>, // + Send + Sync,
     >
     AuthnBackendDynWrapper //<Credentials = Credentials, Error = Error, RealAuthnBackend = RealAuthnBackend>
-    for AuthnBackendDynWrapperImpl<User, Credentials, Error, RealAuthnBackend> {
+    for AuthnBackendDynWrapperImpl<Usr,Cred,Err,RealAuthnBackend> {
 
-    type User = User;
-    type Credentials = Credentials;
-    type Error = Error;
+    type User = Usr;
+    type Credentials = Cred;
+    type Error = Err;
     type RealAuthnBackend = RealAuthnBackend;
 
     fn backend(&self) -> &Self::RealAuthnBackend {
@@ -71,8 +71,8 @@ mod tests {
     use std::sync::Arc;
     use crate::auth::AuthUserProviderError;
     use crate::auth::examples::auth_user::AuthUserExamplePswExtractor;
-    use crate::auth::permission::bits_permission_set::IntegerBitsPermissionSet;
-    use crate::auth::permission::empty_permission_provider::always_allowed_perm_provider_arc;
+    use crate::auth::permission::bits_perm_set::IntegerBitsPermissionSet;
+    use crate::auth::permission::empty_perm_provider::always_allowed_perm_provider_arc;
     use crate::auth::permission::predefined::{Role, RolePermissionsSet};
 
     use super::{ AuthnBackendDynWrapperImpl, AuthnBackendDynWrapper, wrap_authn_backend_as_dyn };

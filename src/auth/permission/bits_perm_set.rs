@@ -45,20 +45,22 @@ pub type IntegerBitsPermissionSet<IntType/*: PrimInt*/> = BitsPermissionSet<IntT
 // #[derive(Debug)]
 // #[derive(Copy, Clone)]
 #[derive(Copy)]
-pub struct BitsPermissionSet < //
-    P: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
-    WP: Into<P> + TryFrom<P,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
-    CErr: std::error::Error + Sync + Send,
-> where PermissionProcessError: From<CErr> {
-    value: P,
-    _pd: PhantomData<WP>,
+pub struct BitsPermissionSet <
+    // Usually BitsIntType is u8, u16, u32, u64
+    BitsIntType: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
+    // Usually SingleBitPermType it is enum where enum-variant represents one bit.
+    SingleBitPermType: Into<BitsIntType> + TryFrom<BitsIntType,Error=ConvertBitToPermTypeError> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
+    ConvertBitToPermTypeError: std::error::Error + Sync + Send,
+> where PermissionProcessError: From<ConvertBitToPermTypeError> {
+    value: BitsIntType,
+    _pd: PhantomData<SingleBitPermType>,
 }
 
 impl <
-    P: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
-    WP: Into<P> + TryFrom<P,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
+    BitsType: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
+    Perm: Into<BitsType> + TryFrom<BitsType,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
     CErr: std::error::Error + Sync + Send,
-> Clone for BitsPermissionSet<P,WP,CErr>
+> Clone for BitsPermissionSet<BitsType, Perm,CErr>
     where PermissionProcessError: From<CErr> // Or Rust stupid or I am ??!! Why I have to add it there??
 {
     fn clone(&self) -> Self {
@@ -70,10 +72,10 @@ impl <
 }
 
 impl <
-    P: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
-    WP: Into<P> + TryFrom<P,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
+    BitsType: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
+    Perm: Into<BitsType> + TryFrom<BitsType,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
     CErr: std::error::Error + Sync + Send,
->  Debug for BitsPermissionSet<P,WP,CErr>
+> Debug for BitsPermissionSet<BitsType,Perm,CErr>
     where PermissionProcessError: From<CErr> {
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -88,27 +90,27 @@ impl <
 }
 
 impl <
-    P: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
-    WP: Into<P> + TryFrom<P,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
+    BitsType: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
+    Perm: Into<BitsType> + TryFrom<BitsType,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
     CErr: std::error::Error + Sync + Send,
-> PermissionSet for BitsPermissionSet<P,WP,CErr>
+> PermissionSet for BitsPermissionSet<BitsType,Perm,CErr>
     where PermissionProcessError: From<CErr> {
-    type Permission = WP;
+    type Permission = Perm;
 
     #[inline]
     fn has_permission(&self, permission: &Self::Permission) -> bool {
-        let self_value: P = self.value.into();
-        let perm_bit: P = (*permission).into();
-        self_value & perm_bit != P::zero()
+        let self_value: BitsType = self.value.into();
+        let perm_bit  : BitsType = (*permission).into();
+        self_value & perm_bit != BitsType::zero()
     }
 
     fn is_empty(&self) -> bool {
-        self.value == P::zero()
+        self.value == BitsType::zero()
     }
 
     #[inline]
     fn new() -> Self {
-        Self::new_raw(P::zero())
+        Self::new_raw(BitsType::zero())
     }
 
     #[inline]
@@ -118,19 +120,19 @@ impl <
 
     #[inline]
     fn from_permission2(perm1: Self::Permission, perm2: Self::Permission) -> Self {
-        let res: P = perm1.into() | perm2.into();
+        let res: BitsType = perm1.into() | perm2.into();
         Self::new_raw(res)
     }
 
     #[inline]
     fn from_permission3(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission) -> Self {
-        let res: P = perm1.into() | perm2.into() | perm3.into();
+        let res: BitsType = perm1.into() | perm2.into() | perm3.into();
         Self::new_raw(res)
     }
 
     #[inline]
     fn from_permission4(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission, perm4: Self::Permission) -> Self {
-        let res: P = perm1.into() | perm2.into() | perm3.into() | perm4.into();
+        let res: BitsType = perm1.into() | perm2.into() | perm3.into() | perm4.into();
         Self::new_raw(res)
     }
 
@@ -148,29 +150,29 @@ impl <
         -> Result<VerifyRequiredPermissionsResult<Self::Permission,Self>, PermissionProcessError> {
 
         let and_bits = self.value & required_permissions.value;
-        if and_bits == P::zero() {
+        if and_bits == BitsType::zero() {
             return Ok(VerifyRequiredPermissionsResult::RequiredPermissionsArePresent);
         }
 
         let absent_bits = and_bits ^ required_permissions.value;
 
         let absent = if absent_bits.count_zeros() == 1 {
-            let absent_perm = WP::try_from(absent_bits) ?;
+            let absent_perm = Perm::try_from(absent_bits) ?;
             VerifyRequiredPermissionsResult::NoPermission(absent_perm)
         } else {
-            VerifyRequiredPermissionsResult::NoPermissions(BitsPermissionSet::<P,WP,CErr>::new_raw(absent_bits))
+            VerifyRequiredPermissionsResult::NoPermissions(BitsPermissionSet::<BitsType,Perm,CErr>::new_raw(absent_bits))
         };
         Ok(absent)
     }
 }
 
 impl <
-    P: PrimInt + Binary + Debug + Hash + Sync + Send,
-    WP: Into<P> + TryFrom<P,Error=CErr> + Debug + Copy + Clone + Eq + Hash + Sync + Send,
+    BitsType: PrimInt + Binary + Debug + Hash + Sync + Send,
+    Perm: Into<BitsType> + TryFrom<BitsType,Error=CErr> + Debug + Copy + Clone + Eq + Hash + Sync + Send,
     CErr: std::error::Error + Sync + Send,
-> PermissionsToHashSet for BitsPermissionSet<P,WP,CErr>
+> PermissionsToHashSet for BitsPermissionSet<BitsType,Perm,CErr>
     where PermissionProcessError: From<CErr> {
-    type Permission = WP;
+    type Permission = Perm;
 
     fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionProcessError> {
         // use BitCounts;
@@ -180,12 +182,12 @@ impl <
         }
 
         use core::mem::size_of;
-        let value: P = self.value.into();
+        let value: BitsType = self.value.into();
 
         let mut as_set = HashSet::<Self::Permission>::with_capacity(count as usize);
         for i in 0..size_of::<Self::Permission>()*8 {
-            let as_bit = P::one() << i;
-            if (as_bit & value) != P::zero() {
+            let as_bit = BitsType::one() << i;
+            if (as_bit & value) != BitsType::zero() {
                 let bit_perm_obj: Self::Permission = Self::Permission::try_from(as_bit) ?;
                 as_set.insert(bit_perm_obj);
             }
@@ -196,15 +198,15 @@ impl <
 
 
 impl <
-    P: PrimInt + Binary + Debug + Hash + Sync + Send,
-    WP: Into<P> + TryFrom<P,Error=CErr> + Debug + Copy + Clone + Eq + Hash + Sync + Send,
+    BitsType: PrimInt + Binary + Debug + Hash + Sync + Send,
+    Perm: Into<BitsType> + TryFrom<BitsType,Error=CErr> + Debug + Copy + Clone + Eq + Hash + Sync + Send,
     CErr: std::error::Error + Sync + Send,
-> BitsPermissionSet<P,WP,CErr>
+> BitsPermissionSet<BitsType,Perm,CErr>
     where PermissionProcessError: From<CErr> {
-    fn new_perm(value: WP) -> BitsPermissionSet<P,WP,CErr> {
+    fn new_perm(value: Perm) -> BitsPermissionSet<BitsType,Perm,CErr> {
         BitsPermissionSet { value: value.into(), _pd: PhantomData }
     }
-    fn new_raw(value: P) -> BitsPermissionSet<P,WP,CErr> {
+    fn new_raw(value: BitsType) -> BitsPermissionSet<BitsType,Perm,CErr> {
         BitsPermissionSet { value, _pd: PhantomData }
     }
 }

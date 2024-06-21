@@ -4,10 +4,10 @@ use crate::auth::permission::VerifyRequiredPermissionsResult;
 use super::super::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError };
 
 #[derive(Clone, Debug)]
-pub struct HashPermissionSet<P: Clone + core::fmt::Debug + Eq + Hash>(HashSet<P>);
+pub struct HashPermissionSet<Perm: Clone + core::fmt::Debug + Eq + Hash>(HashSet<Perm>);
 
-impl <P: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for HashPermissionSet<P> {
-    type Permission = P;
+impl <Perm: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for HashPermissionSet<Perm> {
+    type Permission = Perm;
 
     #[inline]
     fn has_permission(&self, permission: &Self::Permission) -> bool {
@@ -20,19 +20,19 @@ impl <P: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for H
 
     #[inline]
     fn new() -> Self {
-        HashPermissionSet(HashSet::<P>::new())
+        HashPermissionSet(HashSet::<Perm>::new())
     }
 
     #[inline]
     fn from_permission(permission: Self::Permission) -> Self {
-        let mut set = HashSet::<P>::with_capacity(1);
+        let mut set = HashSet::<Perm>::with_capacity(1);
         set.insert(permission);
         HashPermissionSet(set)
     }
 
     #[inline]
     fn from_permission2(perm1: Self::Permission, perm2: Self::Permission) -> Self {
-        let mut set = HashSet::<P>::with_capacity(1);
+        let mut set = HashSet::<Perm>::with_capacity(1);
         set.insert(perm1);
         set.insert(perm2);
         HashPermissionSet(set)
@@ -40,7 +40,7 @@ impl <P: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for H
 
     #[inline]
     fn from_permission3(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission) -> Self {
-        let mut set = HashSet::<P>::with_capacity(1);
+        let mut set = HashSet::<Perm>::with_capacity(1);
         set.insert(perm1);
         set.insert(perm2);
         set.insert(perm3);
@@ -49,7 +49,7 @@ impl <P: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for H
 
     #[inline]
     fn from_permission4(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission, perm4: Self::Permission) -> Self {
-        let mut set = HashSet::<P>::with_capacity(1);
+        let mut set = HashSet::<Perm>::with_capacity(1);
         set.insert(perm1);
         set.insert(perm2);
         set.insert(perm3);
@@ -66,7 +66,7 @@ impl <P: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for H
 
     #[inline]
     fn merge(set1: Self, set2: Self) -> Self {
-        let mut set = HashSet::<P>::with_capacity(set1.0.len() + set2.0.len());
+        let mut set = HashSet::<Perm>::with_capacity(set1.0.len() + set2.0.len());
         for perm in set1.0 {
             set.insert(perm);
         }

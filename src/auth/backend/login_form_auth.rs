@@ -25,7 +25,7 @@ use axum_login::AuthnBackend;
 use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
 use crate::auth::backend::psw_auth::PswUser;
 use crate::auth::permission::{PermissionProvider, PermissionSet};
-use crate::auth::permission::empty_permission_provider::{ AlwaysAllowedPermSet, EmptyPerm };
+use crate::auth::permission::empty_perm_provider::{AlwaysAllowedPermSet, EmptyPerm };
 // use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
 
 #[derive(Clone)]
@@ -43,17 +43,17 @@ pub struct LoginFormAuthBackend <
 }
 
 impl <
-    User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> LoginFormAuthBackend<User,PswComparator,Perm,PermSet> {
+> LoginFormAuthBackend<Usr,PswComp,Perm,PermSet> {
     pub fn new(
-        users_provider: Arc<dyn AuthUserProvider<User=User> + Sync + Send>,
+        users_provider: Arc<dyn AuthUserProvider<User=Usr> + Sync + Send>,
         config: LoginFormAuthConfig,
-        permission_provider: Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet> + Sync + Send>,
-    ) -> LoginFormAuthBackend<User,PswComparator,Perm,PermSet> {
-        LoginFormAuthBackend::<User,PswComparator,Perm,PermSet> {
+        permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send>,
+    ) -> LoginFormAuthBackend<Usr,PswComp,Perm,PermSet> {
+        LoginFormAuthBackend::<Usr,PswComp,Perm,PermSet> {
             psw_backend: PswAuthBackendImpl::new(
                 users_provider,
                 permission_provider,
@@ -69,14 +69,14 @@ impl <
 //       requires Clone which can NOT be used with as 'dyn'.
 #[axum::async_trait]
 impl <
-    User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> AuthnBackend for LoginFormAuthBackend<User,PswComparator,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String>,
+> AuthnBackend for LoginFormAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String>,
 {
-    type User = User;
+    type User = Usr;
     type Credentials = super::psw_auth::PswAuthCredentials;
     type Error = super::super::error::AuthBackendError;
 
@@ -93,13 +93,13 @@ impl <
 }
 #[axum::async_trait]
 impl <
-    User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Sync + Send,
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Sync + Send,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
-> PermissionProviderSource for LoginFormAuthBackend<User,PswComparator,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String> {
-    type User = User;
+> PermissionProviderSource for LoginFormAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String> {
+    type User = Usr;
     type Permission = Perm;
     type PermissionSet = PermSet;
 
@@ -111,28 +111,28 @@ impl <
 }
 #[axum::async_trait]
 impl <
-    User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Sync + Send,
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Sync + Send,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
-> AuthorizeBackend for LoginFormAuthBackend<User,PswComparator,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String> {
+> AuthorizeBackend for LoginFormAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String> {
     //noinspection DuplicatedCode
 }
 
 
 #[axum::async_trait]
 impl <
-    User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> AuthnBackendAttributes for LoginFormAuthBackend<User,PswComparator,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String>,
+> AuthnBackendAttributes for LoginFormAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String>,
 {
     type ProposeAuthAction = ProposeLoginFormAuthAction;
 
-    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=User> + Sync + Send> {
+    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=Usr> + Sync + Send> {
         self.psw_backend.users_provider()
     }
     fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {

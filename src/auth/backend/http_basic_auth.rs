@@ -32,19 +32,19 @@ pub struct HttpBasicAuthBackend <
 
 
 impl <
-    User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> HttpBasicAuthBackend<User,PswComparator,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String>,
+> HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String>,
 {
     pub fn new(
-        users_provider: Arc<dyn AuthUserProvider<User=User> + Send + Sync>,
+        users_provider: Arc<dyn AuthUserProvider<User=Usr> + Send + Sync>,
         auth_mode: AuthBackendMode,
-        permission_provider: Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet> + Send + Sync>,
-    ) -> HttpBasicAuthBackend<User,PswComparator,Perm,PermSet> {
-        HttpBasicAuthBackend::<User,PswComparator,Perm,PermSet> {
+        permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Send + Sync>,
+    ) -> HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet> {
+        HttpBasicAuthBackend::<Usr,PswComp,Perm,PermSet> {
             psw_backend: PswAuthBackendImpl::new(
                 users_provider,
                 permission_provider,
@@ -56,15 +56,15 @@ impl <
 
 
 #[axum::async_trait]
-impl<
-    User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+impl <
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> AuthnBackend for HttpBasicAuthBackend<User,PswComparator,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String>,
+> AuthnBackend for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String>,
 {
-    type User = User;
+    type User = Usr;
     type Credentials = PswAuthCredentials;
     type Error = AuthBackendError;
 
@@ -80,14 +80,14 @@ impl<
     }
 }
 #[axum::async_trait]
-impl<
-    User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Sync + Send,
+impl <
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Sync + Send,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
-> PermissionProviderSource for HttpBasicAuthBackend<User,PswComparator,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String> {
-    type User = User;
+> PermissionProviderSource for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String> {
+    type User = Usr;
     type Permission = Perm;
     type PermissionSet = PermSet;
 
@@ -98,29 +98,29 @@ impl<
     }
 }
 #[axum::async_trait]
-impl<
-    User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Sync + Send,
+impl <
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Sync + Send,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
-> AuthorizeBackend for HttpBasicAuthBackend<User,PswComparator,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String> {
+> AuthorizeBackend for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String> {
     //noinspection DuplicatedCode
 }
 
 
 #[axum::async_trait]
 impl <
-    User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> AuthnBackendAttributes for HttpBasicAuthBackend<User,PswComparator,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String>,
+> AuthnBackendAttributes for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String>,
 {
     type ProposeAuthAction = ProposeHttpBasicAuthAction;
 
-    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=User> + Send + Sync> {
+    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=Usr> + Send + Sync> {
         self.psw_backend.users_provider()
     }
     fn propose_authentication_action(&self, _: &Request) -> Option<Self::ProposeAuthAction> {
@@ -170,12 +170,12 @@ impl<S> axum::extract::FromRequestParts<S> for BasicAuthCreds where S: Send + Sy
 
 #[axum::async_trait]
 impl <
-    User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> RequestUserAuthnBackend for HttpBasicAuthBackend<User,PswComparator,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String>,
+> RequestUserAuthnBackend for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String>,
 {
     type AuthRequestData = BasicAuthCreds;
 
@@ -214,17 +214,18 @@ pub trait RequestUserAuthnBackendDyn : Send + Sync {
 }
 
 #[axum::async_trait]
-impl<
-    User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+impl <
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> RequestUserAuthnBackendDyn for HttpBasicAuthBackend<User,PswComparator,Perm,PermSet>
-    where User: axum_login::AuthUser<Id = String>,
+> RequestUserAuthnBackendDyn for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String>,
 {
-    type User = User;
+    type User = Usr;
+
     async fn is_req_authenticated(&self, req: Request) -> (Request, Result<Option<Self::User>, AuthBackendError>) {
-        let res = self.call_authenticate_request::<PswComparator>(req).await;
+        let res = self.call_authenticate_request::<PswComp>(req).await;
         res
     }
 }
@@ -232,21 +233,22 @@ impl<
 use axum::extract::Request;
 use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
 use crate::auth::permission::{PermissionProvider, PermissionSet};
-use crate::auth::permission::empty_permission_provider::{ AlwaysAllowedPermSet, EmptyPerm };
+use crate::auth::permission::empty_perm_provider::{ AlwaysAllowedPermSet, EmptyPerm };
 use super::super::error::AuthBackendError;
 
 impl <
-    User: axum_login::AuthUser + PswUser + 'static,
-    PswComparator: PasswordComparator + Debug + Clone + Send + Sync + 'static,
+    Usr: axum_login::AuthUser + PswUser + 'static,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync + 'static,
     Perm: Hash + Eq + Debug + Clone + Send + Sync + 'static,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync+ 'static,
-> TryFrom<HttpBasicAuthBackend<User,PswComparator,Perm,PermSet>>
-for Arc<dyn RequestUserAuthnBackendDyn<User=User>>
-    where User: axum_login::AuthUser<Id = String>,
+> TryFrom<HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>>
+for Arc<dyn RequestUserAuthnBackendDyn<User=Usr>>
+    where Usr: axum_login::AuthUser<Id = String>,
 {
     type Error = AuthBackendError;
-    fn try_from(value: HttpBasicAuthBackend<User,PswComparator,Perm,PermSet>) -> Result<Arc<dyn RequestUserAuthnBackendDyn<User=User>>, Self::Error> {
-        let as_dyn: Arc<dyn RequestUserAuthnBackendDyn<User=User>> = Arc::new(value);
+
+    fn try_from(value: HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>) -> Result<Arc<dyn RequestUserAuthnBackendDyn<User=Usr>>, Self::Error> {
+        let as_dyn: Arc<dyn RequestUserAuthnBackendDyn<User=Usr>> = Arc::new(value);
         Ok(as_dyn)
     }
 }
@@ -275,18 +277,17 @@ mod tests {
     use super::super::super::examples::auth_user::AuthUserExample as AuthUser;
     use crate::auth::AuthUserProviderError;
     use crate::auth::examples::auth_user::AuthUserExamplePswExtractor;
-    use crate::auth::permission::bits_permission_set::IntegerBitsPermissionSet;
-    use crate::auth::permission::empty_permission_provider::always_allowed_perm_provider_arc;
-    use crate::auth::permission::predefined::{Role, RolePermissionsSet};
+    use crate::auth::permission::bits_perm_set::IntegerBitsPermissionSet;
+    use crate::auth::permission::empty_perm_provider::{always_allowed_perm_provider_arc, empty_always_allowed_perm_provider_arc};
+    use crate::auth::permission::predefined::{ Role, RolePermissionsSet };
     use crate::util::TestResultUnwrap;
 
     use super::*;
     use super::super::super::{
         examples::auth_user::AuthUserExample,
         backend::{ AuthBackendMode },
-        user_provider::AuthUserProvider,
-        user_provider::{ InMemAuthUserProvider },
-        psw::{ PlainPasswordComparator },
+        user_provider::{ AuthUserProvider, InMemAuthUserProvider },
+        psw::PlainPasswordComparator,
     };
     type Perm = u32;
     type PermSet = IntegerBitsPermissionSet<u32>;
@@ -305,19 +306,23 @@ mod tests {
         let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn<User=AuthUserExample>>, _> =  basic_auth.try_into();
     }
 
-    /*
     #[test]
     fn test_try_into_when_no_impl() {
-        use super::super::auth::{ LoginFormAuthBackend, LoginFormAuthConfig };
+        use super::super::super::backend::{ LoginFormAuthBackend, LoginFormAuthConfig };
 
-        let users = Arc::new(InMemAuthUserProvider::test_users().test_unwrap());
+        let users = Arc::new(in_memory_test_users().test_unwrap());
         let users: Arc<dyn AuthUserProvider<User = AuthUser> + Send + Sync> = users;
-        let basic_auth = LoginFormAuthBackend::<PlainPasswordComparator>::new(
-            users, LoginFormAuthConfig { login_url: "/login", auth_mode: AuthBackendMode::AuthSupported });
+        // let users: Arc<dyn AuthUserProvider<User = AuthUser>> = users;
+        let basic_auth = LoginFormAuthBackend::<AuthUserExample, PlainPasswordComparator>::new(
+            users,
+            LoginFormAuthConfig { login_url: "/login", auth_mode: AuthBackendMode::AuthSupported },
+            empty_always_allowed_perm_provider_arc(),
+        );
 
-        let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn>, _> =  basic_auth.try_into();
+        // let basic_auth_arc = Arc::new(basic_auth);
+        // let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn<User=AuthUserExample>>, _> =
+        //     basic_auth_arc.try_into();
     }
-    */
 
     /*
     use std::sync::Arc;

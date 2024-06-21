@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use crate::auth::permission::bits_permission_set::BitsPermissionSet;
+use crate::auth::permission::bits_perm_set::BitsPermissionSet;
 use super::super::permission::{ PermissionProcessError };
 
 
