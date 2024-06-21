@@ -72,7 +72,7 @@ mod tests {
     use crate::auth::AuthUserProviderError;
     use crate::auth::examples::auth_user::AuthUserExamplePswExtractor;
     use crate::auth::permission::bits_permission_set::IntegerBitsPermissionSet;
-    use crate::auth::permission::empty_permission_provider::empty_perm_provider_arc;
+    use crate::auth::permission::empty_permission_provider::always_allowed_perm_provider_arc;
     use crate::auth::permission::predefined::{Role, RolePermissionsSet};
 
     use super::{ AuthnBackendDynWrapperImpl, AuthnBackendDynWrapper, wrap_authn_backend_as_dyn };
@@ -98,7 +98,7 @@ mod tests {
         let psw_auth = LoginFormAuthBackend::<AuthUserExample,PlainPasswordComparator,Perm,PermSet>::new(
             test_users,
             LoginFormAuthConfig { auth_mode: AuthBackendMode::AuthSupported, login_url: "/login" },
-            empty_perm_provider_arc(),
+            always_allowed_perm_provider_arc(),
         );
 
         use axum_login::AuthnBackend;

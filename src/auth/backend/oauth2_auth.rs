@@ -6,6 +6,7 @@ use axum::extract::OriginalUri;
 use oauth2::basic::BasicClient;
 use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
 use crate::auth::permission::{PermissionProvider, PermissionSet};
+use crate::auth::permission::empty_permission_provider::{AlwaysAllowedPermSet, EmptyPerm};
 
 
 use super::super::{
@@ -38,8 +39,8 @@ pub struct OAuth2AuthCredentials {
 #[readonly::make]
 pub struct OAuth2AuthBackend <
     User: OAuth2User + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync = EmptyPerm,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync = AlwaysAllowedPermSet<Perm>,
 > {
     state: Arc<AuthBackendState<User,Perm,PermSet>>,
 }
@@ -48,8 +49,8 @@ pub struct OAuth2AuthBackend <
 #[derive(Debug)]
 struct AuthBackendState <
     User: OAuth2User + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync = EmptyPerm,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync = AlwaysAllowedPermSet<Perm>,
 > {
     user_provider: Arc<dyn AuthUserProvider<User=User> + Send + Sync>,
     oauth2_user_store: Arc<dyn OAuth2UserStore<User=User> + Send + Sync>,

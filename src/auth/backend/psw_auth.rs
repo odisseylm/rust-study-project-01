@@ -5,6 +5,7 @@ use std::hash::Hash;
 use std::sync::Arc;
 use crate::auth::backend::authz_backend::{ AuthorizeBackend, PermissionProviderSource};
 use crate::auth::permission::{ PermissionProvider, PermissionSet };
+use crate::auth::permission::empty_permission_provider::{ AlwaysAllowedPermSet, EmptyPerm };
 
 use super::super::{
     error::AuthBackendError,
@@ -23,8 +24,8 @@ pub trait PswUser {
 pub struct PswAuthBackendImpl <
     User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Debug + Clone + Sync + Send,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
+    Perm: Hash + Eq + Debug + Clone + Send + Sync = EmptyPerm,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync = AlwaysAllowedPermSet<Perm>,
 > {
     users_provider: Arc<dyn AuthUserProvider<User=User> + Sync + Send>,
     permission_provider: Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet> + Sync + Send>,

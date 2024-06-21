@@ -82,7 +82,7 @@ impl <
 impl <
     Perm: Debug + Clone + Hash + Eq + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
-> From<VerifyRequiredPermissionsResult::<Perm,PermSet>> for AuthorizationResult<Perm,PermSet> {
+> From<VerifyRequiredPermissionsResult<Perm,PermSet>> for AuthorizationResult<Perm,PermSet> {
     fn from(value: VerifyRequiredPermissionsResult<Perm, PermSet>) -> Self {
         use VerifyRequiredPermissionsResult as V;
         match value {

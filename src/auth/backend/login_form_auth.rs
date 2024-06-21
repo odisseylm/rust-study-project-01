@@ -25,6 +25,7 @@ use axum_login::AuthnBackend;
 use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
 use crate::auth::backend::psw_auth::PswUser;
 use crate::auth::permission::{PermissionProvider, PermissionSet};
+use crate::auth::permission::empty_permission_provider::{ AlwaysAllowedPermSet, EmptyPerm };
 // use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
 
 #[derive(Clone)]
@@ -34,8 +35,8 @@ use crate::auth::permission::{PermissionProvider, PermissionSet};
 pub struct LoginFormAuthBackend <
     User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync = EmptyPerm,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync = AlwaysAllowedPermSet<Perm>,
 > {
     psw_backend: PswAuthBackendImpl<User,PswComparator,Perm,PermSet>,
     pub config: LoginFormAuthConfig,
@@ -91,7 +92,7 @@ impl <
     }
 }
 #[axum::async_trait]
-impl<
+impl <
     User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Debug + Clone + Sync + Send,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
@@ -109,7 +110,7 @@ impl<
     }
 }
 #[axum::async_trait]
-impl<
+impl <
     User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Debug + Clone + Sync + Send,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,

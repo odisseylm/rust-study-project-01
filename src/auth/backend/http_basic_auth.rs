@@ -23,8 +23,8 @@ use axum_login::AuthnBackend;
 pub struct HttpBasicAuthBackend <
     User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync = EmptyPerm,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync = AlwaysAllowedPermSet<Perm>,
 > {
     psw_backend: PswAuthBackendImpl<User,PswComparator,Perm,PermSet>,
     pub auth_mode: AuthBackendMode,
@@ -232,6 +232,7 @@ impl<
 use axum::extract::Request;
 use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
 use crate::auth::permission::{PermissionProvider, PermissionSet};
+use crate::auth::permission::empty_permission_provider::{ AlwaysAllowedPermSet, EmptyPerm };
 use super::super::error::AuthBackendError;
 
 impl <
@@ -275,7 +276,7 @@ mod tests {
     use crate::auth::AuthUserProviderError;
     use crate::auth::examples::auth_user::AuthUserExamplePswExtractor;
     use crate::auth::permission::bits_permission_set::IntegerBitsPermissionSet;
-    use crate::auth::permission::empty_permission_provider::empty_perm_provider_arc;
+    use crate::auth::permission::empty_permission_provider::always_allowed_perm_provider_arc;
     use crate::auth::permission::predefined::{Role, RolePermissionsSet};
     use crate::util::TestResultUnwrap;
 
@@ -298,7 +299,7 @@ mod tests {
     fn test_try_into_when_impl() {
         let users = Arc::new(in_memory_test_users().test_unwrap());
         let users: Arc<dyn AuthUserProvider<User =AuthUserExample> + Send + Sync> = users;
-        let perm_provider = empty_perm_provider_arc::<AuthUserExample,Perm,PermSet>();
+        let perm_provider = always_allowed_perm_provider_arc::<AuthUserExample,Perm,PermSet>();
         let basic_auth = HttpBasicAuthBackend::<AuthUserExample,PlainPasswordComparator,Perm,PermSet>::new(users, AuthBackendMode::AuthSupported, perm_provider);
 
         let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn<User=AuthUserExample>>, _> =  basic_auth.try_into();
