@@ -1,6 +1,7 @@
 use core::fmt;
 use crate::auth::permission::PermissionSet;
-use crate::auth::permission::predefined::RolePermissionsSet;
+use crate::auth::permission::predefined::{ Role, RolePermissionsSet };
+use crate::auth::user_provider::mem_user_provider::UserPermissionsExtractor;
 
 use super::super::{
     backend::{ oauth2_auth::OAuth2User, psw_auth::PswUser },
@@ -18,6 +19,19 @@ pub struct AuthUserExample {
     pub access_token: Option<String>,
     pub id: i64,
     pub permissions: RolePermissionsSet,
+}
+
+#[derive(Debug,Clone)]
+pub struct AuthUserExamplePswExtractor;
+#[axum::async_trait]
+impl UserPermissionsExtractor for AuthUserExamplePswExtractor {
+    type User = AuthUserExample;
+    type Permission = Role;
+    type PermissionSet = RolePermissionsSet;
+
+    fn extract_permissions_from_user(user: &Self::User) -> Self::PermissionSet {
+        user.permissions.clone()
+    }
 }
 
 impl AuthUserExample {

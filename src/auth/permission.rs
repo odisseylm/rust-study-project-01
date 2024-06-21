@@ -13,7 +13,11 @@ use anyhow::anyhow;
 #[derive(thiserror::Error, Debug)]
 pub enum PermissionProcessError {
     #[error("ConvertError({0})")]
-    ConvertError(anyhow::Error)
+    ConvertError(anyhow::Error),
+    #[error("NoUser({0})")]
+    NoUser(String),
+    #[error("GetUserError({0})")]
+    GetUserError(anyhow::Error),
 }
 
 impl From<Infallible> for PermissionProcessError {

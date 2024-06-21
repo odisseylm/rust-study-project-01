@@ -40,10 +40,12 @@ impl <
         Ok(PermissionSet::new())
     }
 
+    //noinspection DuplicatedCode
     async fn get_group_permissions(&self, _user: &Self::User) -> Result<Self::PermissionSet, PermissionProcessError> {
         Ok(PermissionSet::new())
     }
 
+    //noinspection DuplicatedCode
     async fn get_group_permissions_by_principal_identity(&self, _user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id) -> Result<Self::PermissionSet, PermissionProcessError> {
         Ok(PermissionSet::new())
     }

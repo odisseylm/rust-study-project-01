@@ -15,30 +15,40 @@ use super::super::{
 };
 
 
+#[async_trait::async_trait]
+pub trait UserPermissionsExtractor: Debug + Clone + Send + Sync {
+    type User: axum_login::AuthUser;
+    type Permission: Hash + Eq + Debug + Clone + Send + Sync;
+    type PermissionSet: PermissionSet<Permission=Self::Permission> + Debug + Clone + Send + Sync;
+    fn extract_permissions_from_user(user: &Self::User) -> Self::PermissionSet;
+}
+
 struct InMemoryState <
     User: axum_login::AuthUser,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
 > {
     // T O D O: I think we could use there Rc (instead of Arc) because it is protected by mutex... but how to say rust about it??
     // T O D O: RwLock TWICE?? It is too much... but without unsafe it is only one accessible approach.
     // users_by_id: HashMap<i64, Arc<RwLock<User>>>,
     users_by_principal_id: HashMap<User::Id, Arc<RwLock<User>>>,
-    _pd: PhantomData<(Perm,PermSet)>
+    _pd: PhantomData<(Perm,PermSet,PermExtract)>
 }
 impl <
     User: axum_login::AuthUser,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> InMemoryState<User,Perm,PermSet> {
-    fn new() -> InMemoryState<User,Perm,PermSet> {
+    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
+> InMemoryState<User,Perm,PermSet,PermExtract> {
+    fn new() -> InMemoryState<User,Perm,PermSet,PermExtract> {
         InMemoryState {
             // users_by_id: HashMap::<i64, Arc<RwLock<User>>>::new(),
             users_by_principal_id: HashMap::<User::Id, Arc<RwLock<User>>>::new(),
             _pd: PhantomData,
         }
     }
-    fn with_capacity(capacity: usize) -> InMemoryState<User,Perm,PermSet> {
+    fn with_capacity(capacity: usize) -> InMemoryState<User,Perm,PermSet,PermExtract> {
         InMemoryState {
             // users_by_id: HashMap::<i64, Arc<RwLock<User>>>::with_capacity(capacity),
             users_by_principal_id: HashMap::<User::Id, Arc<RwLock<User>>>::with_capacity(capacity),
@@ -54,8 +64,9 @@ pub struct InMemAuthUserProvider <
     User: axum_login::AuthUser,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
 > {
-    state: Arc<RwLock<InMemoryState<User,Perm,PermSet>>>,
+    state: Arc<RwLock<InMemoryState<User,Perm,PermSet,PermExtract>>>,
 }
 
 
@@ -63,14 +74,15 @@ impl <
     User: axum_login::AuthUser,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> InMemAuthUserProvider<User,Perm,PermSet> where User::Id : Hash + Eq {
-    pub fn new() -> InMemAuthUserProvider<User,Perm,PermSet> {
+    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
+> InMemAuthUserProvider<User,Perm,PermSet,PermExtract> where User::Id : Hash + Eq {
+    pub fn new() -> InMemAuthUserProvider<User,Perm,PermSet,PermExtract> {
         InMemAuthUserProvider {
-            state: Arc::new(RwLock::<InMemoryState<User,Perm,PermSet>>::new(InMemoryState::new())),
+            state: Arc::new(RwLock::<InMemoryState<User,Perm,PermSet,PermExtract>>::new(InMemoryState::new())),
         }
     }
 
-    pub fn with_users(users: Vec<User>) -> Result<InMemAuthUserProvider<User,Perm,PermSet>, AuthUserProviderError> {
+    pub fn with_users(users: Vec<User>) -> Result<InMemAuthUserProvider<User,Perm,PermSet,PermExtract>, AuthUserProviderError> {
 
         let mut in_memory_state = InMemoryState::with_capacity(users.len());
         for user in users {
@@ -81,7 +93,7 @@ impl <
         }
 
         Ok(InMemAuthUserProvider {
-            state: Arc::new(RwLock::<InMemoryState<User,Perm,PermSet>>::new(in_memory_state)),
+            state: Arc::new(RwLock::<InMemoryState<User,Perm,PermSet,PermExtract>>::new(in_memory_state)),
         })
     }
 }
@@ -91,7 +103,8 @@ impl <
     User: axum_login::AuthUser,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> Debug for InMemAuthUserProvider<User,Perm,PermSet> {
+    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
+> Debug for InMemAuthUserProvider<User,Perm,PermSet,PermExtract> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // T O D O: how to write it with full state for async ??
         write!(f, "InMemAuthUserProvider {{ ... }}")
@@ -120,7 +133,8 @@ impl <
     User: axum_login::AuthUser,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> AuthUserProvider for InMemAuthUserProvider<User,Perm,PermSet> where User::Id : Hash + Eq {
+    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
+> AuthUserProvider for InMemAuthUserProvider<User,Perm,PermSet,PermExtract> where User::Id : Hash + Eq {
     type User = User;
     async fn get_user_by_principal_identity(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
         let state = self.state.read().await;
@@ -136,7 +150,8 @@ impl <
     User: axum_login::AuthUser + OAuth2User,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> OAuth2UserStore for InMemAuthUserProvider<User,Perm,PermSet> where User::Id : Hash + Eq {
+    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
+> OAuth2UserStore for InMemAuthUserProvider<User,Perm,PermSet,PermExtract> where User::Id : Hash + Eq {
     async fn update_user_access_token(&self, user_principal_id: User::Id, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
         let state = self.state.write().await;
         let map_value = state.users_by_principal_id.get(&user_principal_id.clone());
@@ -157,39 +172,52 @@ impl <
     User: axum_login::AuthUser,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> PermissionProvider for InMemAuthUserProvider<User,Perm,PermSet> where User::Id : Hash + Eq {
+    PermExtract: UserPermissionsExtractor<User=User,Permission=Perm,PermissionSet=PermSet> + Debug + Clone + Send + Sync,
+> PermissionProvider for InMemAuthUserProvider<User,Perm,PermSet,PermExtract>
+    where User::Id : Hash + Eq {
     type User = User;
     type Permission = Perm;
     type PermissionSet = PermSet;
 
-    async fn get_user_permissions(&self, user: &Self::User) -> Result<Self::PermissionSet, PermissionProcessError> {
-        todo!()
+    #[inline]
+    async fn get_user_permissions(&self, user: &Self::User)
+        -> Result<Self::PermissionSet, PermissionProcessError> {
+        Ok(PermExtract::extract_permissions_from_user(user))
     }
 
     async fn get_user_permissions_by_principal_identity(&self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
         -> Result<Self::PermissionSet, PermissionProcessError> {
-        todo!()
+        let user_opt = self.get_user_by_principal_identity(&user_principal_id).await
+            .map_err(|err|PermissionProcessError::GetUserError(anyhow::Error::msg(err)))?;
+        let user = user_opt.ok_or_else(||
+            // in theory it should not happen
+            PermissionProcessError::NoUser(user_principal_id.to_string())) ?;
+        self.get_user_permissions(&user).await
     }
 
-    async fn get_group_permissions(&self, user: &Self::User) -> Result<Self::PermissionSet, PermissionProcessError> {
-        todo!()
-    }
-
-    async fn get_group_permissions_by_principal_identity(&self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
+    //noinspection DuplicatedCode
+    async fn get_group_permissions(&self, _user: &Self::User)
         -> Result<Self::PermissionSet, PermissionProcessError> {
-        todo!()
+        Ok(PermissionSet::new())
+    }
+
+    //noinspection DuplicatedCode
+    async fn get_group_permissions_by_principal_identity(&self, _user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
+        -> Result<Self::PermissionSet, PermissionProcessError> {
+        Ok(PermissionSet::new())
     }
 }
 
 
 #[cfg(test)]
 mod tests {
+    use crate::auth::examples::auth_user::AuthUserExamplePswExtractor;
     use crate::auth::permission::predefined::{Role, RolePermissionsSet};
     use super::super::super::examples::auth_user::AuthUserExample as AuthUser;
     use crate::util::{TestOptionUnwrap, TestResultUnwrap};
     use super::*;
 
-    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet>, AuthUserProviderError> {
+    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
         InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
     }
 

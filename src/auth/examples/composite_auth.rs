@@ -11,7 +11,7 @@ use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSo
 use crate::auth::permission::PermissionProvider;
 use crate::auth::util::composite_util::get_permission_provider3;
 
-use super::auth_user::AuthUserExample;
+use super::auth_user::{AuthUserExample, AuthUserExamplePswExtractor};
 use super::super::backend::{
     http_basic_auth::HttpBasicAuthBackend,
     login_form_auth::{ LoginFormAuthBackend, LoginFormAuthConfig },
@@ -41,7 +41,7 @@ pub struct CompositeAuthnBackendExample<
     oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,Role,RolePermissionsSet>>,
 }
 
-pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet>, AuthUserProviderError> {
+pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
     InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "vovan", "qwerty")))
 }
 

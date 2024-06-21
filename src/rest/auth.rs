@@ -5,6 +5,7 @@ use axum::response::{ IntoResponse, Response };
 use crate::auth::{AuthBackendMode, AuthUserProviderError, PlainPasswordComparator};
 use crate::auth::user_provider::{ InMemAuthUserProvider };
 use crate::auth::backend::{ LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config };
+use crate::auth::examples::auth_user::AuthUserExamplePswExtractor;
 use crate::auth::permission::PermissionProvider;
 
 
@@ -96,7 +97,7 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     // which will provide the auth session as a request extension.
     //
     // let usr_provider: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::test_users() ?);
-    let usr_provider: Arc<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet>> = Arc::new(in_memory_test_users() ?);
+    let usr_provider: Arc<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,AuthUserExamplePswExtractor>> = Arc::new(in_memory_test_users() ?);
     let permission_provider: Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet>> = usr_provider.clone();
 
     // Rust does not support casting dyn sub-trait to dyn super-trait :-(
@@ -145,6 +146,6 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     Ok(auth_layer)
 }
 
-pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet>, AuthUserProviderError> {
+pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
     InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
 }

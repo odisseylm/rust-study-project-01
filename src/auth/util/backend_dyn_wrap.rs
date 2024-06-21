@@ -70,6 +70,7 @@ impl  <
 mod tests {
     use std::sync::Arc;
     use crate::auth::AuthUserProviderError;
+    use crate::auth::examples::auth_user::AuthUserExamplePswExtractor;
     use crate::auth::permission::bits_permission_set::IntegerBitsPermissionSet;
     use crate::auth::permission::empty_permission_provider::empty_perm_provider_arc;
     use crate::auth::permission::predefined::{Role, RolePermissionsSet};
@@ -87,7 +88,7 @@ mod tests {
     type PermSet = IntegerBitsPermissionSet<u32>;
     use crate::util::TestResultUnwrap;
 
-    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet>, AuthUserProviderError> {
+    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
         InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "vovan", "qwerty")))
     }
 
