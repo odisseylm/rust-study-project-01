@@ -11,7 +11,8 @@ pub fn iterable_to_display <
     name: &'static str,
     f: &mut fmt::Formatter<'_>,
 ) -> fmt::Result
-    where for<'b> &'b SourceType: IntoIterator<Item=&'b T> {
+    // where for<'b> &'b SourceType: IntoIterator<Item=&'b T> {
+    where &'a SourceType: IntoIterator<Item = &'a T> {
 
     let ref_iter = <&SourceType as IntoIterator>::into_iter(iterable_ref);
     iter_to_display(ref_iter, name, f)
