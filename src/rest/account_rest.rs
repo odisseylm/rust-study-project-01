@@ -3,6 +3,7 @@ use std::sync::Arc;
 use axum::routing::{ get };
 use tracing::{ debug, info, error };
 use log::{ debug as log_debug, info as log_info, error as log_error };
+use crate::auth::permission::PermissionSet;
 use crate::entities::account::AccountId;
 use crate::entities::prelude::UserId;
 use crate::util::UncheckedResultUnwrap;
@@ -10,9 +11,10 @@ use crate::entities::entity;
 use crate::rest::app_dependencies::Dependencies;
 use crate::rest::dto;
 use crate::rest::error_rest::{RestAppError, test_authenticate_basic};
-use crate::rest::auth::RequiredAuthenticationExtension;
+use crate::rest::auth::{RequiredAuthenticationExtension, Role, RolePermissionsSet};
 use crate::service::account_service::{ AccountService };
 
+use crate::auth::examples::usage::RequiredAuthorizationExtension;
 
 
 // fn accounts_rest_router<AccountS: crate::service::account_service::AccountService + Send + Sync>() -> axum::Router {
@@ -41,6 +43,28 @@ pub fn accounts_rest_router<
         .with_state(shared_state.clone())
         .auth_required()
         //
+        .merge(Router::new()
+            .route("/api/account-read/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
+                state.get_user_account(id).to_json().await
+            }))
+            // .with_state(shared_state.clone()) // TODO: it should fail even with that !!!
+            .role_required(Role::Read)
+        )
+        //
+        .merge(Router::new()
+            .route("/api/account-write/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
+                state.get_user_account(id).to_json().await
+            }))
+            .role_required(Role::Write)
+        )
+        //
+        .merge(Router::new()
+            .route("/api/account-read-and-write/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
+                state.get_user_account(id).to_json().await
+            }))
+            .roles_required(RolePermissionsSet::from_permission2(Role::Read, Role::Write))
+        )
+        //
         .route("/api/manual_auth", get(|State(state): State<Arc<AccountRest<AccountS>>>,
                                         creds: Option<TypedHeader<Authorization<Basic>>>,
         | async move {
@@ -60,7 +84,6 @@ static TEMP_CURRENT_USER_ID: UserId = UserId::from_str("11").unchecked_unwrap();
 pub struct AccountRest <AS: AccountService> {
     pub account_service: Arc<AS>,
 }
-
 
 
 impl<AS: AccountService> AccountRest<AS> {

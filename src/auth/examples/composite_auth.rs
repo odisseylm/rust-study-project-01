@@ -91,7 +91,8 @@ impl CompositeAuthnBackendExample {
         }
     }
 
-    pub async fn is_authenticated(
+    /*
+    pub async fn do_is_authenticated2(
         &self,
         auth_session_user: &Option<AuthUserExample>,
         req: Request,
@@ -111,6 +112,29 @@ impl CompositeAuthnBackendExample {
 
         psw_aut_res_opt
     }
+    */
+
+    pub async fn do_authenticate(
+        &self,
+        req: Request,
+        auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
+    ) -> (Request, axum_login::AuthSession<CompositeAuthnBackendExample>, Result<Option<AuthUserExample>,Response>) {
+
+        if auth_session.user.is_some() {
+            let user = auth_session.user.clone();
+            return (req, auth_session, Ok(user));
+        }
+
+        let psw_aut_res_opt: (Request, axum_login::AuthSession<CompositeAuthnBackendExample>, Result<Option<AuthUserExample>, Response>) =
+            if let Some(ref backend) = self.http_basic_auth_backend {
+                let res: (Request, Result<Option<AuthUserExample>, AuthBackendError>) = backend.do_authenticate_request::<()>(req).await;
+                let (req, res) = res;
+                let unauthenticated_action_response = map_auth_res_to_is_auth_res(&self, &req, res);
+                (req, auth_session, unauthenticated_action_response)
+            } else { (req, auth_session, Err(StatusCode::UNAUTHORIZED.into_response())) };
+
+        psw_aut_res_opt
+    }
 
     /*
     pub async fn is_authorized(
@@ -127,9 +151,13 @@ fn map_auth_res_to_is_auth_res(
     backend: &CompositeAuthnBackendExample,
     req: &Request,
     auth_res: Result<Option<AuthUserExample>, AuthBackendError>,
-) -> Result<(), Response> {
+) -> Result<Option<AuthUserExample>, Response> {
 
-    let action_response: Response = unauthenticated_response3(
+    // It can be
+    // * redirection (in case of login form auth)
+    // * request authentication by browser (in case of HTTP Basic auth)
+    // * so on
+    let unauthenticated_action_response: Response = unauthenticated_response3(
         req,
         &backend.http_basic_auth_backend,
         &backend.login_form_auth_backend,
@@ -137,8 +165,8 @@ fn map_auth_res_to_is_auth_res(
     ).unwrap_or_else(|| StatusCode::UNAUTHORIZED.into_response());
 
     match auth_res {
-        Ok(None) => Err(action_response),
-        Ok(_) => Ok(()),
+        Ok(None) => Err(unauthenticated_action_response),
+        Ok(user_opt) => Ok(user_opt),
         Err(err) => {
             error!("Authentication error: {:?}", err);
             Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())

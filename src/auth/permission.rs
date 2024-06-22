@@ -2,12 +2,15 @@ pub mod bits_perm_set;
 pub mod hash_perm_set;
 pub mod predefined;
 pub mod empty_perm_provider;
+pub mod util;
 
 use core::fmt::Debug;
 use std::collections::HashSet;
 use core::convert::Infallible;
 use core::hash::Hash;
 use anyhow::anyhow;
+use askama_axum::Response;
+use http::StatusCode;
 
 
 #[derive(thiserror::Error, Debug)]
@@ -26,6 +29,12 @@ impl From<Infallible> for PermissionProcessError {
     }
 }
 
+impl axum::response::IntoResponse for PermissionProcessError {
+    fn into_response(self) -> Response {
+        // TODO: add logging
+        StatusCode::INTERNAL_SERVER_ERROR.into_response()
+    }
+}
 
 /// It is up to implementation use NoPermission or NoPermissions.
 ///
@@ -35,7 +44,7 @@ impl From<Infallible> for PermissionProcessError {
 ///
 #[derive(Debug, Clone)]
 pub enum VerifyRequiredPermissionsResult <
-    Perm: Debug + Clone + Hash + Eq + Send + Sync,
+    Perm: Debug + Clone + /*Hash + Eq +*/ Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug /*+ Clone*/ + Send + Sync,
 > {
     RequiredPermissionsArePresent,
@@ -45,7 +54,7 @@ pub enum VerifyRequiredPermissionsResult <
     NoPermissions(PermSet),
 }
 impl <
-    Perm: Debug + Clone + Hash + Eq + Send + Sync,
+    Perm: Debug + Clone + /*Hash + Eq +*/ Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
 > VerifyRequiredPermissionsResult<Perm,PermSet> {
     #[inline(always)]

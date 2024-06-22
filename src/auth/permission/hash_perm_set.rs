@@ -1,5 +1,7 @@
 use std::collections::HashSet;
+use std::fmt::{ self, Debug, Display};
 use std::hash::Hash;
+use itertools::Itertools;
 use crate::auth::permission::VerifyRequiredPermissionsResult;
 use super::super::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError };
 
@@ -80,7 +82,7 @@ impl <Perm: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet fo
         -> Result<VerifyRequiredPermissionsResult<Self::Permission,Self>, PermissionProcessError> {
 
         let missed = required_permissions.0.into_iter()
-            .filter(|req|self.0.contains(&req))
+            .filter(|req|!self.0.contains(&req))
             .collect::<HashSet<Self::Permission>>();
 
         if missed.is_empty() {
@@ -92,13 +94,34 @@ impl <Perm: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet fo
 }
 
 
-impl <P: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionsToHashSet for HashPermissionSet<P> {
+impl <P: Clone + Debug + Eq + Hash + Send + Sync> PermissionsToHashSet for HashPermissionSet<P> {
     type Permission = P;
     fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionProcessError> {
         Ok(self.0.clone())
     }
 }
 
+
+impl <P: Display + Clone + Debug + Eq + Hash + Send + Sync> Display
+    for HashPermissionSet<P> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let perms_as_str = self.0.iter().join(", ");
+        write!(f, "HashPermissionSet {{ {} }}", perms_as_str)
+
+        /*
+        // No additional heap allocation.
+        //
+        write!(f, "HashPermissionSet {{ ") ?;
+        let mut first = true;
+        for ref perm in &self.0 {
+            if !first { write!(f, " ,") ?; }
+            write!(f, "{}", perm) ?;
+            first = false;
+        }
+        write!(f, " }}")
+        */
+    }
+}
 
 
 #[cfg(test)]

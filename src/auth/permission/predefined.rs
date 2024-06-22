@@ -1,11 +1,12 @@
 use anyhow::anyhow;
 use crate::auth::permission::bits_perm_set::BitsPermissionSet;
+// use crate::auth::permission::hash_perm_set::HashPermissionSet;
 use super::super::permission::{ PermissionProcessError };
 
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 // #[derive(serde::Serialize, serde::Deserialize)]
-#[derive(strum_macros::FromRepr)]
+#[derive(strum_macros::FromRepr, strum_macros::Display)]
 // #[derive(sqlx::FromRow)]
 #[repr(u32)]
 #[non_exhaustive]
@@ -28,6 +29,7 @@ pub enum Role {
 // If you need more complicated behavior, please define your own separate types
 // for 'role', 'permission', and use BitsPermissionSet for permissions (or for 'role' too).
 pub type RolePermissionsSet = BitsPermissionSet<u32, Role, PermissionProcessError>;
+// pub type RolePermissionsSet = HashPermissionSet<Role>;
 
 
 impl Into<u32> for Role {

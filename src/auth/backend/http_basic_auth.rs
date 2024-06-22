@@ -179,7 +179,7 @@ impl <
 {
     type AuthRequestData = BasicAuthCreds;
 
-    async fn authenticate_request<S>(&self, auth_request_data: Self::AuthRequestData) -> Result<Option<Self::User>, Self::Error> {
+    async fn authenticate_request_impl<S>(&self, auth_request_data: Self::AuthRequestData) -> Result<Option<Self::User>, Self::Error> {
         use axum_login::AuthnBackend;
 
         self.authenticate(PswAuthCredentials {
@@ -225,7 +225,7 @@ impl <
     type User = Usr;
 
     async fn is_req_authenticated(&self, req: Request) -> (Request, Result<Option<Self::User>, AuthBackendError>) {
-        let res = self.call_authenticate_request::<PswComp>(req).await;
+        let res = self.do_authenticate_request::<PswComp>(req).await;
         res
     }
 }
@@ -313,7 +313,7 @@ mod tests {
         let users = Arc::new(in_memory_test_users().test_unwrap());
         let users: Arc<dyn AuthUserProvider<User = AuthUser> + Send + Sync> = users;
         // let users: Arc<dyn AuthUserProvider<User = AuthUser>> = users;
-        let basic_auth = LoginFormAuthBackend::<AuthUserExample, PlainPasswordComparator>::new(
+        let _basic_auth = LoginFormAuthBackend::<AuthUserExample, PlainPasswordComparator>::new(
             users,
             LoginFormAuthConfig { login_url: "/login", auth_mode: AuthBackendMode::AuthSupported },
             empty_always_allowed_perm_provider_arc(),

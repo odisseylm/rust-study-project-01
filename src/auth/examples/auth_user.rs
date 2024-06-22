@@ -42,6 +42,20 @@ impl AuthUserExample {
             permissions: RolePermissionsSet::new(),
         }
     }
+    pub fn with_role(id: i64, username: &'static str, password: &'static str, role: Role) -> AuthUserExample {
+        AuthUserExample {
+            id, username: username.to_string(), password: Some(password.to_string()),
+            access_token: None,
+            permissions: RolePermissionsSet::from_permission(role),
+        }
+    }
+    pub fn with_roles(id: i64, username: &'static str, password: &'static str, roles: RolePermissionsSet) -> AuthUserExample {
+        AuthUserExample {
+            id, username: username.to_string(), password: Some(password.to_string()),
+            access_token: None,
+            permissions: roles,
+        }
+    }
     pub fn access_token(&mut self, access_token: Option<String>) {
         self.access_token = access_token;
     }

@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use std::convert::Infallible;
 use std::hash::Hash;
 use std::marker::PhantomData;
+use std::mem::size_of;
 use num::PrimInt;
 use crate::auth::permission::VerifyRequiredPermissionsResult; // Integer
 // use num::Integer;
@@ -79,9 +80,6 @@ impl <
     where PermissionProcessError: From<CErr> {
 
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // let as_bin = fmt::Binary::fmt(&self.value, f);
-        // write!(f, "BitsPermissionSet {{ {:b} }}", self.value)
-
         let as_bin = format!("{:b}", self.value);
         f.debug_struct("BitsPermissionSet")
             .field("value",  &as_bin)
@@ -150,7 +148,8 @@ impl <
         -> Result<VerifyRequiredPermissionsResult<Self::Permission,Self>, PermissionProcessError> {
 
         let and_bits = self.value & required_permissions.value;
-        if and_bits == BitsType::zero() {
+        // if and_bits == BitsType::zero() {
+        if and_bits == required_permissions.value {
             return Ok(VerifyRequiredPermissionsResult::RequiredPermissionsArePresent);
         }
 
@@ -210,6 +209,40 @@ impl <
         BitsPermissionSet { value, _pd: PhantomData }
     }
 }
+
+impl <
+    BitsType: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
+    Perm: Into<BitsType> + TryFrom<BitsType,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
+    CErr: std::error::Error + Sync + Send,
+> fmt::Display for BitsPermissionSet<BitsType,Perm,CErr>
+    where PermissionProcessError: From<CErr>, // TODO: !!! Why I have to put it there??? This clarification is not needed there!!!
+          Perm: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "BitsPermissionSet {{ ") ?;
+
+        let value = self.value;
+        let mut some_is_printed = false;
+        for i in 0..size_of::<Perm>()*8 {
+            let as_bit = BitsType::one() << i;
+            if (as_bit & value) != BitsType::zero() {
+                let bit_perm_obj: Result<Perm, _> = Perm::try_from(as_bit);
+                if some_is_printed { write!(f, ", ") ?; }
+                match bit_perm_obj {
+                    Ok(perm) => {
+                        write!(f, "{}", perm) ?;
+                    }
+                    Err(_) => {
+                        write!(f, "Unexpected bit [{:b}]", as_bit) ?;
+                    }
+                };
+                some_is_printed = true;
+            }
+        }
+        write!(f, " }}")
+    }
+}
+
 
 
 

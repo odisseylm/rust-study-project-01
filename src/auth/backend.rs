@@ -44,7 +44,7 @@ pub trait RequestUserAuthnBackend : axum_login::AuthnBackend + Clone + Send + Sy
     /// Authenticates the request credentials with the backend if it is present in request.
     /// Since we cannot pass Request (because we cannot clone it) and cannot pass &Request due to
     /// future compilation error, we will extract required request data and pass it to authenticate_request.
-    async fn authenticate_request<S>(
+    async fn authenticate_request_impl<S>(
         &self,
         auth_request_data: Self::AuthRequestData,
     ) -> Result<Option<Self::User>, Self::Error>;
@@ -52,15 +52,15 @@ pub trait RequestUserAuthnBackend : axum_login::AuthnBackend + Clone + Send + Sy
 
     // Workaround with returning moved request.
     // Probably not good approach... Hz...
-    async fn call_authenticate_request<S>(
-        &self,
-        req: axum::extract::Request,
-    ) -> (axum::extract::Request, Result<Option<Self::User>, Self::Error>)
+    // async fn call_authenticate_request<S>(&self, req: axum::extract::Request)
+    async fn do_authenticate_request<S>(&self, req: axum::extract::Request)
+        -> (axum::extract::Request, Result<Option<Self::User>, Self::Error>)
         where Self::AuthRequestData: axum::extract::FromRequestParts<S> {
+
         let auth_req_data: Option<&Self::AuthRequestData> = req.extensions().get::<Self::AuthRequestData>();
         let auth_res: Result<Option<Self::User>, Self::Error> =
             if let Some(auth_req_data) = auth_req_data {
-                self.authenticate_request::<S>(auth_req_data.clone()).await
+                self.authenticate_request_impl::<S>(auth_req_data.clone()).await
             } else { Ok(None) };
 
         (req, auth_res)

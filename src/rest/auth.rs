@@ -5,8 +5,8 @@ use axum::response::{ IntoResponse, Response };
 use crate::auth::{AuthBackendMode, AuthUserProviderError, PlainPasswordComparator};
 use crate::auth::user_provider::{ InMemAuthUserProvider };
 use crate::auth::backend::{ LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config };
-use crate::auth::examples::auth_user::AuthUserExamplePswExtractor;
-use crate::auth::permission::PermissionProvider;
+use crate::auth::examples::auth_user::{ AuthUserExamplePswExtractor };
+use crate::auth::permission::{PermissionProvider, PermissionSet};
 
 
 pub type AuthUser = crate::auth::examples::auth_user::AuthUserExample;
@@ -18,11 +18,19 @@ pub type Role = crate::auth::permission::predefined::Role;
 pub type RolePermissionsSet = crate::auth::permission::predefined::RolePermissionsSet;
 
 
+#[deprecated]
 async fn is_authenticated (
     auth_session: AuthSession,
     req: Request,
 ) -> (Request, Result<(), Response>) {
-    auth_session.backend.is_authenticated(&auth_session.user, req).await
+    // auth_session.backend.is_authenticated(&auth_session.user, req).await
+    let (req, _auth_session, user_opt) =
+        auth_session.backend.do_authenticate(req, auth_session.clone()).await;
+    match user_opt {
+        Ok(None) => (req, Err(http::status::StatusCode::UNAUTHORIZED.into_response())),
+        Ok(_user) => (req, Ok(())),
+        Err(resp) => (req, Err(resp)),
+    }
 }
 
 /*
@@ -147,5 +155,10 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
 }
 
 pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
-    InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
+    InMemAuthUserProvider::with_users(vec!(
+        AuthUser::new(1, "vovan", "qwerty"),
+        AuthUser::with_role(1, "vovan-read", "qwerty", Role::Read),
+        AuthUser::with_role(1, "vovan-write", "qwerty", Role::Write),
+        AuthUser::with_roles(1, "vovan-read-and-write", "qwerty", RolePermissionsSet::from_permission2(Role::Read, Role::Write)),
+    ))
 }

@@ -13,7 +13,7 @@ use crate::auth::permission::{
 ///
 #[derive(Debug, Clone)]
 pub enum AuthorizationResult <
-    Perm: Debug + Clone + Hash + Eq + Send + Sync,
+    Perm: Debug + Clone + /*Hash + Eq +*/ Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
 > {
     Authorized,
@@ -23,7 +23,7 @@ pub enum AuthorizationResult <
     NoPermissions(PermSet),
 }
 impl <
-    Perm: Debug + Clone + Hash + Eq + Send + Sync,
+    Perm: Debug + Clone + /*Hash + Eq +*/ Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
 > AuthorizationResult<Perm,PermSet> {
     #[inline(always)]
@@ -36,7 +36,7 @@ impl <
 }
 
 impl <
-    Perm: Debug + Clone + Hash + Eq + Send + Sync,
+    Perm: Debug + Clone + /*Hash + Eq +*/ Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
 > From<VerifyRequiredPermissionsResult<Perm,PermSet>> for AuthorizationResult<Perm,PermSet> {
     fn from(value: VerifyRequiredPermissionsResult<Perm, PermSet>) -> Self {
