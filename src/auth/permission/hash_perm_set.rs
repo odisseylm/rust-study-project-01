@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 use std::fmt::{ self, Debug, Display};
 use std::hash::Hash;
-use itertools::Itertools;
 use crate::auth::permission::VerifyRequiredPermissionsResult;
+use crate::auth::util::fmt::iterable_to_display;
 use super::super::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError };
 
 #[derive(Clone, Debug)]
-pub struct HashPermissionSet<Perm: Clone + core::fmt::Debug + Eq + Hash>(HashSet<Perm>);
+pub struct HashPermissionSet<Perm: Clone + Debug + Eq + Hash>(HashSet<Perm>);
 
 impl <Perm: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for HashPermissionSet<Perm> {
     type Permission = Perm;
@@ -105,21 +105,8 @@ impl <P: Clone + Debug + Eq + Hash + Send + Sync> PermissionsToHashSet for HashP
 impl <P: Display + Clone + Debug + Eq + Hash + Send + Sync> Display
     for HashPermissionSet<P> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let perms_as_str = self.0.iter().join(", ");
-        write!(f, "HashPermissionSet {{ {} }}", perms_as_str)
-
-        /*
-        // No additional heap allocation.
-        //
-        write!(f, "HashPermissionSet {{ ") ?;
-        let mut first = true;
-        for ref perm in &self.0 {
-            if !first { write!(f, " ,") ?; }
-            write!(f, "{}", perm) ?;
-            first = false;
-        }
-        write!(f, " }}")
-        */
+        // iter_to_display(self.0.iter(), "HashPermissionSet", f)
+        iterable_to_display(&self.0, "HashPermissionSet", f)
     }
 }
 
