@@ -40,47 +40,6 @@ pub impl <S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for 
 }
 
 
-/*
-async fn do_is_authorized (
-    req: Request,
-    auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
-    required_permissions: RolePermissionsSet,
-) -> (Request,Result<bool, PermissionProcessError>) {
-
-    if let Some(ref user) = auth_session.user {
-        let authz_res = auth_session.backend.authorize(user, required_permissions).await;
-        match authz_res {
-            Ok(res) => {
-                let (req,) = log_unauthorized_access(req, user, &res);
-                (req, Ok(res.is_authorized()))
-            }
-            Err(err) => (req, Err(err)),
-        }
-    } else {
-        (req, Ok(false))
-    }
-}
-
-
-pub async fn validate_authorization_chain (
-    auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
-    required_permissions: RolePermissionsSet,
-    req: Request,
-    next: axum::middleware::Next,
-) -> http::Response<Body> {
-    let (req, is_auth_res) = do_is_authorized(req, auth_session, required_permissions).await;
-    match is_auth_res {
-        Ok(true) =>
-            next.run(req).await,
-        Ok(false) =>
-            // Probably by security reason it would be better return 401/404. It is up to you.
-            StatusCode::FORBIDDEN.into_response(),
-        Err(action) =>
-            action.into_response(),
-    }
-}
-*/
-
 
 pub async fn validate_authorization_chain (
     auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
@@ -90,7 +49,7 @@ pub async fn validate_authorization_chain (
 ) -> http::Response<Body> {
 
     let (req, user_opt_res) = auth_session.backend
-        .do_authenticate_request::<()>(req).await; // , auth_session.clone()).await;
+        .do_authenticate_request::<()>(req).await;
 
     let user_opt = match user_opt_res {
         Ok(user_opt) => user_opt,

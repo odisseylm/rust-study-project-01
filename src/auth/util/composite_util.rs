@@ -1,11 +1,9 @@
-use std::fmt::Debug;
-use std::hash::Hash;
 use std::sync::Arc;
 use crate::auth::backend::authz_backend::PermissionProviderSource;
-use crate::auth::permission::{PermissionProvider, PermissionSet};
+use crate::auth::permission::PermissionProvider;
 use super::super::{
     error::AuthBackendError,
-    backend::{ AuthnBackendAttributes},
+    backend::AuthnBackendAttributes,
     user_provider::AuthUserProvider,
 };
 
@@ -15,24 +13,20 @@ use super::super::{
 // -------------------------------------------------------------------------------------------------
 #[inline(always)]
 pub fn backend_usr_prov <
-    U: axum_login::AuthUser,
-    C,
-    B: AuthnBackendAttributes<User=U,Credentials=C,Error=AuthBackendError>,
-> (backend: &Option<B>)
-    -> Option<Arc<dyn AuthUserProvider<User=U> + Sync + Send>> {
+    Usr, Cred,
+    B: AuthnBackendAttributes<User=Usr,Credentials=Cred,Error=AuthBackendError>,
+> (backend: &Option<B>) -> Option<Arc<dyn AuthUserProvider<User=Usr> + Sync + Send>> {
     backend.as_ref().map(|b|b.user_provider())
 }
 
 #[inline(always)]
 pub fn backend_perm_prov <
-    U: axum_login::AuthUser,
-    P: Hash + Eq + Debug + Clone + Send + Sync,
-    PS: PermissionSet<Permission=P> + Debug + Clone + Send + Sync,
-    B: PermissionProviderSource<User=U,Permission=P,PermissionSet=PS>,
+    Usr, Perm, PermSet,
+    B: PermissionProviderSource<User=Usr,Permission=Perm,PermissionSet=PermSet>,
 > (backend: &Option<B>)
-   -> Option<Arc<dyn PermissionProvider<User=U,Permission=P,PermissionSet=PS> + Sync + Send>> {
+   -> Option<Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send>> {
     backend.as_ref().map(|b|{
-        let as_send_sync: Arc<dyn PermissionProvider<User=U,Permission=P,PermissionSet=PS> + Sync + Send> = b.permission_provider().clone();
+        let as_send_sync: Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send> = b.permission_provider().clone();
         as_send_sync
     })
 }
@@ -40,16 +34,14 @@ pub fn backend_perm_prov <
 // -------------------------------------------------------------------------------------------------
 
 
-pub fn get_unique_user_provider <
-    User: axum_login::AuthUser,
->(
-    possible_user_providers: &Vec<Option<Arc<dyn AuthUserProvider<User=User> + Sync + Send>>>
-) -> Result<Arc<dyn AuthUserProvider<User=User> + Sync + Send>, AuthBackendError> {
+pub fn get_unique_user_provider <Usr>(
+    possible_user_providers: &Vec<Option<Arc<dyn AuthUserProvider<User=Usr> + Sync + Send>>>
+) -> Result<Arc<dyn AuthUserProvider<User=Usr> + Sync + Send>, AuthBackendError> {
 
-    let all_user_providers: Vec<&Arc<dyn AuthUserProvider<User=User> + Sync + Send>> =
+    let all_user_providers: Vec<&Arc<dyn AuthUserProvider<User=Usr> + Sync + Send>> =
         possible_user_providers.iter().flat_map(|v|v).collect::<Vec<_>>();
 
-    let users_provider: Arc<dyn AuthUserProvider<User=User> + Sync + Send> = all_user_providers
+    let users_provider: Arc<dyn AuthUserProvider<User=Usr> + Sync + Send> = all_user_providers
         .first()
         .map(|arc|Arc::clone(arc))
         .ok_or_else(||AuthBackendError::NoUserProvider) ?;
@@ -64,18 +56,14 @@ pub fn get_unique_user_provider <
 }
 
 
-pub fn get_unique_permission_provider <
-    User: axum_login::AuthUser,
-    P: Debug + Clone + Hash + Eq + Send + Sync,
-    PS: PermissionSet<Permission=P> + Debug + Clone + Send + Sync,
->(
-    possible_perm_providers: &Vec<Option<Arc<dyn PermissionProvider<User=User,Permission=P,PermissionSet=PS> + Sync + Send>>>
-) -> Result<Arc<dyn PermissionProvider<User=User,Permission=P,PermissionSet=PS> + Sync + Send>, AuthBackendError> {
+pub fn get_unique_permission_provider <Usr, Perm, PermSet>(
+    possible_perm_providers: &Vec<Option<Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send>>>
+) -> Result<Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send>, AuthBackendError> {
 
-    let all_perm_providers: Vec<&Arc<dyn PermissionProvider<User=User,Permission=P,PermissionSet=PS> + Sync + Send>> =
+    let all_perm_providers: Vec<&Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send>> =
         possible_perm_providers.iter().flat_map(|v|v).collect::<Vec<_>>();
 
-    let perm_provider: Arc<dyn PermissionProvider<User=User,Permission=P,PermissionSet=PS> + Sync + Send> = all_perm_providers
+    let perm_provider: Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send> = all_perm_providers
         .first()
         .map(|arc|Arc::clone(arc))
         .ok_or_else(||AuthBackendError::NoUserProvider) ?;

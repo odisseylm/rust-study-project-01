@@ -44,6 +44,7 @@ impl CompositeAuthnBackendExample {
         let in_mem_users = Arc::new(test::in_memory_test_users() ?);
         let user_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send> = in_mem_users.clone();
         let permission_provider: Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send> = in_mem_users.clone();
+
         Ok(CompositeAuthnBackendExample {
             http_basic_auth_backend: Some(HttpBasicAuthBackend::new(user_provider.clone(), AuthBackendMode::AuthProposed, permission_provider.clone())),
             login_form_auth_backend: Some(LoginFormAuthBackend::new(user_provider.clone(), LoginFormAuthConfig {
@@ -248,12 +249,12 @@ pub mod test {
 
     pub fn in_memory_test_users()
         -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
-    InMemAuthUserProvider::with_users(vec!(
-        AuthUserExample::new(1, "vovan", "qwerty"),
-        AuthUserExample::with_role(1, "vovan-read", "qwerty", Role::Read),
-        AuthUserExample::with_role(1, "vovan-write", "qwerty", Role::Write),
-        AuthUserExample::with_roles(1, "vovan-read-and-write", "qwerty", RolePermissionsSet::from_permission2(Role::Read, Role::Write)),
-    ))
-}
+        InMemAuthUserProvider::with_users(vec!(
+            AuthUserExample::new(1, "vovan", "qwerty"),
+            AuthUserExample::with_role(1, "vovan-read", "qwerty", Role::Read),
+            AuthUserExample::with_role(1, "vovan-write", "qwerty", Role::Write),
+            AuthUserExample::with_roles(1, "vovan-read-and-write", "qwerty", RolePermissionsSet::from_permission2(Role::Read, Role::Write)),
+        ))
+    }
 
 }

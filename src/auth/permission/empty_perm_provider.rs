@@ -8,14 +8,14 @@ use crate::auth::permission::{PermissionProcessError, PermissionProvider, Permis
 pub fn always_allowed_perm_provider_arc <
     User: axum_login::AuthUser + 'static,
     Perm: Clone + Debug + Hash + Eq + Send + Sync + 'static,
-    PermSet: PermissionSet<Permission=Perm> + Clone + Debug + Send + Sync + 'static,
+    PermSet: PermissionSet<Permission=Perm> + Clone + 'static,
 > () -> Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet>> {
     Arc::new(EmptyPermProvider::<User,Perm,PermSet,true> { _pd: PhantomData})
 }
 pub fn always_denied_perm_provider_arc <
     User: axum_login::AuthUser + 'static,
     Perm: Clone + Debug + Hash + Eq + Send + Sync + 'static,
-    PermSet: PermissionSet<Permission=Perm> + Clone + Debug + Send + Sync + 'static,
+    PermSet: PermissionSet<Permission=Perm> + Clone + 'static,
 > () -> Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet>> {
     Arc::new(EmptyPermProvider::<User,Perm,PermSet,false> { _pd: PhantomData})
 }
@@ -41,7 +41,7 @@ pub struct EmptyPerm;
 struct EmptyPermProvider <
     User: axum_login::AuthUser,
     Perm: Clone + Debug + Hash + Eq + Send + Sync,// = EmptyPerm,
-    PermSet: PermissionSet<Permission=Perm> + Clone + Debug + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
     const ALLOWED: bool,
 > {
     _pd: PhantomData<(User, Perm, PermSet)>,
@@ -51,7 +51,7 @@ struct EmptyPermProvider <
 impl <
     Usr: axum_login::AuthUser,
     Perm: Clone + Debug + Hash + Eq + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Clone + Debug + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
     const ALLOWED: bool,
 > PermissionProvider for EmptyPermProvider<Usr,Perm,PermSet,ALLOWED> {
     type User = Usr;

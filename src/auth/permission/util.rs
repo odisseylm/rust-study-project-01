@@ -8,7 +8,7 @@ use crate::auth::permission::PermissionSet;
 pub fn log_unauthorized_user <
     User: axum_login::AuthUser + 'static,
     Perm: Display + Debug + Clone + Send + Sync + 'static,
-    PermSet: PermissionSet<Permission=Perm> + Display + Debug + Clone + Send + Sync + 'static,
+    PermSet: PermissionSet<Permission=Perm> + Display + Clone + 'static,
 > (user: &User, res: &AuthorizationResult<Perm, PermSet>) {
     match res {
         AuthorizationResult::Authorized => {}
@@ -25,7 +25,7 @@ pub fn log_unauthorized_user <
 pub fn log_unauthorized_access <
     User: axum_login::AuthUser + 'static,
     Perm: Display + Debug + Clone + Send + Sync + 'static,
-    PermSet: PermissionSet<Permission=Perm> + Display + Debug + Clone + Send + Sync + 'static,
+    PermSet: PermissionSet<Permission=Perm> + Display + Clone + 'static,
 > (req: Request, user: &User, res: &AuthorizationResult<Perm, PermSet>) -> (Request,) {
 
     let url: String = req.extensions().get::<OriginalUri>()

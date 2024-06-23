@@ -13,21 +13,22 @@ use super::super::{
     backend::oauth2_auth::{ OAuth2UserStore, OAuth2User },
     permission::{ PermissionProcessError, PermissionProvider, PermissionSet },
 };
+//--------------------------------------------------------------------------------------------------
 
 
 #[async_trait::async_trait]
-pub trait UserPermissionsExtractor: Debug + Clone + Send + Sync {
+pub trait UserPermissionsExtractor: Debug + Send + Sync {
     type User: axum_login::AuthUser;
     type Permission: Hash + Eq + Debug + Clone + Send + Sync;
-    type PermissionSet: PermissionSet<Permission=Self::Permission> + Debug + Clone + Send + Sync;
+    type PermissionSet: PermissionSet<Permission=Self::Permission> + Clone;
     fn extract_permissions_from_user(user: &Self::User) -> Self::PermissionSet;
 }
 
 struct InMemoryState <
     User: axum_login::AuthUser,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
+    Perm,
+    PermSet: PermissionSet<Permission=Perm>,
+    PermExtract: UserPermissionsExtractor,
 > {
     // T O D O: I think we could use there Rc (instead of Arc) because it is protected by mutex... but how to say rust about it??
     // T O D O: RwLock TWICE?? It is too much... but without unsafe it is only one accessible approach.
@@ -37,9 +38,9 @@ struct InMemoryState <
 }
 impl <
     Usr: axum_login::AuthUser,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
+    Perm,
+    PermSet: PermissionSet<Permission=Perm>,
+    PermExtract: UserPermissionsExtractor,
 > InMemoryState<Usr,Perm,PermSet,PermExtract> {
     fn new() -> InMemoryState<Usr,Perm,PermSet,PermExtract> {
         InMemoryState {
@@ -63,8 +64,8 @@ impl <
 pub struct InMemAuthUserProvider <
     User: axum_login::AuthUser,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm>,
+    PermExtract: UserPermissionsExtractor + Clone,
 > {
     state: Arc<RwLock<InMemoryState<User,Perm,PermSet,PermExtract>>>,
 }
@@ -73,8 +74,8 @@ pub struct InMemAuthUserProvider <
 impl <
     Usr: axum_login::AuthUser,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm>,
+    PermExtract: UserPermissionsExtractor + Clone,
 > InMemAuthUserProvider<Usr,Perm,PermSet,PermExtract> where Usr::Id : Hash + Eq {
     pub fn new() -> InMemAuthUserProvider<Usr,Perm,PermSet,PermExtract> {
         InMemAuthUserProvider {
@@ -82,7 +83,8 @@ impl <
         }
     }
 
-    pub fn with_users(users: Vec<Usr>) -> Result<InMemAuthUserProvider<Usr,Perm,PermSet,PermExtract>, AuthUserProviderError> {
+    pub fn with_users(users: Vec<Usr>)
+        -> Result<InMemAuthUserProvider<Usr,Perm,PermSet,PermExtract>, AuthUserProviderError> {
 
         let mut in_memory_state = InMemoryState::with_capacity(users.len());
         for user in users {
@@ -102,8 +104,8 @@ impl <
 impl <
     Usr: axum_login::AuthUser,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm>,
+    PermExtract: UserPermissionsExtractor + Clone,
 > Debug for InMemAuthUserProvider<Usr,Perm,PermSet,PermExtract> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // T O D O: how to write it with full state for async ??
@@ -132,8 +134,8 @@ async fn extract_cloned_user <
 impl <
     Usr: axum_login::AuthUser,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
+    PermExtract: UserPermissionsExtractor + Debug + Clone,
 > AuthUserProvider for InMemAuthUserProvider<Usr,Perm,PermSet,PermExtract> where Usr::Id : Hash + Eq {
     type User = Usr;
     async fn get_user_by_principal_identity(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
@@ -149,8 +151,8 @@ impl <
 impl <
     Usr: axum_login::AuthUser + OAuth2User,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-    PermExtract: UserPermissionsExtractor + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
+    PermExtract: UserPermissionsExtractor + Debug + Clone,
 > OAuth2UserStore for InMemAuthUserProvider<Usr,Perm,PermSet,PermExtract> where Usr::Id : Hash + Eq {
     async fn update_user_access_token(&self, user_principal_id: Usr::Id, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
         let state = self.state.write().await;
@@ -171,8 +173,8 @@ impl <
 impl <
     Usr: axum_login::AuthUser,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-    PermExtract: UserPermissionsExtractor<User=Usr,Permission=Perm,PermissionSet=PermSet> + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
+    PermExtract: UserPermissionsExtractor<User=Usr,Permission=Perm,PermissionSet=PermSet> + Debug + Clone,
 > PermissionProvider for InMemAuthUserProvider<Usr,Perm,PermSet,PermExtract>
     where Usr::Id : Hash + Eq {
     type User = Usr;

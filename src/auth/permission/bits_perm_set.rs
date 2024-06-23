@@ -11,43 +11,15 @@ use crate::auth::permission::VerifyRequiredPermissionsResult; // Integer
 use super::super::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError };
 
 
-/*
-pub trait AsBitMask <IntType: Integer> {
-    fn as_bit(&self) -> IntType;
-}
-*/
-
-/*
-trait BitCounts {
-    fn call_count_ones(self) -> u32;
-}
-
-impl BitCounts for u32 {
-    #[inline]
-    fn call_count_ones(self) -> u32 {
-        // core::num::Wrapping  core::num::bignum::
-        self.count_ones()
-    }
-}
-impl BitCounts for u64 {
-    #[inline]
-    fn call_count_ones(self) -> u32 {
-        // core::num::Wrapping  core::num::bignum::
-        self.count_ones()
-    }
-}
-*/
 
 // bounds on generic parameters are not enforced in type aliases
 pub type IntegerBitsPermissionSet<IntType/*: PrimInt*/> = BitsPermissionSet<IntType, IntType, Infallible>;
 // pub type U32BitsPermissionSet = IntegerBitsPermissionSet<u32>;
 // pub type U64BitsPermissionSet = IntegerBitsPermissionSet<u64>;
 
-// #[derive(Debug)]
-// #[derive(Copy, Clone)]
 #[derive(Copy)]
 pub struct BitsPermissionSet <
-    // Usually BitsIntType is u8, u16, u32, u64
+    // Usually BitsIntType is u8, u16, u32, u64,..
     BitsIntType: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
     // Usually SingleBitPermType it is enum where enum-variant represents one bit.
     SingleBitPermType: Into<BitsIntType> + TryFrom<BitsIntType,Error=ConvertBitToPermTypeError> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
@@ -148,7 +120,6 @@ impl <
         -> Result<VerifyRequiredPermissionsResult<Self::Permission,Self>, PermissionProcessError> {
 
         let and_bits = self.value & required_permissions.value;
-        // if and_bits == BitsType::zero() {
         if and_bits == required_permissions.value {
             return Ok(VerifyRequiredPermissionsResult::RequiredPermissionsArePresent);
         }

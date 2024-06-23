@@ -12,6 +12,9 @@ use anyhow::anyhow;
 use axum::response::Response;
 use http::StatusCode;
 
+// -------------------------------------------------------------------------------------------------
+
+
 
 #[derive(thiserror::Error, Debug)]
 pub enum PermissionProcessError {
@@ -44,8 +47,8 @@ impl axum::response::IntoResponse for PermissionProcessError {
 ///
 #[derive(Debug, Clone)]
 pub enum VerifyRequiredPermissionsResult <
-    Perm: Debug + Clone + /*Hash + Eq +*/ Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug /*+ Clone*/ + Send + Sync,
+    Perm: Debug + Clone,
+    PermSet: PermissionSet<Permission=Perm>,
 > {
     RequiredPermissionsArePresent,
     /// Contains any/first absent permission
@@ -54,8 +57,8 @@ pub enum VerifyRequiredPermissionsResult <
     NoPermissions(PermSet),
 }
 impl <
-    Perm: Debug + Clone + /*Hash + Eq +*/ Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
+    Perm: Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
 > VerifyRequiredPermissionsResult<Perm,PermSet> {
     #[inline(always)]
     pub fn is_authorized(&self) -> bool {
@@ -69,7 +72,7 @@ impl <
 
 /// Comparing HashSet it does not require heap allocation.
 /// You can use bit-mask or some optimized third-party set impl.
-pub trait PermissionSet : Debug + Sync + Send {
+pub trait PermissionSet : Debug + Send + Sync {
     type Permission: Hash + Eq + Debug + Clone + Send + Sync;
     fn has_permission(&self, permission: &Self::Permission) -> bool;
     fn is_empty(&self) -> bool;
@@ -88,7 +91,7 @@ pub trait PermissionSet : Debug + Sync + Send {
 }
 
 // It is optional trait for compatibility with axum_login::AuthzBackend
-pub trait PermissionsToHashSet : Sync + Send {
+pub trait PermissionsToHashSet : Send + Sync {
     type Permission: Hash + Eq + Send + Sync;
     fn to_hash_set(&self) -> Result<HashSet<Self::Permission>, PermissionProcessError>;
 }
@@ -99,7 +102,7 @@ pub trait PermissionsToHashSet : Sync + Send {
 /// and does not require using HashSet (with heap allocation)
 // #[axum::async_trait]
 #[async_trait::async_trait]
-pub trait PermissionProvider: Debug + /*Clone +*/ Send + Sync {
+pub trait PermissionProvider: Debug + Send + Sync {
     type User: axum_login::AuthUser;
     // type Error: std::error::Error + Send + Sync;
     type Permission: Hash + Eq + Send + Sync;
@@ -107,15 +110,22 @@ pub trait PermissionProvider: Debug + /*Clone +*/ Send + Sync {
     type PermissionSet: PermissionSet<Permission=Self::Permission> + Send + Sync;
 
     /// Gets the permissions for the provided user.
-    async fn get_user_permissions(&self, user: &Self::User) -> Result<Self::PermissionSet, PermissionProcessError>;
-    async fn get_user_permissions_by_principal_identity(&self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id) -> Result<Self::PermissionSet, PermissionProcessError>;
+    async fn get_user_permissions(&self, user: &Self::User)
+        -> Result<Self::PermissionSet, PermissionProcessError>;
+    async fn get_user_permissions_by_principal_identity(
+        &self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
+        -> Result<Self::PermissionSet, PermissionProcessError>;
 
     /// Gets the group permissions for the provided user.
-    async fn get_group_permissions(&self, user: &Self::User) -> Result<Self::PermissionSet, PermissionProcessError>;
-    async fn get_group_permissions_by_principal_identity(&self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id) -> Result<Self::PermissionSet, PermissionProcessError>;
+    async fn get_group_permissions(&self, user: &Self::User)
+        -> Result<Self::PermissionSet, PermissionProcessError>;
+    async fn get_group_permissions_by_principal_identity(
+        &self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
+        -> Result<Self::PermissionSet, PermissionProcessError>;
 
     /// Gets all permissions for the provided user.
-    async fn get_all_permissions(&self, user: &Self::User) -> Result<Self::PermissionSet, PermissionProcessError> {
+    async fn get_all_permissions(&self, user: &Self::User)
+        -> Result<Self::PermissionSet, PermissionProcessError> {
         let all_perms = Self::PermissionSet::merge(
             self.get_user_permissions(user).await?,
             self.get_group_permissions(user).await?
@@ -123,7 +133,9 @@ pub trait PermissionProvider: Debug + /*Clone +*/ Send + Sync {
         Ok(all_perms)
     }
 
-    async fn get_all_permissions_by_principal_identity(&self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id) -> Result<Self::PermissionSet, PermissionProcessError> {
+    async fn get_all_permissions_by_principal_identity(
+        &self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
+        -> Result<Self::PermissionSet, PermissionProcessError> {
         let all_perms = Self::PermissionSet::merge(
             self.get_user_permissions_by_principal_identity(user_principal_id.clone()).await?,
             self.get_group_permissions_by_principal_identity(user_principal_id).await?
@@ -133,7 +145,8 @@ pub trait PermissionProvider: Debug + /*Clone +*/ Send + Sync {
 
     /// Returns a result which is `true` when the provided user has the provided
     /// permission and otherwise is `false`.
-    async fn has_perm(&self, user: &Self::User, perm: Self::Permission) -> Result<bool, PermissionProcessError> {
+    async fn has_perm(&self, user: &Self::User, perm: Self::Permission)
+        -> Result<bool, PermissionProcessError> {
         Ok(self.get_all_permissions(user).await?.has_permission(&perm))
     }
 }

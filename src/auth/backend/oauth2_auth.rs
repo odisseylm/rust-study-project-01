@@ -41,9 +41,9 @@ pub struct OAuth2AuthCredentials {
 #[derive(Debug, Clone)]
 #[readonly::make]
 pub struct OAuth2AuthBackend <
-    User: OAuth2User + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync = EmptyPerm,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync = AlwaysAllowedPermSet<Perm>,
+    User: Debug + Clone,
+    Perm: Debug + Clone = EmptyPerm,
+    PermSet: PermissionSet<Permission=Perm> + Clone = AlwaysAllowedPermSet<Perm>,
 > {
     state: Arc<AuthBackendState<User,Perm,PermSet>>,
 }
@@ -51,9 +51,9 @@ pub struct OAuth2AuthBackend <
 
 #[derive(Debug)]
 struct AuthBackendState <
-    User: OAuth2User + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync = EmptyPerm,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync = AlwaysAllowedPermSet<Perm>,
+    User: Debug,
+    Perm: Debug = EmptyPerm,
+    PermSet: PermissionSet<Permission=Perm> = AlwaysAllowedPermSet<Perm>,
 > {
     user_provider: Arc<dyn AuthUserProvider<User=User> + Send + Sync>,
     oauth2_user_store: Arc<dyn OAuth2UserStore<User=User> + Send + Sync>,
@@ -69,9 +69,9 @@ struct UserInfo {
 }
 
 impl <
-    Usr: OAuth2User + Debug + Clone + Send + Sync,
+    Usr: OAuth2User + Debug + Clone,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
 > OAuth2AuthBackend<Usr,Perm,PermSet> {
     pub fn new(
         user_provider: Arc<dyn AuthUserProvider<User=Usr> + Send + Sync>,
@@ -111,7 +111,7 @@ impl <
 impl <
     Usr: OAuth2User + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
 > axum_login::AuthnBackend for OAuth2AuthBackend<Usr,Perm,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
@@ -169,7 +169,7 @@ impl <
 impl <
     Usr: OAuth2User + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
 > RequestAuthenticated for OAuth2AuthBackend<Usr,Perm,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 { }
@@ -250,7 +250,7 @@ impl OAuth2Config {
 impl <
     Usr: OAuth2User + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
 > AuthnBackendAttributes for OAuth2AuthBackend<Usr,Perm,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
@@ -270,7 +270,7 @@ impl <
 impl<
     Usr: OAuth2User + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
+    PermSet: PermissionSet<Permission=Perm> + Clone,
 > PermissionProviderSource for OAuth2AuthBackend<Usr,Perm,PermSet>
     where Usr: axum_login::AuthUser<Id = String> {
     type User = Usr;
@@ -287,7 +287,7 @@ impl<
 impl<
     Usr: OAuth2User + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
+    PermSet: PermissionSet<Permission=Perm> + Clone,
 > AuthorizeBackend for OAuth2AuthBackend<Usr,Perm,PermSet>
     where Usr: axum_login::AuthUser<Id = String> {
     //noinspection DuplicatedCode

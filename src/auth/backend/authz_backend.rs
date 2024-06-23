@@ -13,8 +13,8 @@ use crate::auth::permission::{
 ///
 #[derive(Debug, Clone)]
 pub enum AuthorizationResult <
-    Perm: Debug + Clone + /*Hash + Eq +*/ Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+    Perm: Debug + Clone,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
 > {
     Authorized,
     /// Contains any/first absent permission.
@@ -23,8 +23,8 @@ pub enum AuthorizationResult <
     NoPermissions(PermSet),
 }
 impl <
-    Perm: Debug + Clone + /*Hash + Eq +*/ Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
+    Perm: Debug + Clone,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
 > AuthorizationResult<Perm,PermSet> {
     #[inline(always)]
     pub fn is_authorized(&self) -> bool {
@@ -36,8 +36,8 @@ impl <
 }
 
 impl <
-    Perm: Debug + Clone + /*Hash + Eq +*/ Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync
+    Perm: Debug + Clone,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
 > From<VerifyRequiredPermissionsResult<Perm,PermSet>> for AuthorizationResult<Perm,PermSet> {
     fn from(value: VerifyRequiredPermissionsResult<Perm, PermSet>) -> Self {
         use VerifyRequiredPermissionsResult as V;
@@ -51,10 +51,10 @@ impl <
 
 
 #[cfg_attr(feature = "ambassador", ambassador::delegatable_trait)]
-pub trait PermissionProviderSource : Clone + Send + Sync {
+pub trait PermissionProviderSource {
     type User: axum_login::AuthUser;
     type Permission: Debug + Clone + Hash + Eq + Send + Sync;
-    type PermissionSet: PermissionSet<Permission=Self::Permission> + Debug + Clone + Send + Sync;
+    type PermissionSet: PermissionSet<Permission=Self::Permission> + Clone;
 
     fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=Self::User,Permission=Self::Permission,PermissionSet=Self::PermissionSet>>;
     // fn permission_provider_ref(&self) -> &Arc<dyn PermissionProvider<User=Self::User,Permission=Self::Permission,PermissionSet=Self::PermissionSet>>;
@@ -63,7 +63,7 @@ pub trait PermissionProviderSource : Clone + Send + Sync {
 
 #[async_trait::async_trait]
 #[cfg_attr(feature = "ambassador", ambassador::delegatable_trait)]
-pub trait AuthorizeBackend : PermissionProviderSource + Clone + Send + Sync {
+pub trait AuthorizeBackend : PermissionProviderSource + Send + Sync {
 
     async fn authorize(&self, user: &Self::User, required_permissions: Self::PermissionSet)
         -> Result<AuthorizationResult<Self::Permission,Self::PermissionSet>, PermissionProcessError> {
@@ -74,13 +74,15 @@ pub trait AuthorizeBackend : PermissionProviderSource + Clone + Send + Sync {
         Ok(authz_res)
     }
 
-    async fn has_permission(&self, user: &Self::User, required_permission: Self::Permission) -> Result<bool, PermissionProcessError> {
+    async fn has_permission(&self, user: &Self::User, required_permission: Self::Permission)
+        -> Result<bool, PermissionProcessError> {
         let authz_res: AuthorizationResult<Self::Permission,Self::PermissionSet> = self.authorize(user,
             PermissionSet::from_permission(required_permission)).await ?;
         Ok(authz_res.is_authorized())
     }
 
-    async fn has_permissions(&self, user: &Self::User, required_permissions: Self::PermissionSet) -> Result<bool, PermissionProcessError> {
+    async fn has_permissions(&self, user: &Self::User, required_permissions: Self::PermissionSet)
+        -> Result<bool, PermissionProcessError> {
         let authz_res: AuthorizationResult<Self::Permission,Self::PermissionSet> =
             self.authorize(user, required_permissions).await ?;
         Ok(authz_res.is_authorized())
