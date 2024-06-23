@@ -1,16 +1,13 @@
 use std::sync::Arc;
 
 use axum::extract::Request;
-use axum::http::StatusCode;
 use axum::response::{ IntoResponse, Response };
 
 use axum_login::UserId;
-use log::{ error };
 use crate::auth::{AuthnBackendAttributes, AuthUserProviderError, ProposeAuthAction};
 use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
 use crate::auth::backend::{ProposeHttpBasicAuthAction, ProposeLoginFormAuthAction, RequestAuthenticated};
 use crate::auth::permission::PermissionProvider;
-use crate::auth::util::composite_util::get_permission_provider3;
 
 use super::auth_user::{AuthUserExample, AuthUserExamplePswExtractor};
 use super::super::backend::{
@@ -24,7 +21,7 @@ use super::super::{
     error::AuthBackendError,
     user_provider::AuthUserProvider,
     psw::PlainPasswordComparator,
-    util::composite_util::{ get_user_provider3, unauthenticated_response3 },
+    util::composite_util::{ backend_usr_prov, backend_perm_prov, get_unique_user_provider, get_unique_permission_provider },
     user_provider::InMemAuthUserProvider,
 };
 
@@ -78,8 +75,19 @@ impl CompositeAuthnBackendExample {
         login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
         oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,Role,RolePermissionsSet>>,
     ) -> Result<CompositeAuthnBackendExample, AuthBackendError> {
-        let users_provider = get_user_provider3(&http_basic_auth_backend, &login_form_auth_backend, &oauth2_backend) ?;
-        let permission_provider = get_permission_provider3(&http_basic_auth_backend, &login_form_auth_backend, &oauth2_backend) ?;
+
+        let users_provider = get_unique_user_provider(&vec!(
+            backend_usr_prov(&http_basic_auth_backend),
+            backend_usr_prov(&login_form_auth_backend),
+            backend_usr_prov(&oauth2_backend),
+        )) ?;
+
+        let permission_provider = get_unique_permission_provider(&vec!(
+            backend_perm_prov(&http_basic_auth_backend),
+            backend_perm_prov(&login_form_auth_backend),
+            backend_perm_prov(&oauth2_backend),
+        )) ?;
+
         Ok(CompositeAuthnBackendExample { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend, permission_provider })
     }
 
