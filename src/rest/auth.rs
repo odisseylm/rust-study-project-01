@@ -6,7 +6,7 @@ use crate::auth::{AuthBackendMode, AuthnBackendAttributes, AuthUserProviderError
 use crate::auth::user_provider::{ InMemAuthUserProvider };
 use crate::auth::backend::{LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config, RequestAuthenticated};
 use crate::auth::examples::auth_user::{ AuthUserExamplePswExtractor };
-use crate::auth::permission::{PermissionProvider, PermissionSet};
+use crate::auth::permission::{ PermissionProvider };
 
 
 pub type AuthUser = crate::auth::examples::auth_user::AuthUserExample;
@@ -34,7 +34,7 @@ async fn is_authenticated (
                     http::status::StatusCode::UNAUTHORIZED.into_response());
             (req, Err(response))
         }
-        Ok(_user) => (req, Ok(())),
+        Ok(ref _user) => (req, Ok(())),
         Err(err) => (req, Err(err.into_response())),
     }
 }
@@ -165,10 +165,5 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
 }
 
 pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
-    InMemAuthUserProvider::with_users(vec!(
-        AuthUser::new(1, "vovan", "qwerty"),
-        AuthUser::with_role(1, "vovan-read", "qwerty", Role::Read),
-        AuthUser::with_role(1, "vovan-write", "qwerty", Role::Write),
-        AuthUser::with_roles(1, "vovan-read-and-write", "qwerty", RolePermissionsSet::from_permission2(Role::Read, Role::Write)),
-    ))
+    crate::auth::examples::composite_auth::test::in_memory_test_users()
 }

@@ -91,7 +91,7 @@ pub fn test_authenticate_basic(creds: &Option<TypedHeader<Authorization<Basic>>>
         Some(TypedHeader(Authorization(ref creds))) => {
             let usr = creds.username();
             let psw = creds.password();
-            if usr != "vovan" || psw != "qwerty" {
+            if usr != "test-rest-vovan" || psw != "qwerty" {
                 return Err(RestAppError::HttpResponseResultError(err_response));
             }
         }

@@ -3,26 +3,22 @@ use std::sync::Arc;
 use axum::extract::Request;
 use axum::response::{ IntoResponse, Response };
 
-use axum_login::UserId;
-use crate::auth::{AuthnBackendAttributes, AuthUserProviderError, ProposeAuthAction};
-use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
-use crate::auth::backend::{ProposeHttpBasicAuthAction, ProposeLoginFormAuthAction, RequestAuthenticated};
-use crate::auth::permission::PermissionProvider;
-
-use super::auth_user::{AuthUserExample, AuthUserExamplePswExtractor};
-use super::super::backend::{
-    http_basic_auth::HttpBasicAuthBackend,
-    login_form_auth::{ LoginFormAuthBackend, LoginFormAuthConfig },
-    oauth2_auth::{ OAuth2AuthBackend, OAuth2AuthCredentials },
-    psw_auth::PswAuthCredentials,
-};
+use super::auth_user::{ AuthUserExample };
 use super::super::{
-    backend::{ AuthBackendMode },
-    error::AuthBackendError,
-    user_provider::AuthUserProvider,
+    backend::{
+        AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction,
+        ProposeHttpBasicAuthAction, ProposeLoginFormAuthAction, RequestAuthenticated,
+        http_basic_auth::HttpBasicAuthBackend,
+        login_form_auth::{ LoginFormAuthBackend, LoginFormAuthConfig },
+        oauth2_auth::{ OAuth2AuthBackend, OAuth2AuthCredentials },
+        psw_auth::PswAuthCredentials,
+        authz_backend::{ AuthorizeBackend, PermissionProviderSource }
+    },
+    error::{ AuthBackendError },
+    user_provider::{ AuthUserProvider },
     psw::PlainPasswordComparator,
+    permission::PermissionProvider,
     util::composite_util::{ backend_usr_prov, backend_perm_prov, get_unique_user_provider, get_unique_permission_provider },
-    user_provider::InMemAuthUserProvider,
 };
 
 pub type Role = crate::auth::permission::predefined::Role;
@@ -39,13 +35,10 @@ pub struct CompositeAuthnBackendExample<
     oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,Role,RolePermissionsSet>>,
 }
 
-pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
-    InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "vovan", "qwerty")))
-}
 
 impl CompositeAuthnBackendExample {
     pub fn test_users() -> Result<CompositeAuthnBackendExample, anyhow::Error> {
-        let in_mem_users = Arc::new(in_memory_test_users() ?);
+        let in_mem_users = Arc::new(test::in_memory_test_users() ?);
         let user_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send> = in_mem_users.clone();
         let permission_provider: Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send> = in_mem_users.clone();
         Ok(CompositeAuthnBackendExample {
@@ -243,7 +236,7 @@ impl axum_login::AuthnBackend for CompositeAuthnBackendExample {
         }
     }
 
-    async fn get_user(&self, user_id: &UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
+    async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error> {
         self.users_provider.get_user_by_principal_identity(user_id).await.map_err(From::from)
     }
 }
@@ -323,3 +316,24 @@ impl PermissionProviderSource for CompositeAuthnBackendExample {
 }
 #[axum::async_trait]
 impl AuthorizeBackend for CompositeAuthnBackendExample { }
+
+
+pub mod test {
+    use super::AuthUserExample;
+    use super::super::auth_user::AuthUserExamplePswExtractor;
+    use super::super::super::{
+        user_provider::{ AuthUserProviderError, InMemAuthUserProvider },
+        permission::{ PermissionSet, predefined::{ Role, RolePermissionsSet, }},
+    };
+
+    pub fn in_memory_test_users()
+        -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
+    InMemAuthUserProvider::with_users(vec!(
+        AuthUserExample::new(1, "vovan", "qwerty"),
+        AuthUserExample::with_role(1, "vovan-read", "qwerty", Role::Read),
+        AuthUserExample::with_role(1, "vovan-write", "qwerty", Role::Write),
+        AuthUserExample::with_roles(1, "vovan-read-and-write", "qwerty", RolePermissionsSet::from_permission2(Role::Read, Role::Write)),
+    ))
+}
+
+}

@@ -327,7 +327,7 @@ mod tests {
     type PermSet = IntegerBitsPermissionSet<u32>;
 
     pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
-        InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
+        InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "http-vovan", "qwerty")))
     }
 
     #[test]

@@ -119,8 +119,3 @@ impl OAuth2User for AuthUserExample {
         self.access_token = access_token.clone()
     }
 }
-
-
-// pub fn test_users() -> Result<InMemAuthUserProvider<AuthUser>, AuthUserProviderError> {
-//     InMemAuthUserProvider::<AuthUser>::with_users(vec!(AuthUser::new(1, "vovan", "qwerty")))
-// }

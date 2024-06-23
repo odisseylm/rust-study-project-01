@@ -89,7 +89,7 @@ mod tests {
     use crate::util::TestResultUnwrap;
 
     pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
-        InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "vovan", "qwerty")))
+        InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "dyn-wrap-vovan", "qwerty")))
     }
 
     #[tokio::test]
@@ -102,17 +102,23 @@ mod tests {
         );
 
         use axum_login::AuthnBackend;
-        let r = psw_auth.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
+        let r = psw_auth.authenticate(PswAuthCredentials {
+            username: "dyn-wrap-vovan".to_string(), password: "qwerty".to_string(), next: None }
+        ).await;
         assert!(r.is_ok());
 
         let as_dyn: Arc<AuthnBackendDynWrapperImpl<AuthUserExample, PswAuthCredentials, AuthBackendError, LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,Perm,PermSet>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
-        let r = as_dyn.authn_backend.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
+        let r = as_dyn.authn_backend.authenticate(PswAuthCredentials {
+            username: "dyn-wrap-vovan".to_string(), password: "qwerty".to_string(), next: None }
+        ).await;
         assert!(r.is_ok());
 
         let as_dyn: Arc<dyn AuthnBackendDynWrapper<User=AuthUserExample, Credentials=PswAuthCredentials, Error=AuthBackendError, RealAuthnBackend=LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,Perm,PermSet>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
-        let r = as_dyn.authenticate(PswAuthCredentials { username: "vovan".to_string(), password: "qwerty".to_string(), next: None }).await;
+        let r = as_dyn.authenticate(PswAuthCredentials {
+            username: "dyn-wrap-vovan".to_string(), password: "qwerty".to_string(), next: None }
+        ).await;
         assert!(r.is_ok());
     }
 }
