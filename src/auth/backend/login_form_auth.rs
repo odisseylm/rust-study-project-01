@@ -5,7 +5,7 @@ use axum::body::Body;
 use axum::extract::OriginalUri;
 use axum::http::StatusCode;
 
-use super::{psw_auth::PswAuthBackendImpl, RequestAuthenticated};
+use super::{ psw_auth::PswAuthBackendImpl, RequestAuthenticated };
 use super::super::{
     backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction },
     user_provider::AuthUserProvider,

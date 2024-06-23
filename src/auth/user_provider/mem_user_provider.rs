@@ -7,11 +7,11 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use tokio::sync::RwLock;
-use crate::auth::permission::{PermissionProcessError, PermissionProvider, PermissionSet};
 
 use super::super::{
     user_provider::{ AuthUserProvider, AuthUserProviderError },
     backend::oauth2_auth::{ OAuth2UserStore, OAuth2User },
+    permission::{ PermissionProcessError, PermissionProvider, PermissionSet },
 };
 
 
@@ -211,14 +211,16 @@ impl <
 
 #[cfg(test)]
 mod tests {
-    use crate::auth::examples::auth_user::AuthUserExamplePswExtractor;
-    use crate::auth::permission::predefined::{Role, RolePermissionsSet};
-    use super::super::super::examples::auth_user::AuthUserExample as AuthUser;
-    use crate::util::{TestOptionUnwrap, TestResultUnwrap};
+    use super::super::super::{
+        examples::auth_user::AuthUserExamplePswExtractor,
+        permission::predefined::{ Role, RolePermissionsSet },
+        examples::auth_user::AuthUserExample,
+    };
+    use crate::util::{ TestOptionUnwrap, TestResultUnwrap };
     use super::*;
 
-    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
-        InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "in-mem-vovan", "qwerty")))
+    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
+        InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "in-mem-vovan", "qwerty")))
     }
 
     // macro_rules! aw {

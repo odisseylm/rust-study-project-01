@@ -1,11 +1,9 @@
 use core::fmt;
 use std::sync::Arc;
-use crate::auth::examples::auth_user::AuthUserExamplePswExtractor;
-use crate::auth::permission::predefined::{Role, RolePermissionsSet};
 
 use super::super::{
-    user_provider::{ AuthUserProvider, AuthUserProviderError },
-    user_provider::InMemAuthUserProvider,
+    user_provider::{ AuthUserProvider, AuthUserProviderError, InMemAuthUserProvider },
+    permission::predefined::{ Role, RolePermissionsSet },
 };
 
 
@@ -57,7 +55,10 @@ pub fn wrap_static_ptr_auth_user_provider<
 #[allow(dead_code)]
 fn compile_test() {
     use std::sync::Arc;
-    use crate::auth::examples::auth_user::AuthUserExample;
+    use super::super::{
+        examples::auth_user::{ AuthUserExample, AuthUserExamplePswExtractor },
+    };
+
 
     type InMemAuthUsrProvider = InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>;
 
@@ -86,9 +87,9 @@ fn compile_test() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // use super::super::{ AuthUser, AuthUserProvider };
-    // use super::{ AuthUserProviderStaticTypeArcWrapper, AuthUserProviderStaticTypePtrWrapper, f2, wrap_static_arc_auth_user_provider};
-    use crate::auth::examples::auth_user::AuthUserExample;
+    use super::super::super::{
+        examples::auth_user::{ AuthUserExample, AuthUserExamplePswExtractor },
+    };
 
     type InMemAuthUsrProvider = InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>;
 

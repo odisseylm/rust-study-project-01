@@ -64,50 +64,11 @@ pub trait RequestAuthenticated : axum_login::AuthnBackend + Clone + Send + Sync 
 }
 
 
-/*
-#[async_trait]
-pub trait RequestUserAuthnBackend : axum_login::AuthnBackend + Clone + Send + Sync {
-
-    // type AuthRequestData: axum::extract::FromRequestParts<_> + Clone + Send + Sync + 'static;
-    // fn auth_request_data_extractor<S>() -> Self::AuthRequestDataExtractor<S>;
-
-    type AuthRequestData: Clone + Send + Sync + 'static;
-
-    /// Authenticates the request credentials with the backend if it is present in request.
-    /// Since we cannot pass Request (because we cannot clone it) and cannot pass &Request due to
-    /// future compilation error, we will extract required request data and pass it to authenticate_request.
-    async fn authenticate_request_impl<S>(
-        &self,
-        auth_request_data: Self::AuthRequestData,
-    ) -> Result<Option<Self::User>, Self::Error>;
-
-
-    // Workaround with returning moved request.
-    // Probably not good approach... Hz...
-    // async fn call_authenticate_request<S>(&self, req: axum::extract::Request)
-    async fn do_authenticate_request<S>(&self, req: axum::extract::Request)
-        -> (axum::extract::Request, Result<Option<Self::User>, Self::Error>)
-        where Self::AuthRequestData: axum::extract::FromRequestParts<S> {
-
-        let auth_req_data: Option<&Self::AuthRequestData> = req.extensions().get::<Self::AuthRequestData>();
-        let auth_res: Result<Option<Self::User>, Self::Error> =
-            if let Some(auth_req_data) = auth_req_data {
-                self.authenticate_request_impl::<S>(auth_req_data.clone()).await
-            } else { Ok(None) };
-
-        (req, auth_res)
-    }
-
-}
-*/
-
-
 pub mod http_basic_auth;
 pub mod login_form_auth;
 pub mod oauth2_auth;
 pub mod psw_auth;
-pub mod axum_login_delegatable;
-pub(crate) mod authz_backend;
+pub mod authz_backend;
 
 pub use http_basic_auth::{ HttpBasicAuthBackend, ProposeHttpBasicAuthAction };
 pub use login_form_auth::{ LoginFormAuthBackend, LoginFormAuthConfig, ProposeLoginFormAuthAction };

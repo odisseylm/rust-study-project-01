@@ -95,7 +95,7 @@ async fn handler_2_open_with_state(state: Extension<Arc<State22>>, _auth_session
     // ...
     Json("bla-bla 23".to_string())
 }
-async fn handler_3_protected_with_state(state: axum::extract::State<State11>, _auth_session: auth::AuthSession) -> Json<String> {
+async fn handler_3_protected_with_state(state: State<State11>, _auth_session: auth::AuthSession) -> Json<String> {
     println!("### handler3 PROTECTED with_state, state11: {}", state.x);
     // ...
     Json("bla-bla 22".to_string())
@@ -127,7 +127,7 @@ struct State11 {
 // use axum::http::StatusCode;
 
 
-async fn temp_my_middleware(req: axum::extract::Request, next: axum::middleware::Next) -> Result<axum::response::Response, (axum::http::StatusCode, &'static str)> {
+async fn temp_my_middleware(req: Request, next: axum::middleware::Next) -> Result<Response, (http::StatusCode, &'static str)> {
     println!("### temp_my_middleware");
     let response = next.run(req).await;
     Ok(response)
@@ -203,7 +203,7 @@ pub async fn temp_handler() {
                 .route("/temp_handler3", get(handler_3_protected_with_state))
                 .with_state(State11 { x: "101" })
                 //.route_layer(axum::middleware::from_fn(validate_auth))
-                .auth_required()
+                .authn_required()
         )
         .nest(
             "/not-protected",

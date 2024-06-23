@@ -4,10 +4,16 @@ use std::hash::Hash;
 use std::sync::Arc;
 use axum::extract::OriginalUri;
 use oauth2::basic::BasicClient;
-use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
-use crate::auth::backend::RequestAuthenticated;
-use crate::auth::permission::{PermissionProvider, PermissionSet};
-use crate::auth::permission::empty_perm_provider::{AlwaysAllowedPermSet, EmptyPerm};
+
+use super::super::{
+    backend::{ RequestAuthenticated,
+               authz_backend::{ AuthorizeBackend, PermissionProviderSource },
+    },
+    permission::{
+        PermissionProvider, PermissionSet,
+        empty_perm_provider::{ AlwaysAllowedPermSet, EmptyPerm },
+    },
+};
 
 
 use super::super::{

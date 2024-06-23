@@ -69,21 +69,23 @@ impl <
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
-    use crate::auth::AuthUserProviderError;
-    use crate::auth::examples::auth_user::AuthUserExamplePswExtractor;
-    use crate::auth::permission::bits_perm_set::IntegerBitsPermissionSet;
-    use crate::auth::permission::empty_perm_provider::always_allowed_perm_provider_arc;
-    use crate::auth::permission::predefined::{Role, RolePermissionsSet};
 
     use super::{ AuthnBackendDynWrapperImpl, AuthnBackendDynWrapper, wrap_authn_backend_as_dyn };
     use super::super::super::{
+        AuthUserProviderError,
+        examples::auth_user::AuthUserExamplePswExtractor,
+        backend::{ AuthBackendMode, LoginFormAuthBackend, LoginFormAuthConfig, psw_auth::PswAuthCredentials },
+        permission::{
+            predefined::{ Role, RolePermissionsSet },
+            bits_perm_set::IntegerBitsPermissionSet,
+            empty_perm_provider::always_allowed_perm_provider_arc,
+        },
         examples::auth_user::AuthUserExample,
         error::AuthBackendError,
-        backend::AuthBackendMode,
         psw::PlainPasswordComparator,
         user_provider::InMemAuthUserProvider,
-        backend::{ LoginFormAuthBackend, LoginFormAuthConfig, psw_auth::PswAuthCredentials },
     };
+
     type Perm = u32;
     type PermSet = IntegerBitsPermissionSet<u32>;
     use crate::util::TestResultUnwrap;

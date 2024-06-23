@@ -168,74 +168,6 @@ impl <
 }
 
 
-/*
-#[derive(Clone)]
-pub struct BasicAuthCreds(axum_extra::headers::authorization::Basic);
-
-impl Debug for BasicAuthCreds {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("BasicAuthCreds")
-            .field("username", &self.0.username())
-            .field("password", &"[...]")
-            .finish()
-    }
-}
-
-#[async_trait::async_trait]
-impl<S> axum::extract::FromRequestParts<S> for BasicAuthCreds where S: Send + Sync {
-    type Rejection = TypedHeaderRejection;
-
-    async fn from_request_parts(parts: &mut http::request::Parts, state: &S) -> Result<Self, Self::Rejection> {
-        use axum_extra:: { TypedHeader, typed_header::TypedHeaderRejection, headers::{ Authorization, authorization::Basic } };
-
-        let basic_auth: Result<TypedHeader<Authorization<Basic>>, TypedHeaderRejection> =
-            TypedHeader::<Authorization<Basic>>::from_request_parts(parts, state).await;
-
-        let basic_auth: Result<BasicAuthCreds, TypedHeaderRejection> = basic_auth.map(|header|BasicAuthCreds(header.0.0.clone()));
-        basic_auth
-    }
-}
-
-
-#[axum::async_trait]
-impl <
-    Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> RequestUserAuthnBackend for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
-    where Usr: axum_login::AuthUser<Id = String>,
-{
-    type AuthRequestData = BasicAuthCreds;
-
-    async fn authenticate_request_impl<S>(&self, auth_request_data: Self::AuthRequestData) -> Result<Option<Self::User>, Self::Error> {
-        use axum_login::AuthnBackend;
-
-        self.authenticate(PswAuthCredentials {
-            username: auth_request_data.0.username().to_string(),
-            password: auth_request_data.0.password().to_string(),
-            next: None,
-        }).await
-    }
-}
-*/
-
-/*
-use super::super::auth::authn_backend_dyn_wrap::AuthnBackendDynWrapper;
-
-impl <
-    PswComparator: PasswordComparator + Clone + Send + Sync,
-> TryFrom<HttpBasicAuthBackend<PswComparator>>
-for Box<dyn AuthnBackendDynWrapper<Credentials=PswAuthCredentials, Error=AuthBackendError, RealAuthnBackend=HttpBasicAuthBackend<PswComparator>>> {
-    type Error = AuthBackendError;
-
-    fn try_from(value: HttpBasicAuthBackend<PswComparator>) -> Result<Self, Self::Error> {
-        t o d o!()
-    }
-}
-*/
-
-
 // TEMP, investigation
 #[axum::async_trait]
 pub trait RequestUserAuthnBackendDyn : Send + Sync {
@@ -307,27 +239,27 @@ for Arc<dyn RequestUserAuthnBackendDyn<User=Usr>>
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-    use super::super::super::examples::auth_user::AuthUserExample as AuthUser;
-    use crate::auth::AuthUserProviderError;
-    use crate::auth::examples::auth_user::AuthUserExamplePswExtractor;
-    use crate::auth::permission::bits_perm_set::IntegerBitsPermissionSet;
-    use crate::auth::permission::empty_perm_provider::{always_allowed_perm_provider_arc, empty_always_allowed_perm_provider_arc};
-    use crate::auth::permission::predefined::{ Role, RolePermissionsSet };
-    use crate::util::TestResultUnwrap;
-
     use super::*;
+    use std::sync::Arc;
     use super::super::super::{
-        examples::auth_user::AuthUserExample,
+        AuthUserProviderError,
+        examples::auth_user::{ AuthUserExample, AuthUserExamplePswExtractor },
+        permission::{
+            bits_perm_set::IntegerBitsPermissionSet,
+            empty_perm_provider::{always_allowed_perm_provider_arc, empty_always_allowed_perm_provider_arc},
+            predefined::{Role, RolePermissionsSet},
+        },
         backend::{ AuthBackendMode },
         user_provider::{ AuthUserProvider, InMemAuthUserProvider },
         psw::PlainPasswordComparator,
     };
+    use crate::util::TestResultUnwrap;
+
     type Perm = u32;
     type PermSet = IntegerBitsPermissionSet<u32>;
 
-    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
-        InMemAuthUserProvider::with_users(vec!(AuthUser::new(1, "http-vovan", "qwerty")))
+    pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
+        InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "http-vovan", "qwerty")))
     }
 
     #[test]
@@ -345,8 +277,7 @@ mod tests {
         use super::super::super::backend::{ LoginFormAuthBackend, LoginFormAuthConfig };
 
         let users = Arc::new(in_memory_test_users().test_unwrap());
-        let users: Arc<dyn AuthUserProvider<User = AuthUser> + Send + Sync> = users;
-        // let users: Arc<dyn AuthUserProvider<User = AuthUser>> = users;
+        let users: Arc<dyn AuthUserProvider<User=AuthUserExample> + Send + Sync> = users;
         let _basic_auth = LoginFormAuthBackend::<AuthUserExample, PlainPasswordComparator>::new(
             users,
             LoginFormAuthConfig { login_url: "/login", auth_mode: AuthBackendMode::AuthSupported },
@@ -358,24 +289,4 @@ mod tests {
         //     basic_auth_arc.try_into();
     }
 
-    /*
-    use std::sync::Arc;
-    // use axum_login::AuthUser;
-    use super::AuthUser;
-    use super::super::auth::{AuthBackendError, AuthBackendMode, BasicAuthCreds, HttpBasicAuthBackend, InMemAuthUserProvider, PlainPasswordComparator, RequestUserAuthnBackend};
-    use super::super::auth::psw_auth::PswAuthCredentials;
-
-    #[test]
-    fn aa() {
-        let users = Arc::new(InMemAuthUserProvider::test_users());
-        let basic_auth = HttpBasicAuthBackend::<PlainPasswordComparator>::new(users, AuthBackendMode::AuthSupported);
-
-        use RequestUserAuthnBackend;
-
-        // let aa: Option<dyn RequestUserAuthnBackend<PlainPasswordComparator>> = basic_auth.try_into();
-        let as_req_user_auth_backend: Result<dyn RequestUserAuthnBackend<User=AuthUser, Credentials=PswAuthCredentials, Error=AuthBackendError, AuthRequestData=BasicAuthCreds>, _> =
-            basic_auth.try_into();
-        println!("### as_req_user_auth_backend: {:?}", as_req_user_auth_backend)
-    }
-    */
 }

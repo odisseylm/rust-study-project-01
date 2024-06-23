@@ -1,14 +1,18 @@
 use std::collections::HashSet;
 use std::fmt::{ self, Debug, Display};
 use std::hash::Hash;
-use crate::auth::permission::VerifyRequiredPermissionsResult;
-use crate::auth::util::fmt::iterable_to_display;
-use super::super::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError };
+
+use super::super::{
+    permission::VerifyRequiredPermissionsResult,
+    util::fmt::iterable_to_display,
+    permission::{PermissionSet, PermissionsToHashSet, PermissionProcessError},
+};
+
 
 #[derive(Clone, Debug)]
 pub struct HashPermissionSet<Perm: Clone + Debug + Eq + Hash>(HashSet<Perm>);
 
-impl <Perm: Clone + core::fmt::Debug + Eq + Hash + Send + Sync> PermissionSet for HashPermissionSet<Perm> {
+impl <Perm: Clone + Debug + Eq + Hash + Send + Sync> PermissionSet for HashPermissionSet<Perm> {
     type Permission = Perm;
 
     #[inline]

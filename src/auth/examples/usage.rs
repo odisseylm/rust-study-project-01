@@ -124,7 +124,7 @@ pub async fn validate_authorization_chain (
 
 
 #[inline]
-async fn internal_validate_authorization_chain (
+pub async fn internal_validate_authorization_chain (
     auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
     State(required_permissions): State<RolePermissionsSet>,
     req: Request, next: axum::middleware::Next,

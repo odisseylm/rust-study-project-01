@@ -3,14 +3,16 @@ use core::fmt::Debug;
 use core::marker::PhantomData;
 use std::hash::Hash;
 use std::sync::Arc;
-use crate::auth::backend::authz_backend::{ AuthorizeBackend, PermissionProviderSource};
-use crate::auth::permission::{ PermissionProvider, PermissionSet };
-use crate::auth::permission::empty_perm_provider::{AlwaysAllowedPermSet, EmptyPerm };
 
 use super::super::{
     error::AuthBackendError,
     user_provider::{ AuthUserProvider, AuthUserProviderError },
     psw::PasswordComparator,
+    backend::authz_backend::{ AuthorizeBackend, PermissionProviderSource },
+    permission::{
+        PermissionProvider, PermissionSet,
+        empty_perm_provider::{ AlwaysAllowedPermSet, EmptyPerm }
+    },
 };
 
 

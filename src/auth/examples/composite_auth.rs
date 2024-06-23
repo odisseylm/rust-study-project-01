@@ -8,17 +8,20 @@ use super::super::{
     backend::{
         AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction,
         ProposeHttpBasicAuthAction, ProposeLoginFormAuthAction, RequestAuthenticated,
-        http_basic_auth::HttpBasicAuthBackend,
+        authz_backend::{ AuthorizeBackend, PermissionProviderSource },
+        psw_auth::PswAuthCredentials,
+        http_basic_auth::{ HttpBasicAuthBackend },
         login_form_auth::{ LoginFormAuthBackend, LoginFormAuthConfig },
         oauth2_auth::{ OAuth2AuthBackend, OAuth2AuthCredentials },
-        psw_auth::PswAuthCredentials,
-        authz_backend::{ AuthorizeBackend, PermissionProviderSource }
     },
     error::{ AuthBackendError },
     user_provider::{ AuthUserProvider },
     psw::PlainPasswordComparator,
     permission::PermissionProvider,
-    util::composite_util::{ backend_usr_prov, backend_perm_prov, get_unique_user_provider, get_unique_permission_provider },
+    util::composite_util::{
+        backend_usr_prov, backend_perm_prov,
+        get_unique_user_provider, get_unique_permission_provider,
+    },
 };
 
 pub type Role = crate::auth::permission::predefined::Role;
@@ -92,63 +95,6 @@ impl CompositeAuthnBackendExample {
             Some(ref oauth2_backend) => Ok(oauth2_backend.authorize_url()),
         }
     }
-
-    /*
-    pub async fn do_is_authenticated2(
-        &self,
-        auth_session_user: &Option<AuthUserExample>,
-        req: Request,
-    ) -> (Request, Result<(), Response>) {
-
-        if auth_session_user.is_some() {
-            return (req, Ok(()));
-        }
-
-        let psw_aut_res_opt: (Request, Result<(), Response>) =
-            if let Some(ref backend) = self.http_basic_auth_backend {
-                let res: (Request, Result<Option<AuthUserExample>, AuthBackendError>) = backend.call_authenticate_request::<()>(req).await;
-                let (req, res) = res;
-                let unauthenticated_action_response = map_auth_res_to_is_auth_res(&self, &req, res);
-                (req, unauthenticated_action_response)
-            } else { (req, Err(StatusCode::UNAUTHORIZED.into_response())) };
-
-        psw_aut_res_opt
-    }
-    */
-
-    /*
-    pub async fn do_authenticate(
-        &self,
-        req: Request,
-        auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
-    ) -> (Request, axum_login::AuthSession<CompositeAuthnBackendExample>, Result<Option<AuthUserExample>,Response>) {
-
-        if auth_session.user.is_some() {
-            let user = auth_session.user.clone();
-            return (req, auth_session, Ok(user));
-        }
-
-        let psw_aut_res_opt: (Request, axum_login::AuthSession<CompositeAuthnBackendExample>, Result<Option<AuthUserExample>, Response>) =
-            if let Some(ref backend) = self.http_basic_auth_backend {
-                let res: (Request, Result<Option<AuthUserExample>, AuthBackendError>) = backend.do_authenticate_request::<()>(req).await;
-                let (req, res) = res;
-                let unauthenticated_action_response = map_auth_res_to_is_auth_res(&self, &req, res);
-                (req, auth_session, unauthenticated_action_response)
-            } else { (req, auth_session, Err(StatusCode::UNAUTHORIZED.into_response())) };
-
-        psw_aut_res_opt
-    }
-    */
-
-    /*
-    pub async fn is_authorized(
-        &self,
-        auth_session_user: &Option<AuthUserExample>,
-        req: Request,
-        role: Role,
-    ) -> (Request, Result<(), Response>) {
-    }
-    */
 }
 
 
@@ -185,35 +131,6 @@ impl RequestAuthenticated for CompositeAuthnBackendExample {
     }
 }
 
-/*
-fn map_auth_res_to_is_auth_res(
-    backend: &CompositeAuthnBackendExample,
-    req: &Request,
-    auth_res: Result<Option<AuthUserExample>, AuthBackendError>,
-) -> Result<Option<AuthUserExample>, Response> {
-
-    // It can be
-    // * redirection (in case of login form auth)
-    // * request authentication by browser (in case of HTTP Basic auth)
-    // * so on
-    let unauthenticated_action_response: Response = unauthenticated_response3(
-        req,
-        &backend.http_basic_auth_backend,
-        &backend.login_form_auth_backend,
-        &backend.oauth2_backend
-    ).unwrap_or_else(|| StatusCode::UNAUTHORIZED.into_response());
-
-    match auth_res {
-        Ok(None) => Err(unauthenticated_action_response),
-        Ok(user_opt) => Ok(user_opt),
-        Err(err) => {
-            error!("Authentication error: {:?}", err);
-            Err(StatusCode::INTERNAL_SERVER_ERROR.into_response())
-        }
-    }
-}
-*/
-
 
 #[axum::async_trait]
 impl axum_login::AuthnBackend for CompositeAuthnBackendExample {
@@ -224,6 +141,9 @@ impl axum_login::AuthnBackend for CompositeAuthnBackendExample {
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
         match creds {
             CompositeAuthCredentials::Password(creds) =>
+                // There is no http backend because it has the same 'authenticate'
+                // method with the same credentials type.
+                //
                 match self.login_form_auth_backend {
                     None => Err(AuthBackendError::NoRequestedBackend),
                     Some(ref backend) => backend.authenticate(creds).await.map_err(AuthBackendError::from)

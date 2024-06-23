@@ -25,9 +25,8 @@ pub fn router() -> Router<()> {
 }
 
 mod get {
-    use crate::auth::examples::composite_auth::CompositeAuthCredentials;
-    // use axum_login::AuthSession;
-    use super::super::auth::AuthSession;
+    use crate::rest::auth::AuthCredentials as CompositeAuthCredentials;
+    use crate::rest::auth::AuthSession;
     use crate::auth::backend::{ OAuth2AuthCredentials as OAuthCreds };
     use super::*;
 

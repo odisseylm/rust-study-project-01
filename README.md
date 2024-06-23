@@ -25,6 +25,7 @@
  - `cargo expand another_static_error_macro_test::parse_amount_another_01 --lib`
  - `cargo expand auth::login_form_auth --lib`
  - `cargo expand auth::internal_delegatable_traits::aaa --lib`
+ - `cargo expand auth::examples::usage --lib`
  - `cargo expand --lib  --ugly > temp_all_app.rs`
 
  - `cargo tree`

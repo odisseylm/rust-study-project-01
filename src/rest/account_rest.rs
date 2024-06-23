@@ -1,9 +1,7 @@
 use std::sync::Arc;
-// use axum::routing::{ delete, get, post };
 use axum::routing::{ get };
 use tracing::{ debug, info, error };
 use log::{ debug as log_debug, info as log_info, error as log_error };
-use crate::auth::permission::PermissionSet;
 use crate::entities::account::AccountId;
 use crate::entities::prelude::UserId;
 use crate::util::UncheckedResultUnwrap;
@@ -11,13 +9,11 @@ use crate::entities::entity;
 use crate::rest::app_dependencies::Dependencies;
 use crate::rest::dto;
 use crate::rest::error_rest::{RestAppError, test_authenticate_basic};
-use crate::rest::auth::{RequiredAuthenticationExtension, Role, RolePermissionsSet};
+use crate::rest::auth::{ RequiredAuthenticationExtension, Role, RolePermissionsSet };
 use crate::service::account_service::{ AccountService };
+use crate::rest::auth::RequiredAuthorizationExtension;
 
-use crate::auth::examples::usage::RequiredAuthorizationExtension;
 
-
-// fn accounts_rest_router<AccountS: crate::service::account_service::AccountService + Send + Sync>() -> axum::Router {
 pub fn accounts_rest_router<
     AccountS: AccountService + Send + Sync + 'static,
     >(
@@ -29,6 +25,7 @@ pub fn accounts_rest_router<
     use std::sync::Arc;
     use super::utils::RestFutureToJson;
     use axum_extra::{ headers::{authorization::Basic, Authorization}, TypedHeader };
+    use crate::auth::permission::PermissionSet;
 
     let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
 
@@ -41,7 +38,7 @@ pub fn accounts_rest_router<
             state.get_user_account(id).to_json().await
         }))
         .with_state(shared_state.clone())
-        .auth_required()
+        .authn_required()
         //
         .merge(Router::new()
             .route("/api/account-read/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {

@@ -1,10 +1,9 @@
 use std::sync::Arc;
 use axum::body::Body;
 use axum::extract::Request;
-use axum::response::{ IntoResponse, Response };
-use crate::auth::{AuthBackendMode, AuthnBackendAttributes, AuthUserProviderError, PlainPasswordComparator};
+use crate::auth::{ AuthBackendMode, AuthUserProviderError, PlainPasswordComparator };
 use crate::auth::user_provider::{ InMemAuthUserProvider };
-use crate::auth::backend::{LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config, RequestAuthenticated};
+use crate::auth::backend::{ LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config };
 use crate::auth::examples::auth_user::{ AuthUserExamplePswExtractor };
 use crate::auth::permission::{ PermissionProvider };
 
@@ -18,44 +17,41 @@ pub type Role = crate::auth::permission::predefined::Role;
 pub type RolePermissionsSet = crate::auth::permission::predefined::RolePermissionsSet;
 
 
-#[deprecated]
-async fn is_authenticated (
-    auth_session: AuthSession,
-    req: Request,
-) -> (Request, Result<(), Response>) {
-    // auth_session.backend.is_authenticated(&auth_session.user, req).await
-    let (req, res_user_opt) =
-        auth_session.backend.do_authenticate_request::<()>(req).await;
-    match res_user_opt {
-        Ok(None) => {
-            let response = auth_session.backend.propose_authentication_action(&req)
-                .map(|unauthenticated_action|unauthenticated_action.into_response())
-                .unwrap_or_else(||
-                    http::status::StatusCode::UNAUTHORIZED.into_response());
-            (req, Err(response))
-        }
-        Ok(ref _user) => (req, Ok(())),
-        Err(err) => (req, Err(err.into_response())),
+// Type alias cannot be applied for trait ?! :-(
+// pub type RequiredAuthenticationExtension = crate::auth::examples::usage::RequiredAuthenticationExtension;
+//
+#[extension_trait::extension_trait]
+pub impl <S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for axum::Router<S> {
+    #[track_caller]
+    fn authn_required(self) -> Self {
+        self.route_layer(axum::middleware::from_fn(
+            crate::auth::examples::usage::validate_authentication_chain))
     }
 }
 
-/*
-async fn is_authorized (
-    auth_session: AuthSession,
-    req: Request,
-    role: Role,
-) -> (Request, Result<(), Response>) {
-    let (req, res) = auth_session.backend.is_authenticated(&auth_session.user, req).await;
-    if res.is_err() {
-        return (req, res);
-    };
 
-    auth_session.backend.is_authorized(&auth_session.user, req, role).await;
-    if res.is_err() {
-        return (req, res);
-    };
+// Type alias cannot be applied for trait ?! :-(
+// pub type RequiredAuthorizationExtension = crate::auth::examples::usage::RequiredAuthorizationExtension;
+//
+#[extension_trait::extension_trait]
+pub impl <S: Clone + Send + Sync + 'static> RequiredAuthorizationExtension for axum::Router<S> {
+    #[track_caller]
+    fn role_required(self, role: Role) -> Self {
+        use crate::auth::permission::PermissionSet;
+        self.route_layer(axum::middleware::from_fn_with_state(
+            RolePermissionsSet::from_permission(role),
+            crate::auth::examples::usage::internal_validate_authorization_chain,
+        ))
+    }
+    #[track_caller]
+    fn roles_required(self, roles: RolePermissionsSet) -> Self {
+        self.route_layer(axum::middleware::from_fn_with_state(
+            roles,
+            crate::auth::examples::usage::internal_validate_authorization_chain,
+        ))
+    }
 }
-*/
+
 
 #[inline]
 pub async fn validate_auth_temp(
@@ -63,31 +59,9 @@ pub async fn validate_auth_temp(
     req: Request,
     next: axum::middleware::Next,
 ) -> http::Response<Body> {
-    validate_auth_chain(auth_session, req, next).await
+    crate::auth::examples::usage::validate_authentication_chain(auth_session, req, next).await
 }
 
-pub async fn validate_auth_chain (
-    auth_session: AuthSession,
-    req: Request,
-    next: axum::middleware::Next,
-) -> http::Response<Body> {
-
-    let (req, is_auth_res) = is_authenticated(auth_session, req).await;
-    match is_auth_res {
-        Ok(_) => next.run(req).await,
-        Err(action) => action.into_response()
-    }
-}
-
-
-#[extension_trait::extension_trait]
-pub impl<S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for axum::Router<S> {
-    // #[inline] // warning: `#[inline]` is ignored on function prototypes
-    #[track_caller]
-    fn auth_required(self) -> Self {
-        self.route_layer(axum::middleware::from_fn(validate_auth_chain))
-    }
-}
 
 pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBackend, axum_login::tower_sessions::MemoryStore>, anyhow::Error> {
 
