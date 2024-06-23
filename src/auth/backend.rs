@@ -25,6 +25,7 @@ pub trait ProposeAuthAction : axum::response::IntoResponse {
 
 
 #[async_trait]
+#[cfg_attr(feature = "ambassador", ambassador::delegatable_trait)]
 pub trait AuthnBackendAttributes : axum_login::AuthnBackend + Clone + Send + Sync {
     type ProposeAuthAction: ProposeAuthAction;
     fn user_provider(&self) -> Arc<dyn AuthUserProvider<User = Self::User> + Sync + Send>;
@@ -33,6 +34,7 @@ pub trait AuthnBackendAttributes : axum_login::AuthnBackend + Clone + Send + Syn
 
 
 #[async_trait]
+#[cfg_attr(feature = "ambassador", ambassador::delegatable_trait)]
 pub trait RequestAuthenticated : axum_login::AuthnBackend + Clone + Send + Sync {
 
     /// Authenticates the request credentials with the backend if it is present in request.
@@ -64,6 +66,7 @@ pub trait RequestAuthenticated : axum_login::AuthnBackend + Clone + Send + Sync 
 }
 
 
+mod axum_login_delegatable;
 pub mod http_basic_auth;
 pub mod login_form_auth;
 pub mod oauth2_auth;

@@ -50,6 +50,7 @@ impl <
 }
 
 
+#[cfg_attr(feature = "ambassador", ambassador::delegatable_trait)]
 pub trait PermissionProviderSource : Clone + Send + Sync {
     type User: axum_login::AuthUser;
     type Permission: Debug + Clone + Hash + Eq + Send + Sync;
@@ -61,6 +62,7 @@ pub trait PermissionProviderSource : Clone + Send + Sync {
 
 
 #[async_trait::async_trait]
+#[cfg_attr(feature = "ambassador", ambassador::delegatable_trait)]
 pub trait AuthorizeBackend : PermissionProviderSource + Clone + Send + Sync {
 
     async fn authorize(&self, user: &Self::User, required_permissions: Self::PermissionSet)

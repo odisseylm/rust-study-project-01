@@ -6,18 +6,30 @@ use std::sync::Arc;
 use super::psw_auth::{ PswAuthBackendImpl, PswAuthCredentials, PswUser };
 use super::super::{
     util::http::http_unauthenticated_401_response,
-    backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction },
+    backend::{
+        AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction,
+        authz_backend::{ AuthorizationResult },
+    },
     user_provider::AuthUserProvider,
     psw::PasswordComparator,
+    permission::PermissionProcessError,
 };
 
+#[cfg(feature = "ambassador")]
+use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
+#[cfg(feature = "ambassador")]
 use axum_login::AuthnBackend;
-// use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
+#[cfg(feature = "ambassador")]
+use crate::auth::backend::authz_backend::ambassador_impl_PermissionProviderSource;
+#[cfg(feature = "ambassador")]
+use crate::auth::backend::authz_backend::ambassador_impl_AuthorizeBackend;
 
 #[derive(Clone)]
-// #[derive(Clone, ambassador::Delegate)]
+#[cfg_attr(feature = "ambassador", derive(ambassador::Delegate))]
 #[readonly::make] // should be after 'derive'
-// #[delegate(axum_login::AuthnBackend, target = "psw_backend")]
+#[cfg_attr(feature = "ambassador", delegate(axum_login::AuthnBackend, target = "psw_backend"))]
+#[cfg_attr(feature = "ambassador", delegate(PermissionProviderSource, target = "psw_backend"))]
+#[cfg_attr(feature = "ambassador", delegate(AuthorizeBackend, target = "psw_backend"))]
 pub struct HttpBasicAuthBackend <
     User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
@@ -53,13 +65,14 @@ impl <
 }
 
 
+#[cfg(not(feature = "ambassador"))]
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
     PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> AuthnBackend for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+> axum_login::AuthnBackend for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     type User = Usr;
@@ -77,6 +90,8 @@ impl <
         self.psw_backend.get_user(user_id).await
     }
 }
+
+#[cfg(not(feature = "ambassador"))]
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
@@ -95,6 +110,8 @@ impl <
         self.psw_backend.permission_provider()
     }
 }
+
+#[cfg(not(feature = "ambassador"))] // not supported by 'ambassador' now since it is not delegation
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
@@ -156,6 +173,7 @@ impl <
 
         let auth_res: Result<Option<Self::User>, Self::Error> =
             if let Some(Authorization(basic)) = basic_opt {
+                use axum_login::AuthnBackend;
                 self.authenticate(PswAuthCredentials {
                     username: basic.username().to_string(),
                     password: basic.password().to_string(),
@@ -175,6 +193,7 @@ pub trait RequestUserAuthnBackendDyn : Send + Sync {
     async fn is_req_authenticated(&self, req: Request) -> (Request, Result<Option<Self::User>, AuthBackendError>);
 }
 
+// TEMP - investigation
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser + 'static,
@@ -202,6 +221,7 @@ use crate::auth::permission::{PermissionProvider, PermissionSet};
 use crate::auth::permission::empty_perm_provider::{ AlwaysAllowedPermSet, EmptyPerm };
 use super::super::error::AuthBackendError;
 
+// TEMP - investigation
 impl <
     Usr: axum_login::AuthUser + PswUser + 'static,
     PswComp: PasswordComparator + Debug + Clone + Send + Sync + 'static,

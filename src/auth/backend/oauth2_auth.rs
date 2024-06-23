@@ -6,22 +6,18 @@ use axum::extract::OriginalUri;
 use oauth2::basic::BasicClient;
 
 use super::super::{
-    backend::{ RequestAuthenticated,
-               authz_backend::{ AuthorizeBackend, PermissionProviderSource },
+    backend::{
+        RequestAuthenticated, AuthBackendMode, AuthnBackendAttributes,
+        authz_backend::{ AuthorizeBackend, PermissionProviderSource, },
     },
     permission::{
         PermissionProvider, PermissionSet,
-        empty_perm_provider::{ AlwaysAllowedPermSet, EmptyPerm },
+        empty_perm_provider::{ AlwaysAllowedPermSet, EmptyPerm, },
     },
-};
-
-
-use super::super::{
-    backend::AuthBackendMode,
+    user_provider::{ AuthUserProvider, AuthUserProviderError, },
     error::AuthBackendError,
-    user_provider::{ AuthUserProvider, AuthUserProviderError },
-    backend::AuthnBackendAttributes,
 };
+
 
 pub trait OAuth2User {
     fn access_token(&self) -> Option<String>;

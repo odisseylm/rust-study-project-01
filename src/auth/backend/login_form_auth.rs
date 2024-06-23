@@ -7,9 +7,17 @@ use axum::http::StatusCode;
 
 use super::{ psw_auth::PswAuthBackendImpl, RequestAuthenticated };
 use super::super::{
-    backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction },
+    backend::{
+        AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction,
+        psw_auth::PswUser,
+        authz_backend::{ AuthorizeBackend, PermissionProviderSource, AuthorizationResult },
+    },
     user_provider::AuthUserProvider,
     psw::PasswordComparator,
+    permission::{
+        PermissionProvider, PermissionSet, PermissionProcessError,
+        empty_perm_provider::{ AlwaysAllowedPermSet, EmptyPerm },
+    },
     util::http::url_encode,
 };
 
@@ -21,17 +29,22 @@ pub struct LoginFormAuthConfig {
 }
 
 
+#[cfg(feature = "ambassador")]
+use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
+#[cfg(feature = "ambassador")]
 use axum_login::AuthnBackend;
-use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
-use crate::auth::backend::psw_auth::PswUser;
-use crate::auth::permission::{PermissionProvider, PermissionSet};
-use crate::auth::permission::empty_perm_provider::{AlwaysAllowedPermSet, EmptyPerm };
-// use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
+#[cfg(feature = "ambassador")]
+use crate::auth::backend::authz_backend::ambassador_impl_PermissionProviderSource;
+#[cfg(feature = "ambassador")]
+use crate::auth::backend::authz_backend::ambassador_impl_AuthorizeBackend;
+
 
 #[derive(Clone)]
-// #[derive(Clone, ambassador::Delegate)]
+#[cfg_attr(feature = "ambassador", derive(ambassador::Delegate))]
 #[readonly::make] // should be after 'derive'
-// #[delegate(axum_login::AuthnBackend, target = "psw_backend")]
+#[cfg_attr(feature = "ambassador", delegate(axum_login::AuthnBackend, target = "psw_backend"))]
+#[cfg_attr(feature = "ambassador", delegate(PermissionProviderSource, target = "psw_backend"))]
+#[cfg_attr(feature = "ambassador", delegate(AuthorizeBackend, target = "psw_backend"))]
 pub struct LoginFormAuthBackend <
     User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
@@ -64,16 +77,18 @@ impl <
 }
 
 
-// T O D O: how to avoid duplicating this code?
-//       Deref/Borrow do not work because they use 'dyn' and axum_login::AuthnBackend
-//       requires Clone which can NOT be used with as 'dyn'.
+#[cfg(not(feature = "ambassador"))]
+// How to avoid duplicating this code?
+// Deref/Borrow do not work because they use 'dyn' and axum_login::AuthnBackend
+// requires Clone which can NOT be used with as 'dyn'.
+//
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
     PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
-> AuthnBackend for LoginFormAuthBackend<Usr,PswComp,Perm,PermSet>
+> axum_login::AuthnBackend for LoginFormAuthBackend<Usr,PswComp,Perm,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     type User = Usr;
@@ -91,6 +106,8 @@ impl <
         self.psw_backend.get_user(user_id).await
     }
 }
+
+#[cfg(not(feature = "ambassador"))]
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
@@ -109,6 +126,8 @@ impl <
         self.psw_backend.permission_provider()
     }
 }
+
+#[cfg(not(feature = "ambassador"))]
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
@@ -161,16 +180,18 @@ pub struct ProposeLoginFormAuthAction {
 impl ProposeAuthAction for ProposeLoginFormAuthAction { }
 #[inherent::inherent]
 impl axum::response::IntoResponse for ProposeLoginFormAuthAction {
+
     #[allow(dead_code)] // !! It is really used IMPLICITLY !!
     pub fn into_response(self) -> axum::response::Response<Body> {
         let login_url = self.login_url.unwrap_or("/login");
         let login_url = match self.initial_url {
             None => login_url.to_string(),
-            Some(ref initial_url) => format!("{}?next={}", login_url, url_encode(initial_url.as_str())),
+            Some(ref initial_url) => format!("{login_url}?next={}", url_encode(initial_url.as_str())),
         };
+
         axum::response::Response::builder()
-            .status(StatusCode::UNAUTHORIZED) // redirect
-            .header("Location", login_url.clone())
+            .status(StatusCode::UNAUTHORIZED)
+            .header("Location", login_url.clone()) // redirect
             .header("Content-Type", "text/html; charset=utf-8")
             .body(Body::from(REDIRECT_LOGIN_PAGE_CONTENT.replace("{login_url}", login_url.as_str())))
             .unwrap_or_else(|_err| StatusCode::UNAUTHORIZED.into_response())
