@@ -219,7 +219,7 @@ impl <
           Perm: fmt::Display,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "BitsPermissionSet {{ ") ?;
+        write!(f, "Permissions (bits) {{ ") ?;
 
         let value = self.value;
         let mut some_is_printed = false;

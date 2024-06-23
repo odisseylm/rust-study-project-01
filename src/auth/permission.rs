@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use core::convert::Infallible;
 use core::hash::Hash;
 use anyhow::anyhow;
-use askama_axum::Response;
+use axum::response::Response;
 use http::StatusCode;
 
 

@@ -5,7 +5,7 @@ use axum::body::Body;
 use axum::extract::OriginalUri;
 use axum::http::StatusCode;
 
-use super::{ psw_auth::PswAuthBackendImpl };
+use super::{psw_auth::PswAuthBackendImpl, RequestAuthenticated};
 use super::super::{
     backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction },
     user_provider::AuthUserProvider,
@@ -120,6 +120,16 @@ impl <
     //noinspection DuplicatedCode
 }
 
+#[axum::async_trait]
+impl <
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+> RequestAuthenticated for LoginFormAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String>,
+{ }
+
 
 #[axum::async_trait]
 impl <
@@ -143,6 +153,7 @@ impl <
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ProposeLoginFormAuthAction {
     pub login_url: Option<&'static str>,
     pub initial_url: Option<String>,

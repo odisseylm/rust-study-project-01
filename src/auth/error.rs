@@ -1,3 +1,6 @@
+use axum::response::{ IntoResponse, Response };
+use http::StatusCode;
+use log::error;
 use super::user_provider::AuthUserProviderError;
 use super::permission::PermissionProcessError;
 
@@ -65,5 +68,29 @@ impl From<sqlx::Error> for AuthBackendError {
 impl From<PermissionProcessError> for AuthBackendError {
     fn from(value: PermissionProcessError) -> Self {
         AuthBackendError::RoleError(value)
+    }
+}
+
+
+impl IntoResponse for AuthBackendError {
+    fn into_response(self) -> Response {
+        // T O D O: Probably logging is should be done in other place.
+        error!("Internal error: {}", self);
+        StatusCode::INTERNAL_SERVER_ERROR.into_response()
+
+        /*
+        match self {
+            AuthBackendError::UserProviderError(_) => {}
+            AuthBackendError::Sqlx(_) => {}
+            AuthBackendError::Reqwest(_) => {}
+            AuthBackendError::OAuth2(_) => {}
+            AuthBackendError::NoRequestedBackend => {}
+            AuthBackendError::NoUserProvider => {}
+            AuthBackendError::DifferentUserProviders => {}
+            AuthBackendError::TaskJoin(_) => {}
+            AuthBackendError::ConfigError(_) => {}
+            AuthBackendError::RoleError(_) => {}
+        }
+        */
     }
 }

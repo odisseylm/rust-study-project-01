@@ -3,8 +3,10 @@ use axum::body::Body;
 use axum::response::IntoResponse;
 use http::status::StatusCode;
 use log::error;
+use crate::auth::AuthnBackendAttributes;
 
 use crate::auth::backend::authz_backend::AuthorizeBackend;
+use crate::auth::backend::RequestAuthenticated;
 
 use crate::auth::examples::composite_auth::{ CompositeAuthnBackendExample, Role, RolePermissionsSet };
 use crate::auth::permission::util::log_unauthorized_access;
@@ -16,9 +18,10 @@ pub async fn validate_authentication_chain (
     next: axum::middleware::Next,
 ) -> http::Response<Body> {
 
-    let (req, _auth_session, is_auth_res) =
-        // TODO: try to pass auth_session by ref
-        auth_session.backend.do_authenticate(req, auth_session.clone()).await;
+    use super::super::backend::RequestAuthenticated;
+
+    let (req, is_auth_res) =
+        auth_session.backend.do_authenticate_request::<()>(req).await;
     match is_auth_res {
         Ok(None) => StatusCode::UNAUTHORIZED.into_response(),
         Ok(_) => next.run(req).await,
@@ -86,12 +89,12 @@ pub async fn validate_authorization_chain (
     next: axum::middleware::Next,
 ) -> http::Response<Body> {
 
-    let (req, auth_session, user_opt_res) = auth_session.backend
-        .do_authenticate(req, auth_session.clone()).await;
+    let (req, user_opt_res) = auth_session.backend
+        .do_authenticate_request::<()>(req).await; // , auth_session.clone()).await;
 
     let user_opt = match user_opt_res {
         Ok(user_opt) => user_opt,
-        Err(err_response) => { return err_response; }
+        Err(err_response) => { return err_response.into_response(); }
     };
 
     if let Some(ref user) = user_opt {
@@ -113,7 +116,9 @@ pub async fn validate_authorization_chain (
             }
         }
     } else {
-        StatusCode::UNAUTHORIZED.into_response()
+        auth_session.backend.propose_authentication_action(&req)
+            .map(|unauthenticated_action|unauthenticated_action.into_response())
+            .unwrap_or_else(||StatusCode::UNAUTHORIZED.into_response())
     }
 }
 
@@ -133,7 +138,9 @@ pub impl <S: Clone + Send + Sync + 'static> RequiredAuthorizationExtension for a
     #[track_caller]
     fn role_required(self, role: Role) -> Self {
         use crate::auth::permission::PermissionSet;
-        self.route_layer(axum::middleware::from_fn_with_state(RolePermissionsSet::from_permission(role), internal_validate_authorization_chain))
+        self.route_layer(axum::middleware::from_fn_with_state(
+            RolePermissionsSet::from_permission(role),
+            internal_validate_authorization_chain))
     }
     #[track_caller]
     fn roles_required(self, roles: RolePermissionsSet) -> Self {

@@ -1,8 +1,7 @@
 use core::fmt;
-use askama_axum::Response;
 use axum::body::Body;
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
+use axum::response::{ IntoResponse, Response };
 use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Basic;
 use axum_extra::TypedHeader;

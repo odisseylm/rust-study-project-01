@@ -9,7 +9,7 @@ use crate::auth::permission::{
 ///
 /// * In case of bits impl it is easier to return all absent bits.
 /// * In case of hash-set impl it is cheaper to return NoPermission
-/// with single/first missed permission without heap allocation.
+///   with single/first missed permission without heap allocation.
 ///
 #[derive(Debug, Clone)]
 pub enum AuthorizationResult <
@@ -17,7 +17,7 @@ pub enum AuthorizationResult <
     PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
 > {
     Authorized,
-    /// Contains any/first absent permission
+    /// Contains any/first absent permission.
     NoPermission(Perm),
     /// Contains all absent permissions.
     NoPermissions(PermSet),

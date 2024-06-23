@@ -105,8 +105,8 @@ impl <P: Clone + Debug + Eq + Hash + Send + Sync> PermissionsToHashSet for HashP
 impl <P: Display + Clone + Debug + Eq + Hash + Send + Sync> Display
     for HashPermissionSet<P> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // iter_to_display(self.0.iter(), "HashPermissionSet", f)
-        iterable_to_display(&self.0, "HashPermissionSet", f)
+        // iter_to_display(self.0.iter(), "Permissions (set)", f)
+        iterable_to_display(&self.0, "Permissions (set)", f)
     }
 }
 

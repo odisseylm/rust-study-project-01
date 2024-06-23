@@ -6,8 +6,9 @@ use axum::response::{ IntoResponse, Response };
 
 use axum_login::UserId;
 use log::{ error };
-use crate::auth::AuthUserProviderError;
+use crate::auth::{AuthnBackendAttributes, AuthUserProviderError, ProposeAuthAction};
 use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
+use crate::auth::backend::{ProposeHttpBasicAuthAction, ProposeLoginFormAuthAction, RequestAuthenticated};
 use crate::auth::permission::PermissionProvider;
 use crate::auth::util::composite_util::get_permission_provider3;
 
@@ -19,7 +20,7 @@ use super::super::backend::{
     psw_auth::PswAuthCredentials,
 };
 use super::super::{
-    backend::{ AuthBackendMode, RequestUserAuthnBackend },
+    backend::{ AuthBackendMode },
     error::AuthBackendError,
     user_provider::AuthUserProvider,
     psw::PlainPasswordComparator,
@@ -114,6 +115,7 @@ impl CompositeAuthnBackendExample {
     }
     */
 
+    /*
     pub async fn do_authenticate(
         &self,
         req: Request,
@@ -135,6 +137,7 @@ impl CompositeAuthnBackendExample {
 
         psw_aut_res_opt
     }
+    */
 
     /*
     pub async fn is_authorized(
@@ -147,6 +150,41 @@ impl CompositeAuthnBackendExample {
     */
 }
 
+
+#[axum::async_trait]
+impl RequestAuthenticated for CompositeAuthnBackendExample {
+    async fn do_authenticate_request<S: Send + Sync>(&self, req: Request)
+        -> (Request, Result<Option<Self::User>, Self::Error>) where Self: 'static {
+
+        let req = if let Some(ref backend) = self.http_basic_auth_backend {
+            let req_and_res = backend.do_authenticate_request::<()>(req).await;
+            match req_and_res.1 {
+                Ok(None) => req_and_res.0, // continue finding user or error
+                _ => return req_and_res,
+            }
+        } else { req };
+
+        let req = if let Some(ref backend) = self.login_form_auth_backend {
+            let req_and_res = backend.do_authenticate_request::<()>(req).await;
+            match req_and_res.1 {
+                Ok(None) => req_and_res.0, // continue finding user or error
+                _ => return req_and_res,
+            }
+        } else { req };
+
+        let req = if let Some(ref backend) = self.oauth2_backend {
+            let req_and_res = backend.do_authenticate_request::<()>(req).await;
+            match req_and_res.1 {
+                Ok(None) => req_and_res.0, // continue finding user or error
+                _ => return req_and_res,
+            }
+        } else { req };
+
+        (req, Ok(None))
+    }
+}
+
+/*
 fn map_auth_res_to_is_auth_res(
     backend: &CompositeAuthnBackendExample,
     req: &Request,
@@ -173,6 +211,7 @@ fn map_auth_res_to_is_auth_res(
         }
     }
 }
+*/
 
 
 #[axum::async_trait]
@@ -207,6 +246,58 @@ pub enum CompositeAuthCredentials {
     Password(PswAuthCredentials),
     OAuth(OAuth2AuthCredentials),
 }
+
+
+#[derive(Debug, Clone)]
+pub enum CompositeProposeAuthAction {
+    ProposeLoginFormAuthAction(ProposeLoginFormAuthAction),
+    ProposeHttpBasicAuthAction(ProposeHttpBasicAuthAction),
+}
+impl ProposeAuthAction for CompositeProposeAuthAction { }
+#[inherent::inherent]
+impl IntoResponse for CompositeProposeAuthAction {
+    #[allow(dead_code)] // !! It is really used IMPLICITLY !!
+    fn into_response(self) -> Response {
+        match self {
+            CompositeProposeAuthAction::ProposeLoginFormAuthAction(action) =>
+                action.into_response(),
+            CompositeProposeAuthAction::ProposeHttpBasicAuthAction(action) =>
+                action.into_response(),
+        }
+    }
+}
+
+#[axum::async_trait]
+impl AuthnBackendAttributes for CompositeAuthnBackendExample {
+    type ProposeAuthAction = CompositeProposeAuthAction;
+
+    fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send> {
+        self.users_provider.clone()
+    }
+
+    fn propose_authentication_action(&self, req: &Request) -> Option<Self::ProposeAuthAction> {
+        if let Some(ref backend) = self.http_basic_auth_backend {
+            let proposes_auth_action = backend.propose_authentication_action(&req);
+            if let Some(proposes_auth_action) = proposes_auth_action {
+                return Some(CompositeProposeAuthAction::ProposeHttpBasicAuthAction(proposes_auth_action));
+            }
+        }
+        if let Some(ref backend) = self.login_form_auth_backend {
+            let proposes_auth_action = backend.propose_authentication_action(&req);
+            if let Some(proposes_auth_action) = proposes_auth_action {
+                return Some(CompositeProposeAuthAction::ProposeLoginFormAuthAction(proposes_auth_action));
+            }
+        }
+        if let Some(ref backend) = self.oauth2_backend {
+            let proposes_auth_action = backend.propose_authentication_action(&req);
+            if let Some(proposes_auth_action) = proposes_auth_action {
+                return Some(CompositeProposeAuthAction::ProposeLoginFormAuthAction(proposes_auth_action));
+            }
+        }
+        None
+    }
+}
+
 
 
 

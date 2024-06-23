@@ -5,6 +5,7 @@ use std::sync::Arc;
 use axum::extract::OriginalUri;
 use oauth2::basic::BasicClient;
 use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
+use crate::auth::backend::RequestAuthenticated;
 use crate::auth::permission::{PermissionProvider, PermissionSet};
 use crate::auth::permission::empty_perm_provider::{AlwaysAllowedPermSet, EmptyPerm};
 
@@ -160,6 +161,16 @@ impl <
         self.state.user_provider.get_user_by_principal_identity(user_id).await.map_err(From::<AuthUserProviderError>::from)
     }
 }
+
+
+#[axum::async_trait]
+impl <
+    Usr: OAuth2User + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+> RequestAuthenticated for OAuth2AuthBackend<Usr,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String>,
+{ }
 
 
 pub fn create_basic_client(config: &OAuth2Config) -> Result<BasicClient, AuthBackendError> {

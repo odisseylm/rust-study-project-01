@@ -2,9 +2,9 @@ use std::sync::Arc;
 use axum::body::Body;
 use axum::extract::Request;
 use axum::response::{ IntoResponse, Response };
-use crate::auth::{AuthBackendMode, AuthUserProviderError, PlainPasswordComparator};
+use crate::auth::{AuthBackendMode, AuthnBackendAttributes, AuthUserProviderError, PlainPasswordComparator};
 use crate::auth::user_provider::{ InMemAuthUserProvider };
-use crate::auth::backend::{ LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config };
+use crate::auth::backend::{LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config, RequestAuthenticated};
 use crate::auth::examples::auth_user::{ AuthUserExamplePswExtractor };
 use crate::auth::permission::{PermissionProvider, PermissionSet};
 
@@ -24,12 +24,18 @@ async fn is_authenticated (
     req: Request,
 ) -> (Request, Result<(), Response>) {
     // auth_session.backend.is_authenticated(&auth_session.user, req).await
-    let (req, _auth_session, user_opt) =
-        auth_session.backend.do_authenticate(req, auth_session.clone()).await;
-    match user_opt {
-        Ok(None) => (req, Err(http::status::StatusCode::UNAUTHORIZED.into_response())),
+    let (req, res_user_opt) =
+        auth_session.backend.do_authenticate_request::<()>(req).await;
+    match res_user_opt {
+        Ok(None) => {
+            let response = auth_session.backend.propose_authentication_action(&req)
+                .map(|unauthenticated_action|unauthenticated_action.into_response())
+                .unwrap_or_else(||
+                    http::status::StatusCode::UNAUTHORIZED.into_response());
+            (req, Err(response))
+        }
         Ok(_user) => (req, Ok(())),
-        Err(resp) => (req, Err(resp)),
+        Err(err) => (req, Err(err.into_response())),
     }
 }
 
@@ -134,8 +140,8 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
 
     let http_basic_auth_backend = crate::auth::backend::HttpBasicAuthBackend::<AuthUser,PlainPasswordComparator,Role,RolePermissionsSet>::new(
         usr_provider.clone(),
-        // AuthBackendMode::AuthProposed, // It makes sense for pure server SOA (especially for testing)
-        AuthBackendMode::AuthSupported,
+        AuthBackendMode::AuthProposed, // It makes sense for pure server SOA (especially for testing)
+        // AuthBackendMode::AuthSupported,
         permission_provider.clone(),
     );
     let login_form_auth_backend = crate::auth::backend::LoginFormAuthBackend::<AuthUser,PlainPasswordComparator,Role,RolePermissionsSet>::new(
@@ -149,7 +155,11 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
     );
 
     let backend = AuthnBackend::with_backends(
-        Some(http_basic_auth_backend), Some(login_form_auth_backend), oauth2_backend_opt) ?;
+        Some(http_basic_auth_backend),
+        // Some(login_form_auth_backend),
+        None,
+        oauth2_backend_opt,
+    ) ?;
     let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, MemoryStore> = AuthManagerLayerBuilder::new(backend, session_layer).build();
     Ok(auth_layer)
 }

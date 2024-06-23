@@ -1,14 +1,12 @@
-use core::fmt;
 use core::fmt::Debug;
 use std::hash::Hash;
 use std::sync::Arc;
 
-use axum_extra::typed_header::TypedHeaderRejection;
 
 use super::psw_auth::{ PswAuthBackendImpl, PswAuthCredentials, PswUser };
 use super::super::{
     util::http::http_unauthenticated_401_response,
-    backend::{ AuthBackendMode, AuthnBackendAttributes, RequestUserAuthnBackend },
+    backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction },
     user_provider::AuthUserProvider,
     psw::PasswordComparator,
 };
@@ -129,8 +127,9 @@ impl <
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct ProposeHttpBasicAuthAction;
-impl super::super::backend::ProposeAuthAction for ProposeHttpBasicAuthAction { }
+impl ProposeAuthAction for ProposeHttpBasicAuthAction { }
 #[inherent::inherent]
 impl axum::response::IntoResponse for ProposeHttpBasicAuthAction {
     #[allow(dead_code)] // !! It is really used IMPLICITLY !!
@@ -140,6 +139,36 @@ impl axum::response::IntoResponse for ProposeHttpBasicAuthAction {
 }
 
 
+#[axum::async_trait]
+impl <
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+> RequestAuthenticated for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    where Usr: axum_login::AuthUser<Id = String>,
+{
+    async fn do_authenticate_request<S: Send + Sync>(&self, req: Request)
+        -> (Request, Result<Option<Self::User>, Self::Error>)
+        where Self: 'static {
+
+        let basic_opt = req.headers().typed_get::<Authorization<Basic>>(); //"Authorization");
+
+        let auth_res: Result<Option<Self::User>, Self::Error> =
+            if let Some(Authorization(basic)) = basic_opt {
+                self.authenticate(PswAuthCredentials {
+                    username: basic.username().to_string(),
+                    password: basic.password().to_string(),
+                    next: None,
+                }).await
+            } else { Ok(None) };
+
+        (req, auth_res)
+    }
+}
+
+
+/*
 #[derive(Clone)]
 pub struct BasicAuthCreds(axum_extra::headers::authorization::Basic);
 
@@ -189,6 +218,7 @@ impl <
         }).await
     }
 }
+*/
 
 /*
 use super::super::auth::authn_backend_dyn_wrap::AuthnBackendDynWrapper;
@@ -215,23 +245,27 @@ pub trait RequestUserAuthnBackendDyn : Send + Sync {
 
 #[axum::async_trait]
 impl <
-    Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync,
+    Usr: axum_login::AuthUser + PswUser + 'static,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync + 'static,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync + 'static,
+    PermSet: PermissionSet<Permission=Perm> + Debug + Clone + Send + Sync + 'static,
 > RequestUserAuthnBackendDyn for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     type User = Usr;
 
     async fn is_req_authenticated(&self, req: Request) -> (Request, Result<Option<Self::User>, AuthBackendError>) {
-        let res = self.do_authenticate_request::<PswComp>(req).await;
+        // let res = self.do_authenticate_request::<PswComp>(req).await;
+        let res = self.do_authenticate_request::<()>(req).await;
         res
     }
 }
 
 use axum::extract::Request;
+use axum_extra::headers::{Authorization, HeaderMapExt};
+use axum_extra::headers::authorization::Basic;
 use crate::auth::backend::authz_backend::{AuthorizeBackend, PermissionProviderSource};
+use crate::auth::backend::RequestAuthenticated;
 use crate::auth::permission::{PermissionProvider, PermissionSet};
 use crate::auth::permission::empty_perm_provider::{ AlwaysAllowedPermSet, EmptyPerm };
 use super::super::error::AuthBackendError;
