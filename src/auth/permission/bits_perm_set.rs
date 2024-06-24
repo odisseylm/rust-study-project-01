@@ -88,6 +88,16 @@ impl <
         Self::new_perm(permission)
     }
 
+    fn from_permissions<const N: usize>(permissions: [Self::Permission; N]) -> Self {
+        let mut res: BitsType = BitsType::zero();
+        for perm in permissions {
+            // res |= perm.into(); // need to add type bounds std::ops::BitOrAssign
+            res = res | perm.into();
+        }
+        Self::new_raw(res)
+    }
+
+    /*
     #[inline]
     fn from_permission2(perm1: Self::Permission, perm2: Self::Permission) -> Self {
         let res: BitsType = perm1.into() | perm2.into();
@@ -105,6 +115,7 @@ impl <
         let res: BitsType = perm1.into() | perm2.into() | perm3.into() | perm4.into();
         Self::new_raw(res)
     }
+    */
 
     #[inline]
     fn merge_with_mut(&mut self, another: Self) {
@@ -301,7 +312,7 @@ mod tests {
         assert!(!ps.has_permission(&Role::Admin));
         assert!(!ps.has_permission(&Role::SuperUser));
 
-        let ps = RoleSet::from_permission2(Role::Read, Role::Write);
+        let ps = RoleSet::from_permissions([Role::Read, Role::Write]);
         assert!(!ps.has_permission(&Role::Anonymous));
         assert!( ps.has_permission(&Role::Read));
         assert!( ps.has_permission(&Role::Write));
@@ -309,7 +320,7 @@ mod tests {
         assert!(!ps.has_permission(&Role::Admin));
         assert!(!ps.has_permission(&Role::SuperUser));
 
-        let ps = RoleSet::from_permission3(Role::Read, Role::Write, Role::User);
+        let ps = RoleSet::from_permissions([Role::Read, Role::Write, Role::User]);
         assert!(!ps.has_permission(&Role::Anonymous));
         assert!( ps.has_permission(&Role::Read));
         assert!( ps.has_permission(&Role::Write));
@@ -317,7 +328,8 @@ mod tests {
         assert!(!ps.has_permission(&Role::Admin));
         assert!(!ps.has_permission(&Role::SuperUser));
 
-        let ps = RoleSet::from_permission4(Role::Read, Role::Write, Role::User, Role::Admin);
+        let ps = RoleSet::from_permissions(
+            [Role::Read, Role::Write, Role::User, Role::Admin]);
         assert!(!ps.has_permission(&Role::Anonymous));
         assert!( ps.has_permission(&Role::Read));
         assert!( ps.has_permission(&Role::Write));
@@ -341,7 +353,7 @@ mod tests {
         assert_eq!(ps.to_hash_set().test_unwrap(), HashSet::from_iter(vec!(Role::Write, Role::Admin).iter().cloned()));
         assert_eq!(ps.to_hash_set().test_unwrap(), HashSet::from_iter(vec!(Role::Write, Role::Admin)));
 
-        let mut ps = RoleSet::from_permission2(Role::Read, Role::Write);
+        let mut ps = RoleSet::from_permissions([Role::Read, Role::Write]);
         ps.merge_with_mut(RoleSet::from_permission(Role::Admin));
         assert!(!ps.has_permission(&Role::Anonymous));
         assert!( ps.has_permission(&Role::Read));

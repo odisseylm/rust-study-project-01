@@ -59,7 +59,7 @@ pub fn accounts_rest_router<
             .route("/api/account-read-and-write/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
                 state.get_user_account(id).to_json().await
             }))
-            .roles_required(RolePermissionsSet::from_permission2(Role::Read, Role::Write))
+            .roles_required(RolePermissionsSet::from_permissions([Role::Read, Role::Write]))
         )
         //
         .route("/api/manual_auth", get(|State(state): State<Arc<AccountRest<AccountS>>>,

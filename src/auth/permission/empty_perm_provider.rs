@@ -126,6 +126,11 @@ impl <
         Self::new()
     }
     #[inline(always)]
+    fn from_permissions<const N: usize>(_permissions: [Self::Permission; N]) -> Self {
+        Self::new()
+    }
+    /*
+    #[inline(always)]
     fn from_permission2(_perm1: Self::Permission, _perm2: Self::Permission) -> Self {
         Self::new()
     }
@@ -137,6 +142,7 @@ impl <
     fn from_permission4(_perm1: Self::Permission, _perm2: Self::Permission, _perm3: Self::Permission, _perm4: Self::Permission) -> Self {
         Self::new()
     }
+    */
     #[inline(always)]
     fn merge_with_mut(&mut self, _another: Self) {
     }
@@ -177,6 +183,11 @@ impl <
         Self::new()
     }
     #[inline(always)]
+    fn from_permissions<const N: usize>(_permissions: [Self::Permission; N]) -> Self {
+        Self::new()
+    }
+    /*
+    #[inline(always)]
     fn from_permission2(_perm1: Self::Permission, _perm2: Self::Permission) -> Self {
         Self::new()
     }
@@ -188,6 +199,7 @@ impl <
     fn from_permission4(_perm1: Self::Permission, _perm2: Self::Permission, _perm3: Self::Permission, _perm4: Self::Permission) -> Self {
         Self::new()
     }
+    */
     #[inline(always)]
     fn merge_with_mut(&mut self, _another: Self) {
     }

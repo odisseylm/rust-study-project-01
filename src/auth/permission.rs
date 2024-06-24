@@ -78,9 +78,10 @@ pub trait PermissionSet : Debug + Send + Sync {
     fn is_empty(&self) -> bool;
     fn new() -> Self;
     fn from_permission(permission: Self::Permission) -> Self;
-    fn from_permission2(perm1: Self::Permission, perm2: Self::Permission) -> Self;
-    fn from_permission3(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission) -> Self;
-    fn from_permission4(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission, perm4: Self::Permission) -> Self;
+    fn from_permissions<const N: usize>(permissions: [Self::Permission;N]) -> Self;
+    // fn from_permission2(perm1: Self::Permission, perm2: Self::Permission) -> Self;
+    // fn from_permission3(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission) -> Self;
+    // fn from_permission4(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission, perm4: Self::Permission) -> Self;
     fn merge_with_mut(&mut self, another: Self);
     // ??? Use ref or values.
     fn merge(set1: Self, set2: Self) -> Self;
