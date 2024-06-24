@@ -1,11 +1,12 @@
 use core::fmt::Debug;
+use core::hash::Hash;
 use std::env::VarError;
-use std::hash::Hash;
 use std::sync::Arc;
+
 use axum::extract::OriginalUri;
 use oauth2::basic::BasicClient;
 
-use super::super::{
+use crate::{
     backend::{
         RequestAuthenticated, AuthBackendMode, AuthnBackendAttributes,
         authz_backend::{ AuthorizeBackend, PermissionProviderSource, },

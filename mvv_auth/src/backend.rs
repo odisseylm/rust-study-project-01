@@ -1,10 +1,7 @@
 use std::sync::Arc;
-
 use async_trait::async_trait;
 
-use super::{
-    user_provider::AuthUserProvider,
-};
+use crate::user_provider::AuthUserProvider;
 
 
 #[derive(Debug, Copy, Clone)]
@@ -74,7 +71,7 @@ pub mod oauth2_auth;
 pub mod psw_auth;
 pub mod authz_backend;
 
-pub use http_basic_auth::{ HttpBasicAuthBackend, ProposeHttpBasicAuthAction };
-pub use login_form_auth::{ LoginFormAuthBackend, LoginFormAuthConfig, ProposeLoginFormAuthAction };
-pub use oauth2_auth::{ OAuth2AuthBackend, OAuth2AuthCredentials, OAuth2Config, Oauth2ConfigError, OAuth2UserStore };
+pub use http_basic_auth::{ HttpBasicAuthBackend, ProposeHttpBasicAuthAction, };
+pub use login_form_auth::{ LoginFormAuthBackend, LoginFormAuthConfig, ProposeLoginFormAuthAction, };
+pub use oauth2_auth::{ OAuth2AuthBackend, OAuth2AuthCredentials, OAuth2Config, Oauth2ConfigError, OAuth2UserStore, };
 pub use psw_auth::{ PswAuthCredentials };

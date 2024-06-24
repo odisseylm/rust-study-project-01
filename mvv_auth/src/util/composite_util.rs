@@ -1,10 +1,10 @@
 use std::sync::Arc;
-use crate::auth::backend::authz_backend::PermissionProviderSource;
-use crate::auth::permission::PermissionProvider;
-use super::super::{
+
+use crate::{
     error::AuthBackendError,
-    backend::AuthnBackendAttributes,
+    backend::{ AuthnBackendAttributes, authz_backend::PermissionProviderSource },
     user_provider::AuthUserProvider,
+    permission::PermissionProvider,
 };
 
 
@@ -162,10 +162,10 @@ fn get_unique_prov_ref_impl <'a,Data: ?Sized, const N: usize>(
 mod tests {
     use super::*;
     use std::sync::Arc;
-    use crate::auth::examples::auth_user::{AuthUserExample, AuthUserExamplePswExtractor};
-    use crate::auth::examples::composite_auth::{Role, RolePermissionsSet, test};
-    use crate::auth::user_provider::InMemAuthUserProvider;
-    use crate::util::{TestOptionUnwrap, TestResultUnwrap};
+    use crate::examples::auth_user::{ AuthUserExample, AuthUserExamplePswExtractor, };
+    use crate::examples::composite_auth::{ Role, RolePermissionsSet, test };
+    use crate::user_provider::InMemAuthUserProvider;
+    use crate::test::{ TestOptionUnwrap, TestResultUnwrap, };
 
     type UsrProvider = dyn AuthUserProvider<User=AuthUserExample> + Send + Sync;
     type ArcUsrProvider = Arc<dyn AuthUserProvider<User=AuthUserExample> + Send + Sync>;

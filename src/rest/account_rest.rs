@@ -25,7 +25,7 @@ pub fn accounts_rest_router<
     use std::sync::Arc;
     use super::utils::RestFutureToJson;
     use axum_extra::{ headers::{authorization::Basic, Authorization}, TypedHeader };
-    use crate::auth::permission::PermissionSet;
+    use mvv_auth::permission::PermissionSet;
 
     let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
 

@@ -1,7 +1,7 @@
 /*
 use sqlx::SqlitePool;
 
-use super::super::{
+use crate::{
     examples::auth_user::AuthUserExample,
     user_provider::{ AuthUserProvider, AuthUserProviderError },
     backend::oauth2_auth::OAuth2UserStore,

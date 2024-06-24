@@ -1,14 +1,14 @@
 use core::fmt;
-use core::ops::{ Deref, DerefMut };
-use std::collections::HashMap;
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
+use core::ops::{ Deref, DerefMut };
 use std::sync::Arc;
+use std::collections::HashMap;
 
 use tokio::sync::RwLock;
 
-use super::super::{
+use crate::{
     user_provider::{ AuthUserProvider, AuthUserProviderError },
     backend::oauth2_auth::{ OAuth2UserStore, OAuth2User },
     permission::{ PermissionProcessError, PermissionProvider, PermissionSet },
@@ -213,13 +213,12 @@ impl <
 
 #[cfg(test)]
 mod tests {
-    use super::super::super::{
-        examples::auth_user::AuthUserExamplePswExtractor,
-        permission::predefined::{ Role, RolePermissionsSet },
-        examples::auth_user::AuthUserExample,
-    };
-    use crate::util::{ TestOptionUnwrap, TestResultUnwrap };
     use super::*;
+    use crate::{
+        examples::auth_user::{ AuthUserExample, AuthUserExamplePswExtractor, },
+        permission::predefined::{ Role, RolePermissionsSet, },
+    };
+    use crate::test::{ TestOptionUnwrap, TestResultUnwrap, };
 
     pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
         InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "in-mem-vovan", "qwerty")))

@@ -2,7 +2,10 @@ use core::fmt::Debug;
 use core::hash::Hash;
 use core::marker::PhantomData;
 use std::sync::Arc;
-use crate::auth::permission::{PermissionProcessError, PermissionProvider, PermissionSet, VerifyRequiredPermissionsResult};
+
+use crate::permission::{
+    PermissionProcessError, PermissionProvider, PermissionSet, VerifyRequiredPermissionsResult,
+};
 
 
 pub fn always_allowed_perm_provider_arc <

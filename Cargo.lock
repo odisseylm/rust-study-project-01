@@ -2263,6 +2263,64 @@ dependencies = [
 ]
 
 [[package]]
+name = "mvv_auth"
+version = "0.1.0"
+dependencies = [
+ "ambassador",
+ "anyhow",
+ "askama",
+ "askama_axum",
+ "assert-json-diff",
+ "assertables",
+ "async-trait",
+ "axum",
+ "axum-ctx",
+ "axum-extra",
+ "axum-login",
+ "axum-typed-routing",
+ "axum_session_auth",
+ "axum_static",
+ "by_address",
+ "cargo_metadata",
+ "dotenv",
+ "extension-trait",
+ "http 1.1.0",
+ "hyper 1.3.1",
+ "if_chain",
+ "indoc",
+ "inherent",
+ "itertools 0.13.0",
+ "jsonwebtoken",
+ "log",
+ "macro_rules_attribute",
+ "num",
+ "nutype",
+ "oauth2",
+ "password-auth",
+ "readonly",
+ "reqwest 0.12.4",
+ "serde",
+ "sqlx",
+ "static_assertions",
+ "strum",
+ "strum_macros",
+ "test-case",
+ "thiserror",
+ "tokio",
+ "tokio-test",
+ "tower",
+ "tower-async-http",
+ "tower-http",
+ "tracing",
+ "tracing-futures",
+ "tracing-subscriber",
+ "tracing-timing",
+ "trait-variant",
+ "url",
+ "validator",
+]
+
+[[package]]
 name = "native-tls"
 version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2846,6 +2904,7 @@ dependencies = [
  "log",
  "log4rs",
  "macro_rules_attribute",
+ "mvv_auth",
  "num",
  "nutype",
  "oauth2",

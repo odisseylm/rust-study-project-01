@@ -2,10 +2,9 @@ use std::collections::HashSet;
 use core::fmt::{ self, Debug, Display};
 use core::hash::Hash;
 
-use super::super::{
-    permission::VerifyRequiredPermissionsResult,
+use crate::{
     util::fmt::iterable_to_display,
-    permission::{PermissionSet, PermissionsToHashSet, PermissionProcessError},
+    permission::{ PermissionSet, PermissionsToHashSet, VerifyRequiredPermissionsResult, PermissionProcessError },
 };
 
 
@@ -128,9 +127,9 @@ impl <P: Display + Clone + Debug + Eq + Hash + Send + Sync> Display
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;
-    use crate::util::TestResultUnwrap;
-    use super::super::super::permission::{PermissionSet, PermissionsToHashSet, predefined::Role };
-    use super::{ HashPermissionSet };
+    use super::HashPermissionSet;
+    use crate::permission::{ PermissionSet, PermissionsToHashSet, predefined::Role, };
+    use crate::test::TestResultUnwrap;
 
 
     #[test]

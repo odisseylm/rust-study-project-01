@@ -1,9 +1,9 @@
 use core::fmt;
-use crate::auth::permission::PermissionSet;
-use crate::auth::permission::predefined::{ Role, RolePermissionsSet };
-use crate::auth::user_provider::mem_user_provider::UserPermissionsExtractor;
-
-use super::super::{
+use crate::{
+    permission::{
+        PermissionSet, predefined::{ Role, RolePermissionsSet },
+    },
+    user_provider::mem_user_provider::UserPermissionsExtractor,
     backend::{ oauth2_auth::OAuth2User, psw_auth::PswUser },
     psw::PasswordComparator,
 };

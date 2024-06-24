@@ -71,7 +71,7 @@ mod tests {
     use std::sync::Arc;
 
     use super::{ AuthnBackendDynWrapperImpl, AuthnBackendDynWrapper, wrap_authn_backend_as_dyn };
-    use super::super::super::{
+    use crate::{
         AuthUserProviderError,
         examples::auth_user::AuthUserExamplePswExtractor,
         backend::{ AuthBackendMode, LoginFormAuthBackend, LoginFormAuthConfig, psw_auth::PswAuthCredentials },
@@ -88,7 +88,7 @@ mod tests {
 
     type Perm = u32;
     type PermSet = IntegerBitsPermissionSet<u32>;
-    use crate::util::TestResultUnwrap;
+    use crate::test::TestResultUnwrap;
 
     pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
         InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "dyn-wrap-vovan", "qwerty")))

@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use super::super::permission::{ PermissionProcessError, bits_perm_set::BitsPermissionSet };
+use crate::permission::{ PermissionProcessError, bits_perm_set::BitsPermissionSet, };
 
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]

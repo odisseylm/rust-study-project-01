@@ -4,7 +4,7 @@ use core::marker::PhantomData;
 use std::hash::Hash;
 use std::sync::Arc;
 
-use super::super::{
+use crate::{
     error::AuthBackendError,
     user_provider::{ AuthUserProvider, AuthUserProviderError },
     psw::PasswordComparator,

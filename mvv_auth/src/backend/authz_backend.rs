@@ -1,8 +1,10 @@
 use core::fmt::Debug;
 use std::hash::Hash;
 use std::sync::Arc;
-use crate::auth::permission::{
-    PermissionProcessError, PermissionProvider, PermissionSet, VerifyRequiredPermissionsResult};
+
+use crate::permission::{
+    PermissionProcessError, PermissionProvider, PermissionSet, VerifyRequiredPermissionsResult,
+};
 
 
 /// It is up to implementation use NoPermission or NoPermissions.

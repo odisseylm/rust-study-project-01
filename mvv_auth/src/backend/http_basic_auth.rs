@@ -5,7 +5,7 @@ use axum::extract::Request;
 use axum_extra::headers::{ Authorization, HeaderMapExt, authorization::Basic };
 
 use super::psw_auth::{ PswAuthBackendImpl, PswAuthCredentials, PswUser };
-use super::super::{
+use crate::{
     util::http::http_unauthenticated_401_response,
     backend::{
         AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction, RequestAuthenticated,
@@ -22,7 +22,7 @@ use super::super::{
 #[cfg(feature = "ambassador")]
 use axum_login::AuthnBackend;
 #[cfg(feature = "ambassador")]
-use crate::auth::backend::{
+use crate::backend::{
     axum_login_delegatable::ambassador_impl_AuthnBackend,
 };
 #[cfg(feature = "ambassador22")]
@@ -93,7 +93,7 @@ impl <
 {
     type User = Usr;
     type Credentials = PswAuthCredentials;
-    type Error = super::super::error::AuthBackendError;
+    type Error = crate::error::AuthBackendError;
 
     #[inline]
     //noinspection DuplicatedCode
@@ -221,7 +221,7 @@ mod investigation {
     use std::hash::Hash;
     use std::sync::Arc;
     use axum::extract::Request;
-    use super::super::super::{
+    use crate::{
         backend::{
             RequestAuthenticated,
             psw_auth::PswUser,
@@ -299,7 +299,7 @@ mod tests {
     use super::*;
     use super::investigation::*;
     use std::sync::Arc;
-    use super::super::super::{
+    use crate::{
         AuthUserProviderError,
         examples::auth_user::{ AuthUserExample, AuthUserExamplePswExtractor },
         permission::{
@@ -311,7 +311,7 @@ mod tests {
         user_provider::{ AuthUserProvider, InMemAuthUserProvider },
         psw::PlainPasswordComparator,
     };
-    use crate::util::TestResultUnwrap;
+    use crate::test::TestResultUnwrap;
 
     type Perm = u32;
     type PermSet = IntegerBitsPermissionSet<u32>;
@@ -332,7 +332,7 @@ mod tests {
 
     #[test]
     fn test_try_into_when_no_impl() {
-        use super::super::super::backend::{ LoginFormAuthBackend, LoginFormAuthConfig };
+        use crate::backend::{ LoginFormAuthBackend, LoginFormAuthConfig };
 
         let users = Arc::new(in_memory_test_users().test_unwrap());
         let users: Arc<dyn AuthUserProvider<User=AuthUserExample> + Send + Sync> = users;

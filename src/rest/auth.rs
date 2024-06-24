@@ -1,20 +1,20 @@
 use std::sync::Arc;
 use axum::body::Body;
 use axum::extract::Request;
-use crate::auth::{ AuthBackendMode, AuthUserProviderError, PlainPasswordComparator };
-use crate::auth::user_provider::{ InMemAuthUserProvider };
-use crate::auth::backend::{ LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config };
-use crate::auth::examples::auth_user::{ AuthUserExamplePswExtractor };
-use crate::auth::permission::{ PermissionProvider };
+use mvv_auth::{ AuthBackendMode, AuthUserProviderError, PlainPasswordComparator };
+use mvv_auth::user_provider::{ InMemAuthUserProvider };
+use mvv_auth::backend::{ LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config };
+use mvv_auth::examples::auth_user::{ AuthUserExamplePswExtractor };
+use mvv_auth::permission::{ PermissionProvider };
 
 
-pub type AuthUser = crate::auth::examples::auth_user::AuthUserExample;
-pub type AuthCredentials = crate::auth::examples::composite_auth::CompositeAuthCredentials;
-pub type AuthnBackend = crate::auth::examples::composite_auth::CompositeAuthnBackendExample;
+pub type AuthUser = mvv_auth::examples::auth_user::AuthUserExample;
+pub type AuthCredentials = mvv_auth::examples::composite_auth::CompositeAuthCredentials;
+pub type AuthnBackend = mvv_auth::examples::composite_auth::CompositeAuthnBackendExample;
 pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
-pub type AuthBackendError = crate::auth::AuthBackendError;
-pub type Role = crate::auth::permission::predefined::Role;
-pub type RolePermissionsSet = crate::auth::permission::predefined::RolePermissionsSet;
+pub type AuthBackendError = mvv_auth::AuthBackendError;
+pub type Role = mvv_auth::permission::predefined::Role;
+pub type RolePermissionsSet = mvv_auth::permission::predefined::RolePermissionsSet;
 
 
 // Type alias cannot be applied for trait ?! :-(
@@ -25,7 +25,7 @@ pub impl <S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for 
     #[track_caller]
     fn authn_required(self) -> Self {
         self.route_layer(axum::middleware::from_fn(
-            crate::auth::examples::usage::validate_authentication_chain))
+            mvv_auth::examples::usage::validate_authentication_chain))
     }
 }
 
@@ -37,17 +37,17 @@ pub impl <S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for 
 pub impl <S: Clone + Send + Sync + 'static> RequiredAuthorizationExtension for axum::Router<S> {
     #[track_caller]
     fn role_required(self, role: Role) -> Self {
-        use crate::auth::permission::PermissionSet;
+        use mvv_auth::permission::PermissionSet;
         self.route_layer(axum::middleware::from_fn_with_state(
             RolePermissionsSet::from_permission(role),
-            crate::auth::examples::usage::internal_validate_authorization_chain,
+            mvv_auth::examples::usage::internal_validate_authorization_chain,
         ))
     }
     #[track_caller]
     fn roles_required(self, roles: RolePermissionsSet) -> Self {
         self.route_layer(axum::middleware::from_fn_with_state(
             roles,
-            crate::auth::examples::usage::internal_validate_authorization_chain,
+            mvv_auth::examples::usage::internal_validate_authorization_chain,
         ))
     }
 }
@@ -59,7 +59,7 @@ pub async fn validate_auth_temp(
     req: Request,
     next: axum::middleware::Next,
 ) -> http::Response<Body> {
-    crate::auth::examples::usage::validate_authentication_chain(auth_session, req, next).await
+    mvv_auth::examples::usage::validate_authentication_chain(auth_session, req, next).await
 }
 
 
@@ -113,13 +113,13 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
         }
     };
 
-    let http_basic_auth_backend = crate::auth::backend::HttpBasicAuthBackend::<AuthUser,PlainPasswordComparator,Role,RolePermissionsSet>::new(
+    let http_basic_auth_backend = mvv_auth::backend::HttpBasicAuthBackend::<AuthUser,PlainPasswordComparator,Role,RolePermissionsSet>::new(
         usr_provider.clone(),
         AuthBackendMode::AuthProposed, // It makes sense for pure server SOA (especially for testing)
         // AuthBackendMode::AuthSupported,
         permission_provider.clone(),
     );
-    let login_form_auth_backend = crate::auth::backend::LoginFormAuthBackend::<AuthUser,PlainPasswordComparator,Role,RolePermissionsSet>::new(
+    let login_form_auth_backend = mvv_auth::backend::LoginFormAuthBackend::<AuthUser,PlainPasswordComparator,Role,RolePermissionsSet>::new(
         usr_provider.clone(),
         // It makes sense for web-app
         LoginFormAuthConfig {
@@ -140,5 +140,5 @@ pub async fn auth_manager_layer() -> Result<axum_login::AuthManagerLayer<AuthnBa
 }
 
 pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
-    crate::auth::examples::composite_auth::test::in_memory_test_users()
+    mvv_auth::examples::composite_auth::test::in_memory_test_users()
 }

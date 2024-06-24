@@ -1,4 +1,6 @@
 
+// pub mod auth;
+
 mod error;
 
 mod psw;
@@ -9,6 +11,7 @@ pub mod user_provider;
 
 pub mod examples;
 pub mod permission;
+mod test;
 
 
 pub use backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction };

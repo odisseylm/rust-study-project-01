@@ -1,38 +1,18 @@
 [package]
-name = "project01"
+name = "mvv_auth"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-#[lib]
-#proc-macro = true
-
 [features]
 # Defines a feature named `webp` that does not enable any other features.
-#webp = []
 #error_generic_member_access = []
-#special-integration-test = []
-
-serde_json_raw_value = ["serde_json/raw_value"]
-#default = ["serde_json_raw_value", ]
 
 ambassador = [ "dep:ambassador" ]
 default = [ "ambassador", ]
 #default = [ ]
 
-#['cfg(feature = "a")'.lib]
-#crate-type = ["staticlib"]
-#
-#['cfg(feature = "b")'.lib]
-#crate-type = ["rlib"]
-
-
-[workspace]
-members = [
-    "mvv_auth",
-    "static_error_macro",
-]
 
 
 [build-dependencies]
@@ -40,31 +20,22 @@ cargo_metadata = "0.18.1"
 
 
 [dependencies]
-static_error_macro = { version = "0.1.0", path = "static_error_macro" }
-mvv_auth = { version = "0.1.0", path = "mvv_auth" }
+# static_error_macro = { version = "0.1.0", path = "static_error_macro" }
 
 # -------------------------------------------------------------------------
 if_chain = "1.0.2"
 
 static_assertions = "1.1.0"
-const_format = "0.2.32"
-bigdecimal = "0.4.3"
-#bigdecimal = {  version = "0.4.3", features = ["default", "serde" ] }
+#const_format = "0.2.32"
 
 trait-variant = "0.1.2"
 
 serde = { version = "1.0.201", features = ["derive", "std", "rc", "serde_derive" ] }
-#serde = "1.0.201"
-#serde_json = "1.0.117"
 #serde_json = { version = "1.0.117", features = ["default", ] }
-#serde_json = { version = "1.0.117", features = ["default", "raw_value", ] }
-serde_json = { version = "1.0.117", features = ["default", ] }
-#serde_json5 = "0.1.0
-#serde_as = "0.0.1"
-serde_with = "3.8.1"
-serde_with_macros = "3.8.1"
+#serde_with = "3.8.1"
+#serde_with_macros = "3.8.1"
 
-anyhow = { version = "1.0.83", features = ["backtrace"] }
+anyhow = { version = "1.0.83" } #, features = ["backtrace"] }
 #anyhow = { version = "1.0.83"} # , features = ["backtrace"] } // it means third-party "backtrace"
 thiserror = "1.0.60"
 #snafu = "0.8.2"
@@ -79,16 +50,16 @@ strum_macros = "0.26"
 # # Seems it does not work.
 # color-backtrace = "0.6.1"
 
-derivative = "2.2.0"
+# derivative = "2.2.0"
 
-ctor = "0.2.8"
-once_cell = "1.19.0"
+#ctor = "0.2.8"
+#once_cell = "1.19.0"
 #lazy_static = "1.4.0"
-static_init = "1.0.3"
+#static_init = "1.0.3"
 
 log = "0.4.21"
-env_logger = "0.11.3"
-log4rs = "1.3.0"
+#env_logger = "0.11.3"
+#log4rs = "1.3.0"
 #tracing = "0.1.40"
 tracing = {  version = "0.1.40", features = ["attributes", "log", ] }
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
@@ -107,12 +78,12 @@ ambassador = { version = "0.4.0",  optional = true }
 num = "0.4.3"
 nutype = "0.4.2"
 
-chrono = {  version = "0.4.38", features = ["default", "serde"] }
-chrono-tz = "0.9.0"
-time = "0.3.36"
+#chrono = {  version = "0.4.38", features = ["default", "serde"] }
+#chrono-tz = "0.9.0"
+#time = "0.3.36"
 
 #type-rules = { version = "0.2.3", features = ["derive", "regex", "serde"] }
-type-rules = { version = "0.2.3", features = ["derive", "regex"] }
+# ??? type-rules = { version = "0.2.3", features = ["derive", "regex"] }
 
 axum = "0.7.5"
 async-trait = "0.1.80"
@@ -131,21 +102,10 @@ password-auth = "1.0.0"
 #axum-auth = "0.7.0"
 axum-extra = { version = "0.9.3", features = ["typed-header"] }
 axum-ctx = "0.4.0"
-#axum-handler-error = "0.1.1"
-#axum-error = "0.2.0"
-#axum-htpasswd = "0.2.0"
-#axum-limit = ""
-#axum-openapi = ""
-#axum-request-validator = "0.1.0"
-#axum-route = ""
-#axum-swagger-ui = "0.3.0"
-#axum-template = "2.3.0" # ++
 axum-typed-routing = "0.2.1"
-#axum_health = ""
 axum_session_auth = "0.14.0"
 axum_static = "1.7.1"
-#axum-request-validator = "0.1.0"
-axum-valid = "0.18.0"
+#axum-valid = "0.18.0"
 validator = {  version = "0.18.1", features = ["derive", "validator_derive"] }
 #axum_typed_multipart = "0.11.1"
 #axum_static_include = "0.3.0"
@@ -251,6 +211,5 @@ macro_rules_attribute = "0.2.0"
 
 #[workspace]
 #members = [
-#    "mvv_auth",
 #    "static_error_macro",
 #]

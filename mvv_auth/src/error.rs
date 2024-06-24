@@ -1,8 +1,9 @@
 use axum::response::{ IntoResponse, Response };
 use http::StatusCode;
 use log::error;
-use super::user_provider::AuthUserProviderError;
-use super::permission::PermissionProcessError;
+
+use crate::user_provider::AuthUserProviderError;
+use crate::permission::PermissionProcessError;
 
 
 // This enum contains ALL possible errors for ANY auth Backend.

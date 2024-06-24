@@ -12,5 +12,3 @@ pub trait AuthnBackend: Clone + Send + Sync {
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error>;
     async fn get_user(&self, user_id: &axum_login::UserId<Self>) -> Result<Option<Self::User>, Self::Error>;
 }
-
-

@@ -6,9 +6,11 @@ use std::hash::Hash;
 use std::marker::PhantomData;
 use std::mem::size_of;
 use num::PrimInt;
-use crate::auth::permission::VerifyRequiredPermissionsResult; // Integer
+
 // use num::Integer;
-use super::super::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError };
+use crate::permission::{
+    PermissionSet, PermissionsToHashSet, VerifyRequiredPermissionsResult, PermissionProcessError,
+};
 
 
 
@@ -233,9 +235,9 @@ impl <
 mod tests {
     use std::collections::HashSet;
     use std::convert::Infallible;
-    use crate::util::TestResultUnwrap;
-    use super::{ BitsPermissionSet };
-    use super::super::super::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError, predefined::Role };
+    use crate::test::TestResultUnwrap;
+    use super::BitsPermissionSet;
+    use crate::permission::{ PermissionSet, PermissionsToHashSet, PermissionProcessError, predefined::Role };
 
 
     #[test]

@@ -3,13 +3,13 @@ use axum::body::Body;
 use axum::response::IntoResponse;
 use http::status::StatusCode;
 use log::error;
-use crate::auth::AuthnBackendAttributes;
 
-use crate::auth::backend::authz_backend::AuthorizeBackend;
-use crate::auth::backend::RequestAuthenticated;
-
-use crate::auth::examples::composite_auth::{ CompositeAuthnBackendExample, Role, RolePermissionsSet };
-use crate::auth::permission::util::log_unauthorized_access;
+use crate::{
+    AuthnBackendAttributes,
+    backend::{ RequestAuthenticated, authz_backend::AuthorizeBackend, },
+    permission::util::log_unauthorized_access,
+};
+use super::composite_auth::{ CompositeAuthnBackendExample, Role, RolePermissionsSet };
 
 
 pub async fn validate_authentication_chain (
@@ -18,7 +18,7 @@ pub async fn validate_authentication_chain (
     next: axum::middleware::Next,
 ) -> http::Response<Body> {
 
-    use super::super::backend::RequestAuthenticated;
+    use crate::backend::RequestAuthenticated;
 
     let (req, is_auth_res) =
         auth_session.backend.do_authenticate_request::<()>(req).await;
@@ -96,7 +96,7 @@ pub async fn internal_validate_authorization_chain (
 pub impl <S: Clone + Send + Sync + 'static> RequiredAuthorizationExtension for axum::Router<S> {
     #[track_caller]
     fn role_required(self, role: Role) -> Self {
-        use crate::auth::permission::PermissionSet;
+        use crate::permission::PermissionSet;
         self.route_layer(axum::middleware::from_fn_with_state(
             RolePermissionsSet::from_permission(role),
             internal_validate_authorization_chain))

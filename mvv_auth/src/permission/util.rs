@@ -1,8 +1,9 @@
 use core::fmt::{ Debug, Display };
 use axum::extract::{OriginalUri, Request};
 use log::warn;
-use crate::auth::backend::authz_backend::AuthorizationResult;
-use crate::auth::permission::PermissionSet;
+
+use crate::backend::authz_backend::AuthorizationResult;
+use crate::permission::PermissionSet;
 
 
 pub fn log_unauthorized_user <

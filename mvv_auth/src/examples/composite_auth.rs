@@ -4,7 +4,7 @@ use axum::extract::Request;
 use axum::response::{ IntoResponse, Response };
 
 use super::auth_user::{ AuthUserExample };
-use super::super::{
+use crate::{
     backend::{
         AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction,
         ProposeHttpBasicAuthAction, ProposeLoginFormAuthAction, RequestAuthenticated,
@@ -26,8 +26,8 @@ use super::super::{
 // -------------------------------------------------------------------------------------------------
 
 
-pub type Role = crate::auth::permission::predefined::Role;
-pub type RolePermissionsSet = crate::auth::permission::predefined::RolePermissionsSet;
+pub type Role = crate::permission::predefined::Role;
+pub type RolePermissionsSet = crate::permission::predefined::RolePermissionsSet;
 
 
 #[derive(Clone)]
@@ -271,7 +271,7 @@ impl AuthorizeBackend for CompositeAuthnBackendExample { }
 pub mod test {
     use super::AuthUserExample;
     use super::super::auth_user::AuthUserExamplePswExtractor;
-    use super::super::super::{
+    use crate::{
         user_provider::{ AuthUserProviderError, InMemAuthUserProvider },
         permission::{ PermissionSet, predefined::{ Role, RolePermissionsSet, }},
     };
