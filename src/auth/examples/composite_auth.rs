@@ -19,8 +19,8 @@ use super::super::{
     psw::PlainPasswordComparator,
     permission::PermissionProvider,
     util::composite_util::{
-        backend_usr_prov, backend_perm_prov,
-        get_unique_user_provider, get_unique_permission_provider,
+        backend_usr_prov_ref, backend_perm_prov_ref,
+        get_unique_user_provider_ref, get_unique_permission_provider_ref,
     },
 };
 // -------------------------------------------------------------------------------------------------
@@ -75,19 +75,38 @@ impl CompositeAuthnBackendExample {
         oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,Role,RolePermissionsSet>>,
     ) -> Result<CompositeAuthnBackendExample, AuthBackendError> {
 
+        /*
         let users_provider = get_unique_user_provider(&vec!(
             backend_usr_prov(&http_basic_auth_backend),
             backend_usr_prov(&login_form_auth_backend),
             backend_usr_prov(&oauth2_backend),
         )) ?;
+        */
 
+        let users_provider_ref = get_unique_user_provider_ref([
+            backend_usr_prov_ref(&http_basic_auth_backend),
+            backend_usr_prov_ref(&login_form_auth_backend),
+            backend_usr_prov_ref(&oauth2_backend),
+        ]) ? .clone();
+
+        /*
         let permission_provider = get_unique_permission_provider(&vec!(
             backend_perm_prov(&http_basic_auth_backend),
             backend_perm_prov(&login_form_auth_backend),
             backend_perm_prov(&oauth2_backend),
         )) ?;
+        */
 
-        Ok(CompositeAuthnBackendExample { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend, permission_provider })
+        let permission_provider_ref = get_unique_permission_provider_ref([
+            backend_perm_prov_ref(&http_basic_auth_backend),
+            backend_perm_prov_ref(&login_form_auth_backend),
+            backend_perm_prov_ref(&oauth2_backend),
+        ]) ? .clone();
+
+        Ok(CompositeAuthnBackendExample {
+            users_provider: users_provider_ref,
+            http_basic_auth_backend, login_form_auth_backend, oauth2_backend,
+            permission_provider: permission_provider_ref })
     }
 
     // T O D O: Do we need redirection there??
