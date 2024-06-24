@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use core::ops::Deref;
 use bigdecimal::BigDecimal;
 use crate::util::fmt::BytesAsBuf;
 
@@ -105,7 +105,7 @@ pub fn deserialize_json_bd_as_raw_value<'de, D>(deserializer: D) -> Result<BigDe
         .strip_suffix('"').unwrap_or(str)
         .trim();
 
-    use std::str::FromStr;
+    use core::str::FromStr;
     use serde::de::Error;
     let bd = BigDecimal::from_str(str).map_err(|err| Error::custom(err))?;
     return Ok::<BigDecimal, D::Error>(bd);
@@ -158,8 +158,8 @@ pub fn deserialize_json_bd_as_std_json_value<'de, D>(deserializer: D) -> Result<
             // use bigdecimal::FromPrimitive;
             // BigDecimal::from_f32(v).ok_or_else(||Error::custom("Wrong f32 big-decimal format"))
 
-            use std::str::{ self, FromStr };
-            use std::fmt::Write;
+            use core::str::{ self, FromStr };
+            use core::fmt::Write;
 
             if !v.is_normal() && !v.is_subnormal() {
                 return Err(Error::custom("BigDecimal supports only norma/subnormal float values."));
@@ -188,8 +188,8 @@ pub fn deserialize_json_bd_as_std_json_value<'de, D>(deserializer: D) -> Result<
 
             // 13.346000000000000085265128291212022304534912109375
 
-            use std::str::{ self, FromStr };
-            use std::fmt::Write;
+            use core::str::{ self, FromStr };
+            use core::fmt::Write;
 
             if !v.is_normal() && !v.is_subnormal() {
                 return Err(Error::custom("BigDecimal supports only norma/subnormal float values."));

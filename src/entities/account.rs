@@ -40,8 +40,6 @@ pub struct Account {
     pub id: AccountId,
     pub user_id: UserId,
     pub amount: Amount,
-    // pub created_at: std::time::Instant,
-    // pub updated_at: std::time::Instant,
     pub created_at: chrono::DateTime<Utc>,
     // #[serde(serialize_with = "serialize_fn...")]
     pub updated_at: chrono::DateTime<Utc>,
@@ -188,7 +186,7 @@ mod tests {
 
     #[allow(dead_code)] // actually it is really used
     fn datetime_from_str(str: &str) -> chrono::DateTime<Utc> {
-        use std::str::FromStr;
+        use core::str::FromStr;
         chrono::DateTime::<FixedOffset>::from_str(str).test_unwrap().to_utc()
     }
 }

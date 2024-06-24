@@ -72,8 +72,8 @@ fn keep_only_last_file_path_part3<'a>(path: &str) -> &str {
 */
 
 
-use std::cmp::PartialEq;
-use std::fmt::Display;
+use core::cmp::PartialEq;
+use core::fmt::Display;
 use log::warn;
 use strum_macros::Display;
 
@@ -381,8 +381,8 @@ fn is_str_backtrace_captured(str_backtrace: &str) -> bool {
     str_backtrace.contains('\n')
 }
 
-impl std::fmt::Debug for BacktraceInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl core::fmt::Debug for BacktraceInfo {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         use std::backtrace::*;
 
         match self.backtrace_status() {
@@ -400,8 +400,8 @@ impl std::fmt::Debug for BacktraceInfo {
 }
 
 
-impl std::fmt::Display for BacktraceInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+impl core::fmt::Display for BacktraceInfo {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         write!(f, "{:?}", self)
     }
 }
@@ -603,7 +603,7 @@ pub fn is_anyhow_backtrace_enabled() -> bool {
 
 #[allow(dead_code)]
 fn is_anyhow_backtrace_enabled_impl() -> bool {
-    use std::fmt::Write;
+    use core::fmt::Write;
 
     let res: Result<i32, & 'static str> = Err("test error");
     let anyhow_res: Result<i32, anyhow::Error> = res.map_err(anyhow::Error::msg);

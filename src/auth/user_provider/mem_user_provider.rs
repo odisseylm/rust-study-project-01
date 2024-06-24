@@ -1,9 +1,9 @@
 use core::fmt;
 use core::ops::{ Deref, DerefMut };
 use std::collections::HashMap;
-use std::fmt::Debug;
-use std::hash::Hash;
-use std::marker::PhantomData;
+use core::fmt::Debug;
+use core::hash::Hash;
+use core::marker::PhantomData;
 use std::sync::Arc;
 
 use tokio::sync::RwLock;

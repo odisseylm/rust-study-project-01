@@ -1,5 +1,5 @@
 
-use std::fmt::Debug;
+use core::fmt::Debug;
 
 
 /// This trait and its impl was added to minimize uncontrolled usage of panic-risky unwrap.

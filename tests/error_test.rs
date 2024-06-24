@@ -4,7 +4,7 @@ mod errors;
 
 
 use std::error::Error;
-use std::fmt::write;
+use core::fmt::write;
 use assertables::{ assert_ge, assert_ge_as_result };
 use assertables::{ assert_starts_with, assert_starts_with_as_result };
 use assertables::{ assert_contains, assert_contains_as_result };

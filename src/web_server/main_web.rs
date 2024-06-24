@@ -1,4 +1,4 @@
-use std::future::Future;
+use core::future::Future;
 use axum::{ routing::get, routing::post, Router, Json };
 use tokio::signal;
 // use axum::{ routing::post_service };
@@ -56,8 +56,8 @@ async fn root() -> & 'static str { "GET root" }
 async fn get_foo() -> & 'static str { "GET foo" }
 async fn post_foo_02() -> & 'static str { "GET foo" }
 fn post_foo_04() -> impl Future<Output = & 'static str> { async { "POST foo" } }
-fn post_foo_05() -> impl Future<Output = & 'static str> { std::future::ready("POST foo") }
-// async fn post_foo_06() -> & 'static str { std::future::ready("POST foo") }
+fn post_foo_05() -> impl Future<Output = & 'static str> { core::future::ready("POST foo") }
+// async fn post_foo_06() -> & 'static str { core::future::ready("POST foo") }
 async fn post_foo() -> & 'static str { async { "POST foo" }.await }
 
 async fn get_json_foo_01() -> Json<& 'static str> { Json("GET foo") }
@@ -80,7 +80,7 @@ async fn shutdown_signal() {
     };
 
     #[cfg(not(unix))]
-    let terminate = std::future::pending::<()>();
+    let terminate = core::future::pending::<()>();
 
     tokio::select! {
         _ = ctrl_c    => { panic!("### select ctrl_c")    },

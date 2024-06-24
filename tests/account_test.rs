@@ -50,7 +50,7 @@ fn test_to_json() { // T O D O: split to several tests or use soft assertions
 
     let _sas: serde_json::Value = serde_json::json!({ "a": { "b": 1 } });
 
-    use std::str::FromStr;
+    use core::str::FromStr;
     let _sas22: serde_json::Value = serde_json::Value::from_str(s.as_str()).test_unwrap();
 
     // serde_json::from_str()
@@ -284,7 +284,7 @@ fn readonly_field_test() {
 
     // account.id = Id::from_str("54545").unwrap();
 
-    use std::str::FromStr;
+    use core::str::FromStr;
     let t = chrono::NaiveDateTime::from_str("2024-05-31T22:29:57").test_unwrap();
     println!("### t: {}", t);
 
@@ -318,7 +318,7 @@ fn account_01() -> Account {
 }
 
 fn datetime_from_str(str: &str) -> chrono::DateTime<Utc> {
-    use std::str::FromStr;
+    use core::str::FromStr;
     // chrono::DateTime::<FixedOffset>::from_str(str).test_unwrap()
     chrono::DateTime::<FixedOffset>::from_str(str).test_unwrap().to_utc()
 }

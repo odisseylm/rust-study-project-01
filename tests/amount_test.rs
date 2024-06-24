@@ -1,7 +1,7 @@
 mod common;
 
-use std::fmt::write;
-use std::str::FromStr;
+use core::fmt::write;
+use core::str::FromStr;
 use bigdecimal::BigDecimal;
 
 use project01::entities::amount::{ Amount, amount };
@@ -254,7 +254,7 @@ fn from_string_with_wrong_amount_value_do_not_print_stack_trace_twice() {
 #[track_caller]
 #[allow(dead_code)]
 fn assert_display_stack_trace_is_only_one<Err: core::fmt::Display>(err: &Err) {
-    use std::fmt::Write;
+    use core::fmt::Write;
     let mut str_buf = String::new();
     write!(str_buf, "{}", err).test_unwrap();
     assert_stack_trace_is_only_one(str_buf.as_str());
@@ -262,7 +262,7 @@ fn assert_display_stack_trace_is_only_one<Err: core::fmt::Display>(err: &Err) {
 #[track_caller]
 #[allow(dead_code)]
 fn assert_debug_stack_trace_is_only_one<Err: core::fmt::Debug>(err: &Err) {
-    use std::fmt::Write;
+    use core::fmt::Write;
     let mut str_buf = String::new();
     write!(str_buf, "{:?}", err).test_unwrap();
     assert_stack_trace_is_only_one(str_buf.as_str());
@@ -308,7 +308,7 @@ fn aa() {
 #[track_caller]
 #[allow(dead_code)]
 fn assert_display_no_stack_trace<Err: core::fmt::Display>(err: &Err) {
-    use std::fmt::Write;
+    use core::fmt::Write;
     let mut str_buf = String::new();
     write!(str_buf, "{}", err).test_unwrap();
     assert_no_stack_trace(str_buf.as_str());
@@ -316,7 +316,7 @@ fn assert_display_no_stack_trace<Err: core::fmt::Display>(err: &Err) {
 #[track_caller]
 #[allow(dead_code)]
 fn assert_debug_no_stack_trace<Err: core::fmt::Debug>(err: &Err) {
-    use std::fmt::Write;
+    use core::fmt::Write;
     let mut str_buf = String::new();
     write!(str_buf, "{:?}", err).test_unwrap();
     assert_no_stack_trace(str_buf.as_str());

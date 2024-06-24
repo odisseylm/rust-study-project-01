@@ -1,7 +1,7 @@
 // #![cfg(feature = "error_generic_member_access")]
 
-use std::{env, fmt};
-use std::fmt::write;
+use std::env;
+use core::fmt::{ self, write };
 use std::io::Write;
 use project01::entities::currency::{ Currency, CurrencyFormatError, USD };
 use project01::util::{ as_printable, as_printable_ptr };

@@ -50,7 +50,7 @@ const PATH: &'static [u8] = &combine!(BASE, PART);
 
 fn main() {
     // Once you're confident it's working you can use `from_utf8_unchecked` here.
-    let s = std::str::from_utf8(PATH).expect("Something went badly wrong at compile time.");
+    let s = core::str::from_utf8(PATH).expect("Something went badly wrong at compile time.");
     dbg!(s);
 }
 

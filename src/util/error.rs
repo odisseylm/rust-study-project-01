@@ -16,7 +16,7 @@
 // }
 
 
-use std::fmt::{Debug, Display};
+use core::fmt::{Debug, Display};
 
 
 pub trait ToAnyHowError <

@@ -44,14 +44,14 @@ pub impl<T> TestSringOps for T /* where T: Debug */ {
     #[track_caller]
     fn to_test_debug_string(&self) -> String where Self: Debug {
         let mut str_buf = String::new();
-        use std::fmt::Write;
+        use core::fmt::Write;
         write!(str_buf, "{:?}", self).test_unwrap();
         str_buf
     }
     #[track_caller]
     fn to_test_display_string(&self) -> String where Self: core::fmt::Display {
         let mut str_buf = String::new();
-        use std::fmt::Write;
+        use core::fmt::Write;
         write!(str_buf, "{}", self).test_unwrap();
         str_buf
     }

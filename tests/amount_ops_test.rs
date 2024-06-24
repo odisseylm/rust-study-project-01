@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use core::str::FromStr;
 use assertables:: { assert_starts_with, assert_starts_with_as_result };
 use bigdecimal::BigDecimal;
 use project01::entities::amount::Amount;
@@ -49,7 +49,7 @@ fn test_add_amounts_with_different_currencies() {
 
 #[test]
 fn test_add_amounts_with_different_currencies_to_see_currencies() {
-    use std::fmt::Write;
+    use core::fmt::Write;
 
     let amount1 = Amount::from_str("123.45  BRL").test_unwrap();
     let amount2 = Amount::from_str("111.111 EUR").test_unwrap();

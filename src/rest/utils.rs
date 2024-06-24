@@ -1,4 +1,4 @@
-use std::future::Future;
+use core::future::Future;
 use axum::Json;
 use extension_trait::extension_trait;
 use crate::rest::error_rest::RestAppError;

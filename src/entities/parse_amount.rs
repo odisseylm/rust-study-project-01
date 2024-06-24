@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use core::str::FromStr;
 use bigdecimal::BigDecimal;
 use crate::entities::amount::Amount;
 use crate::entities::currency::Currency;

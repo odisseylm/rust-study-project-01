@@ -2,7 +2,7 @@ mod common;
 
 use common::TestResultUnwrap;
 
-use std::fmt;
+use core::fmt;
 
 
 struct Position {
@@ -64,7 +64,7 @@ fn test_format_usage_03() {
 // !!! From command line its output looks OK.
 #[test]
 fn test_format_usage_04() {
-    use std::fmt::write;
+    use core::fmt::write;
     use std::io::Write;
 
     println!("### test_format_usage_04");
@@ -121,7 +121,7 @@ fn test_looks_like_hanged_up() {
 
 #[test]
 fn test_looks_like_hanged_up_54545() {
-    use std::fmt::write;
+    use core::fmt::write;
 
     let mut some_writer = String::new();
     write(&mut some_writer, format_args!("Hello {}!", "world\n")).test_unwrap();

@@ -45,7 +45,7 @@ mod arc_test {
 
     #[test]
     fn capture_and_to_display_backtrace_performance_test() {
-        use std::fmt::Write;
+        use core::fmt::Write;
         test_impl(N, "capture backtrace and convert to display string", ||{
             let bt = Backtrace::force_capture();
             let mut str = String::new();
@@ -55,7 +55,7 @@ mod arc_test {
 
     #[test]
     fn capture_and_to_debug_backtrace_performance_test() {
-        use std::fmt::Write;
+        use core::fmt::Write;
         test_impl(N, "capture backtrace and convert to debug string", ||{
             let bt = Backtrace::force_capture();
             let mut str = String::new();

@@ -262,7 +262,7 @@ impl Default for Pagination {
 
 // -------------------------------------------------------------------------------
 
-use std::future::Future;
+use core::future::Future;
 
 trait AsyncFnOnce0 {
     type Output;

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
-use std::fmt::{ self, Debug, Display};
-use std::hash::Hash;
+use core::fmt::{ self, Debug, Display};
+use core::hash::Hash;
 
 use super::super::{
     permission::VerifyRequiredPermissionsResult,

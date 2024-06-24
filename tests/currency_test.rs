@@ -1,6 +1,6 @@
 mod common;
 
-use std::any::Any;
+use core::any::Any;
 use project01::{make_currency, make_currency_b };
 use project01::entities::currency::{Currency, make_currency_b, make_currency, CurrencyFormatError};
 use project01::entities::currency::{ EUR, USD, };

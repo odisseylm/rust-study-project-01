@@ -1,7 +1,7 @@
 // #![macro_use]
 
-use std::char;
-use std::str::FromStr;
+use core::char;
+use core::str::FromStr;
 use crate::util::serde_json::{ deserialize_as_from_str, serialize_as_display_string };
 use crate::util::string::DisplayValueExample;
 
