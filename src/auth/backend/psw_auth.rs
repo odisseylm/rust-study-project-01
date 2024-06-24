@@ -24,10 +24,10 @@ pub trait PswUser {
 
 // #[derive(Clone)]
 pub struct PswAuthBackendImpl <
-    User,
-    PswComparator,
-    Perm = EmptyPerm,
-    PermSet = AlwaysAllowedPermSet<Perm>,
+    User: axum_login::AuthUser + PswUser,
+    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync = EmptyPerm,
+    PermSet: PermissionSet<Permission=Perm> + Clone = AlwaysAllowedPermSet<Perm>,
 > {
     pub(crate) users_provider: Arc<dyn AuthUserProvider<User=User> + Send + Sync>,
     pub(crate) permission_provider: Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet> + Send + Sync>,
@@ -36,10 +36,10 @@ pub struct PswAuthBackendImpl <
 
 
 impl <
-    Usr: Clone,
-    PswComp,
-    Perm: Clone,
-    PermSet: Clone,
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
 > Clone for PswAuthBackendImpl<Usr,PswComp,Perm,PermSet> {
     fn clone(&self) -> Self {
         PswAuthBackendImpl::<Usr,PswComp,Perm,PermSet> {
@@ -55,10 +55,10 @@ impl <
 
 
 impl <
-    Usr: axum_login::AuthUser,
-    PswComp: PasswordComparator,
-    Perm:  Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm>,
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync,
+    PermSet: PermissionSet<Permission=Perm> + Clone,
 > PswAuthBackendImpl<Usr,PswComp,Perm,PermSet> {
     pub(crate) fn new(
         users_provider: Arc<dyn AuthUserProvider<User=Usr> + Send + Sync>,
@@ -79,7 +79,7 @@ impl <
 #[axum::async_trait]
 impl<
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Send + Sync,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Clone,
 > axum_login::AuthnBackend for PswAuthBackendImpl<Usr,PswComp,Perm,PermSet>
@@ -121,8 +121,8 @@ impl<
 
 #[axum::async_trait]
 impl<
-    Usr: axum_login::AuthUser,
-    PswComp: PasswordComparator + Send + Sync,
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Clone,
 > PermissionProviderSource for PswAuthBackendImpl<Usr,PswComp,Perm,PermSet>
@@ -149,8 +149,8 @@ impl<
 
 #[axum::async_trait]
 impl<
-    Usr: axum_login::AuthUser,
-    PswComp: PasswordComparator + Send + Sync,
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Clone,
 > AuthorizeBackend for PswAuthBackendImpl<Usr,PswComp,Perm,PermSet>

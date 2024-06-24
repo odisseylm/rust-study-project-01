@@ -24,54 +24,55 @@ use super::super::{
 #[cfg(feature = "ambassador")]
 use axum_login::AuthnBackend;
 #[cfg(feature = "ambassador")]
+use crate::auth::backend::{
+    axum_login_delegatable::ambassador_impl_AuthnBackend,
+};
+#[cfg(feature = "ambassador22")]
 use super::{
     super::{
-        backend::authz_backend:: {
+        backend::authz_backend::{
             AuthorizationResult,
-            authz_backend::{
-                ambassador_impl_PermissionProviderSource,
-                ambassador_impl_AuthorizeBackend,
-            },
+            ambassador_impl_PermissionProviderSource,
+            ambassador_impl_AuthorizeBackend,
         },
         permission::PermissionProcessError,
     },
-    axum_login_delegatable::ambassador_impl_AuthnBackend,
 };
 
 // -------------------------------------------------------------------------------------------------
 
 
 
-#[derive(Debug, Clone)]
-pub struct LoginFormAuthConfig {
+    # [derive(Debug, Clone)]
+    pub struct LoginFormAuthConfig {
     pub auth_mode: AuthBackendMode,
     pub login_url: &'static str,
 }
 
 
-#[derive(Clone)]
-#[cfg_attr(feature = "ambassador", derive(ambassador::Delegate))]
-#[readonly::make] // should be after 'derive'
-#[cfg_attr(feature = "ambassador", delegate(axum_login::AuthnBackend, target = "psw_backend"))]
-#[cfg_attr(feature = "ambassador", delegate(PermissionProviderSource, target = "psw_backend"))]
-#[cfg_attr(feature = "ambassador", delegate(AuthorizeBackend, target = "psw_backend"))]
-pub struct LoginFormAuthBackend <
-    User: Clone,
-    PswComparator: Clone,
-    Perm: Clone = EmptyPerm,
-    PermSet: Clone = AlwaysAllowedPermSet<Perm>,
+    # [derive(Clone)]
+    # [cfg_attr(feature = "ambassador", derive(ambassador::Delegate))]
+    # [readonly::make] // should be after 'derive'
+    # [cfg_attr(feature = "ambassador", delegate(axum_login::AuthnBackend, target = "psw_backend"))]
+// #[cfg_attr(feature = "ambassador", delegate(PermissionProviderSource, target = "psw_backend"))]
+// #[cfg_attr(feature = "ambassador", delegate(AuthorizeBackend, target = "psw_backend"))]
+    pub struct LoginFormAuthBackend <
+    User: axum_login::AuthUser + PswUser,
+    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+    Perm: Hash + Eq + Debug + Clone + Send + Sync = EmptyPerm,
+    PermSet: PermissionSet<Permission=Perm> + Clone = AlwaysAllowedPermSet<Perm>,
 > {
     psw_backend: PswAuthBackendImpl<User,PswComparator,Perm,PermSet>,
     pub config: LoginFormAuthConfig,
 }
 
 
-impl <
-    Usr: axum_login::AuthUser,
-    PswComp: PasswordComparator + Clone,
+    impl <
+    Usr: axum_login::AuthUser + PswUser,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Clone,
-> LoginFormAuthBackend<Usr,PswComp,Perm,PermSet> {
+    > LoginFormAuthBackend<Usr, PswComp, Perm, PermSet> {
     pub fn new(
         users_provider: Arc<dyn AuthUserProvider<User=Usr> + Sync + Send>,
         config: LoginFormAuthConfig,
@@ -88,18 +89,18 @@ impl <
 }
 
 
-#[cfg(not(feature = "ambassador"))]
+    # [cfg(not(feature = "ambassador"))]
 // How to avoid duplicating this code?
 // Deref/Borrow do not work because they use 'dyn' and axum_login::AuthnBackend
 // requires Clone which can NOT be used with as 'dyn'.
 //
-#[axum::async_trait]
-impl <
+    # [axum::async_trait]
+    impl <
     Usr: axum_login::AuthUser + PswUser,
     PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Clone,
-> axum_login::AuthnBackend for LoginFormAuthBackend<Usr,PswComp,Perm,PermSet>
+    > axum_login::AuthnBackend for LoginFormAuthBackend<Usr, PswComp, Perm, PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     type User = Usr;
@@ -118,14 +119,14 @@ impl <
     }
 }
 
-#[cfg(not(feature = "ambassador"))]
-#[axum::async_trait]
-impl <
+// #[cfg(not(feature = "ambassador"))]
+    # [axum::async_trait]
+    impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Sync + Send,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Clone,
-> PermissionProviderSource for LoginFormAuthBackend<Usr,PswComp,Perm,PermSet>
+    > PermissionProviderSource for LoginFormAuthBackend<Usr, PswComp, Perm, PermSet>
     where Usr: axum_login::AuthUser<Id = String> {
     type User = Usr;
     type Permission = Perm;
@@ -143,36 +144,36 @@ impl <
     }
 }
 
-#[cfg(not(feature = "ambassador"))]
-#[axum::async_trait]
-impl <
+// #[cfg(not(feature = "ambassador"))]
+    # [axum::async_trait]
+    impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Sync + Send,
+    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Clone,
-> AuthorizeBackend for LoginFormAuthBackend<Usr,PswComp,Perm,PermSet>
+    > AuthorizeBackend for LoginFormAuthBackend<Usr, PswComp, Perm, PermSet>
     where Usr: axum_login::AuthUser<Id = String> {
     //noinspection DuplicatedCode
 }
 
 #[axum::async_trait]
-impl <
+    impl <
     Usr: axum_login::AuthUser + PswUser,
     PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Clone,
-> RequestAuthenticated for LoginFormAuthBackend<Usr,PswComp,Perm,PermSet>
+    > RequestAuthenticated for LoginFormAuthBackend<Usr, PswComp, Perm, PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 { }
 
 
-#[axum::async_trait]
-impl <
+    # [axum::async_trait]
+    impl <
     Usr: axum_login::AuthUser + PswUser,
     PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Clone,
-> AuthnBackendAttributes for LoginFormAuthBackend<Usr,PswComp,Perm,PermSet>
+    > AuthnBackendAttributes for LoginFormAuthBackend<Usr, PswComp, Perm, PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     type ProposeAuthAction = ProposeLoginFormAuthAction;
@@ -192,15 +193,15 @@ impl <
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ProposeLoginFormAuthAction {
+    # [derive(Debug, Clone)]
+    pub struct ProposeLoginFormAuthAction {
     pub login_url: Option<&'static str>,
     pub initial_url: Option<String>,
 }
 
-impl ProposeAuthAction for ProposeLoginFormAuthAction { }
+    impl ProposeAuthAction for ProposeLoginFormAuthAction { }
 #[inherent::inherent]
-impl axum::response::IntoResponse for ProposeLoginFormAuthAction {
+    impl axum::response::IntoResponse for ProposeLoginFormAuthAction {
 
     #[allow(dead_code)] // !! It is really used IMPLICITLY !!
     pub fn into_response(self) -> axum::response::Response<Body> {
@@ -221,7 +222,7 @@ impl axum::response::IntoResponse for ProposeLoginFormAuthAction {
 }
 
 
-static REDIRECT_LOGIN_PAGE_CONTENT: &'static str = r#"
+    static REDIRECT_LOGIN_PAGE_CONTENT: & 'static str = r#"
 <!doctype html>
 <html>
   <head>
