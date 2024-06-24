@@ -16,10 +16,11 @@ edition = "2021"
 
 serde_json_raw_value = ["serde_json/raw_value"]
 #default = ["serde_json_raw_value", ]
-#ambassador = [ "ambassador/default" ]
-ambassador = [ "dep:ambassador" ]
 
-default = [ "ambassador", ]
+#ambassador = [ "dep:ambassador" ]
+#default = [ "ambassador", ]
+#default = [ ]
+
 #['cfg(feature = "a")'.lib]
 #crate-type = ["staticlib"]
 #

@@ -29,6 +29,7 @@ pub trait ProposeAuthAction : axum::response::IntoResponse {
 pub trait AuthnBackendAttributes : axum_login::AuthnBackend + Clone + Send + Sync {
     type ProposeAuthAction: ProposeAuthAction;
     fn user_provider(&self) -> Arc<dyn AuthUserProvider<User = Self::User> + Sync + Send>;
+    fn user_provider_ref<'a>(&'a self) -> &'a Arc<dyn AuthUserProvider<User = Self::User> + Sync + Send>;
     fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction>;
 }
 

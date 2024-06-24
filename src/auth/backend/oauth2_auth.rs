@@ -59,7 +59,7 @@ struct AuthBackendState <
     oauth2_user_store: Arc<dyn OAuth2UserStore<User=User> + Send + Sync>,
     config: OAuth2Config,
     client: BasicClient,
-    permission_provider: Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet>>,
+    permission_provider: Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet> + Send + Sync>,
 }
 
 
@@ -259,6 +259,10 @@ impl <
     fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=Usr> + Sync + Send> {
         self.state.user_provider.clone()
     }
+    fn user_provider_ref<'a>(&'a self) -> &'a Arc<dyn AuthUserProvider<User=Self::User> + Sync + Send> {
+        &self.state.user_provider
+    }
+
     fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {
         // TODO: add simple oauth2 login form
         let initial_uri: Option<String> = req.extensions().get::<OriginalUri>().map(|uri|uri.to_string());
@@ -279,8 +283,13 @@ impl<
 
     #[inline]
     //noinspection DuplicatedCode
-    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet>> {
+    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {
         self.state.permission_provider.clone()
+    }
+    #[inline]
+    //noinspection DuplicatedCode
+    fn permission_provider_ref<'a>(&'a self) -> &'a Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {
+        &self.state.permission_provider
     }
 }
 #[axum::async_trait]

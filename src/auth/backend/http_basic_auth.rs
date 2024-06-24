@@ -9,24 +9,32 @@ use super::super::{
     util::http::http_unauthenticated_401_response,
     backend::{
         AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction, RequestAuthenticated,
-        authz_backend::{ PermissionProviderSource, AuthorizeBackend, AuthorizationResult },
+        authz_backend::{ PermissionProviderSource, AuthorizeBackend },
     },
     user_provider::AuthUserProvider,
     psw::PasswordComparator,
     permission::{
-        PermissionSet, PermissionProvider, PermissionProcessError,
+        PermissionSet, PermissionProvider,
         empty_perm_provider::{ EmptyPerm, AlwaysAllowedPermSet },
     },
 };
 
 #[cfg(feature = "ambassador")]
-use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
-#[cfg(feature = "ambassador")]
 use axum_login::AuthnBackend;
 #[cfg(feature = "ambassador")]
-use crate::auth::backend::authz_backend::ambassador_impl_PermissionProviderSource;
-#[cfg(feature = "ambassador")]
-use crate::auth::backend::authz_backend::ambassador_impl_AuthorizeBackend;
+use super::{
+    super::{
+        backend::authz_backend:: {
+            AuthorizationResult,
+            authz_backend::{
+                ambassador_impl_PermissionProviderSource,
+                ambassador_impl_AuthorizeBackend,
+            },
+        },
+        permission::PermissionProcessError,
+    },
+    axum_login_delegatable::ambassador_impl_AuthnBackend,
+};
 
 // -------------------------------------------------------------------------------------------------
 
@@ -84,7 +92,7 @@ impl <
 {
     type User = Usr;
     type Credentials = PswAuthCredentials;
-    type Error = AuthBackendError;
+    type Error = super::super::error::AuthBackendError;
 
     #[inline]
     //noinspection DuplicatedCode
@@ -113,8 +121,13 @@ impl <
 
     #[inline]
     //noinspection DuplicatedCode
-    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet>> {
+    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {
         self.psw_backend.permission_provider()
+    }
+    #[inline]
+    //noinspection DuplicatedCode
+    fn permission_provider_ref<'a>(&'a self) -> &'a Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {
+        &self.psw_backend.permission_provider
     }
 }
 
@@ -145,6 +158,10 @@ impl <
     fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=Usr> + Send + Sync> {
         self.psw_backend.users_provider()
     }
+    fn user_provider_ref<'a>(&'a self) -> &'a Arc<dyn AuthUserProvider<User=Self::User> + Sync + Send> {
+        &self.psw_backend.users_provider
+    }
+
     fn propose_authentication_action(&self, _: &Request) -> Option<Self::ProposeAuthAction> {
         if let AuthBackendMode::AuthProposed = self.auth_mode
         { Some(ProposeHttpBasicAuthAction) } else { None }

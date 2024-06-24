@@ -23,6 +23,8 @@ use super::super::{
         get_unique_user_provider, get_unique_permission_provider,
     },
 };
+// -------------------------------------------------------------------------------------------------
+
 
 pub type Role = crate::auth::permission::predefined::Role;
 pub type RolePermissionsSet = crate::auth::permission::predefined::RolePermissionsSet;
@@ -196,6 +198,9 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
     fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send> {
         self.users_provider.clone()
     }
+    fn user_provider_ref<'a>(&'a self) -> &'a Arc<dyn AuthUserProvider<User=Self::User> + Sync + Send> {
+        &self.users_provider
+    }
 
     fn propose_authentication_action(&self, req: &Request) -> Option<Self::ProposeAuthAction> {
         if let Some(ref backend) = self.http_basic_auth_backend {
@@ -231,8 +236,13 @@ impl PermissionProviderSource for CompositeAuthnBackendExample {
 
     #[inline]
     //noinspection DuplicatedCode
-    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet>> {
+    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet> + Send + Sync> {
         self.permission_provider.clone()
+    }
+    #[inline]
+    //noinspection DuplicatedCode
+    fn permission_provider_ref<'a>(&'a self) -> &'a Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {
+        &self.permission_provider
     }
 }
 #[axum::async_trait]

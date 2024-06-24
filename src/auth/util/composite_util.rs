@@ -20,16 +20,38 @@ pub fn backend_usr_prov <
 }
 
 #[inline(always)]
+pub fn backend_usr_prov_ref <
+    'a, Usr, Cred,
+    B: AuthnBackendAttributes<User=Usr,Credentials=Cred,Error=AuthBackendError>,
+> (backend: &'a Option<B>) -> Option<&'a Arc<dyn AuthUserProvider<User=Usr> + Sync + Send>> {
+    backend.as_ref().map(|b|b.user_provider_ref())
+}
+
+#[inline(always)]
 pub fn backend_perm_prov <
     Usr, Perm, PermSet,
     B: PermissionProviderSource<User=Usr,Permission=Perm,PermissionSet=PermSet>,
 > (backend: &Option<B>)
    -> Option<Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send>> {
     backend.as_ref().map(|b|{
-        let as_send_sync: Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send> = b.permission_provider().clone();
+        let as_send_sync: Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send> = b.permission_provider();
         as_send_sync
     })
 }
+
+/*
+#[inline(always)]
+pub fn backend_perm_prov_ref <
+    'a, Usr, Perm, PermSet,
+    B: PermissionProviderSource<User=Usr,Permission=Perm,PermissionSet=PermSet>,
+> (backend: &'a Option<B>)
+   -> Option<&'a Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send>> {
+    backend.as_ref().map(|b|{
+        let as_send_sync: Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send> = b.permission_provider_ref();
+        as_send_sync
+    })
+}
+*/
 
 // -------------------------------------------------------------------------------------------------
 

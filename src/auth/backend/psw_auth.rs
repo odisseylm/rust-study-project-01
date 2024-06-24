@@ -29,8 +29,8 @@ pub struct PswAuthBackendImpl <
     Perm = EmptyPerm,
     PermSet = AlwaysAllowedPermSet<Perm>,
 > {
-    users_provider: Arc<dyn AuthUserProvider<User=User> + Send + Sync>,
-    permission_provider: Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet> + Send + Sync>,
+    pub(crate) users_provider: Arc<dyn AuthUserProvider<User=User> + Send + Sync>,
+    pub(crate) permission_provider: Arc<dyn PermissionProvider<User=User,Permission=Perm,PermissionSet=PermSet> + Send + Sync>,
     _pd: PhantomData<PswComparator>,
 }
 
@@ -132,13 +132,18 @@ impl<
     type Permission = Perm;
     type PermissionSet = PermSet;
 
-    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet>> {
+    #[inline]
+    //noinspection DuplicatedCode
+    fn permission_provider(&self)
+        -> Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {
         self.permission_provider.clone()
     }
-    // TODO: try to use ref
-    // fn permission_provider_ref(&self) -> &Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet>> {
-    //     &self.permission_provider
-    // }
+    #[inline]
+    //noinspection DuplicatedCode
+    fn permission_provider_ref<'a>(&'a self)
+        -> &'a Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {
+        &self.permission_provider
+    }
 }
 
 

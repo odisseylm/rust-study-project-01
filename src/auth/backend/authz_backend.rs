@@ -56,8 +56,8 @@ pub trait PermissionProviderSource {
     type Permission: Debug + Clone + Hash + Eq + Send + Sync;
     type PermissionSet: PermissionSet<Permission=Self::Permission> + Clone;
 
-    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=Self::User,Permission=Self::Permission,PermissionSet=Self::PermissionSet>>;
-    // fn permission_provider_ref(&self) -> &Arc<dyn PermissionProvider<User=Self::User,Permission=Self::Permission,PermissionSet=Self::PermissionSet>>;
+    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=Self::User,Permission=Self::Permission,PermissionSet=Self::PermissionSet> + Send + Sync>;
+    fn permission_provider_ref<'a>(&'a self) -> &'a Arc<dyn PermissionProvider<User=Self::User,Permission=Self::Permission,PermissionSet=Self::PermissionSet> + Send + Sync>;
 }
 
 

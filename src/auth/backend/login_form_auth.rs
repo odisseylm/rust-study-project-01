@@ -10,25 +10,33 @@ use super::super::{
     backend::{
         AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction,
         psw_auth::PswUser,
-        authz_backend::{ AuthorizeBackend, PermissionProviderSource, AuthorizationResult },
+        authz_backend::{ AuthorizeBackend, PermissionProviderSource },
     },
     user_provider::AuthUserProvider,
     psw::PasswordComparator,
     permission::{
-        PermissionProvider, PermissionSet, PermissionProcessError,
+        PermissionProvider, PermissionSet,
         empty_perm_provider::{ AlwaysAllowedPermSet, EmptyPerm },
     },
     util::http::url_encode,
 };
 
 #[cfg(feature = "ambassador")]
-use super::axum_login_delegatable::ambassador_impl_AuthnBackend;
-#[cfg(feature = "ambassador")]
 use axum_login::AuthnBackend;
 #[cfg(feature = "ambassador")]
-use crate::auth::backend::authz_backend::ambassador_impl_PermissionProviderSource;
-#[cfg(feature = "ambassador")]
-use crate::auth::backend::authz_backend::ambassador_impl_AuthorizeBackend;
+use super::{
+    super::{
+        backend::authz_backend:: {
+            AuthorizationResult,
+            authz_backend::{
+                ambassador_impl_PermissionProviderSource,
+                ambassador_impl_AuthorizeBackend,
+            },
+        },
+        permission::PermissionProcessError,
+    },
+    axum_login_delegatable::ambassador_impl_AuthnBackend,
+};
 
 // -------------------------------------------------------------------------------------------------
 
@@ -125,8 +133,13 @@ impl <
 
     #[inline]
     //noinspection DuplicatedCode
-    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet>> {
+    fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {
         self.psw_backend.permission_provider()
+    }
+    #[inline]
+    //noinspection DuplicatedCode
+    fn permission_provider_ref<'a>(&'a self) -> &'a Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {
+        &self.psw_backend.permission_provider
     }
 }
 
@@ -167,6 +180,10 @@ impl <
     fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=Usr> + Sync + Send> {
         self.psw_backend.users_provider()
     }
+    fn user_provider_ref<'a>(&'a self) -> &'a Arc<dyn AuthUserProvider<User=Self::User> + Sync + Send> {
+        &self.psw_backend.users_provider
+    }
+
     fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {
         if let AuthBackendMode::AuthProposed = self.config.auth_mode {
             let initial_url: Option<String> = req.extensions().get::<OriginalUri>().map(|uri|uri.to_string());
