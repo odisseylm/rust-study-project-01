@@ -116,9 +116,6 @@ impl <
     PermSet: PermissionSet<Permission=Perm> + Clone,
 > PermissionProviderSource for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
     where
-        PswComp: PasswordComparator + Debug + Clone + Sync + Send,
-        Perm: Hash + Eq + Debug + Clone + Send + Sync,
-        PermSet: PermissionSet<Permission=Perm> + Clone,
         Usr: axum_login::AuthUser<Id = String> {
     type User = Usr;
     type Permission = Perm;

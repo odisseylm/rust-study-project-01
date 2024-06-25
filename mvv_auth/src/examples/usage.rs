@@ -1,13 +1,9 @@
 use axum::extract::{ Request, State };
 use axum::body::Body;
 
-use crate::{
-    AuthBackendError,
-};
-use crate::examples::auth_user::AuthUserExample;
 use crate::route::validate_authentication_chain;
 use super::composite_auth::{
-    CompositeAuthCredentials, CompositeAuthnBackendExample, Role, RolePermissionsSet,
+    CompositeAuthnBackendExample, Role, RolePermissionsSet,
 };
 
 
@@ -17,8 +13,7 @@ pub impl <S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for 
     #[track_caller]
     fn authn_required(self) -> Self {
         self.route_layer(axum::middleware::from_fn(
-            validate_authentication_chain::
-                <AuthUserExample, CompositeAuthCredentials, AuthBackendError, CompositeAuthnBackendExample>))
+            validate_authentication_chain::<CompositeAuthnBackendExample>))
     }
 }
 

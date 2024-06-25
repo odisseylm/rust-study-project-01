@@ -1,5 +1,4 @@
-use std::fmt::{Debug, Display};
-use std::hash::Hash;
+use core::fmt::Display;
 use askama_axum::IntoResponse;
 use axum::body::Body;
 use axum::extract::{Request, State};
@@ -9,24 +8,22 @@ use log::error;
 use crate::backend::{
     AuthnBackendAttributes, RequestAuthenticated, authz_backend::AuthorizeBackend,
 };
-use crate::permission::{ PermissionSet, util::log_unauthorized_access };
+use crate::backend::authz_backend::PermissionProviderSource;
+use crate::permission::util::log_unauthorized_access;
 
 
-
-pub async fn validate_authentication_chain <
-    Usr: axum_login::AuthUser,
-    Creds: Send + Sync,
-    Err: std::error::Error + IntoResponse + Send + Sync,
-    Backend: axum_login::AuthnBackend<User=Usr,Credentials=Creds,Error=Err> + RequestAuthenticated + 'static
-> (
+pub async fn validate_authentication_chain <Backend> (
     auth_session: axum_login::AuthSession<Backend>,
     req: Request,
     next: axum::middleware::Next,
-) -> http::Response<Body> {
-
+) -> http::Response<Body>
+    where
+        Backend: axum_login::AuthnBackend + RequestAuthenticated + 'static,
+        Backend: axum_login::AuthnBackend<Error: IntoResponse>,
+{
     let (req, is_auth_res) =
         auth_session.backend.do_authenticate_request::
-            <Creds, Err, Backend,()>(auth_session.clone(), req).await;
+            <Backend::Credentials, Backend::Error, Backend,()>(auth_session.clone(), req).await;
     match is_auth_res {
         Ok(None) => StatusCode::UNAUTHORIZED.into_response(),
         Ok(_) => next.run(req).await,
@@ -35,27 +32,26 @@ pub async fn validate_authentication_chain <
 }
 
 
-pub async fn validate_authorization_chain<
-    Usr: axum_login::AuthUser + 'static,
-    Creds: Send + Sync,
-    Err: std::error::Error + IntoResponse + Send + Sync,
-    Backend: axum_login::AuthnBackend<User=Usr,Credentials=Creds,Error=Err>
-        + RequestAuthenticated
-        + AuthorizeBackend<User=Usr,Permission=Perm,PermissionSet=PermSet>
-        + AuthnBackendAttributes
-        + 'static,
-    Perm: Hash + Eq + Display + Debug + Clone + Send + Sync + 'static,
-    PermSet: PermissionSet<Permission=Perm> + Clone + Display + 'static,
-> (
+pub async fn validate_authorization_chain <Backend> (
     auth_session: axum_login::AuthSession<Backend>,
-    required_permissions: PermSet,
+    required_permissions: <Backend as PermissionProviderSource>::PermissionSet,
     req: Request,
     next: axum::middleware::Next,
-) -> http::Response<Body> {
+) -> http::Response<Body>
+    where
+        Backend: axum_login::AuthnBackend<Error: IntoResponse>
+            + RequestAuthenticated
+            + AuthorizeBackend
+            + AuthnBackendAttributes
+            + 'static,
+        Backend: axum_login::AuthnBackend<User = <Backend as PermissionProviderSource>::User>,
+        <Backend as PermissionProviderSource>::Permission: Display,
+        <Backend as PermissionProviderSource>::PermissionSet: Display,
+{
 
     let (req, user_opt_res) = auth_session.backend
         .do_authenticate_request::
-            <Creds, Err, Backend, ()>(auth_session.clone(), req).await;
+            <Backend::Credentials, Backend::Error, Backend, ()>(auth_session.clone(), req).await;
 
     let user_opt = match user_opt_res {
         Ok(user_opt) => user_opt,
@@ -89,21 +85,20 @@ pub async fn validate_authorization_chain<
 
 
 #[inline]
-pub async fn validate_authorization_chain_as_middleware_fn<
-    Usr: axum_login::AuthUser + 'static,
-    Creds: Send + Sync,
-    Err: std::error::Error + IntoResponse + Send + Sync,
-    Backend: axum_login::AuthnBackend<User=Usr,Credentials=Creds,Error=Err>
+pub async fn validate_authorization_chain_as_middleware_fn <Backend> (
+    auth_session: axum_login::AuthSession<Backend>,
+    required_permissions: State< <Backend as PermissionProviderSource>::PermissionSet >,
+    req: Request, next: axum::middleware::Next,
+) -> http::Response<Body>
+    where
+        Backend: axum_login::AuthnBackend<Error: IntoResponse>
         + RequestAuthenticated
-        + AuthorizeBackend<User=Usr,Permission=Perm,PermissionSet=PermSet>
+        + AuthorizeBackend
         + AuthnBackendAttributes
         + 'static,
-    Perm: Hash + Eq + Display + Debug + Clone + Send + Sync + 'static,
-    PermSet: PermissionSet<Permission=Perm> + Clone + Display + 'static,
-> (
-    auth_session: axum_login::AuthSession<Backend>,
-    required_permissions: State<PermSet>,
-    req: Request, next: axum::middleware::Next,
-) -> http::Response<Body> {
+        Backend: axum_login::AuthnBackend<User = <Backend as PermissionProviderSource>::User>,
+        <Backend as PermissionProviderSource>::Permission: Display,
+        <Backend as PermissionProviderSource>::PermissionSet: Display,
+{
     validate_authorization_chain(auth_session, required_permissions.0, req, next).await
 }

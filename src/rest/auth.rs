@@ -34,7 +34,7 @@ pub impl <S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for 
     #[track_caller]
     fn authn_required(self) -> Self {
         self.route_layer(axum::middleware::from_fn(
-            validate_authentication_chain::<AuthUser, AuthCredentials, AuthBackendError, AuthnBackend>))
+            validate_authentication_chain::<AuthnBackend>))
     }
 }
 
@@ -49,16 +49,14 @@ pub impl <S: Clone + Send + Sync + 'static> RequiredAuthorizationExtension for a
         use mvv_auth::permission::PermissionSet;
         self.route_layer(axum::middleware::from_fn_with_state(
             RolePermissionsSet::from_permission(role),
-            mvv_auth::route::validate_authorization_chain_as_middleware_fn::
-                <AuthUser, AuthCredentials, AuthBackendError, AuthnBackend, Role, RolePermissionsSet>
+            mvv_auth::route::validate_authorization_chain_as_middleware_fn::<AuthnBackend>
         ))
     }
     #[track_caller]
     fn roles_required(self, roles: RolePermissionsSet) -> Self {
         self.route_layer(axum::middleware::from_fn_with_state(
             roles,
-            mvv_auth::route::validate_authorization_chain_as_middleware_fn::
-                <AuthUser,AuthCredentials,AuthBackendError,AuthnBackend,Role,RolePermissionsSet>,
+            mvv_auth::route::validate_authorization_chain_as_middleware_fn::<AuthnBackend>,
         ))
     }
 }

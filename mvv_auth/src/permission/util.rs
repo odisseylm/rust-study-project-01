@@ -1,4 +1,4 @@
-use core::fmt::{ Debug, Display };
+use core::fmt::Display;
 use axum::extract::{OriginalUri, Request};
 use log::warn;
 
@@ -8,9 +8,10 @@ use crate::permission::PermissionSet;
 
 pub fn log_unauthorized_user <
     User: axum_login::AuthUser + 'static,
-    Perm: Display + Debug + Clone + Send + Sync + 'static,
-    PermSet: PermissionSet<Permission=Perm> + Display + Clone + 'static,
-> (user: &User, res: &AuthorizationResult<Perm, PermSet>) {
+    PermSet: PermissionSet + Display + Clone + 'static,
+> (user: &User, res: &AuthorizationResult< <PermSet as PermissionSet>::Permission, PermSet>)
+    where <PermSet as PermissionSet>::Permission: Display
+{
     match res {
         AuthorizationResult::Authorized => {}
         AuthorizationResult::NoPermission(ref no_permission) => {
@@ -25,10 +26,11 @@ pub fn log_unauthorized_user <
 
 pub fn log_unauthorized_access <
     User: axum_login::AuthUser + 'static,
-    Perm: Display + Debug + Clone + Send + Sync + 'static,
-    PermSet: PermissionSet<Permission=Perm> + Display + Clone + 'static,
-> (req: Request, user: &User, res: &AuthorizationResult<Perm, PermSet>) -> (Request,) {
-
+    PermSet: PermissionSet + Display + Clone + 'static,
+> (req: Request, user: &User, res: &AuthorizationResult< <PermSet as PermissionSet>::Permission, PermSet>)
+    -> (Request,)
+    where <PermSet as PermissionSet>::Permission: Display
+{
     let url: String = req.extensions().get::<OriginalUri>()
         .map(|uri|uri.to_string())
         .unwrap_or_else(||String::new());
