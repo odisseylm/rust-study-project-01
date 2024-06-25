@@ -53,7 +53,7 @@ impl Default for LoginFormAuthConfig {
     fn default() -> Self {
         LoginFormAuthConfig {
             auth_mode: AuthBackendMode::AuthProposed,
-            login_url: "/mvv_auth/login_form/login",
+            login_url: "/login",
         }
     }
 }
@@ -294,73 +294,70 @@ pub mod web {
         where User: axum_login::AuthUser<Id = String>,
     {
         Router::new()
-            .route("/mvv_auth/login_form/login", POST(post::login::password::<User,PswComparator,Perm,PermSet>))
-            .route("/mvv_auth/login_form/login", GET(get::login))
-            .route("/mvv_auth/login_form/logout", GET(get::logout::<User,PswComparator,Perm,PermSet>))
+            .route("/login", POST(post::login::<User,PswComparator,Perm,PermSet>))
+            .route("/login", GET(get::login))
+            .route("/logout", GET(get::logout::<User,PswComparator,Perm,PermSet>))
     }
 
     mod post {
         use super::*;
 
-        pub(super) mod login {
-            use core::fmt::Debug;
-            use std::hash::Hash;
-            use log::error;
-            use crate::{ PasswordComparator };
-            use crate::backend::{ LoginFormAuthBackend, PswAuthCredentials, psw_auth::PswUser };
-            use crate::permission::PermissionSet;
-            use super::*;
+        use core::fmt::Debug;
+        use std::hash::Hash;
+        use log::error;
+        use crate::{ PasswordComparator };
+        use crate::backend::{ LoginFormAuthBackend, PswAuthCredentials, psw_auth::PswUser };
+        use crate::permission::PermissionSet;
 
-            pub async fn password <
-                User: axum_login::AuthUser + PswUser,
-                PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
-                // !!! We cannot use there default params (like EmptyPerm/AlwaysAllowedPermSet) because axum_login
-                // uses type_id for looking data in the session.
-                Perm: Hash + Eq + Debug + Clone + Send + Sync,
-                PermSet: PermissionSet<Permission=Perm> + Clone,
-            > (
-                mut auth_session: axum_login::AuthSession<LoginFormAuthBackend<User,PswComparator,Perm,PermSet>>,
-                Form(creds): Form<PswAuthCredentials>,
-            ) -> impl IntoResponse
-                where User: axum_login::AuthUser<Id = String>,
-            {
-                let auth_res: Result<Option<User>, axum_login::Error<LoginFormAuthBackend<User,PswComparator,Perm,PermSet>>> =
-                    auth_session.authenticate(creds.clone()).await;
-                let user = match auth_res {
-                    Ok(Some(user)) => user,
-                    Ok(None) => {
-                        return LoginTemplate {
-                                message: Some("Invalid credentials.".to_string()),
-                                next: creds.next,
-                            }
-                            .into_response()
-                    }
-                    Err(err) => {
-                        match err {
-                            axum_login::Error::Session(err) => {
-                                error!("Authentication session error [{}]", err)
-                            }
-                            axum_login::Error::Backend(err) => {
-                                error!("Authentication backend error [{}]", err)
-                            }
+        pub async fn login <
+            User: axum_login::AuthUser + PswUser,
+            PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+            // !!! We cannot use there default params (like EmptyPerm/AlwaysAllowedPermSet) because axum_login
+            // uses type_id for looking data in the session.
+            Perm: Hash + Eq + Debug + Clone + Send + Sync,
+            PermSet: PermissionSet<Permission=Perm> + Clone,
+        > (
+            mut auth_session: axum_login::AuthSession<LoginFormAuthBackend<User,PswComparator,Perm,PermSet>>,
+            Form(creds): Form<PswAuthCredentials>,
+        ) -> impl IntoResponse
+            where User: axum_login::AuthUser<Id = String>,
+        {
+            let auth_res: Result<Option<User>, axum_login::Error<LoginFormAuthBackend<User,PswComparator,Perm,PermSet>>> =
+                auth_session.authenticate(creds.clone()).await;
+            let user = match auth_res {
+                Ok(Some(user)) => user,
+                Ok(None) => {
+                    return LoginTemplate {
+                            message: Some("Invalid credentials.".to_string()),
+                            next: creds.next,
                         }
-                        return StatusCode::INTERNAL_SERVER_ERROR.into_response()
-                    },
-                    // Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-                };
-
-                if auth_session.login(&user).await.is_err() {
-                    return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+                        .into_response()
                 }
+                Err(err) => {
+                    match err {
+                        axum_login::Error::Session(err) => {
+                            error!("Authentication session error [{}]", err)
+                        }
+                        axum_login::Error::Backend(err) => {
+                            error!("Authentication backend error [{}]", err)
+                        }
+                    }
+                    return StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                },
+                // Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            };
 
-                if let Some(ref next) = creds.next {
-                    Redirect::to(next).into_response()
-                } else {
-                    Redirect::to("/").into_response()
-                }
+            if auth_session.login(&user).await.is_err() {
+                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
             }
 
+            if let Some(ref next) = creds.next {
+                Redirect::to(next).into_response()
+            } else {
+                Redirect::to("/").into_response()
+            }
         }
+
     }
 
 

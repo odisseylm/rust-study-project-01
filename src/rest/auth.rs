@@ -2,20 +2,25 @@ use std::sync::Arc;
 use mvv_auth::{ AuthBackendMode, AuthUserProviderError };
 use mvv_auth::user_provider::{ InMemAuthUserProvider };
 use mvv_auth::backend::{ LoginFormAuthBackend, LoginFormAuthConfig, OAuth2AuthBackend, OAuth2Config };
-use mvv_auth::permission::{ PermissionProvider };
 
-use mvv_auth::examples::auth_user::{ AuthUserExamplePswExtractor };
-use mvv_auth::examples::composite_auth::CompositeAuthnBackendExample;
 use mvv_auth::route::validate_authentication_chain;
 
 
 pub type AuthUser = mvv_auth::examples::auth_user::AuthUserExample;
 pub type PswComparator = mvv_auth::PlainPasswordComparator;
-// pub type AuthCredentials = mvv_auth::examples::composite_auth::CompositeAuthCredentials;
-// pub type AuthnBackend = mvv_auth::examples::composite_auth::CompositeAuthnBackendExample;
-pub type AuthCredentials = mvv_auth::backend::PswAuthCredentials;
-pub type AuthnBackend = LoginFormAuthBackend<AuthUser,PswComparator,Role,RolePermissionsSet>;
-// pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
+
+pub type CompositeAuthCredentials = mvv_auth::examples::composite_auth::CompositeAuthCredentials;
+pub type CompositeAuthnBackend = mvv_auth::examples::composite_auth::CompositeAuthnBackendExample;
+
+pub type PswAuthCredentials = mvv_auth::backend::PswAuthCredentials;
+pub type LoginFormAuthnBackend = LoginFormAuthBackend<AuthUser,PswComparator,Role,RolePermissionsSet>;
+
+pub type AuthCredentials = CompositeAuthCredentials;
+pub type AuthnBackend = CompositeAuthnBackend;
+// pub type AuthCredentials = PswAuthCredentials;
+// pub type AuthnBackend = LoginFormAuthnBackend;
+pub type AuthSession = axum_login::AuthSession<AuthnBackend>;
+
 pub type AuthBackendError = mvv_auth::AuthBackendError;
 pub type Role = mvv_auth::permission::predefined::Role;
 pub type RolePermissionsSet = mvv_auth::permission::predefined::RolePermissionsSet;
@@ -59,11 +64,10 @@ pub impl <S: Clone + Send + Sync + 'static> RequiredAuthorizationExtension for a
 }
 
 
-pub async fn auth_manager_layer_with_composite_backend()
-    -> Result<axum_login::AuthManagerLayer<CompositeAuthnBackendExample, axum_login::tower_sessions::MemoryStore>, anyhow::Error> {
+pub async fn composite_auth_manager_layer()
+    -> Result<axum_login::AuthManagerLayer<CompositeAuthnBackend, axum_login::tower_sessions::MemoryStore>, anyhow::Error> {
 
     use axum_login::{
-        // login_required,
         tower_sessions::{cookie::SameSite, Expiry, MemoryStore, SessionManagerLayer},
         AuthManagerLayerBuilder,
     };
@@ -81,10 +85,8 @@ pub async fn auth_manager_layer_with_composite_backend()
     // This combines the session layer with our backend to establish the auth service
     // which will provide the auth session as a request extension.
     //
-    // let usr_provider: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::test_users() ?);
-    let usr_provider: Arc<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,AuthUserExamplePswExtractor>> =
-        Arc::new(in_memory_test_users() ?);
-    let permission_provider: Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet>> = usr_provider.clone();
+    let usr_provider = Arc::new(users_and_perm_provider() ?);
+    let permission_provider = usr_provider.clone();
 
     // Rust does not support casting dyn sub-trait to dyn super-trait :-(
     // let std_usr_provider: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = wrap_static_ptr_auth_user_provider(Arc::clone(&usr_provider_impl));
@@ -126,19 +128,19 @@ pub async fn auth_manager_layer_with_composite_backend()
         permission_provider.clone(),
     );
 
-    let backend = CompositeAuthnBackendExample::with_backends(
+    let backend = CompositeAuthnBackend::with_backends(
         Some(http_basic_auth_backend),
         Some(login_form_auth_backend),
         // None,
         oauth2_backend_opt,
     ) ?;
-    let auth_layer: axum_login::AuthManagerLayer<CompositeAuthnBackendExample, MemoryStore> =
+    let auth_layer: axum_login::AuthManagerLayer<CompositeAuthnBackend, MemoryStore> =
         AuthManagerLayerBuilder::new(backend, session_layer).build();
     Ok(auth_layer)
 }
 
 
-pub async fn auth_manager_layer_with_login_form_default()
+pub async fn login_form_auth_manager_layer(login_url: &'static str)
     -> Result<axum_login::AuthManagerLayer<
         LoginFormAuthBackend<AuthUser, PswComparator, Role, RolePermissionsSet>,
         axum_login::tower_sessions::MemoryStore>, anyhow::Error> {
@@ -161,31 +163,22 @@ pub async fn auth_manager_layer_with_login_form_default()
     // This combines the session layer with our backend to establish the auth service
     // which will provide the auth session as a request extension.
     //
-    // let usr_provider: Arc<InMemAuthUserProvider<AuthUser>> = Arc::new(InMemAuthUserProvider::test_users() ?);
-    let usr_provider: Arc<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,AuthUserExamplePswExtractor>> =
-        Arc::new(in_memory_test_users() ?);
-    let permission_provider: Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet>> = usr_provider.clone();
+    let usr_provider = Arc::new(users_and_perm_provider() ?);
+    let permission_provider = usr_provider.clone();
 
-    // let http_basic_auth_backend = mvv_auth::backend::HttpBasicAuthBackend::<AuthUser,PlainPasswordComparator,Role,RolePermissionsSet>::new(
-    //     usr_provider.clone(),
-    //     AuthBackendMode::AuthProposed, // It makes sense for pure server SOA (especially for testing)
-    //     // AuthBackendMode::AuthSupported,
-    //     permission_provider.clone(),
-    // );
     let login_form_auth_backend = LoginFormAuthBackend::
             <AuthUser,PswComparator,Role,RolePermissionsSet>::new(
         usr_provider,
-        LoginFormAuthConfig::default(),
-        permission_provider,
-    );
+        LoginFormAuthConfig { login_url, ..LoginFormAuthConfig::default() },
+        permission_provider);
 
-    let auth_layer: axum_login::AuthManagerLayer<
-        LoginFormAuthBackend<AuthUser, PswComparator, Role, RolePermissionsSet>,
-        MemoryStore> =
+    let auth_layer: axum_login::AuthManagerLayer
+        <LoginFormAuthBackend<AuthUser, PswComparator, Role, RolePermissionsSet>, MemoryStore> =
         AuthManagerLayerBuilder::new(login_form_auth_backend, session_layer).build();
     Ok(auth_layer)
 }
 
-pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
+pub fn users_and_perm_provider()
+    -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,mvv_auth::examples::auth_user::AuthUserExamplePswExtractor>, AuthUserProviderError> {
     mvv_auth::examples::composite_auth::test::in_memory_test_users()
 }

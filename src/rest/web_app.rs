@@ -2,13 +2,17 @@ use std::sync::Arc;
 use axum::Router;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
+
 use crate::database::DatabaseConnection;
-use crate::rest::account_rest::{ AccountRest, accounts_rest_router };
-use crate::rest::app_dependencies::Dependencies;
-use crate::rest::auth::{Role, RolePermissionsSet};
 use crate::service::account_service::AccountServiceImpl;
-use crate::web::auth::login_router;
-use crate::web::templates::protected_page_01::protected_page_01_router;
+use crate::rest::{
+    app_dependencies::Dependencies,
+    account_rest::{ AccountRest, accounts_rest_router },
+};
+use crate::web::{
+    auth::composite_login_router,
+    templates::protected_page_01::protected_page_01_router,
+};
 
 
 fn create_prod_dependencies() -> Dependencies<AccountServiceImpl> {
@@ -24,9 +28,7 @@ fn create_prod_dependencies() -> Dependencies<AccountServiceImpl> {
     }
 }
 
-
-pub async fn web_app_main() -> Result<(), anyhow::Error> {
-
+fn init_logger() {
     // // Set environment for logging configuration
     // if std::env::var("RUST_LOG").is_err() {
     //     std::env::set_var("RUST_LOG", "info,myapp=debug");
@@ -38,7 +40,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     //     .init();
 
     // tracing_subscriber::fmt()
-    //     // .with_timer() /TODO: play with it
+    //     // .with_timer() // T O D O: play with it
     //     // .with_env_filter(EnvFilter::from_default_env())
     //     .init();
 
@@ -70,26 +72,35 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
         .with(tracing_subscriber::fmt::layer())
         .try_init()?;
     */
+}
 
+pub async fn web_app_main() -> Result<(), anyhow::Error> {
+
+    init_logger();
     log::info!("Hello from [web_app_main]");
 
     let dependencies = create_prod_dependencies();
-    // let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, axum_login::tower_sessions::MemoryStore> =
-    //     auth_manager_layer().await ?;
 
-    use crate::rest::auth::{ auth_manager_layer_with_login_form_default, AuthUser, PswComparator };
-    let auth_layer =
-        auth_manager_layer_with_login_form_default().await ?;
+    use crate::rest::auth::{ composite_auth_manager_layer };
+    let auth_layer = composite_auth_manager_layer().await ?;
+    let login_route = composite_login_router();
+
+    // #[allow(non_upper_case_globals)]
+    // const login_url_prefix: &'static str = ""; // "/mvv_auth_555/login_form";
+    // use crate::rest::auth::{ login_form_auth_manager_layer, AuthUser, PswComparator };
+    // use const_format::concatcp;
+    // let auth_layer = login_form_auth_manager_layer(concatcp!(login_url_prefix, "/login")).await ?;
+    // let login_route = Router::new().nest(login_url_prefix,
+    //           mvv_auth::backend::login_form_auth::web::login_router::
+    //             <AuthUser,PswComparator,Role,RolePermissionsSet>());
 
     let app_router = Router::new()
-        .merge(mvv_auth::backend::login_form_auth::web::login_router::<AuthUser,PswComparator,Role,RolePermissionsSet>())
-        .merge(login_router())
+        .merge(login_route)
         .merge(protected_page_01_router())
         .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
-                // .layer(axum::middleware::from_fn(temp_my_middleware))
                 .layer(auth_layer)
                 // additional state which will/can be accessible for ALL route methods
                 // .layer(Extension(Arc::new(State22 { x: "963" })))
@@ -103,7 +114,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
 
 
 /*
-fn aaa() {
+fn with_histogram() {
     use tracing::*;
     use tracing_timing::{Builder, Histogram};
 

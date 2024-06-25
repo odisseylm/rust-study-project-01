@@ -27,7 +27,7 @@ pub struct NextUrl {
     next: Option<String>,
 }
 
-pub fn login_router() -> Router<()> {
+pub fn composite_login_router() -> Router<()> {
     Router::new()
         .route("/login/password", POST(post::login::password))
         .route("/login/oauth", POST(post::login::oauth))
