@@ -15,10 +15,10 @@ pub fn protected_page_01_router() -> Router<()> {
 
 mod get {
     use super::*;
-    use crate::rest::auth::AuthSession;
+    use crate::rest::auth::AuthnBackend;
     use axum::{ http::StatusCode, response::IntoResponse };
 
-    pub async fn protected_page_01(auth_session: AuthSession) -> impl IntoResponse {
+    pub async fn protected_page_01(auth_session: axum_login::AuthSession<AuthnBackend>) -> impl IntoResponse {
         match auth_session.user {
             Some(user) => ProtectedTemplate {
                 username: &user.username,

@@ -5,7 +5,7 @@ use tower_http::trace::TraceLayer;
 use crate::database::DatabaseConnection;
 use crate::rest::account_rest::{ AccountRest, accounts_rest_router };
 use crate::rest::app_dependencies::Dependencies;
-use crate::rest::auth::{auth_manager_layer, AuthnBackend};
+use crate::rest::auth::{Role, RolePermissionsSet};
 use crate::service::account_service::AccountServiceImpl;
 use crate::web::auth::login_router;
 use crate::web::templates::protected_page_01::protected_page_01_router;
@@ -52,9 +52,9 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
         std::env::set_var("RUST_LOG", "info");
     }
 
-    use tracing_subscriber::EnvFilter;
-    use tracing_subscriber::layer::SubscriberExt;
-    use tracing_subscriber::util::SubscriberInitExt;
+    use tracing_subscriber::{
+        EnvFilter, layer::SubscriberExt, util::SubscriberInitExt,
+    };
 
     // Start logging to console
     tracing_subscriber::registry()
@@ -74,9 +74,15 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     log::info!("Hello from [web_app_main]");
 
     let dependencies = create_prod_dependencies();
-    let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, axum_login::tower_sessions::MemoryStore> = auth_manager_layer().await ?;
+    // let auth_layer: axum_login::AuthManagerLayer<AuthnBackend, axum_login::tower_sessions::MemoryStore> =
+    //     auth_manager_layer().await ?;
+
+    use crate::rest::auth::{ auth_manager_layer_with_login_form_default, AuthUser, PswComparator };
+    let auth_layer =
+        auth_manager_layer_with_login_form_default().await ?;
 
     let app_router = Router::new()
+        .merge(mvv_auth::backend::login_form_auth::web::login_router::<AuthUser,PswComparator,Role,RolePermissionsSet>())
         .merge(login_router())
         .merge(protected_page_01_router())
         .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))

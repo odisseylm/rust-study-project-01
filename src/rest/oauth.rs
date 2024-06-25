@@ -25,14 +25,14 @@ pub fn router() -> Router<()> {
 }
 
 mod get {
-    use crate::rest::auth::AuthCredentials as CompositeAuthCredentials;
-    use crate::rest::auth::AuthSession;
+    // use crate::rest::auth::AuthCredentials as CompositeAuthCredentials;
     use mvv_auth::backend::{ OAuth2AuthCredentials as OAuthCreds };
+    use mvv_auth::examples::composite_auth::{CompositeAuthCredentials, CompositeAuthnBackendExample};
     use super::*;
 
     pub async fn callback /*<B: axum_login::AuthnBackend>*/ (
         // mut auth_session: AuthSession<B>,
-        mut auth_session: AuthSession,
+        mut auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
         session: Session,
         Query(AuthzResp {
                   code,

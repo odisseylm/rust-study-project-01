@@ -1,33 +1,14 @@
 use axum::extract::{ Request, State };
 use axum::body::Body;
-use axum::response::IntoResponse;
-use http::status::StatusCode;
-use log::error;
 
 use crate::{
-    AuthnBackendAttributes,
-    backend::{ RequestAuthenticated, authz_backend::AuthorizeBackend, },
-    permission::util::log_unauthorized_access,
+    AuthBackendError,
 };
-use super::composite_auth::{ CompositeAuthnBackendExample, Role, RolePermissionsSet };
-
-
-pub async fn validate_authentication_chain (
-    auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
-    req: Request,
-    next: axum::middleware::Next,
-) -> http::Response<Body> {
-
-    use crate::backend::RequestAuthenticated;
-
-    let (req, is_auth_res) =
-        auth_session.backend.do_authenticate_request::<()>(req).await;
-    match is_auth_res {
-        Ok(None) => StatusCode::UNAUTHORIZED.into_response(),
-        Ok(_) => next.run(req).await,
-        Err(action) => action.into_response()
-    }
-}
+use crate::examples::auth_user::AuthUserExample;
+use crate::route::validate_authentication_chain;
+use super::composite_auth::{
+    CompositeAuthCredentials, CompositeAuthnBackendExample, Role, RolePermissionsSet,
+};
 
 
 #[extension_trait::extension_trait]
@@ -35,60 +16,23 @@ pub impl <S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for 
     // #[inline] // warning: `#[inline]` is ignored on function prototypes
     #[track_caller]
     fn authn_required(self) -> Self {
-        self.route_layer(axum::middleware::from_fn(validate_authentication_chain))
-    }
-}
-
-
-
-pub async fn validate_authorization_chain (
-    auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
-    required_permissions: RolePermissionsSet,
-    req: Request,
-    next: axum::middleware::Next,
-) -> http::Response<Body> {
-
-    let (req, user_opt_res) = auth_session.backend
-        .do_authenticate_request::<()>(req).await;
-
-    let user_opt = match user_opt_res {
-        Ok(user_opt) => user_opt,
-        Err(err_response) => { return err_response.into_response(); }
-    };
-
-    if let Some(ref user) = user_opt {
-        let authz_res = auth_session.backend.authorize(user, required_permissions).await;
-        match authz_res {
-            Ok(ref authz_res) => {
-                if authz_res.is_authorized() {
-                    next.run(req).await
-                } else {
-                    log_unauthorized_access(req, user, authz_res);
-                    // Probably by security reason it would be better return 401/404. It is up to you.
-                    StatusCode::FORBIDDEN.into_response()
-                }
-            }
-            Err(err) => {
-                // TODO: verify printed result and stack-trace
-                error!("Permission process error: {}", err);
-                StatusCode::INTERNAL_SERVER_ERROR.into_response()
-            }
-        }
-    } else {
-        auth_session.backend.propose_authentication_action(&req)
-            .map(|unauthenticated_action|unauthenticated_action.into_response())
-            .unwrap_or_else(||StatusCode::UNAUTHORIZED.into_response())
+        self.route_layer(axum::middleware::from_fn(
+            validate_authentication_chain::
+                <AuthUserExample, CompositeAuthCredentials, AuthBackendError, CompositeAuthnBackendExample>))
     }
 }
 
 
 #[inline]
-pub async fn internal_validate_authorization_chain (
+pub async fn validate_authorization_chain_as_middleware_fn<
+> (
     auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
-    State(required_permissions): State<RolePermissionsSet>,
+    required_permissions: State<RolePermissionsSet>,
     req: Request, next: axum::middleware::Next,
 ) -> http::Response<Body> {
-    validate_authorization_chain(auth_session, required_permissions, req, next).await
+    crate::route::validate_authorization_chain_as_middleware_fn(
+        auth_session, required_permissions, req, next,
+    ).await
 }
 
 
@@ -99,10 +43,11 @@ pub impl <S: Clone + Send + Sync + 'static> RequiredAuthorizationExtension for a
         use crate::permission::PermissionSet;
         self.route_layer(axum::middleware::from_fn_with_state(
             RolePermissionsSet::from_permission(role),
-            internal_validate_authorization_chain))
+            validate_authorization_chain_as_middleware_fn))
     }
     #[track_caller]
     fn roles_required(self, roles: RolePermissionsSet) -> Self {
-        self.route_layer(axum::middleware::from_fn_with_state(roles, internal_validate_authorization_chain))
+        self.route_layer(axum::middleware::from_fn_with_state(
+            roles, validate_authorization_chain_as_middleware_fn))
     }
 }

@@ -42,17 +42,17 @@ mod post {
         use log::error;
         use crate::rest::auth::AuthUser;
         use mvv_auth::backend::PswAuthCredentials as PasswordCreds;
-        use mvv_auth::examples::composite_auth::{CompositeAuthCredentials as Credentials, CompositeAuthnBackendExample};
-        use crate::rest::auth::AuthSession;
+        use mvv_auth::examples::composite_auth::{CompositeAuthCredentials, CompositeAuthnBackendExample};
         use crate::rest::oauth::CSRF_STATE_KEY;
         use super::*;
 
         pub async fn password(
-            mut auth_session: AuthSession,
+            mut auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
             Form(creds): Form<PasswordCreds>,
         ) -> impl IntoResponse {
-            let auth_res: Result<Option<AuthUser>, axum_login::Error<CompositeAuthnBackendExample>> = auth_session.authenticate(
-                Credentials::Password(creds.clone())).await;
+            let auth_res: Result<Option<AuthUser>, axum_login::Error<CompositeAuthnBackendExample>> =
+                auth_session.authenticate(
+                    CompositeAuthCredentials::Password(creds.clone())).await;
             let user = match auth_res {
                 Ok(Some(user)) => user,
                 Ok(None) => {
@@ -110,7 +110,7 @@ mod post {
         }
 
         pub async fn oauth(
-            auth_session: AuthSession,
+            auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
             session: Session,
             Form(NextUrl { next }): Form<NextUrl>,
         ) -> impl IntoResponse {
@@ -133,15 +133,14 @@ mod post {
 }
 
 mod get {
-    use crate::rest::auth::AuthSession;
-    // use super::super::super::rest::auth::AuthSession;
+    use mvv_auth::examples::composite_auth::CompositeAuthnBackendExample;
     use super::*;
 
     pub async fn login(Query(NextUrl { next }): Query<NextUrl>) -> LoginTemplate {
         LoginTemplate { message: None, next }
     }
 
-    pub async fn logout(mut auth_session: AuthSession) -> impl IntoResponse {
+    pub async fn logout(mut auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>) -> impl IntoResponse {
         match auth_session.logout().await {
             Ok(_) => Redirect::to("/login").into_response(),
             Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),

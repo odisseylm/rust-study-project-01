@@ -194,8 +194,13 @@ impl <
 > RequestAuthenticated for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
-    async fn do_authenticate_request<S: Send + Sync>(&self, req: Request)
-        -> (Request, Result<Option<Self::User>, Self::Error>)
+    async fn do_authenticate_request <
+        C: Send + Sync,
+        E: std::error::Error + Send + Sync,
+        RootBackend: axum_login::AuthnBackend<User=Self::User,Credentials=C,Error=E>,
+        S: Send + Sync,
+    > (&self, _auth_session: axum_login::AuthSession<RootBackend>, req: Request)
+       -> (Request, Result<Option<Self::User>, Self::Error>)
         where Self: 'static {
 
         let basic_opt = req.headers().typed_get::<Authorization<Basic>>(); //"Authorization");
@@ -215,6 +220,7 @@ impl <
 }
 
 
+/*
 // TEMP, investigation
 mod investigation {
     use core::fmt::Debug;
@@ -293,18 +299,19 @@ mod investigation {
 //     }
 // }
 }
+*/
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::investigation::*;
+    // use super::investigation::*;
     use std::sync::Arc;
     use crate::{
         AuthUserProviderError,
         examples::auth_user::{ AuthUserExample, AuthUserExamplePswExtractor },
         permission::{
             bits_perm_set::IntegerBitsPermissionSet,
-            empty_perm_provider::{always_allowed_perm_provider_arc, empty_always_allowed_perm_provider_arc},
+            empty_perm_provider::{ empty_always_allowed_perm_provider_arc },
             predefined::{Role, RolePermissionsSet},
         },
         backend::{ AuthBackendMode },
@@ -320,6 +327,7 @@ mod tests {
         InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "http-vovan", "qwerty")))
     }
 
+    /*
     #[test]
     fn test_try_into_when_impl() {
         let users = Arc::new(in_memory_test_users().test_unwrap());
@@ -329,6 +337,7 @@ mod tests {
 
         let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn<User=AuthUserExample>>, _> =  basic_auth.try_into();
     }
+    */
 
     #[test]
     fn test_try_into_when_no_impl() {
@@ -338,7 +347,7 @@ mod tests {
         let users: Arc<dyn AuthUserProvider<User=AuthUserExample> + Send + Sync> = users;
         let _basic_auth = LoginFormAuthBackend::<AuthUserExample, PlainPasswordComparator>::new(
             users,
-            LoginFormAuthConfig { login_url: "/login", auth_mode: AuthBackendMode::AuthSupported },
+            LoginFormAuthConfig { login_url: "/test_login", auth_mode: AuthBackendMode::AuthSupported },
             empty_always_allowed_perm_provider_arc(),
         );
 

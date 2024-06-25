@@ -49,6 +49,15 @@ pub struct LoginFormAuthConfig {
     pub login_url: &'static str,
 }
 
+impl Default for LoginFormAuthConfig {
+    fn default() -> Self {
+        LoginFormAuthConfig {
+            auth_mode: AuthBackendMode::AuthProposed,
+            login_url: "/mvv_auth/login_form/login",
+        }
+    }
+}
+
 
 #[derive(Clone)]
 #[cfg_attr(feature = "ambassador", derive(ambassador::Delegate))]
@@ -237,3 +246,152 @@ static REDIRECT_LOGIN_PAGE_CONTENT: & 'static str = r#"
   </body>
 </html>
 "#;
+
+
+pub mod web {
+    use std::fmt::Debug;
+    use std::hash::Hash;
+    use askama::Template;
+    use axum::{
+        extract::Query,
+        http::StatusCode,
+        response::{IntoResponse, Redirect},
+        routing::{get as GET, post as POST},
+        Form, Router,
+    };
+    // use axum_login::tower_sessions::Session;
+    use serde::Deserialize;
+    use crate::backend::psw_auth::PswUser;
+    use crate::PasswordComparator;
+    use crate::permission::PermissionSet;
+
+
+    pub const NEXT_URL_KEY: &str = "auth.next-url";
+
+    #[derive(Template)]
+    #[template(path = "mvv_auth/login_form/login.html")]
+    pub struct LoginTemplate {
+        pub message: Option<String>,
+        pub next: Option<String>,
+    }
+
+
+    // This allows us to extract the "next" field from the query string. We use this
+    // to redirect after log in.
+    #[derive(Debug, Deserialize)]
+    pub struct NextUrl {
+        next: Option<String>,
+    }
+
+    pub fn login_router <
+        User: axum_login::AuthUser + PswUser + 'static,
+        PswComparator: PasswordComparator + Debug + Clone + Send + Sync + 'static,
+        // !!! We cannot use there default params (like EmptyPerm/AlwaysAllowedPermSet) because axum_login
+        // uses type_id for looking data in the session.
+        Perm: Hash + Eq + Debug + Clone + Send + Sync+ 'static,
+        PermSet: PermissionSet<Permission=Perm> + Clone+ 'static,
+    > () -> Router<()>
+        where User: axum_login::AuthUser<Id = String>,
+    {
+        Router::new()
+            .route("/mvv_auth/login_form/login", POST(post::login::password::<User,PswComparator,Perm,PermSet>))
+            .route("/mvv_auth/login_form/login", GET(get::login))
+            .route("/mvv_auth/login_form/logout", GET(get::logout::<User,PswComparator,Perm,PermSet>))
+    }
+
+    mod post {
+        use super::*;
+
+        pub(super) mod login {
+            use core::fmt::Debug;
+            use std::hash::Hash;
+            use log::error;
+            use crate::{ PasswordComparator };
+            use crate::backend::{ LoginFormAuthBackend, PswAuthCredentials, psw_auth::PswUser };
+            use crate::permission::PermissionSet;
+            use super::*;
+
+            pub async fn password <
+                User: axum_login::AuthUser + PswUser,
+                PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+                // !!! We cannot use there default params (like EmptyPerm/AlwaysAllowedPermSet) because axum_login
+                // uses type_id for looking data in the session.
+                Perm: Hash + Eq + Debug + Clone + Send + Sync,
+                PermSet: PermissionSet<Permission=Perm> + Clone,
+            > (
+                mut auth_session: axum_login::AuthSession<LoginFormAuthBackend<User,PswComparator,Perm,PermSet>>,
+                Form(creds): Form<PswAuthCredentials>,
+            ) -> impl IntoResponse
+                where User: axum_login::AuthUser<Id = String>,
+            {
+                let auth_res: Result<Option<User>, axum_login::Error<LoginFormAuthBackend<User,PswComparator,Perm,PermSet>>> =
+                    auth_session.authenticate(creds.clone()).await;
+                let user = match auth_res {
+                    Ok(Some(user)) => user,
+                    Ok(None) => {
+                        return LoginTemplate {
+                                message: Some("Invalid credentials.".to_string()),
+                                next: creds.next,
+                            }
+                            .into_response()
+                    }
+                    Err(err) => {
+                        match err {
+                            axum_login::Error::Session(err) => {
+                                error!("Authentication session error [{}]", err)
+                            }
+                            axum_login::Error::Backend(err) => {
+                                error!("Authentication backend error [{}]", err)
+                            }
+                        }
+                        return StatusCode::INTERNAL_SERVER_ERROR.into_response()
+                    },
+                    // Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+                };
+
+                if auth_session.login(&user).await.is_err() {
+                    return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+                }
+
+                if let Some(ref next) = creds.next {
+                    Redirect::to(next).into_response()
+                } else {
+                    Redirect::to("/").into_response()
+                }
+            }
+
+        }
+    }
+
+
+    mod get {
+        use core::fmt::Debug;
+        use std::hash::Hash;
+        use super::*;
+        use crate::PasswordComparator;
+        use crate::backend::{ LoginFormAuthBackend, psw_auth::PswUser };
+        use crate::permission::PermissionSet;
+
+        pub async fn login(Query(NextUrl { next }): Query<NextUrl>) -> LoginTemplate {
+            LoginTemplate { message: None, next }
+        }
+
+        pub async fn logout <
+            User: axum_login::AuthUser + PswUser,
+            PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+            // !!! We cannot use there default params (like EmptyPerm/AlwaysAllowedPermSet) because axum_login
+            // uses type_id for looking data in the session.
+            Perm: Hash + Eq + Debug + Clone + Send + Sync,
+            PermSet: PermissionSet<Permission=Perm> + Clone,
+        > (mut auth_session: axum_login::AuthSession<LoginFormAuthBackend<User,PswComparator,Perm,PermSet>>)
+            -> impl IntoResponse
+            where User: axum_login::AuthUser<Id = String>,
+        {
+            match auth_session.logout().await {
+                Ok(_) => Redirect::to("/login").into_response(),
+                Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            }
+        }
+    }
+
+}

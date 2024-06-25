@@ -122,11 +122,20 @@ impl CompositeAuthnBackendExample {
 
 #[axum::async_trait]
 impl RequestAuthenticated for CompositeAuthnBackendExample {
-    async fn do_authenticate_request<S: Send + Sync>(&self, req: Request)
-        -> (Request, Result<Option<Self::User>, Self::Error>) where Self: 'static {
+    async fn do_authenticate_request <
+        C: Send + Sync,
+        E: std::error::Error + Send + Sync,
+        // TODO: Can ew have only RootBackend generic param??
+        RootBackend: axum_login::AuthnBackend<User=Self::User,Credentials=C,Error=E> + 'static,
+        S: Send + Sync,
+    > (&self, auth_session: axum_login::AuthSession<RootBackend>, req: Request)
+       -> (Request, Result<Option<Self::User>, Self::Error>)
+        where Self: 'static {
+
 
         let req = if let Some(ref backend) = self.http_basic_auth_backend {
-            let req_and_res = backend.do_authenticate_request::<()>(req).await;
+            let req_and_res = backend.do_authenticate_request::
+                <C, E, RootBackend,()>(auth_session.clone(), req).await;
             match req_and_res.1 {
                 Ok(None) => req_and_res.0, // continue finding user or error
                 _ => return req_and_res,
@@ -134,7 +143,8 @@ impl RequestAuthenticated for CompositeAuthnBackendExample {
         } else { req };
 
         let req = if let Some(ref backend) = self.login_form_auth_backend {
-            let req_and_res = backend.do_authenticate_request::<()>(req).await;
+            let req_and_res = backend.do_authenticate_request::
+                <C, E, RootBackend,()>(auth_session.clone(), req).await;
             match req_and_res.1 {
                 Ok(None) => req_and_res.0, // continue finding user or error
                 _ => return req_and_res,
@@ -142,7 +152,8 @@ impl RequestAuthenticated for CompositeAuthnBackendExample {
         } else { req };
 
         let req = if let Some(ref backend) = self.oauth2_backend {
-            let req_and_res = backend.do_authenticate_request::<()>(req).await;
+            let req_and_res = backend.do_authenticate_request::
+                <C, E, RootBackend,()>(auth_session.clone(), req).await;
             match req_and_res.1 {
                 Ok(None) => req_and_res.0, // continue finding user or error
                 _ => return req_and_res,

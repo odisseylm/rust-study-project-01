@@ -5,13 +5,14 @@ mod error;
 
 mod psw;
 
-mod util;
+pub mod util;
 pub mod backend;
 pub mod user_provider;
 
 pub mod examples;
 pub mod permission;
 mod test;
+pub mod route;
 
 
 pub use backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction };

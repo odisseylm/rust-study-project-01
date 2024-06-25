@@ -42,23 +42,34 @@ pub trait RequestAuthenticated : axum_login::AuthnBackend + Clone + Send + Sync 
     // Workaround with returning moved request.
     // Probably not good approach... Hz...
     // async fn call_authenticate_request<S>(&self, req: axum::extract::Request)
-    async fn do_authenticate_request<S: Send + Sync>(&self, req: axum::extract::Request)
+    async fn do_authenticate_request <
+        C: Send + Sync,
+        E: std::error::Error + Send + Sync,
+        RootBackend: axum_login::AuthnBackend<User=Self::User,Credentials=C,Error=E> + 'static,
+        S: Send + Sync,
+    > (&self, auth_session: axum_login::AuthSession<RootBackend>, req: axum::extract::Request)
         -> (axum::extract::Request, Result<Option<Self::User>, Self::Error>)
         where Self: 'static {
-        self.internal_do_authenticate_request_by_user_session::<S>(req).await
+        self.internal_do_authenticate_request_by_user_session::<RootBackend,S>(auth_session, req).await
     }
 
-    async fn internal_do_authenticate_request_by_user_session<S: Send + Sync>(&self, req: axum::extract::Request)
+    async fn internal_do_authenticate_request_by_user_session <
+        RootBackend: axum_login::AuthnBackend<User=Self::User> + 'static,
+        S: Send + Sync,
+    >
+    (&self, auth_session: axum_login::AuthSession<RootBackend>, req: axum::extract::Request)
         -> (axum::extract::Request, Result<Option<Self::User>, Self::Error>)
         where Self: 'static {
-        let auth_session: Option<axum_login::AuthSession<Self>> = req.extensions()
-            .get::<axum_login::AuthSession<Self>>().cloned(); // .map(|uri|uri.to_string());
 
-        match auth_session {
+        // It works Ok.
+        // let auth_session22: Option<axum_login::AuthSession<RootBackend>> = req.extensions()
+        //     .get::<axum_login::AuthSession<RootBackend>>().cloned();
+
+        match auth_session.user {
             None =>
                 (req, Ok(None)),
-            Some(auth_session) =>
-                (req, Ok(auth_session.user)),
+            Some(auth_session_user) =>
+                (req, Ok(Some(auth_session_user))),
         }
     }
 }
