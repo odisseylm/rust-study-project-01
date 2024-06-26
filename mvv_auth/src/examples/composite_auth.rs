@@ -75,27 +75,11 @@ impl CompositeAuthnBackendExample {
         oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,RolePermissionsSet>>,
     ) -> Result<CompositeAuthnBackendExample, AuthBackendError> {
 
-        /*
-        let users_provider = get_unique_user_provider(&vec!(
-            backend_usr_prov(&http_basic_auth_backend),
-            backend_usr_prov(&login_form_auth_backend),
-            backend_usr_prov(&oauth2_backend),
-        )) ?;
-        */
-
         let users_provider_ref = get_unique_user_provider_ref([
             backend_usr_prov_ref(&http_basic_auth_backend),
             backend_usr_prov_ref(&login_form_auth_backend),
             backend_usr_prov_ref(&oauth2_backend),
         ]) ? .clone();
-
-        /*
-        let permission_provider = get_unique_permission_provider(&vec!(
-            backend_perm_prov(&http_basic_auth_backend),
-            backend_perm_prov(&login_form_auth_backend),
-            backend_perm_prov(&oauth2_backend),
-        )) ?;
-        */
 
         let permission_provider_ref = get_unique_permission_provider_ref([
             backend_perm_prov_ref(&http_basic_auth_backend),
@@ -147,37 +131,6 @@ impl RequestAuthenticated for CompositeAuthnBackendExample {
         } }
 
         req_and_res
-
-        /*
-        let req = if let Some(ref backend) = self.http_basic_auth_backend {
-            let req_and_res = backend.do_authenticate_request::
-                <RootBackend,()>(auth_session.clone(), req).await;
-            match req_and_res.1 {
-                Ok(None) => req_and_res.0, // continue finding user or error
-                _ => return req_and_res,
-            }
-        } else { req };
-
-        let req = if let Some(ref backend) = self.login_form_auth_backend {
-            let req_and_res = backend.do_authenticate_request::
-                <RootBackend,()>(auth_session.clone(), req).await;
-            match req_and_res.1 {
-                Ok(None) => req_and_res.0, // continue finding user or error
-                _ => return req_and_res,
-            }
-        } else { req };
-
-        let req = if let Some(ref backend) = self.oauth2_backend {
-            let req_and_res = backend.do_authenticate_request::
-                <RootBackend,()>(auth_session.clone(), req).await;
-            match req_and_res.1 {
-                Ok(None) => req_and_res.0, // continue finding user or error
-                _ => return req_and_res,
-            }
-        } else { req };
-
-        (req, Ok(None))
-        */
     }
 }
 
@@ -237,7 +190,6 @@ impl IntoResponse for CompositeProposeAuthAction {
         }
     }
 }
-
 impl From<ProposeHttpBasicAuthAction> for CompositeProposeAuthAction {
     fn from(value: ProposeHttpBasicAuthAction) -> Self {
         CompositeProposeAuthAction::ProposeHttpBasicAuthAction(value)
@@ -248,6 +200,7 @@ impl From<ProposeLoginFormAuthAction> for CompositeProposeAuthAction {
         CompositeProposeAuthAction::ProposeLoginFormAuthAction(value)
     }
 }
+
 
 #[axum::async_trait]
 impl AuthnBackendAttributes for CompositeAuthnBackendExample {
@@ -274,31 +227,8 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
         }}
 
         None
-
-        /*
-        if let Some(ref backend) = self.http_basic_auth_backend {
-            let proposes_auth_action = backend.propose_authentication_action(&req);
-            if let Some(proposes_auth_action) = proposes_auth_action {
-                return Some(CompositeProposeAuthAction::ProposeHttpBasicAuthAction(proposes_auth_action));
-            }
-        }
-        if let Some(ref backend) = self.login_form_auth_backend {
-            let proposes_auth_action = backend.propose_authentication_action(&req);
-            if let Some(proposes_auth_action) = proposes_auth_action {
-                return Some(CompositeProposeAuthAction::ProposeLoginFormAuthAction(proposes_auth_action));
-            }
-        }
-        if let Some(ref backend) = self.oauth2_backend {
-            let proposes_auth_action = backend.propose_authentication_action(&req);
-            if let Some(proposes_auth_action) = proposes_auth_action {
-                return Some(CompositeProposeAuthAction::ProposeLoginFormAuthAction(proposes_auth_action));
-            }
-        }
-        None
-        */
     }
 }
-
 
 
 
