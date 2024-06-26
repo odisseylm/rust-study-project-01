@@ -122,6 +122,8 @@ impl CompositeAuthnBackendExample {
 
 #[axum::async_trait]
 impl RequestAuthenticated for CompositeAuthnBackendExample {
+
+    //noinspection RsUnresolvedPath // for 'item_ref'
     async fn do_authenticate_request <
         RootBackend: axum_login::AuthnBackend + 'static,
         S: Send + Sync,
@@ -130,6 +132,23 @@ impl RequestAuthenticated for CompositeAuthnBackendExample {
         where Self: 'static,
         RootBackend: axum_login::AuthnBackend<User = Self::User>,
     {
+        use static_error_macro::for_each_by_ref;
+        let mut req_and_res = (req, Ok(None));
+
+        for_each_by_ref! { self.http_basic_auth_backend, self.login_form_auth_backend, self.oauth2_backend, {
+            if let Some(ref backend) = item_ref {
+                req_and_res = backend.do_authenticate_request::<RootBackend,()>(
+                    auth_session.clone(), req_and_res.0).await;
+                match req_and_res.1 {
+                    Ok(None) => {} // Ok, lets continue finding user or error
+                    _ => return req_and_res,
+                }
+            };
+        } }
+
+        req_and_res
+
+        /*
         let req = if let Some(ref backend) = self.http_basic_auth_backend {
             let req_and_res = backend.do_authenticate_request::
                 <RootBackend,()>(auth_session.clone(), req).await;
@@ -158,6 +177,7 @@ impl RequestAuthenticated for CompositeAuthnBackendExample {
         } else { req };
 
         (req, Ok(None))
+        */
     }
 }
 
@@ -218,6 +238,17 @@ impl IntoResponse for CompositeProposeAuthAction {
     }
 }
 
+impl From<ProposeHttpBasicAuthAction> for CompositeProposeAuthAction {
+    fn from(value: ProposeHttpBasicAuthAction) -> Self {
+        CompositeProposeAuthAction::ProposeHttpBasicAuthAction(value)
+    }
+}
+impl From<ProposeLoginFormAuthAction> for CompositeProposeAuthAction {
+    fn from(value: ProposeLoginFormAuthAction) -> Self {
+        CompositeProposeAuthAction::ProposeLoginFormAuthAction(value)
+    }
+}
+
 #[axum::async_trait]
 impl AuthnBackendAttributes for CompositeAuthnBackendExample {
     type ProposeAuthAction = CompositeProposeAuthAction;
@@ -229,7 +260,22 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
         &self.users_provider
     }
 
+    //noinspection RsUnresolvedPath // for 'item_ref'
     fn propose_authentication_action(&self, req: &Request) -> Option<Self::ProposeAuthAction> {
+        use static_error_macro::for_each_by_ref;
+
+        for_each_by_ref! { self.http_basic_auth_backend, self.login_form_auth_backend, self.oauth2_backend, {
+            if let Some(ref backend) = item_ref {
+                let proposes_auth_action = backend.propose_authentication_action(&req);
+                if let Some(proposes_auth_action) = proposes_auth_action {
+                    return Some(proposes_auth_action.into());
+                }
+            }
+        }}
+
+        None
+
+        /*
         if let Some(ref backend) = self.http_basic_auth_backend {
             let proposes_auth_action = backend.propose_authentication_action(&req);
             if let Some(proposes_auth_action) = proposes_auth_action {
@@ -249,6 +295,7 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
             }
         }
         None
+        */
     }
 }
 

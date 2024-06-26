@@ -20,7 +20,7 @@ cargo_metadata = "0.18.1"
 
 
 [dependencies]
-# static_error_macro = { version = "0.1.0", path = "static_error_macro" }
+static_error_macro = { version = "0.1.0", path = "../static_error_macro" }
 
 # -------------------------------------------------------------------------
 if_chain = "1.0.2"

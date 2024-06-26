@@ -625,6 +625,60 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
 }
 
 
+#[proc_macro]
+pub fn for_each_by_ref(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
+
+    use proc_macro2::TokenTree;
+    let params2: proc_macro2::TokenStream = params.into();
+
+    let mut params_vec = Vec::<proc_macro2::TokenStream>::new();
+    let mut current_param_as_stream = proc_macro2::TokenStream::new();
+
+    use itertools::Itertools;
+
+    for (pos, tt) in params2.into_iter().with_position() {
+
+        let mut end_of_func_param = false;
+        use quote::TokenStreamExt;
+
+        if let TokenTree::Punct(ref punct) = tt {
+            if punct.as_char() == ',' {
+                end_of_func_param = true;
+            }
+            else {
+                current_param_as_stream.append(tt);
+            }
+        } else {
+            current_param_as_stream.append(tt);
+        }
+
+        if let Position::Last | Position::Only = pos {
+            end_of_func_param = true;
+        }
+
+        if end_of_func_param {
+            params_vec.push(current_param_as_stream);
+            current_param_as_stream = proc_macro2::TokenStream::new();
+        }
+    }
+
+    assert!(params_vec.len() >= 2, "Expected at least one param and run block.");
+
+    let for_each_run_block = params_vec.pop()
+        .expect("Expected at least one param and run block.");
+
+    let for_each_code = quote! {
+        #(
+             let item_ref = & (#params_vec);
+             #for_each_run_block
+        )*
+    };
+
+    let out: proc_macro::TokenStream = for_each_code.into();
+    out
+}
+
+
 
 // -------------------------------------------------------------------------------------------------
 //                                        Private tests
