@@ -290,14 +290,13 @@ mod investigation {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    // use super::*;
     // use super::investigation::*;
     use std::sync::Arc;
     use crate::{
         AuthUserProviderError,
         examples::auth_user::{ AuthUserExample, AuthUserExamplePswExtractor },
         permission::{
-            bits_perm_set::IntegerBitsPermissionSet,
             empty_perm_provider::{ empty_always_allowed_perm_provider_arc },
             predefined::{Role, RolePermissionsSet},
         },
@@ -307,8 +306,7 @@ mod tests {
     };
     use crate::test::TestResultUnwrap;
 
-    type Perm = u32;
-    type PermSet = IntegerBitsPermissionSet<u32>;
+    // type PermSet = IntegerBitsPermissionSet<u32>;
 
     pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
         InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "http-vovan", "qwerty")))
@@ -319,7 +317,7 @@ mod tests {
     fn test_try_into_when_impl() {
         let users = Arc::new(in_memory_test_users().test_unwrap());
         let users: Arc<dyn AuthUserProvider<User =AuthUserExample> + Send + Sync> = users;
-        let perm_provider = always_allowed_perm_provider_arc::<AuthUserExample,Perm,PermSet>();
+        let perm_provider = always_allowed_perm_provider_arc::<AuthUserExample,PermSet>();
         let basic_auth = HttpBasicAuthBackend::<AuthUserExample,PlainPasswordComparator,Perm,PermSet>::new(users, AuthBackendMode::AuthSupported, perm_provider);
 
         let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn<User=AuthUserExample>>, _> =  basic_auth.try_into();
