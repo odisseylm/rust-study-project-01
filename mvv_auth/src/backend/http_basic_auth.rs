@@ -1,5 +1,4 @@
 use core::fmt::Debug;
-use std::hash::Hash;
 use std::sync::Arc;
 use axum::extract::Request;
 use axum_extra::headers::{ Authorization, HeaderMapExt, authorization::Basic };
@@ -49,10 +48,9 @@ use super::{
 pub struct HttpBasicAuthBackend <
     User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync = EmptyPerm,
-    PermSet: PermissionSet<Permission=Perm> + Clone = AlwaysAllowedPermSet<Perm>,
+    PermSet: PermissionSet + Clone = AlwaysAllowedPermSet<EmptyPerm>,
 > where User: axum_login::AuthUser<Id = String> {
-    psw_backend: PswAuthBackendImpl<User,PswComparator,Perm,PermSet>,
+    psw_backend: PswAuthBackendImpl<User,PswComparator,PermSet>,
     pub auth_mode: AuthBackendMode,
 }
 
@@ -60,17 +58,16 @@ pub struct HttpBasicAuthBackend <
 impl <
     Usr: axum_login::AuthUser + PswUser,
     PswComp: PasswordComparator + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Clone,
-> HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    PermSet: PermissionSet + Clone,
+> HttpBasicAuthBackend<Usr,PswComp,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     pub fn new(
         users_provider: Arc<dyn AuthUserProvider<User=Usr> + Send + Sync>,
         auth_mode: AuthBackendMode,
-        permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Send + Sync>,
-    ) -> HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet> {
-        HttpBasicAuthBackend::<Usr,PswComp,Perm,PermSet> {
+        permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=<PermSet as PermissionSet>::Permission,PermissionSet=PermSet> + Send + Sync>,
+    ) -> HttpBasicAuthBackend<Usr,PswComp,PermSet> {
+        HttpBasicAuthBackend::<Usr,PswComp,PermSet> {
             psw_backend: PswAuthBackendImpl::new(
                 users_provider,
                 permission_provider,
@@ -85,10 +82,9 @@ impl <
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Clone,
-> axum_login::AuthnBackend for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    PermSet: PermissionSet + Clone,
+> axum_login::AuthnBackend for HttpBasicAuthBackend<Usr,PswComp,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     type User = Usr;
@@ -112,13 +108,12 @@ impl <
 impl <
     Usr: axum_login::AuthUser + PswUser,
     PswComp: PasswordComparator + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Clone,
-> PermissionProviderSource for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    PermSet: PermissionSet + Clone,
+> PermissionProviderSource for HttpBasicAuthBackend<Usr,PswComp,PermSet>
     where
         Usr: axum_login::AuthUser<Id = String> {
     type User = Usr;
-    type Permission = Perm;
+    type Permission = <PermSet as PermissionSet>::Permission;
     type PermissionSet = PermSet;
 
     #[inline]
@@ -138,9 +133,8 @@ impl <
 impl <
     Usr: axum_login::AuthUser + PswUser,
     PswComp: PasswordComparator + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Clone,
-> AuthorizeBackend for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    PermSet: PermissionSet + Clone,
+> AuthorizeBackend for HttpBasicAuthBackend<Usr,PswComp,PermSet>
     where Usr: axum_login::AuthUser<Id = String> {
     //noinspection DuplicatedCode
 }
@@ -150,9 +144,8 @@ impl <
 impl <
     Usr: axum_login::AuthUser + PswUser,
     PswComp: PasswordComparator + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Clone,
-> AuthnBackendAttributes for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    PermSet: PermissionSet + Clone,
+> AuthnBackendAttributes for HttpBasicAuthBackend<Usr,PswComp,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     type ProposeAuthAction = ProposeHttpBasicAuthAction;
@@ -186,15 +179,12 @@ impl axum::response::IntoResponse for ProposeHttpBasicAuthAction {
 impl <
     Usr: axum_login::AuthUser + PswUser,
     PswComp: PasswordComparator + Debug + Clone + Send + Sync,
-    Perm: Hash + Eq + Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Clone,
-> RequestAuthenticated for HttpBasicAuthBackend<Usr,PswComp,Perm,PermSet>
+    PermSet: PermissionSet + Clone,
+> RequestAuthenticated for HttpBasicAuthBackend<Usr,PswComp,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     async fn do_authenticate_request <
-        C: Send + Sync,
-        E: std::error::Error + Send + Sync,
-        RootBackend: axum_login::AuthnBackend<User=Self::User,Credentials=C,Error=E>,
+        RootBackend: axum_login::AuthnBackend,
         S: Send + Sync,
     > (&self, _auth_session: axum_login::AuthSession<RootBackend>, req: Request)
        -> (Request, Result<Option<Self::User>, Self::Error>)
@@ -221,7 +211,7 @@ impl <
 // TEMP, investigation
 mod investigation {
     use core::fmt::Debug;
-    use std::hash::Hash;
+    use core::hash::Hash;
     use std::sync::Arc;
     use axum::extract::Request;
     use crate::{

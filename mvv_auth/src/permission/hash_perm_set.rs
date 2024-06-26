@@ -92,7 +92,7 @@ impl <Perm: Clone + Debug + Eq + Hash + Send + Sync> PermissionSet for HashPermi
     }
 
     fn verify_required_permissions(&self, required_permissions: Self)
-        -> Result<VerifyRequiredPermissionsResult<Self::Permission,Self>, PermissionProcessError> {
+        -> Result<VerifyRequiredPermissionsResult<Self>, PermissionProcessError> {
 
         let missed = required_permissions.0.into_iter()
             .filter(|req|!self.0.contains(&req))

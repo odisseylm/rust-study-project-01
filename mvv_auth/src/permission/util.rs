@@ -9,7 +9,7 @@ use crate::permission::PermissionSet;
 pub fn log_unauthorized_user <
     User: axum_login::AuthUser + 'static,
     PermSet: PermissionSet + Display + Clone + 'static,
-> (user: &User, res: &AuthorizationResult< <PermSet as PermissionSet>::Permission, PermSet>)
+> (user: &User, res: &AuthorizationResult<PermSet>)
     where <PermSet as PermissionSet>::Permission: Display
 {
     match res {
@@ -27,7 +27,7 @@ pub fn log_unauthorized_user <
 pub fn log_unauthorized_access <
     User: axum_login::AuthUser + 'static,
     PermSet: PermissionSet + Display + Clone + 'static,
-> (req: Request, user: &User, res: &AuthorizationResult< <PermSet as PermissionSet>::Permission, PermSet>)
+> (req: Request, user: &User, res: &AuthorizationResult<PermSet>)
     -> (Request,)
     where <PermSet as PermissionSet>::Permission: Display
 {

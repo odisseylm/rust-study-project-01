@@ -22,8 +22,8 @@ pub async fn validate_authentication_chain <Backend> (
         Backend: axum_login::AuthnBackend<Error: IntoResponse>,
 {
     let (req, is_auth_res) =
-        auth_session.backend.do_authenticate_request::
-            <Backend::Credentials, Backend::Error, Backend,()>(auth_session.clone(), req).await;
+        auth_session.backend.do_authenticate_request::<Backend,()>(
+            auth_session.clone(), req).await;
     match is_auth_res {
         Ok(None) => StatusCode::UNAUTHORIZED.into_response(),
         Ok(_) => next.run(req).await,
@@ -50,8 +50,7 @@ pub async fn validate_authorization_chain <Backend> (
 {
 
     let (req, user_opt_res) = auth_session.backend
-        .do_authenticate_request::
-            <Backend::Credentials, Backend::Error, Backend, ()>(auth_session.clone(), req).await;
+        .do_authenticate_request::<Backend, ()>(auth_session.clone(), req).await;
 
     let user_opt = match user_opt_res {
         Ok(user_opt) => user_opt,

@@ -2,8 +2,8 @@ use core::fmt;
 use core::fmt::{ Binary, Debug };
 use std::collections::HashSet;
 use std::convert::Infallible;
-use std::hash::Hash;
-use std::marker::PhantomData;
+use core::hash::Hash;
+use core::marker::PhantomData;
 use std::mem::size_of;
 use num::PrimInt;
 
@@ -130,7 +130,7 @@ impl <
     }
 
     fn verify_required_permissions(&self, required_permissions: Self)
-        -> Result<VerifyRequiredPermissionsResult<Self::Permission,Self>, PermissionProcessError> {
+        -> Result<VerifyRequiredPermissionsResult<Self>, PermissionProcessError> {
 
         let and_bits = self.value & required_permissions.value;
         if and_bits == required_permissions.value {

@@ -43,13 +43,13 @@ pub trait RequestAuthenticated : axum_login::AuthnBackend + Clone + Send + Sync 
     // Probably not good approach... Hz...
     // async fn call_authenticate_request<S>(&self, req: axum::extract::Request)
     async fn do_authenticate_request <
-        C: Send + Sync,
-        E: std::error::Error + Send + Sync,
-        RootBackend: axum_login::AuthnBackend<User=Self::User,Credentials=C,Error=E> + 'static,
+        RootBackend: axum_login::AuthnBackend + 'static,
         S: Send + Sync,
     > (&self, auth_session: axum_login::AuthSession<RootBackend>, req: axum::extract::Request)
         -> (axum::extract::Request, Result<Option<Self::User>, Self::Error>)
-        where Self: 'static {
+        where Self: 'static,
+              RootBackend: axum_login::AuthnBackend<User = Self::User>,
+    {
         self.internal_do_authenticate_request_by_user_session::<RootBackend,S>(auth_session, req).await
     }
 

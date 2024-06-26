@@ -13,7 +13,7 @@ pub type CompositeAuthCredentials = mvv_auth::examples::composite_auth::Composit
 pub type CompositeAuthnBackend = mvv_auth::examples::composite_auth::CompositeAuthnBackendExample;
 
 pub type PswAuthCredentials = mvv_auth::backend::PswAuthCredentials;
-pub type LoginFormAuthnBackend = LoginFormAuthBackend<AuthUser,PswComparator,Role,RolePermissionsSet>;
+pub type LoginFormAuthnBackend = LoginFormAuthBackend<AuthUser,PswComparator,RolePermissionsSet>;
 
 pub type AuthCredentials = CompositeAuthCredentials;
 pub type AuthnBackend = CompositeAuthnBackend;
@@ -93,7 +93,7 @@ pub async fn composite_auth_manager_layer()
     // !!! With Arc::clone(&usr_provider_impl) auto casting does NOT work !!!
     //
     let config = OAuth2Config::git_from_env() ?;
-    let oauth2_backend_opt: Option<OAuth2AuthBackend<AuthUser,Role,RolePermissionsSet>> = match config {
+    let oauth2_backend_opt: Option<OAuth2AuthBackend<AuthUser,RolePermissionsSet>> = match config {
         None => None,
         Some(config) => {
             let mut config = config.clone();
@@ -110,13 +110,13 @@ pub async fn composite_auth_manager_layer()
         }
     };
 
-    let http_basic_auth_backend = mvv_auth::backend::HttpBasicAuthBackend::<AuthUser,PswComparator,Role,RolePermissionsSet>::new(
+    let http_basic_auth_backend = mvv_auth::backend::HttpBasicAuthBackend::<AuthUser,PswComparator,RolePermissionsSet>::new(
         usr_provider.clone(),
         // AuthBackendMode::AuthProposed, // It makes sense for pure server SOA (especially for testing)
         AuthBackendMode::AuthSupported,
         permission_provider.clone(),
     );
-    let login_form_auth_backend = LoginFormAuthBackend::<AuthUser,PswComparator,Role,RolePermissionsSet>::new(
+    let login_form_auth_backend = LoginFormAuthBackend::<AuthUser,PswComparator,RolePermissionsSet>::new(
         usr_provider.clone(),
         // It makes sense for web-app
         LoginFormAuthConfig {
@@ -140,7 +140,7 @@ pub async fn composite_auth_manager_layer()
 
 pub async fn login_form_auth_manager_layer(login_url: &'static str)
     -> Result<axum_login::AuthManagerLayer<
-        LoginFormAuthBackend<AuthUser, PswComparator, Role, RolePermissionsSet>,
+        LoginFormAuthBackend<AuthUser,PswComparator,RolePermissionsSet>,
         axum_login::tower_sessions::MemoryStore>, anyhow::Error> {
 
     use axum_login::{
@@ -165,13 +165,13 @@ pub async fn login_form_auth_manager_layer(login_url: &'static str)
     let permission_provider = usr_provider.clone();
 
     let login_form_auth_backend = LoginFormAuthBackend::
-            <AuthUser,PswComparator,Role,RolePermissionsSet>::new(
+            <AuthUser,PswComparator,RolePermissionsSet>::new(
         usr_provider,
         LoginFormAuthConfig { login_url, ..LoginFormAuthConfig::default() },
         permission_provider);
 
     let auth_layer: axum_login::AuthManagerLayer
-        <LoginFormAuthBackend<AuthUser, PswComparator, Role, RolePermissionsSet>, MemoryStore> =
+        <LoginFormAuthBackend<AuthUser, PswComparator, RolePermissionsSet>, MemoryStore> =
         AuthManagerLayerBuilder::new(login_form_auth_backend, session_layer).build();
     Ok(auth_layer)
 }

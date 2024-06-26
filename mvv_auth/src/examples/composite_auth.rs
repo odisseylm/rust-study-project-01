@@ -35,9 +35,9 @@ pub struct CompositeAuthnBackendExample<
     > {
     users_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send>,
     permission_provider: Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send>,
-    http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
-    login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
-    oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,Role,RolePermissionsSet>>,
+    http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator,RolePermissionsSet>>,
+    login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,RolePermissionsSet>>,
+    oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,RolePermissionsSet>>,
 }
 
 
@@ -62,17 +62,17 @@ impl CompositeAuthnBackendExample {
     pub fn new_raw(
         users_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send>,
         permission_provider: Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send>,
-        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
-        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
-        oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,Role,RolePermissionsSet>>,
+        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator,RolePermissionsSet>>,
+        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,RolePermissionsSet>>,
+        oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,RolePermissionsSet>>,
     ) -> CompositeAuthnBackendExample {
         CompositeAuthnBackendExample { users_provider, http_basic_auth_backend, login_form_auth_backend, oauth2_backend, permission_provider }
     }
 
     pub fn with_backends(
-        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
-        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,Role,RolePermissionsSet>>,
-        oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,Role,RolePermissionsSet>>,
+        http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator,RolePermissionsSet>>,
+        login_form_auth_backend: Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,RolePermissionsSet>>,
+        oauth2_backend: Option<OAuth2AuthBackend<AuthUserExample,RolePermissionsSet>>,
     ) -> Result<CompositeAuthnBackendExample, AuthBackendError> {
 
         /*
@@ -123,19 +123,16 @@ impl CompositeAuthnBackendExample {
 #[axum::async_trait]
 impl RequestAuthenticated for CompositeAuthnBackendExample {
     async fn do_authenticate_request <
-        C: Send + Sync,
-        E: std::error::Error + Send + Sync,
-        // TODO: Can ew have only RootBackend generic param??
-        RootBackend: axum_login::AuthnBackend<User=Self::User,Credentials=C,Error=E> + 'static,
+        RootBackend: axum_login::AuthnBackend + 'static,
         S: Send + Sync,
     > (&self, auth_session: axum_login::AuthSession<RootBackend>, req: Request)
        -> (Request, Result<Option<Self::User>, Self::Error>)
-        where Self: 'static {
-
-
+        where Self: 'static,
+        RootBackend: axum_login::AuthnBackend<User = Self::User>,
+    {
         let req = if let Some(ref backend) = self.http_basic_auth_backend {
             let req_and_res = backend.do_authenticate_request::
-                <C, E, RootBackend,()>(auth_session.clone(), req).await;
+                <RootBackend,()>(auth_session.clone(), req).await;
             match req_and_res.1 {
                 Ok(None) => req_and_res.0, // continue finding user or error
                 _ => return req_and_res,
@@ -144,7 +141,7 @@ impl RequestAuthenticated for CompositeAuthnBackendExample {
 
         let req = if let Some(ref backend) = self.login_form_auth_backend {
             let req_and_res = backend.do_authenticate_request::
-                <C, E, RootBackend,()>(auth_session.clone(), req).await;
+                <RootBackend,()>(auth_session.clone(), req).await;
             match req_and_res.1 {
                 Ok(None) => req_and_res.0, // continue finding user or error
                 _ => return req_and_res,
@@ -153,7 +150,7 @@ impl RequestAuthenticated for CompositeAuthnBackendExample {
 
         let req = if let Some(ref backend) = self.oauth2_backend {
             let req_and_res = backend.do_authenticate_request::
-                <C, E, RootBackend,()>(auth_session.clone(), req).await;
+                <RootBackend,()>(auth_session.clone(), req).await;
             match req_and_res.1 {
                 Ok(None) => req_and_res.0, // continue finding user or error
                 _ => return req_and_res,

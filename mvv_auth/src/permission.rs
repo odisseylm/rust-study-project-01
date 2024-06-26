@@ -48,19 +48,17 @@ impl axum::response::IntoResponse for PermissionProcessError {
 ///
 #[derive(Debug, Clone)]
 pub enum VerifyRequiredPermissionsResult <
-    Perm: Debug + Clone,
-    PermSet: PermissionSet<Permission=Perm>,
+    PermSet: PermissionSet,
 > {
     RequiredPermissionsArePresent,
     /// Contains any/first absent permission
-    NoPermission(Perm),
+    NoPermission(<PermSet as PermissionSet>::Permission),
     /// Contains all absent permissions.
     NoPermissions(PermSet),
 }
 impl <
-    Perm: Debug + Clone + Send + Sync,
-    PermSet: PermissionSet<Permission=Perm> + Clone,
-> VerifyRequiredPermissionsResult<Perm,PermSet> {
+    PermSet: PermissionSet + Clone,
+> VerifyRequiredPermissionsResult<PermSet> {
     #[inline(always)]
     pub fn is_authorized(&self) -> bool {
         match self {
@@ -80,15 +78,12 @@ pub trait PermissionSet : Debug + Send + Sync {
     fn new() -> Self;
     fn from_permission(permission: Self::Permission) -> Self;
     fn from_permissions<const N: usize>(permissions: [Self::Permission;N]) -> Self;
-    // fn from_permission2(perm1: Self::Permission, perm2: Self::Permission) -> Self;
-    // fn from_permission3(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission) -> Self;
-    // fn from_permission4(perm1: Self::Permission, perm2: Self::Permission, perm3: Self::Permission, perm4: Self::Permission) -> Self;
     fn merge_with_mut(&mut self, another: Self);
     // ??? Use ref or values.
     fn merge(set1: Self, set2: Self) -> Self;
     // Returns missed permissions
     fn verify_required_permissions(&self, required_permissions: Self)
-        -> Result<VerifyRequiredPermissionsResult<Self::Permission,Self>, PermissionProcessError>
+        -> Result<VerifyRequiredPermissionsResult<Self>, PermissionProcessError>
         where Self: Sized;
 }
 

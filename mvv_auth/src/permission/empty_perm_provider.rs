@@ -154,7 +154,8 @@ impl <
         Self::new()
     }
     #[inline(always)]
-    fn verify_required_permissions(&self, _required_permissions: Self) -> Result<VerifyRequiredPermissionsResult<Self::Permission, Self>, PermissionProcessError> where Self: Sized {
+    fn verify_required_permissions(&self, _required_permissions: Self)
+        -> Result<VerifyRequiredPermissionsResult<Self>, PermissionProcessError> where Self: Sized {
         Ok(VerifyRequiredPermissionsResult::RequiredPermissionsArePresent)
     }
 }
@@ -211,7 +212,8 @@ impl <
         Self::new()
     }
     #[inline(always)]
-    fn verify_required_permissions(&self, _required_permissions: Self) -> Result<VerifyRequiredPermissionsResult<Self::Permission, Self>, PermissionProcessError> where Self: Sized {
+    fn verify_required_permissions(&self, _required_permissions: Self)
+        -> Result<VerifyRequiredPermissionsResult<Self>, PermissionProcessError> where Self: Sized {
         Ok(VerifyRequiredPermissionsResult::NoPermissions(Self::new()))
     }
 }

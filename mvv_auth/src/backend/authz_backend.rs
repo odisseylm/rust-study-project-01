@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use std::hash::Hash;
+use core::hash::Hash;
 use std::sync::Arc;
 
 use crate::permission::{
@@ -14,20 +14,14 @@ use crate::permission::{
 ///   with single/first missed permission without heap allocation.
 ///
 #[derive(Debug, Clone)]
-pub enum AuthorizationResult <
-    Perm: Debug + Clone,
-    PermSet: PermissionSet<Permission=Perm> + Clone,
-> {
+pub enum AuthorizationResult <PermSet: PermissionSet + Clone> {
     Authorized,
     /// Contains any/first absent permission.
-    NoPermission(Perm),
+    NoPermission(<PermSet as PermissionSet>::Permission),
     /// Contains all absent permissions.
     NoPermissions(PermSet),
 }
-impl <
-    Perm: Debug + Clone,
-    PermSet: PermissionSet<Permission=Perm> + Clone,
-> AuthorizationResult<Perm,PermSet> {
+impl <PermSet: PermissionSet + Clone> AuthorizationResult<PermSet> {
     #[inline(always)]
     pub fn is_authorized(&self) -> bool {
         match self {
@@ -37,11 +31,10 @@ impl <
     }
 }
 
-impl <
-    Perm: Debug + Clone,
-    PermSet: PermissionSet<Permission=Perm> + Clone,
-> From<VerifyRequiredPermissionsResult<Perm,PermSet>> for AuthorizationResult<Perm,PermSet> {
-    fn from(value: VerifyRequiredPermissionsResult<Perm, PermSet>) -> Self {
+impl <PermSet: PermissionSet + Clone> From<VerifyRequiredPermissionsResult<PermSet>>
+    for AuthorizationResult<PermSet> {
+
+    fn from(value: VerifyRequiredPermissionsResult<PermSet>) -> Self {
         use VerifyRequiredPermissionsResult as V;
         match value {
             V::RequiredPermissionsArePresent => Self::Authorized,
@@ -68,24 +61,24 @@ pub trait PermissionProviderSource {
 pub trait AuthorizeBackend : PermissionProviderSource + Send + Sync {
 
     async fn authorize(&self, user: &Self::User, required_permissions: Self::PermissionSet)
-        -> Result<AuthorizationResult<Self::Permission,Self::PermissionSet>, PermissionProcessError> {
+        -> Result<AuthorizationResult<Self::PermissionSet>, PermissionProcessError> {
 
         let user_perms = self.permission_provider().get_all_permissions(user).await ?;
-        let authz_res: AuthorizationResult<Self::Permission,Self::PermissionSet> =
+        let authz_res: AuthorizationResult<Self::PermissionSet> =
             user_perms.verify_required_permissions(required_permissions) ?.into();
         Ok(authz_res)
     }
 
     async fn has_permission(&self, user: &Self::User, required_permission: Self::Permission)
         -> Result<bool, PermissionProcessError> {
-        let authz_res: AuthorizationResult<Self::Permission,Self::PermissionSet> = self.authorize(user,
+        let authz_res: AuthorizationResult<Self::PermissionSet> = self.authorize(user,
             PermissionSet::from_permission(required_permission)).await ?;
         Ok(authz_res.is_authorized())
     }
 
     async fn has_permissions(&self, user: &Self::User, required_permissions: Self::PermissionSet)
         -> Result<bool, PermissionProcessError> {
-        let authz_res: AuthorizationResult<Self::Permission,Self::PermissionSet> =
+        let authz_res: AuthorizationResult<Self::PermissionSet> =
             self.authorize(user, required_permissions).await ?;
         Ok(authz_res.is_authorized())
     }
