@@ -679,6 +679,95 @@ pub fn for_each_by_ref(params: proc_macro::TokenStream) -> proc_macro::TokenStre
 }
 
 
+#[proc_macro]
+pub fn for_each_in_tuple_by_ref(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
+
+    use proc_macro2::{ TokenTree };
+
+    let params2: proc_macro2::TokenStream = params.into();
+
+    let mut params_vec = Vec::<proc_macro2::TokenStream>::new();
+    let mut current_param_as_stream = proc_macro2::TokenStream::new();
+
+    use itertools::Itertools;
+
+    for (pos, tt) in params2.into_iter().with_position() {
+
+        let mut end_of_func_param = false;
+        use quote::TokenStreamExt;
+
+        if let TokenTree::Punct(ref punct) = tt {
+            if punct.as_char() == ',' {
+                end_of_func_param = true;
+            }
+            else {
+                current_param_as_stream.append(tt);
+            }
+        } else {
+            current_param_as_stream.append(tt);
+        }
+
+        if let Position::Last | Position::Only = pos {
+            end_of_func_param = true;
+        }
+
+        if end_of_func_param {
+            params_vec.push(current_param_as_stream);
+            current_param_as_stream = proc_macro2::TokenStream::new();
+        }
+    }
+
+    assert_eq!(params_vec.len(), 3, "Expected ???.");
+
+    let for_each_run_block = params_vec.pop()
+        .expect("Expected ???.");
+
+    let tuple = params_vec.get(0)
+        .expect("Expected ???.");
+    let tuple_len_ts = params_vec.get(1);
+    eprintln!("### tuple count: {:?}", tuple_len_ts);
+    // let count: usize = 2;
+
+    // if tuple_len_ts.unwrap().into()
+
+    let count: Option<usize> = as_uint_literal(tuple_len_ts.map(|v|v.clone()));
+    let count = count.expect("Expects tuple size a literal");
+    // let count: usize = params_vec.get(1)
+    //         .expect("Expected ???.").into();
+
+    let mut vars = Vec::<proc_macro2::TokenStream>::new();
+    for i in 0..count {
+        vars.push( quote!( ((#tuple).#i) ) );
+    }
+
+
+    let for_each_code = quote! {
+        #(
+             let item_ref = & (#vars);
+             #for_each_run_block
+        )*
+    };
+
+    let out: proc_macro::TokenStream = for_each_code.into();
+    out
+}
+
+fn as_uint_literal(token_stream: Option<proc_macro2::TokenStream>) -> Option<usize> {
+    use proc_macro2::TokenTree;
+
+    for tt in token_stream.unwrap().into_iter() {
+        return match tt {
+            TokenTree::Literal(ref lit) => {
+                let lit_str = lit.to_string();
+                let as_uint: Option<usize> = core::str::FromStr::from_str(lit_str.as_str()).ok();
+                as_uint
+            }
+            _ => None,
+        }
+    }
+    None
+}
+
 
 // -------------------------------------------------------------------------------------------------
 //                                        Private tests

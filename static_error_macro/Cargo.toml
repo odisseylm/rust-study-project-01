@@ -22,4 +22,7 @@ strum_macros = "0.26"
 #log = "0.4.21"
 #env_logger = "0.11.3"
 
+tuple_len = "3.0.0"
+tuple_length = "0.2.0"
+
 [dev-dependencies]

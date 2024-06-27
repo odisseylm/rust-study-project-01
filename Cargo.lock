@@ -2936,6 +2936,8 @@ dependencies = [
  "tracing-subscriber",
  "tracing-timing",
  "trait-variant",
+ "tuple_len",
+ "tuple_length",
  "type-rules",
  "url",
  "validator",
@@ -3796,6 +3798,8 @@ dependencies = [
  "strum",
  "strum_macros",
  "syn 2.0.65",
+ "tuple_len",
+ "tuple_length",
 ]
 
 [[package]]
@@ -4425,6 +4429,27 @@ name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
+
+[[package]]
+name = "tuple_len"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1e74616fb257546f57a70a3274295eb41a4608ec17cba5ee51653afb89a329a"
+
+[[package]]
+name = "tuple_length"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efdf0bd00d61b13b90d462f74460fe90947e2d96b1e40de704b0e971c2a6bdb3"
+dependencies = [
+ "tuple_macro",
+]
+
+[[package]]
+name = "tuple_macro"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c1c6ae5c14e8382459a954c425d64be7935c783e494203f2c240e44f685e398c"
 
 [[package]]
 name = "type-rules"
