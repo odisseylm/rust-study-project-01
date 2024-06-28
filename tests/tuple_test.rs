@@ -9,10 +9,8 @@ mod tuples22 {
 }
 
 
-
-
 #[test]
-fn aaaa_123() {
+fn test_123() {
 
     let tuple_v = (1, "str", "string".to_string(), std::f64::consts::PI);
     // TODO: add such function
@@ -27,6 +25,24 @@ fn aaaa_123() {
     println!("### tupl test => _3: {:?}", tuple_of_refs._3());
     println!("### tupl test => _4: {:?}", tuple_of_refs._4());
     println!("### tupl test => _5: {:?}", tuple_of_refs._5());
+
+    assert!(false, "To see output");
+}
+
+
+#[test]
+fn test_124() {
+
+    let tuple_v = (1, "str", "string".to_string(), std::f64::consts::PI);
+    // TODO: add such function
+    let tuple_of_refs = (tuple_v.0, tuple_v.1, tuple_v.2, tuple_v.3, );
+
+    //noinspection RsUnresolvedPath
+    use tuples22::TupleOps;
+
+    tuple_heter_iter::for_each_in_tuple_by_ref_2! (tuple_of_refs, {
+        println!("### dddd {:?}", item_ref);
+    });
 
     assert!(false, "To see output");
 }

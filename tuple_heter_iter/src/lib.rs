@@ -7,9 +7,9 @@ include!("./compile_log_macros.rs");
 
 use itertools::*;
 
-use quote::{quote, TokenStreamExt, ToTokens};
+use quote::{ quote, /*TokenStreamExt,*/ ToTokens };
 use syn::{ LitInt, parse_macro_input };
-use syn::spanned::Spanned;
+// use syn::spanned::Spanned;
 
 
 #[proc_macro]
@@ -290,6 +290,44 @@ fn make_ident(ident: String)
         .expect(&format!("Error of converting \"{ident}\" to Ident."));
     ident.into_token_stream()
 }
+
+
+#[proc_macro]
+pub fn for_each_in_tuple_by_ref_2(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
+
+    let mut params_vec = split_params(params);
+
+    // const input_err_msg = "Input should be { tuple_expr, { code } }.";
+    macro_rules! input_err_msg { () => { "Input should be {{ tuple_expr, {{ code }} }}." }; }
+
+    assert_eq!(params_vec.len(), 2, input_err_msg!());
+
+    let for_each_run_block = params_vec.pop().expect(input_err_msg!());
+    let tuple = params_vec.get(0).expect(input_err_msg!());
+
+    let max_tuple_len = 12; // TODO: get from ???
+
+    let mut vars = Vec::<proc_macro2::TokenStream>::new();
+    for i in 0..max_tuple_len {
+        let method_ident = make_ident(format!("_{i}"));
+        vars.push( quote!( ((#tuple).#method_ident()) ) );
+    }
+
+    let for_each_code = quote! {
+        #(
+             let option_item_ref = & (#vars);
+             match option_item_ref {
+                None => {}
+                Some(ref item_ref) => { #for_each_run_block }
+             }
+        )*
+    };
+
+    let out: proc_macro::TokenStream = for_each_code.into();
+    out
+}
+
+
 
 // -------------------------------------------------------------------------------------------------
 //                                        Private tests
