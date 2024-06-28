@@ -2936,6 +2936,7 @@ dependencies = [
  "tracing-subscriber",
  "tracing-timing",
  "trait-variant",
+ "tuple_heter_iter",
  "tuple_len",
  "tuple_length",
  "type-rules",
@@ -4429,6 +4430,21 @@ name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
+
+[[package]]
+name = "tuple_heter_iter"
+version = "0.1.0"
+dependencies = [
+ "if_chain",
+ "itertools 0.13.0",
+ "proc-macro2",
+ "quote",
+ "strum",
+ "strum_macros",
+ "syn 2.0.65",
+ "tuple_len",
+ "tuple_length",
+]
 
 [[package]]
 name = "tuple_len"

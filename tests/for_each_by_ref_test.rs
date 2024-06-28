@@ -70,23 +70,41 @@ fn test_literals_for_each_by_ref() {
     assert_eq!(result, vec!("John", "568"));
 }
 
+const fn tuple_len<T1,T2,T3>(_tuple: &(T1,T2,T3)) -> usize {
+    3
+}
+
 
 #[test]
 //noinspection RsUnresolvedPath // for 'item_ref'
 fn test_for_each_in_tuple_by_ref() {
+
+    macro_rules! tuple_size {
+        () => (3)
+    }
 
     use static_error_macro::for_each_in_tuple_by_ref;
 
     // to test access from 'for each' body
     let internal_var = "internal 789";
 
-    let tuple_var = ("John", 568, "Smith");
+    // const tuple_var: (&str, i32, &str) = ("John", 568, "Smith");
+    let tuple_var: (&str, i32, &str) = ("John", 568, "Smith");
 
     let mut result = Vec::<String>::new();
 
-    // use tuple_len::tuple_len;
+    use tuple_len::tuple_len;
+    println!("### tuple length: {}", tuple_len!(tuple_var));
+    println!("### tuple_size: {}", tuple_size!());
+
+    // use tuple_len::TupleLen;
+    // use tuple_length::TupLen;
+    // static_assertions::const_assert_eq!(tuple_len!(tuple_var), 3);
+    // static_assertions::const_assert_eq!(tuple_var.len(), 3);
+    // static_assertions::const_assert_eq!(tuple_len(&tuple_var), 3);
 
     // for_each_in_tuple_by_ref! { tuple_var, tuple_len!(tuple_var), {
+    // for_each_in_tuple_by_ref! { tuple_var, tuple_size!(), {
     for_each_in_tuple_by_ref! { tuple_var, 3, {
         println!("### print from for_each_by_ref2 {{ internal_var: {:?} }}", internal_var);
         println!("### print from for_each_by_ref2 {{ iterated value: {:?} }}", item_ref);
@@ -94,6 +112,8 @@ fn test_for_each_in_tuple_by_ref() {
     }}
 
     assert_eq!(result, vec!("John", "568", "Smith"));
+
+    assert!(false, "To see output");
 }
 
 
