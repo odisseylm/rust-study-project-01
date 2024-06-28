@@ -7,7 +7,7 @@ include!("./compile_log_macros.rs");
 
 use itertools::*;
 
-use quote::{quote, TokenStreamExt};
+use quote::{quote, TokenStreamExt, ToTokens};
 use syn::{ LitInt, parse_macro_input };
 use syn::spanned::Spanned;
 
@@ -150,9 +150,10 @@ pub fn generate_all_tuple_ops(input: proc_macro::TokenStream) -> proc_macro::Tok
 
     let trait_def = generate_tuple_ops_trait_impl(max_tuple_len);
 
-    let impls =  (1..max_tuple_len).into_iter().map(|tuple_len|{
-            generate_tuple_ops_impl(max_tuple_len, tuple_len)
-        }).collect::<Vec<_>>();
+    let impls =  (1..max_tuple_len)
+        .into_iter()
+        .map(|tuple_len| generate_tuple_ops_impl(max_tuple_len, tuple_len))
+        .collect::<Vec<_>>();
 
     let out_ps2: proc_macro2::TokenStream = quote! {
         #trait_def
@@ -188,18 +189,18 @@ pub trait TupleOps {
 fn generate_tuple_ops_trait_impl(max_tuple_len: usize) -> proc_macro2::TokenStream {
     use proc_macro2::TokenStream as PM2TS;
 
-    let mut rows: Vec<proc_macro2::TokenStream> = Vec::new();
-    for i in 0..max_tuple_len {
-        let elem_type_ident = proc_macro2::TokenTree::Ident(proc_macro2::Ident::new(
-            format!("Elem{i}").as_str(), quote!{}.span()));
-        let method_ident = proc_macro2::TokenTree::Ident(proc_macro2::Ident::new(
-            format!("_{i}").as_str(), quote!{}.span()));
+    let rows: Vec<PM2TS> = (0..max_tuple_len)
+        .into_iter()
+        .map(|i|{
+            let elem_type_ident = make_ident(format!("Elem{i}"));
+            let method_ident = make_ident(format!("_{i}"));
 
-        rows.push(quote! {
-            type #elem_type_ident;
-            fn #method_ident(&self) -> Option<&Self:: #elem_type_ident>;
-        });
-    }
+            quote! {
+                type #elem_type_ident;
+                fn #method_ident(&self) -> Option<&Self:: #elem_type_ident>;
+            }
+        })
+        .collect();
 
     let out: PM2TS = quote!{
         pub trait TupleOps {
@@ -233,45 +234,42 @@ fn generate_tuple_ops_impl(max_tuple_len: usize, current_tuple_len: usize)
                            -> proc_macro2::TokenStream {
     use proc_macro2::TokenStream as PM2TS;
 
-    let mut types: Vec<proc_macro2::TokenStream> = Vec::new();
-    let mut matched_type_rows: Vec<proc_macro2::TokenStream> = Vec::new();
-    let mut unmatched_type_rows: Vec<proc_macro2::TokenStream> = Vec::new();
+    let types = (0..current_tuple_len)
+        .into_iter()
+        .map(|i| make_ident(format!("T{i}")))
+        .collect::<Vec<_>>();
 
-    // TODO: use iter functions
-    for i in 0..current_tuple_len {
-        let gen_elem_type_ident = proc_macro2::TokenTree::Ident(proc_macro2::Ident::new(
-            format!("T{i}").as_str(), quote!{}.span()));
-        types.push(quote! { #gen_elem_type_ident });
-    }
+    let matched_type_rows: Vec<proc_macro2::TokenStream> = (0..current_tuple_len)
+        .into_iter()
+        .map(|i| {
+            let index = proc_macro2::TokenTree::Literal(proc_macro2::Literal::usize_unsuffixed(i));
+            let gen_elem_type_ident = make_ident(format!("T{i}"));
+            let elem_type_ident = make_ident(format!("Elem{i}"));
+            let method_ident = make_ident(format!("_{i}"));
 
-    for i in 0..current_tuple_len {
-        let index = proc_macro2::TokenTree::Literal(proc_macro2::Literal::usize_unsuffixed(i));
-        let gen_elem_type_ident = proc_macro2::TokenTree::Ident(proc_macro2::Ident::new(
-            format!("T{i}").as_str(), quote!{}.span()));
-        let elem_type_ident = proc_macro2::TokenTree::Ident(proc_macro2::Ident::new(
-            format!("Elem{i}").as_str(), quote!{}.span()));
-        let method_ident = proc_macro2::TokenTree::Ident(proc_macro2::Ident::new(
-            format!("_{i}").as_str(), quote!{}.span()));
+            quote! {
+                type #elem_type_ident = #gen_elem_type_ident;
+                #[inline(always)]
+                fn #method_ident(&self) -> Option<&Self:: #elem_type_ident> { Some(&self. #index) }
+            }
+        })
+        .collect::<Vec<_>>();
 
-        matched_type_rows.push(quote! {
-            type #elem_type_ident = #gen_elem_type_ident;
-            #[inline(always)]
-            fn #method_ident(&self) -> Option<&Self:: #elem_type_ident> { Some(&self. #index) }
-        });
-    }
 
-    for i in current_tuple_len..max_tuple_len {
-        let elem_type_ident = proc_macro2::TokenTree::Ident(proc_macro2::Ident::new(
-            format!("Elem{i}").as_str(), quote!{}.span()));
-        let method_ident = proc_macro2::TokenTree::Ident(proc_macro2::Ident::new(
-            format!("_{i}").as_str(), quote!{}.span()));
+    let mut unmatched_type_rows =  (current_tuple_len..max_tuple_len)
+        .into_iter()
+        .map(|i| {
+            let elem_type_ident = make_ident(format!("Elem{i}"));
+            let method_ident = make_ident(format!("_{i}"));
 
-        unmatched_type_rows.push(quote! {
-            type #elem_type_ident = T0;
-            #[inline(always)]
-            fn #method_ident(&self) -> Option<&Self:: #elem_type_ident> { None }
-        });
-    }
+            quote! {
+                type #elem_type_ident = T0;
+                #[inline(always)]
+                fn #method_ident(&self) -> Option<&Self:: #elem_type_ident> { None }
+            }
+        })
+        .collect::<Vec<_>>();
+
 
     let out: PM2TS = quote! {
         impl < #(#types),* > TupleOps for ( #(#types),* ,) {
@@ -280,6 +278,17 @@ fn generate_tuple_ops_impl(max_tuple_len: usize, current_tuple_len: usize)
         }
     };
     out.into()
+}
+
+fn make_ident(ident: String)
+    -> proc_macro2::TokenStream
+{
+    // proc_macro2::TokenTree::Ident(proc_macro2::Ident::new(ident.as_str(), quote!{}.span()))
+
+    // or
+    let ident: syn::Ident = syn::parse_str(ident.as_str())
+        .expect(&format!("Error of converting \"{ident}\" to Ident."));
+    ident.into_token_stream()
 }
 
 // -------------------------------------------------------------------------------------------------

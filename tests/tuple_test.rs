@@ -19,7 +19,7 @@ fn aaaa_123() {
     let tuple_of_refs = (tuple_v.0, tuple_v.1, tuple_v.2, tuple_v.3, );
 
     //noinspection RsUnresolvedPath
-    use tuples22::TupleAccessor;
+    use tuples22::TupleOps;
 
     println!("### tupl test => _0: {:?}", tuple_of_refs._0());
     println!("### tupl test => _1: {:?}", tuple_of_refs._1());
