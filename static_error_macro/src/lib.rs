@@ -711,6 +711,7 @@ pub fn for_each_in_tuple_by_ref(params: proc_macro::TokenStream) -> proc_macro::
 
     let mut vars = Vec::<proc_macro2::TokenStream>::new();
     for i in 0..count {
+        let i = syn::Index::from(i);
         vars.push( quote!( ((#tuple).#i) ) );
     }
 

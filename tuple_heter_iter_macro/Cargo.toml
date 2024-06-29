@@ -1,12 +1,20 @@
 [package]
-name = "tuple_heter_iter"
-# desription = "tuple heterogenous utils"
+name = "tuple_heter_iter_macro"
 version = "0.1.0"
 edition = "2021"
 
 
 [lib]
 proc-macro = true
+
+
+[features]
+# possible values: tuple_len_16, tuple_len_32, tuple_len_64
+tuple_len_16 = []
+tuple_len_32 = []
+tuple_len_64 = []
+
+default = ["tuple_len_16", ]
 
 
 [dependencies]

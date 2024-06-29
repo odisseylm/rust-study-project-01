@@ -1,13 +1,4 @@
 
-// #[cfg(something)]
-mod tuples22 {
-    tuple_heter_iter::generate_all_tuple_ops!(12);
-}
-
-#[cfg(something)]
-mod tuples22 {
-}
-
 
 #[test]
 fn test_123() {
@@ -17,7 +8,7 @@ fn test_123() {
     let tuple_of_refs = (tuple_v.0, tuple_v.1, tuple_v.2, tuple_v.3, );
 
     //noinspection RsUnresolvedPath
-    use tuples22::TupleOps;
+    use tuple_heter_iter::TupleOps;
 
     println!("### tupl test => _0: {:?}", tuple_of_refs._0());
     println!("### tupl test => _1: {:?}", tuple_of_refs._1());
@@ -26,7 +17,7 @@ fn test_123() {
     println!("### tupl test => _4: {:?}", tuple_of_refs._4());
     println!("### tupl test => _5: {:?}", tuple_of_refs._5());
 
-    assert!(false, "To see output");
+    // assert!(false, "To see output");
 }
 
 
@@ -38,12 +29,12 @@ fn test_124() {
     let tuple_of_refs = (tuple_v.0, tuple_v.1, tuple_v.2, tuple_v.3, );
 
     //noinspection RsUnresolvedPath
-    use tuples22::TupleOps;
+    use tuple_heter_iter::TupleOps;
 
-    tuple_heter_iter::for_each_in_tuple_by_ref_2! (tuple_of_refs, {
+    tuple_heter_iter_macro::for_each_in_tuple_by_ref_2! (tuple_of_refs, {
         //noinspection RsUnresolvedPath
         println!("### test_124: {:?}", item_ref); // How to fix 'item_ref' properly
     });
 
-    assert!(false, "To see output");
+    // assert!(false, "To see output");
 }

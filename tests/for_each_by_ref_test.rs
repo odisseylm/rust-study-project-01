@@ -70,6 +70,7 @@ fn test_literals_for_each_by_ref() {
     assert_eq!(result, vec!("John", "568"));
 }
 
+#[allow(dead_code)]
 const fn tuple_len<T1,T2,T3>(_tuple: &(T1,T2,T3)) -> usize {
     3
 }
@@ -93,8 +94,13 @@ fn test_for_each_in_tuple_by_ref() {
 
     let mut result = Vec::<String>::new();
 
-    use tuple_len::tuple_len;
-    println!("### tuple length: {}", tuple_len!(tuple_var));
+    // use tuple_len::tuple_len;
+    use tuple_heter_iter::TupleOps;
+    // use Otuple_heter_iter::assert_tuple_len_is_63;
+    #[allow(unused_imports)]
+    use tuple_heter_iter::assert_tuple_len_is_15;
+    // println!("### tuple length: {}", tuple_len!(tuple_var));
+    println!("### tuple length: {}", tuple_var.tuple_len());
     println!("### tuple_size: {}", tuple_size!());
 
     // use tuple_len::TupleLen;
@@ -113,7 +119,7 @@ fn test_for_each_in_tuple_by_ref() {
 
     assert_eq!(result, vec!("John", "568", "Smith"));
 
-    assert!(false, "To see output");
+    // assert!(false, "To see output");
 }
 
 

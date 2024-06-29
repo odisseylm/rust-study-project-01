@@ -12,6 +12,16 @@ use syn::{ LitInt, parse_macro_input };
 // use syn::spanned::Spanned;
 
 
+const MAX_TUPLE_LEN: usize =
+if cfg!(feature = "tuple_len_64") {
+    64
+} else if cfg!(feature = "tuple_len_32") {
+    32
+} else {
+    16
+};
+
+
 #[proc_macro]
 pub fn for_each_by_ref(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
@@ -127,20 +137,67 @@ fn as_uint_literal(token_stream: Option<proc_macro2::TokenStream>) -> Option<usi
 
 
 
-/*
+/**
  Expected output:
-    fn assert_tuple_len_is_0(_tuple: &(,)) {}
-    fn assert_tuple_len_is_1<T1>(_tuple: &(T1,)) {}
-    fn assert_tuple_len_is_2<T1,T2>(_tuple: &(T1,T2)) {}
-    fn assert_tuple_len_is_3<T1,T2,T3>(_tuple: &(T1,T2,T3)) {}
-    fn assert_tuple_len_is_4<T1,T2,T3,T4>(_tuple: &(T1,T2,T3,T4)) {}
-
+ ```
+    pub fn assert_tuple_len_is_0(_tuple: &()) {}
+    pub fn assert_tuple_len_is_1<T1>(_tuple: &(T1)) {}
+    pub fn assert_tuple_len_is_2<T1,T2>(_tuple: &(T1,T2)) {}
+    pub fn assert_tuple_len_is_3<T1,T2,T3>(_tuple: &(T1,T2,T3)) {}
+    pub fn assert_tuple_len_is_4<T1,T2,T3,T4>(_tuple: &(T1,T2,T3,T4)) {}
+ ```
 */
 #[proc_macro]
-pub fn generate_assert_tuple_len_is(_params: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    todo!("Implement")
+pub fn generate_assert_tuple_len_is(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let max_tuple_len = parse_macro_input!(input as LitInt);
+    let max_tuple_len = max_tuple_len.base10_parse().unwrap();
+
+    generate_assert_tuple_len_is_impl(max_tuple_len).into()
 }
 
+fn generate_assert_tuple_len_is_impl(max_tuple_len: usize) -> proc_macro2::TokenStream {
+
+    let assert_tuple_len_is_functions = (1..max_tuple_len)
+        .into_iter()
+        .map(|i|{
+            let method_ident = make_ident(format!("assert_tuple_len_is_{i}"));
+            let types = types_list(i);
+            quote! {
+                pub fn #method_ident < #(#types),* >(_tuple: &(#(#types),*)) {}
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let q = quote! {
+        pub fn assert_tuple_len_is_0(_tuple: &()) {}
+        #(#assert_tuple_len_is_functions)*
+    };
+    q.into()
+}
+
+/*
+/* *
+ Expected output:
+ `` `
+    ???
+    pub fn const fn tuple_len(_tuple: &()) -> usize { 0 }
+    pub fn const fn tuple_len<T1>(_tuple: &(T1)) -> usize { 1 }
+    // ...
+    pub fn const fn tuple_len<T1,T2,T3>(_tuple: &(T1,T2,T3)) -> usize { 3 }
+ `` `
+*/
+#[proc_macro]
+pub fn generate_tuple_len(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let max_tuple_len = parse_macro_input!(input as LitInt);
+    let max_tuple_len = max_tuple_len.base10_parse().unwrap();
+
+    generate_assert_tuple_len_is_impl(max_tuple_len).into()
+}
+
+fn generate_tuple_len_impl(max_tuple_len: usize) -> proc_macro2::TokenStream {
+    ...
+}
+*/
 
 #[proc_macro]
 pub fn generate_all_tuple_ops(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -155,9 +212,13 @@ pub fn generate_all_tuple_ops(input: proc_macro::TokenStream) -> proc_macro::Tok
         .map(|tuple_len| generate_tuple_ops_impl(max_tuple_len, tuple_len))
         .collect::<Vec<_>>();
 
+    let assert_len_functions = generate_assert_tuple_len_is_impl(max_tuple_len);
+
     let out_ps2: proc_macro2::TokenStream = quote! {
         #trait_def
         #(#impls)*
+
+        #assert_len_functions
     };
     out_ps2.into()
 }
@@ -173,6 +234,10 @@ pub fn generate_tuple_ops_trait(input: proc_macro::TokenStream) -> proc_macro::T
 Generates code like
 ```
 pub trait TupleOps {
+    const LENGTH: usize;
+    fn tuple_len(&self) -> usize { Self::LENGTH }
+    // ?? Can we safely use such short name ??
+    fn len(&self) -> usize { Self::LENGTH }
     type Elem0;
     fn _0(&self) -> Option<&Self::Elem0>;
     type Elem1;
@@ -204,6 +269,10 @@ fn generate_tuple_ops_trait_impl(max_tuple_len: usize) -> proc_macro2::TokenStre
 
     let out: PM2TS = quote!{
         pub trait TupleOps {
+            const LENGTH: usize;
+            fn tuple_len(&self) -> usize { Self::LENGTH }
+            // ?? Can we safely use such short name ??
+            fn len(&self) -> usize { Self::LENGTH }
             #(#rows)*
         }
     };
@@ -232,17 +301,19 @@ impl <T0,T1> TupleOps for (T0,T1) {
 */
 fn generate_tuple_ops_impl(max_tuple_len: usize, current_tuple_len: usize)
                            -> proc_macro2::TokenStream {
+    use proc_macro2 as pm2;
     use proc_macro2::TokenStream as PM2TS;
 
-    let types = (0..current_tuple_len)
-        .into_iter()
-        .map(|i| make_ident(format!("T{i}")))
-        .collect::<Vec<_>>();
+    let current_tuple_len_literal = pm2::TokenTree::Literal(
+        pm2::Literal::usize_unsuffixed(current_tuple_len));
 
-    let matched_type_rows: Vec<proc_macro2::TokenStream> = (0..current_tuple_len)
+    let types = types_list(current_tuple_len);
+
+    let matched_type_rows: Vec<pm2::TokenStream> = (0..current_tuple_len)
         .into_iter()
         .map(|i| {
-            let index = proc_macro2::TokenTree::Literal(proc_macro2::Literal::usize_unsuffixed(i));
+            // let index = proc_macro2::TokenTree::Literal(proc_macro2::Literal::usize_unsuffixed(i));
+            let index = syn::Index::from(i);
             let gen_elem_type_ident = make_ident(format!("T{i}"));
             let elem_type_ident = make_ident(format!("Elem{i}"));
             let method_ident = make_ident(format!("_{i}"));
@@ -256,7 +327,7 @@ fn generate_tuple_ops_impl(max_tuple_len: usize, current_tuple_len: usize)
         .collect::<Vec<_>>();
 
 
-    let mut unmatched_type_rows =  (current_tuple_len..max_tuple_len)
+    let unmatched_type_rows =  (current_tuple_len..max_tuple_len)
         .into_iter()
         .map(|i| {
             let elem_type_ident = make_ident(format!("Elem{i}"));
@@ -273,6 +344,12 @@ fn generate_tuple_ops_impl(max_tuple_len: usize, current_tuple_len: usize)
 
     let out: PM2TS = quote! {
         impl < #(#types),* > TupleOps for ( #(#types),* ,) {
+            const LENGTH: usize = #current_tuple_len_literal;
+            #[inline(always)]
+            fn tuple_len(&self) -> usize { #current_tuple_len_literal }
+            // ?? Can we safely use such short name ??
+            #[inline(always)]
+            fn len(&self) -> usize { #current_tuple_len_literal }
             #(#matched_type_rows)*
             #(#unmatched_type_rows)*
         }
@@ -291,6 +368,15 @@ fn make_ident(ident: String)
     ident.into_token_stream()
 }
 
+/**
+ * Generates types quote like 'T0,T1,T2...'
+ */
+fn types_list(type_count: usize) -> Vec<proc_macro2::TokenStream> {
+    (0..type_count)
+        .into_iter()
+        .map(|i| make_ident(format!("T{i}")))
+        .collect::<Vec<_>>()
+}
 
 #[proc_macro]
 pub fn for_each_in_tuple_by_ref_2(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
@@ -305,7 +391,7 @@ pub fn for_each_in_tuple_by_ref_2(params: proc_macro::TokenStream) -> proc_macro
     let for_each_run_block = params_vec.pop().expect(input_err_msg!());
     let tuple = params_vec.get(0).expect(input_err_msg!());
 
-    let max_tuple_len = 12; // TODO: get from ???
+    let max_tuple_len = MAX_TUPLE_LEN;
 
     let mut vars = Vec::<proc_macro2::TokenStream>::new();
     for i in 0..max_tuple_len {

@@ -2937,8 +2937,7 @@ dependencies = [
  "tracing-timing",
  "trait-variant",
  "tuple_heter_iter",
- "tuple_len",
- "tuple_length",
+ "tuple_heter_iter_macro",
  "type-rules",
  "url",
  "validator",
@@ -4433,6 +4432,31 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 
 [[package]]
 name = "tuple_heter_iter"
+version = "0.1.0"
+dependencies = [
+ "assert-json-diff",
+ "assertables",
+ "by_address",
+ "cargo_metadata",
+ "cfg-if",
+ "const_format",
+ "dotenv",
+ "env_logger",
+ "extension-trait",
+ "if_chain",
+ "indoc",
+ "inherent",
+ "itertools 0.13.0",
+ "log",
+ "macro_rules_attribute",
+ "readonly",
+ "static_assertions",
+ "test-case",
+ "tuple_heter_iter_macro",
+]
+
+[[package]]
+name = "tuple_heter_iter_macro"
 version = "0.1.0"
 dependencies = [
  "if_chain",
