@@ -7,7 +7,6 @@ fn test_123() {
     // TODO: add such function
     let tuple_of_refs = (tuple_v.0, tuple_v.1, tuple_v.2, tuple_v.3, );
 
-    //noinspection RsUnresolvedPath
     use tuple_heter_iter::TupleOps;
 
     println!("### tupl test => _0: {:?}", tuple_of_refs._0());
@@ -28,12 +27,14 @@ fn test_124() {
     // TODO: add such function
     let tuple_of_refs = (tuple_v.0, tuple_v.1, tuple_v.2, tuple_v.3, );
 
-    //noinspection RsUnresolvedPath
     use tuple_heter_iter::TupleOps;
 
-    tuple_heter_iter_macro::for_each_in_tuple_by_ref_2! (tuple_of_refs, {
-        //noinspection RsUnresolvedPath
-        println!("### test_124: {:?}", item_ref); // How to fix 'item_ref' properly
+    // Faked (really unused) variable to shut up Idea error notification.
+    #[allow(dead_code, unused_variables)]
+    let item = &tuple_of_refs.0;
+
+    tuple_heter_iter_macro::for_each_in_tuple_by_ref_2! ($item, tuple_of_refs, {
+        println!("### test_124: {:?}", item); // How to fix 'item_ref' properly
     });
 
     // assert!(false, "To see output");

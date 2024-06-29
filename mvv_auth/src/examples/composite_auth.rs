@@ -107,7 +107,6 @@ impl CompositeAuthnBackendExample {
 #[axum::async_trait]
 impl RequestAuthenticated for CompositeAuthnBackendExample {
 
-    //noinspection RsUnresolvedPath // for 'item_ref'
     async fn do_authenticate_request <
         RootBackend: axum_login::AuthnBackend + 'static,
         S: Send + Sync,
@@ -116,11 +115,16 @@ impl RequestAuthenticated for CompositeAuthnBackendExample {
         where Self: 'static,
         RootBackend: axum_login::AuthnBackend<User = Self::User>,
     {
-        use static_error_macro::for_each_by_ref;
+        use tuple_heter_iter_macro::for_each_by_ref;
         let mut req_and_res = (req, Ok(None));
 
-        for_each_by_ref! { self.http_basic_auth_backend, self.login_form_auth_backend, self.oauth2_backend, {
-            if let Some(ref backend) = item_ref {
+        // Faked (really unused) variable to shut up Idea error notification.
+        #[allow(dead_code, unused_variables)]
+        let backend = &self.http_basic_auth_backend;
+
+        for_each_by_ref! { $backend, self.http_basic_auth_backend,
+            self.login_form_auth_backend, self.oauth2_backend, {
+            if let Some(ref backend) = backend {
                 req_and_res = backend.do_authenticate_request::<RootBackend,()>(
                     auth_session.clone(), req_and_res.0).await;
                 match req_and_res.1 {
@@ -213,12 +217,27 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
         &self.users_provider
     }
 
-    //noinspection RsUnresolvedPath // for 'item_ref'
     fn propose_authentication_action(&self, req: &Request) -> Option<Self::ProposeAuthAction> {
-        use static_error_macro::for_each_by_ref;
+        use tuple_heter_iter_macro::for_each_by_ref;
 
-        for_each_by_ref! { self.http_basic_auth_backend, self.login_form_auth_backend, self.oauth2_backend, {
-            if let Some(ref backend) = item_ref {
+        /*
+        use forr::forr;
+        forr! { $val:expr, $i:idx in [(), (2,), (2,3), ""] $*
+            println!("### in forr: {:?}", $val);
+        }
+        forr! { $val:expr, $i:idx in [(), (2,), (2,3), ""] $*
+            {
+                println!("### in forr: {:?}", $val);
+            }
+        }
+        */
+
+        // Faked (really unused) variable to shut up Idea error notification.
+        #[allow(dead_code, unused_variables)]
+        let backend = &self.http_basic_auth_backend;
+
+        for_each_by_ref! { $backend, self.http_basic_auth_backend, self.login_form_auth_backend, self.oauth2_backend, {
+            if let Some(ref backend) = backend {
                 let proposes_auth_action = backend.propose_authentication_action(&req);
                 if let Some(proposes_auth_action) = proposes_auth_action {
                     return Some(proposes_auth_action.into());

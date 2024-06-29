@@ -11,10 +11,14 @@ fn tuple_iter_test_125() {
     let tuple_v = (123u8, "John", "Vovan".to_string(), PI);
     let tuple_of_refs = (&tuple_v.0, &tuple_v.1, &tuple_v.2, &tuple_v.3);
 
-    tuple_heter_iter_macro::for_each_in_tuple_by_ref_2! ($item_ref, tuple_of_refs, {
-        //noinspection RsUnresolvedPath
-        println!("### tuple_iter_test_125: {:?}", item_ref); // How to fix 'item_ref' properly
-    });
+
+    // Faked (really unused) variable to shut up Idea error notification.
+    #[allow(dead_code, unused_variables)]
+    let item_ref22 = &tuple_of_refs.0;
+
+    tuple_heter_iter_macro::for_each_in_tuple_by_ref_2! { item_ref22, tuple_of_refs, {
+        println!("### tuple_iter_test_125: {:?}", item_ref22); // How to fix 'item_ref' properly
+    }}
 
     tuple_heter_iter::assert_tuple_len_is_4(&tuple_v);
     tuple_heter_iter::assert_tuple_len_is_4(&tuple_of_refs);
@@ -32,8 +36,8 @@ fn tuple_iter_test_125() {
 fn forr_tuple_iter_test_125() {
     use tuple_heter_iter::TupleOps;
 
-    let tuple_v = (123u8, "John", "Vovan".to_string(), PI);
-    let tuple_of_refs = (&tuple_v.0, &tuple_v.1, &tuple_v.2, &tuple_v.3);
+    // let tuple_v = (123u8, "John", "Vovan".to_string(), PI);
+    // let tuple_of_refs = (&tuple_v.0, &tuple_v.1, &tuple_v.2, &tuple_v.3);
 
     use forr::forr;
 
@@ -61,9 +65,14 @@ fn forr_tuple_iter_test_125() {
     //     println!("### in forr: {:?}", $val.to_string());
     // }
 
+    let mut res = Vec::new();
+
     forr! { $val:expr, $i:idx in [(), (2,), (2,3)] $*
         println!("### in forr: {:?} - tuple len {}", $val, $val.tuple_len());
+        res.push($val.tuple_len());
     }
+
+    assert_eq!(res, vec!(0, 1, 2));
 
     // let tuple_v2 = ((), (2,), (2,3));
     // forr! { $val:expr, $i:idx in tuple_v2 $*
@@ -75,5 +84,5 @@ fn forr_tuple_iter_test_125() {
     // forr! { ($val:expr, $vbl:ty), $i:idx in [(1, i32), (2, i32)]
     // forr! { ($val:expr, $i:idx, $vbl:ty) in [(1, i32), (2, i32)]
 
-    assert!(false, "To see output");
+    // assert!(false, "To see output");
 }
