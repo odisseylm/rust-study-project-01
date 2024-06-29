@@ -207,6 +207,8 @@ pub fn generate_all_tuple_ops(input: proc_macro::TokenStream) -> proc_macro::Tok
 
     let trait_def = generate_tuple_ops_trait_impl(max_tuple_len);
 
+    let impl_for_0 = generate_tuple_0_ops_impl(max_tuple_len);
+
     let impls =  (1..max_tuple_len)
         .into_iter()
         .map(|tuple_len| generate_tuple_ops_impl(max_tuple_len, tuple_len))
@@ -216,6 +218,7 @@ pub fn generate_all_tuple_ops(input: proc_macro::TokenStream) -> proc_macro::Tok
 
     let out_ps2: proc_macro2::TokenStream = quote! {
         #trait_def
+        #impl_for_0
         #(#impls)*
 
         #assert_len_functions
@@ -357,6 +360,39 @@ fn generate_tuple_ops_impl(max_tuple_len: usize, current_tuple_len: usize)
     out.into()
 }
 
+fn generate_tuple_0_ops_impl(max_tuple_len: usize)
+                           -> proc_macro2::TokenStream {
+    use proc_macro2 as pm2;
+    use proc_macro2::TokenStream as PM2TS;
+
+    let unmatched_type_rows: Vec<pm2::TokenStream> = (0..max_tuple_len)
+        .into_iter()
+        .map(|i| {
+            let elem_type_ident = make_ident(format!("Elem{i}"));
+            let method_ident = make_ident(format!("_{i}"));
+
+            quote! {
+                type #elem_type_ident = ();
+                #[inline(always)]
+                fn #method_ident(&self) -> Option<&Self:: #elem_type_ident> { None }
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let out: PM2TS = quote! {
+        impl TupleOps for () {
+            const LENGTH: usize = 0;
+            #[inline(always)]
+            fn tuple_len(&self) -> usize { 0 }
+            // ?? Can we safely use such short name ??
+            #[inline(always)]
+            fn len(&self) -> usize { 0 }
+            #(#unmatched_type_rows)*
+        }
+    };
+    out.into()
+}
+
 fn make_ident(ident: String)
     -> proc_macro2::TokenStream
 {
@@ -386,10 +422,10 @@ pub fn for_each_in_tuple_by_ref_2(params: proc_macro::TokenStream) -> proc_macro
     // const input_err_msg = "Input should be { tuple_expr, { code } }.";
     macro_rules! input_err_msg { () => { "Input should be {{ tuple_expr, {{ code }} }}." }; }
 
-    assert_eq!(params_vec.len(), 2, input_err_msg!());
+    assert_eq!(params_vec.len(), 3, input_err_msg!());
 
     let for_each_run_block = params_vec.pop().expect(input_err_msg!());
-    let tuple = params_vec.get(0).expect(input_err_msg!());
+    let tuple = params_vec.get(1).expect(input_err_msg!());
 
     let max_tuple_len = MAX_TUPLE_LEN;
 

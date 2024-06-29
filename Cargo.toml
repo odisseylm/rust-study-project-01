@@ -181,6 +181,7 @@ askama_axum = "0.4.0"
 
 itertools = "0.13.0"
 by_address = "1.2.1"
+forr = "0.2.3"
 
 #tuple_len = "3.0.0"
 #tuple_length = "0.2.0"
