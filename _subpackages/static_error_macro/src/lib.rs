@@ -6,7 +6,7 @@ mod compile_log;
 // RustRover does not pick it up (however cargo does)
 // #[macro_use]
 // mod compile_log_macros;
-include!("./compile_log_macros.rs");
+include!("compile_log_macros.rs");
 
 
 use std::collections::{ HashMap, HashSet };

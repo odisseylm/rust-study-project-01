@@ -30,10 +30,10 @@ default = [ "ambassador", ]
 
 [workspace]
 members = [
-    "mvv_auth",
-    "static_error_macro",
-    "tuple_heter_iter_macro",
-    "tuple_heter_iter",
+    "_subpackages/static_error_macro",
+    "_subpackages/tuple_heter_iter_macro",
+    "_subpackages/tuple_heter_iter",
+    "_subpackages/mvv_auth",
 ]
 
 
@@ -42,10 +42,10 @@ cargo_metadata = "0.18.1"
 
 
 [dependencies]
-static_error_macro = { version = "0.1.0", path = "static_error_macro" }
-mvv_auth = { version = "0.1.0", path = "mvv_auth" }
-tuple_heter_iter_macro = { version = "0.1.0", path = "tuple_heter_iter_macro" }
-tuple_heter_iter = { version = "0.1.0", path = "tuple_heter_iter" }
+static_error_macro = { version = "0.1.0", path = "_subpackages/static_error_macro" }
+mvv_auth = { version = "0.1.0", path = "_subpackages/mvv_auth" }
+tuple_heter_iter_macro = { version = "0.1.0", path = "_subpackages/tuple_heter_iter_macro" }
+tuple_heter_iter = { version = "0.1.0", path = "_subpackages/tuple_heter_iter" }
 
 # -------------------------------------------------------------------------
 if_chain = "1.0.2"
