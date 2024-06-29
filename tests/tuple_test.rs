@@ -41,7 +41,8 @@ fn test_124() {
     use tuples22::TupleOps;
 
     tuple_heter_iter::for_each_in_tuple_by_ref_2! (tuple_of_refs, {
-        println!("### dddd {:?}", item_ref);
+        //noinspection RsUnresolvedPath
+        println!("### test_124: {:?}", item_ref); // How to fix 'item_ref' properly
     });
 
     assert!(false, "To see output");
