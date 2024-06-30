@@ -6,7 +6,7 @@ use tuple_heter_iter;
 
 #[test]
 fn tuple_iter_test_125() {
-    use tuple_heter_iter::TupleOps;
+    use tuple_heter_iter::{ TupleAccess, TupleLen };
 
     let tuple_v = (123u8, "John", "Vovan".to_string(), PI);
     let tuple_of_refs = (&tuple_v.0, &tuple_v.1, &tuple_v.2, &tuple_v.3);
@@ -34,7 +34,7 @@ fn tuple_iter_test_125() {
 
 #[test]
 fn forr_tuple_iter_test_125() {
-    use tuple_heter_iter::TupleOps;
+    use tuple_heter_iter::TupleLen;
 
     // let tuple_v = (123u8, "John", "Vovan".to_string(), PI);
     // let tuple_of_refs = (&tuple_v.0, &tuple_v.1, &tuple_v.2, &tuple_v.3);

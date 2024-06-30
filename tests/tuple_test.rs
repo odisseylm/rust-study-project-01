@@ -7,7 +7,7 @@ fn test_123() {
     // TODO: add such function
     let tuple_of_refs = (tuple_v.0, tuple_v.1, tuple_v.2, tuple_v.3, );
 
-    use tuple_heter_iter::TupleOps;
+    use tuple_heter_iter::TupleAccess;
 
     println!("### tupl test => _0: {:?}", tuple_of_refs._0());
     println!("### tupl test => _1: {:?}", tuple_of_refs._1());
@@ -27,7 +27,7 @@ fn test_124() {
     // TODO: add such function
     let tuple_of_refs = (tuple_v.0, tuple_v.1, tuple_v.2, tuple_v.3, );
 
-    use tuple_heter_iter::TupleOps;
+    use tuple_heter_iter::TupleAccess;
 
     // Faked (really unused) variable to shut up Idea error notification.
     #[allow(dead_code, unused_variables)]

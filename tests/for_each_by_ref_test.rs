@@ -103,8 +103,8 @@ fn test_for_each_in_tuple_by_ref() {
     let mut result = Vec::<String>::new();
 
     // use tuple_len::tuple_len;
-    use tuple_heter_iter::TupleOps;
-    // use Otuple_heter_iter::assert_tuple_len_is_63;
+    use tuple_heter_iter::TupleLen;
+    // use tuple_heter_iter::assert_tuple_len_is_63;
     #[allow(unused_imports)]
     use tuple_heter_iter::assert_tuple_len_is_15;
     // println!("### tuple length: {}", tuple_len!(tuple_var));

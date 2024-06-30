@@ -49,21 +49,21 @@ pub fn generate_assert_tuple_len_is(input: proc_macro::TokenStream) -> proc_macr
     generate_tuple_op_types::generate_assert_tuple_len_is_impl(max_tuple_len).into()
 }
 
-
 #[proc_macro]
-pub fn generate_all_tuple_ops(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn generate_all_tuple_len_traits(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let max_tuple_len = parse_macro_input!(input as LitInt)
         .base10_parse().unwrap();
-    generate_tuple_op_types::generate_all_tuple_ops(max_tuple_len)
+    generate_tuple_op_types::generate_all_tuple_len_traits(max_tuple_len).into()
 }
 
 
 #[proc_macro]
-pub fn generate_tuple_ops_trait(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn generate_all_tuple_access_traits(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let max_tuple_len = parse_macro_input!(input as LitInt)
         .base10_parse().unwrap();
-    generate_tuple_op_types::generate_tuple_ops_trait_impl(max_tuple_len).into()
+    generate_tuple_op_types::generate_all_tuple_access(max_tuple_len)
 }
+
 
 
 /*

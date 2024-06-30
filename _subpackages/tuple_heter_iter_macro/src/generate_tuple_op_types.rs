@@ -28,25 +28,25 @@ pub(crate) fn generate_assert_tuple_len_is_impl(max_tuple_len: usize) -> proc_ma
 }
 
 
-pub(crate) fn generate_all_tuple_ops(max_tuple_len: usize) -> proc_macro::TokenStream {
+pub(crate) fn generate_all_tuple_access(max_tuple_len: usize) -> proc_macro::TokenStream {
 
-    let trait_def = generate_tuple_ops_trait_impl(max_tuple_len);
+    let trait_def = generate_tuple_access_trait_impl(max_tuple_len);
 
-    let impl_for_0 = generate_tuple_0_ops_impl(max_tuple_len);
+    let impl_for_0 = generate_tuple_0_access_impl(max_tuple_len);
 
     let impls =  (1..max_tuple_len)
         .into_iter()
-        .map(|tuple_len| generate_tuple_ops_impl(max_tuple_len, tuple_len))
+        .map(|tuple_len| generate_tuple_access_impl(max_tuple_len, tuple_len))
         .collect::<Vec<_>>();
 
-    let assert_len_functions = generate_assert_tuple_len_is_impl(max_tuple_len);
+    // let assert_len_functions = generate_assert_tuple_len_is_impl(max_tuple_len);
 
     let out_ps2: proc_macro2::TokenStream = quote! {
         #trait_def
         #impl_for_0
         #(#impls)*
 
-        #assert_len_functions
+        // #assert_len_functions
     };
     out_ps2.into()
 }
@@ -56,11 +56,7 @@ pub(crate) fn generate_all_tuple_ops(max_tuple_len: usize) -> proc_macro::TokenS
 /**
 Generates code like
 ```
-pub trait TupleOps {
-    const LENGTH: usize;
-    fn tuple_len(&self) -> usize { Self::LENGTH }
-    // ?? Can we safely use such short name ??
-    fn len(&self) -> usize { Self::LENGTH }
+pub trait TupleAccess {
     type Elem0;
     fn _0(&self) -> Option<&Self::Elem0>;
     type Elem1;
@@ -74,7 +70,7 @@ pub trait TupleOps {
 }
 ```
 */
-pub(crate) fn generate_tuple_ops_trait_impl(max_tuple_len: usize) -> proc_macro2::TokenStream {
+pub(crate) fn generate_tuple_access_trait_impl(max_tuple_len: usize) -> proc_macro2::TokenStream {
     use proc_macro2::TokenStream as PM2TS;
 
     let rows: Vec<PM2TS> = (0..max_tuple_len)
@@ -91,11 +87,7 @@ pub(crate) fn generate_tuple_ops_trait_impl(max_tuple_len: usize) -> proc_macro2
         .collect();
 
     let out: PM2TS = quote!{
-        pub trait TupleOps {
-            const LENGTH: usize;
-            fn tuple_len(&self) -> usize { Self::LENGTH }
-            // ?? Can we safely use such short name ??
-            fn len(&self) -> usize { Self::LENGTH }
+        pub trait TupleAccess {
             #(#rows)*
         }
     };
@@ -108,7 +100,7 @@ pub(crate) fn generate_tuple_ops_trait_impl(max_tuple_len: usize) -> proc_macro2
 /**
 Generates code like
 ``
-impl <T0,T1> TupleOps for (T0,T1) {
+impl <T0,T1> TupleAccess for (T0,T1) {
     type Elem0 = T0;
     #[inline(always)]
     fn _0(&self) -> Option<&Self::Elem0> { Some(&self.0) }
@@ -124,20 +116,15 @@ impl <T0,T1> TupleOps for (T0,T1) {
 }
 ``
 */
-fn generate_tuple_ops_impl(max_tuple_len: usize, current_tuple_len: usize)
+fn generate_tuple_access_impl(max_tuple_len: usize, current_tuple_len: usize)
                            -> proc_macro2::TokenStream {
     use proc_macro2 as pm2;
-    use proc_macro2::TokenStream as PM2TS;
-
-    let current_tuple_len_literal = pm2::TokenTree::Literal(
-        pm2::Literal::usize_unsuffixed(current_tuple_len));
 
     let types = types_list(current_tuple_len);
 
     let matched_type_rows: Vec<pm2::TokenStream> = (0..current_tuple_len)
         .into_iter()
         .map(|i| {
-            // let index = proc_macro2::TokenTree::Literal(proc_macro2::Literal::usize_unsuffixed(i));
             let index = syn::Index::from(i);
             let gen_elem_type_ident = make_ident(format!("T{i}"));
             let elem_type_ident = make_ident(format!("Elem{i}"));
@@ -167,14 +154,8 @@ fn generate_tuple_ops_impl(max_tuple_len: usize, current_tuple_len: usize)
         .collect::<Vec<_>>();
 
 
-    let out: PM2TS = quote! {
-        impl < #(#types),* > TupleOps for ( #(#types),* ,) {
-            const LENGTH: usize = #current_tuple_len_literal;
-            #[inline(always)]
-            fn tuple_len(&self) -> usize { #current_tuple_len_literal }
-            // ?? Can we safely use such short name ??
-            #[inline(always)]
-            fn len(&self) -> usize { #current_tuple_len_literal }
+    let out: pm2::TokenStream = quote! {
+        impl < #(#types),* > TupleAccess for ( #(#types),* ,) {
             #(#matched_type_rows)*
             #(#unmatched_type_rows)*
         }
@@ -184,7 +165,7 @@ fn generate_tuple_ops_impl(max_tuple_len: usize, current_tuple_len: usize)
 
 
 
-fn generate_tuple_0_ops_impl(max_tuple_len: usize)
+fn generate_tuple_0_access_impl(max_tuple_len: usize)
                            -> proc_macro2::TokenStream {
     use proc_macro2 as pm2;
     use proc_macro2::TokenStream as PM2TS;
@@ -204,14 +185,99 @@ fn generate_tuple_0_ops_impl(max_tuple_len: usize)
         .collect::<Vec<_>>();
 
     let out: PM2TS = quote! {
-        impl TupleOps for () {
+        impl TupleAccess for () {
+            #(#unmatched_type_rows)*
+        }
+    };
+    out.into()
+}
+
+
+pub(crate) fn generate_all_tuple_len_traits(max_tuple_len: usize) -> proc_macro::TokenStream {
+
+    let trait_def = generate_tuple_len_trait();
+
+    let impl_for_0 = generate_tuple_0_len_impl();
+
+    let impls =  (1..max_tuple_len)
+        .into_iter()
+        .map(|tuple_len| generate_tuple_len_impl(tuple_len))
+        .collect::<Vec<_>>();
+
+    let out_ps2: proc_macro2::TokenStream = quote! {
+        #trait_def
+        #impl_for_0
+        #(#impls)*
+    };
+    out_ps2.into()
+}
+
+
+
+/**
+Generates code like
+```
+pub trait TupleLen {
+    const LENGTH: usize;
+    fn tuple_len(&self) -> usize { Self::LENGTH }
+    // ?? Can we safely use such short name ??
+    fn len(&self) -> usize { Self::LENGTH }
+}
+```
+*/
+pub(crate) fn generate_tuple_len_trait() -> proc_macro2::TokenStream {
+    let out: proc_macro2::TokenStream = quote!{
+        pub trait TupleLen {
+            const LENGTH: usize;
+            fn tuple_len(&self) -> usize { Self::LENGTH }
+            fn len(&self) -> usize { Self::LENGTH }
+        }
+    };
+    out.into()
+}
+
+/**
+Generates code like
+``
+impl <T0,T1> TupleLen for (T0,T1) {
+    const LENGTH: usize = 2;
+    #[inline(always)]
+    fn tuple_len(&self) -> usize { 2 }
+    #[inline(always)]
+    fn len(&self) -> usize { 2 }
+}
+``
+*/
+fn generate_tuple_len_impl(tuple_len: usize)
+                           -> proc_macro2::TokenStream {
+    use proc_macro2 as pm2;
+    use proc_macro2::TokenStream as PM2TS;
+
+    let current_tuple_len_literal = pm2::TokenTree::Literal(
+        pm2::Literal::usize_unsuffixed(tuple_len));
+
+    let types = types_list(tuple_len);
+
+    let out: PM2TS = quote! {
+        impl < #(#types),* > TupleLen for ( #(#types),* ,) {
+            const LENGTH: usize = #current_tuple_len_literal;
+            #[inline(always)]
+            fn tuple_len(&self) -> usize { #current_tuple_len_literal }
+            #[inline(always)]
+            fn len(&self) -> usize { #current_tuple_len_literal }
+        }
+    };
+    out.into()
+}
+
+fn generate_tuple_0_len_impl() -> proc_macro2::TokenStream {
+    let out: proc_macro2::TokenStream = quote! {
+        impl TupleLen for () {
             const LENGTH: usize = 0;
             #[inline(always)]
             fn tuple_len(&self) -> usize { 0 }
-            // ?? Can we safely use such short name ??
             #[inline(always)]
             fn len(&self) -> usize { 0 }
-            #(#unmatched_type_rows)*
         }
     };
     out.into()
