@@ -1,4 +1,3 @@
-
 use axum::{
     extract::Query,
     http::StatusCode,
@@ -10,7 +9,8 @@ use axum_login::tower_sessions::Session;
 use serde::Deserialize;
 
 use crate::web::auth::{ LoginTemplate, NEXT_URL_KEY };
-// use super::auth::AuthSession;
+//--------------------------------------------------------------------------------------------------
+
 
 pub const CSRF_STATE_KEY: &str = "oauth.csrf-state";
 
@@ -27,12 +27,12 @@ pub fn router() -> Router<()> {
 mod get {
     // use crate::rest::auth::AuthCredentials as CompositeAuthCredentials;
     use mvv_auth::backend::{ OAuth2AuthCredentials as OAuthCreds };
-    use mvv_auth::examples::composite_auth::{CompositeAuthCredentials, CompositeAuthnBackendExample};
+    use crate::rest::auth::{ CompositeAuthBackend, CompositeAuthCredentials };
     use super::*;
 
     pub async fn callback /*<B: axum_login::AuthnBackend>*/ (
         // mut auth_session: AuthSession<B>,
-        mut auth_session: axum_login::AuthSession<CompositeAuthnBackendExample>,
+        mut auth_session: axum_login::AuthSession<CompositeAuthBackend>,
         session: Session,
         Query(AuthzResp {
                   code,
@@ -51,10 +51,10 @@ mod get {
                 return (
                     StatusCode::UNAUTHORIZED,
                     LoginTemplate {
-                        message: Some("Invalid CSRF state.".to_string()),
-                        next: None,
-                    },
-                )
+                            message: Some("Invalid CSRF state.".to_string()),
+                            next: None,
+                        },
+                    )
                     .into_response()
             }
             Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),

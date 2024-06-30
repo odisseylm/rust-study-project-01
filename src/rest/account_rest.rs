@@ -12,6 +12,7 @@ use crate::rest::error_rest::{RestAppError, test_authenticate_basic};
 use crate::rest::auth::{ RequiredAuthenticationExtension, Role, RolePermissionsSet };
 use crate::service::account_service::{ AccountService };
 use crate::rest::auth::RequiredAuthorizationExtension;
+//--------------------------------------------------------------------------------------------------
 
 
 pub fn accounts_rest_router<

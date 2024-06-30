@@ -4,6 +4,7 @@ use std::{fs::File, sync::Arc};
 
 // A layer that logs events to stdout using the human-readable "pretty"
 // format.
+#[allow(dead_code)]
 fn main_456() {
     let stdout_log = tracing_subscriber::fmt::layer()
         .pretty();

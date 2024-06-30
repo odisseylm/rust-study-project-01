@@ -81,7 +81,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
 
     let dependencies = create_prod_dependencies();
 
-    use crate::rest::auth::{ composite_auth_manager_layer };
+    use crate::rest::auth::auth_layer::{ composite_auth_manager_layer };
     let auth_layer = composite_auth_manager_layer().await ?;
     let login_route = composite_login_router();
 

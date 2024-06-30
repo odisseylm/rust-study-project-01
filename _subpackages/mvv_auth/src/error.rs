@@ -1,9 +1,11 @@
 use axum::response::{ IntoResponse, Response };
 use http::StatusCode;
 use log::error;
+use crate::backend::Oauth2ConfigError;
 
 use crate::user_provider::AuthUserProviderError;
 use crate::permission::PermissionProcessError;
+//--------------------------------------------------------------------------------------------------
 
 
 // This enum contains ALL possible errors for ANY auth Backend.
@@ -36,6 +38,9 @@ pub enum AuthBackendError {
 
     #[error(transparent)]
     OAuth2(oauth2::basic::BasicRequestTokenError<oauth2::reqwest::AsyncHttpClientError>),
+
+    #[error(transparent)]
+    OAuth2ConfigError(#[from] Oauth2ConfigError),
 
     #[error("NoRequestedBackend")]
     NoRequestedBackend,

@@ -5,6 +5,7 @@ use axum::response::{ IntoResponse, Response };
 use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Basic;
 use axum_extra::TypedHeader;
+//--------------------------------------------------------------------------------------------------
 
 
 // Error processing:
@@ -26,6 +27,9 @@ pub enum RestAppError {
     #[must_use = "Mainly for xxx usage."]
     Unauthenticated,
 
+    // In most cases authorization also should be processed on axum route layer,
+    // but of course in some cases it is possible to do only later
+    // (for example if user sends account ID of another client)
     Unauthorized,
     HttpResponseResultError(Response),
 

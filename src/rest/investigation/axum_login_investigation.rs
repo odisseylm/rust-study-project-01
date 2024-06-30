@@ -14,14 +14,15 @@ use axum_extra::headers::authorization::Basic;
 use axum_extra::TypedHeader;
 use tower_http::{trace::TraceLayer};
 use tower::{ service_fn, ServiceBuilder };
+use super::super::auth::CompositeAuthBackend;
 use mvv_auth::examples::composite_auth::CompositeAuthnBackendExample;
 use mvv_auth::route::validate_authentication_chain;
 use crate::rest::auth::{
-    composite_auth_manager_layer,
     RequiredAuthenticationExtension,
+    auth_layer::composite_auth_manager_layer,
 };
 use crate::util::TestResultUnwrap;
-use super::auth;
+use super::super::auth;
 
 type AuthSession = axum_login::AuthSession<CompositeAuthnBackendExample>;
 
@@ -170,7 +171,7 @@ pub async fn temp_handler() {
     */
 
 
-    let auth_layer: axum_login::AuthManagerLayer<CompositeAuthnBackendExample, axum_login::tower_sessions::MemoryStore> =
+    let auth_layer: axum_login::AuthManagerLayer<CompositeAuthBackend, axum_login::tower_sessions::MemoryStore> =
         composite_auth_manager_layer().await.test_unwrap();
 
     // !!! WORKING router !!!

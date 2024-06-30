@@ -10,15 +10,15 @@ struct ProtectedTemplate<'a> {
 pub fn protected_page_01_router() -> Router<()> {
     Router::new()
         .route("/protected-01", GET(get::protected_page_01))
-        .route_layer(axum_login::login_required!(crate::rest::auth::AuthnBackend, login_url = "/login"))
+        .route_layer(axum_login::login_required!(crate::rest::auth::AuthBackend, login_url = "/login"))
 }
 
 mod get {
     use super::*;
-    use crate::rest::auth::AuthnBackend;
+    use crate::rest::auth::AuthBackend;
     use axum::{ http::StatusCode, response::IntoResponse };
 
-    pub async fn protected_page_01(auth_session: axum_login::AuthSession<AuthnBackend>) -> impl IntoResponse {
+    pub async fn protected_page_01(auth_session: axum_login::AuthSession<AuthBackend>) -> impl IntoResponse {
         match auth_session.user {
             Some(user) => ProtectedTemplate {
                 username: &user.username,
