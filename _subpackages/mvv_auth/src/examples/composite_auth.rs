@@ -250,6 +250,10 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
         use if_chain::if_chain;
 
         let propose_opt = tuple_find_some_by_ref! { $backend, self.backends(), {
+            if let Some(ref backend) = backend {
+                backend.propose_authentication_action(&req).map(|action|action.into())
+            } else { None }
+            /*
             if_chain! {
                 if let Some(ref backend) = backend;
                 let proposes_auth_action = backend.propose_authentication_action(&req);
@@ -257,6 +261,7 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
                 then { Some(proposes_auth_action.into()) }
                 else { None }
             }
+            */
             /*
             if let Some(ref backend) = backend {
                 let proposes_auth_action = backend.propose_authentication_action(&req);
