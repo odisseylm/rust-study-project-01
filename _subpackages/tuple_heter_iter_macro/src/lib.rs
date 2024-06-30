@@ -19,11 +19,6 @@ pub fn for_each_in_tuple_by_ref(params: proc_macro::TokenStream) -> proc_macro::
 }
 
 #[proc_macro]
-pub fn for_each_in_tuple_by_ref_2(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    for_each::for_each_in_tuple_by_ref_2(params)
-}
-
-#[proc_macro]
 pub fn for_each_by_ref(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
     for_each::for_each_by_ref(params)
 }

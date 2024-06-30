@@ -42,6 +42,14 @@ pub struct CompositeAuthnBackendExample<
 
 
 impl CompositeAuthnBackendExample {
+    fn backends(&self) -> (
+        &Option<HttpBasicAuthBackend<AuthUserExample,PlainPasswordComparator,RolePermissionsSet>>,
+        &Option<LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,RolePermissionsSet>>,
+        &Option<OAuth2AuthBackend<AuthUserExample,RolePermissionsSet>>,
+    ) {
+        (&self.http_basic_auth_backend, &self.login_form_auth_backend, &self.oauth2_backend)
+    }
+
     pub fn test_users() -> Result<CompositeAuthnBackendExample, anyhow::Error> {
         let in_mem_users = Arc::new(test::in_memory_test_users() ?);
         let user_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send> = in_mem_users.clone();
@@ -115,15 +123,17 @@ impl RequestAuthenticated for CompositeAuthnBackendExample {
         where Self: 'static,
         RootBackend: axum_login::AuthnBackend<User = Self::User>,
     {
-        use tuple_heter_iter_macro::for_each_by_ref;
+        // use tuple_heter_iter_macro::for_each_by_ref;
+        use tuple_heter_iter_macro::for_each_in_tuple_by_ref;
         let mut req_and_res = (req, Ok(None));
 
         // Faked (really unused) variable to shut up Idea error notification.
         #[allow(dead_code, unused_variables)]
         let backend = &self.http_basic_auth_backend;
 
-        for_each_by_ref! { $backend, self.http_basic_auth_backend,
-            self.login_form_auth_backend, self.oauth2_backend, {
+        // for_each_by_ref! { $backend, self.http_basic_auth_backend,
+        //     self.login_form_auth_backend, self.oauth2_backend, {
+        for_each_in_tuple_by_ref! { $backend, self.backends(), 3, {
             if let Some(ref backend) = backend {
                 req_and_res = backend.do_authenticate_request::<RootBackend,()>(
                     auth_session.clone(), req_and_res.0).await;
@@ -218,7 +228,8 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
     }
 
     fn propose_authentication_action(&self, req: &Request) -> Option<Self::ProposeAuthAction> {
-        use tuple_heter_iter_macro::for_each_by_ref;
+        // use tuple_heter_iter_macro::for_each_by_ref;
+        use tuple_heter_iter_macro::for_each_in_tuple_by_ref;
 
         /*
         use forr::forr;
@@ -236,7 +247,8 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
         #[allow(dead_code, unused_variables)]
         let backend = &self.http_basic_auth_backend;
 
-        for_each_by_ref! { $backend, self.http_basic_auth_backend, self.login_form_auth_backend, self.oauth2_backend, {
+        for_each_in_tuple_by_ref! { $backend, self.backends(), {
+        // for_each_by_ref! { $backend, self.http_basic_auth_backend, self.login_form_auth_backend, self.oauth2_backend, {
             if let Some(ref backend) = backend {
                 let proposes_auth_action = backend.propose_authentication_action(&req);
                 if let Some(proposes_auth_action) = proposes_auth_action {

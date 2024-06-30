@@ -33,7 +33,7 @@ fn test_124() {
     #[allow(dead_code, unused_variables)]
     let item = &tuple_of_refs.0;
 
-    tuple_heter_iter_macro::for_each_in_tuple_by_ref_2! ($item, tuple_of_refs, {
+    tuple_heter_iter_macro::for_each_in_tuple_by_ref! ($item, tuple_of_refs, {
         println!("### test_124: {:?}", item); // How to fix 'item_ref' properly
     });
 

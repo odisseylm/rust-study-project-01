@@ -5,20 +5,41 @@ use tuple_heter_iter;
 
 
 #[test]
-fn tuple_iter_test_125() {
+fn test_for_each_in_tuple_by_ref() {
     use tuple_heter_iter::{ TupleAccess, TupleLen };
 
     let tuple_v = (123u8, "John", "Vovan".to_string(), PI);
     let tuple_of_refs = (&tuple_v.0, &tuple_v.1, &tuple_v.2, &tuple_v.3);
 
+    {
+        let mut res = Vec::<String>::new();
 
-    // Faked (really unused) variable to shut up Idea error notification.
-    #[allow(dead_code, unused_variables)]
-    let item_ref22 = &tuple_of_refs.0;
+        // Faked (really unused) variable to shut up Idea error notification.
+        #[allow(dead_code, unused_variables)]
+            let item_ref22 = &tuple_of_refs.0;
 
-    tuple_heter_iter_macro::for_each_in_tuple_by_ref_2! { item_ref22, tuple_of_refs, {
-        println!("### tuple_iter_test_125: {:?}", item_ref22); // How to fix 'item_ref' properly
-    }}
+        tuple_heter_iter_macro::for_each_in_tuple_by_ref! { item_ref22, tuple_of_refs, {
+            println!("### tuple_iter_test_125: {:?}", item_ref22); // How to fix 'item_ref' properly??
+            res.push(item_ref22.to_string());
+        }}
+
+        assert_eq!(res, vec!("123".to_string(), "John".to_string(), "Vovan".to_string(), PI.to_string()));
+    }
+
+    {
+        let mut res = Vec::<String>::new();
+
+        // Faked (really unused) variable to shut up Idea error notification.
+        #[allow(dead_code, unused_variables)]
+            let item_ref22 = &tuple_of_refs.0;
+
+        tuple_heter_iter_macro::for_each_in_tuple_by_ref! { item_ref22, tuple_of_refs, 4, {
+            println!("### tuple_iter_test_125: {:?}", item_ref22); // How to fix 'item_ref' properly??
+            res.push(item_ref22.to_string());
+        }}
+
+        assert_eq!(res, vec!("123".to_string(), "John".to_string(), "Vovan".to_string(), PI.to_string()));
+    }
 
     tuple_heter_iter::assert_tuple_len_is_4(&tuple_v);
     tuple_heter_iter::assert_tuple_len_is_4(&tuple_of_refs);
