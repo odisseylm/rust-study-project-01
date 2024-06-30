@@ -4,6 +4,24 @@ use crate::util::{ as_uint_literal, make_ident, split_params };
 
 
 pub(crate) fn tuple_for_each_by_ref(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let params = parse_for_each_params(params);
+
+    if let Some(tuple_len) = params.tuple_len {
+        tuple_for_each_by_ref_n(params.item_var_name.as_str(), tuple_len, params.tuple, params.item_processing_code)
+    } else {
+        tuple_for_each_by_ref_via_tuple_accessor(params.item_var_name.as_str(), params.tuple, params.item_processing_code)
+    }
+}
+
+pub(crate) struct ForEachInputParams {
+    pub(crate) item_var_name: String,
+    pub(crate) item_var_ident: proc_macro2::TokenStream,
+    pub(crate) tuple: proc_macro2::TokenStream,
+    pub(crate) tuple_len: Option<usize>,
+    pub(crate) item_processing_code: proc_macro2::TokenStream,
+}
+
+pub(crate) fn parse_for_each_params(params: proc_macro::TokenStream) -> ForEachInputParams {
 
     let mut params_vec = split_params(params);
 
@@ -12,7 +30,7 @@ pub(crate) fn tuple_for_each_by_ref(params: proc_macro::TokenStream) -> proc_mac
     let param_count = params_vec.len();
     assert!(param_count == 3 || param_count == 4, input_err_msg!());
 
-    let for_each_run_block = params_vec.pop()
+    let item_processing_code = params_vec.pop()
         .expect(input_err_msg!());
 
     let tuple_len: Option<usize> = if param_count == 4 {
@@ -25,16 +43,18 @@ pub(crate) fn tuple_for_each_by_ref(params: proc_macro::TokenStream) -> proc_mac
 
     let var_name = params_vec.pop().expect(input_err_msg!())
         .to_string();
-    let var_name = var_name
+    let item_var_name = var_name
         .strip_prefix("$")
         .map(|s|s.to_string())
         // .expect("Var name should start from $").to_string();
         .unwrap_or(var_name);
 
-    if let Some(tuple_len) = tuple_len {
-        tuple_for_each_by_ref_n(var_name.as_str(), tuple_len, tuple, for_each_run_block)
-    } else {
-        tuple_for_each_by_ref_via_tuple_accessor(var_name.as_str(), tuple, for_each_run_block)
+    ForEachInputParams {
+        item_var_ident: make_ident(item_var_name.to_string()),
+        item_var_name,
+        tuple,
+        tuple_len,
+        item_processing_code,
     }
 }
 

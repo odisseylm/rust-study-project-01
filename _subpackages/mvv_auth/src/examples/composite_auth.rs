@@ -229,7 +229,8 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
 
     fn propose_authentication_action(&self, req: &Request) -> Option<Self::ProposeAuthAction> {
         // use tuple_heter_iter_macro::for_each_by_ref;
-        use tuple_heter_iter_macro::tuple_for_each_by_ref;
+        // use tuple_heter_iter_macro::tuple_for_each_by_ref;
+        use tuple_heter_iter_macro::tuple_find_some_by_ref;
 
         /*
         use forr::forr;
@@ -247,17 +248,18 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
         #[allow(dead_code, unused_variables)]
         let backend = &self.http_basic_auth_backend;
 
-        tuple_for_each_by_ref! { $backend, self.backends(), {
-        // for_each_by_ref! { $backend, self.http_basic_auth_backend, self.login_form_auth_backend, self.oauth2_backend, {
+        let propose_opt = tuple_find_some_by_ref! { $backend, self.backends(), {
             if let Some(ref backend) = backend {
                 let proposes_auth_action = backend.propose_authentication_action(&req);
                 if let Some(proposes_auth_action) = proposes_auth_action {
-                    return Some(proposes_auth_action.into());
+                    Some(proposes_auth_action.into())
+                } else {
+                    None
                 }
-            }
-        }}
+            } else { None }
+        }};
 
-        None
+        propose_opt
     }
 }
 
