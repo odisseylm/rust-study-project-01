@@ -1,28 +1,27 @@
 use quote::quote;
 use crate::feature_cfg::MAX_TUPLE_LEN;
-use crate::tuple_for_each::parse_for_each_params;
+use crate::tuple_for_each::{ForEachInputParams, parse_for_each_params};
 use crate::util::make_ident;
 
 
 pub(crate) fn tuple_find_some_by_ref(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let params = parse_for_each_params(params);
 
-    if let Some(tuple_len) = params.tuple_len {
-        tuple_find_some_by_ref_n(params.item_var_name.as_str(), tuple_len, params.tuple, params.item_processing_code)
+    if let Some(ref _tuple_len) = params.tuple_len {
+        tuple_find_some_by_ref_n(params)
     } else {
-        tuple_find_some_by_ref_via_tuple_accessor(params.item_var_name.as_str(), params.tuple, params.item_processing_code)
+        tuple_find_some_by_ref_via_tuple_accessor(params)
     }
 }
 
 
-pub(crate) fn tuple_find_some_by_ref_n(
-    var_name: &str,
-    tuple_len: usize,
-    tuple: proc_macro2::TokenStream,
-    for_each_run_block: proc_macro2::TokenStream,
-) -> proc_macro::TokenStream {
+pub(crate) fn tuple_find_some_by_ref_n (params: ForEachInputParams) -> proc_macro::TokenStream {
 
-    let var_ident = make_ident(var_name.to_string());
+    let var_ident = params.item_var_ident;
+    let tuple = params.tuple;
+    let tuple_len: usize = params.tuple_len.expect("tuple_for_each_by_ref_n requires 'tuple_len'.");
+    let item_processing_code = params.item_processing_code;
+
     let assert_tuple_len_is_xxx = make_ident(format!("assert_tuple_len_is_{tuple_len}"));
 
     let vars = (0..tuple_len)
@@ -42,7 +41,7 @@ pub(crate) fn tuple_find_some_by_ref_n(
             #(
                 if comlex_result_123456789.is_none() {
                     let #var_ident = & (#vars);
-                    let result = { #for_each_run_block };
+                    let result = { #item_processing_code };
                     comlex_result_123456789 = result;
                 }
             )*
@@ -56,15 +55,15 @@ pub(crate) fn tuple_find_some_by_ref_n(
 }
 
 
-pub(crate) fn tuple_find_some_by_ref_via_tuple_accessor(
-    var_name: &str,
-    tuple: proc_macro2::TokenStream,
-    for_each_run_block: proc_macro2::TokenStream,
-) -> proc_macro::TokenStream {
+pub(crate) fn tuple_find_some_by_ref_via_tuple_accessor (params: ForEachInputParams)
+    -> proc_macro::TokenStream {
 
-    let var_ident = make_ident(var_name.to_string());
+    let var_ident = params.item_var_ident;
+    let tuple = params.tuple;
+    let item_processing_code = params.item_processing_code;
+    let max_tuple_len = MAX_TUPLE_LEN;
 
-    let vars = (0..MAX_TUPLE_LEN)
+    let vars = (0..max_tuple_len)
         .into_iter()
         .map(|i|{
             let method_ident = make_ident(format!("_{i}"));
@@ -86,7 +85,7 @@ pub(crate) fn tuple_find_some_by_ref_via_tuple_accessor(
                     match option_item_ref {
                         None => {}
                         Some(ref #var_ident) => {
-                            let result = { #for_each_run_block };
+                            let result = { #item_processing_code };
                             comlex_result_123456789 = result;
                         }
                      }

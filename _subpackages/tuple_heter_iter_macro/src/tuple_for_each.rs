@@ -6,15 +6,15 @@ use crate::util::{ as_uint_literal, make_ident, split_params };
 pub(crate) fn tuple_for_each_by_ref(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let params = parse_for_each_params(params);
 
-    if let Some(tuple_len) = params.tuple_len {
-        tuple_for_each_by_ref_n(params.item_var_name.as_str(), tuple_len, params.tuple, params.item_processing_code)
+    if let Some(ref _tl) = params.tuple_len {
+        tuple_for_each_by_ref_n(params)
     } else {
-        tuple_for_each_by_ref_via_tuple_accessor(params.item_var_name.as_str(), params.tuple, params.item_processing_code)
+        tuple_for_each_by_ref_via_tuple_accessor(params)
     }
 }
 
 pub(crate) struct ForEachInputParams {
-    pub(crate) item_var_name: String,
+    // pub(crate) item_var_name: String,
     pub(crate) item_var_ident: proc_macro2::TokenStream,
     pub(crate) tuple: proc_macro2::TokenStream,
     pub(crate) tuple_len: Option<usize>,
@@ -51,7 +51,7 @@ pub(crate) fn parse_for_each_params(params: proc_macro::TokenStream) -> ForEachI
 
     ForEachInputParams {
         item_var_ident: make_ident(item_var_name.to_string()),
-        item_var_name,
+        // item_var_name,
         tuple,
         tuple_len,
         item_processing_code,
@@ -59,14 +59,15 @@ pub(crate) fn parse_for_each_params(params: proc_macro::TokenStream) -> ForEachI
 }
 
 
-pub(crate) fn tuple_for_each_by_ref_n(
-    var_name: &str,
-    tuple_len: usize,
-    tuple: proc_macro2::TokenStream,
-    for_each_run_block: proc_macro2::TokenStream,
+pub(crate) fn tuple_for_each_by_ref_n (
+    params: ForEachInputParams,
 ) -> proc_macro::TokenStream {
 
-    let var_ident = make_ident(var_name.to_string());
+    let var_ident = params.item_var_ident;
+    let tuple = params.tuple;
+    let tuple_len: usize = params.tuple_len.expect("tuple_for_each_by_ref_n requires 'tuple_len'.");
+    let item_processing_code = params.item_processing_code;
+
     let assert_tuple_len_is_xxx = make_ident(format!("assert_tuple_len_is_{tuple_len}"));
 
     let vars = (0..tuple_len)
@@ -82,7 +83,7 @@ pub(crate) fn tuple_for_each_by_ref_n(
             tuple_heter_iter::#assert_tuple_len_is_xxx( &(#tuple) );
 
              let #var_ident = & (#vars);
-             #for_each_run_block
+             #item_processing_code
         )*
     };
 
@@ -91,13 +92,13 @@ pub(crate) fn tuple_for_each_by_ref_n(
 }
 
 
-pub(crate) fn tuple_for_each_by_ref_via_tuple_accessor(
-    var_name: &str,
-    tuple: proc_macro2::TokenStream,
-    for_each_run_block: proc_macro2::TokenStream,
+pub(crate) fn tuple_for_each_by_ref_via_tuple_accessor (
+    params: ForEachInputParams,
 ) -> proc_macro::TokenStream {
 
-    let var_ident = make_ident(var_name.to_string());
+    let var_ident = params.item_var_ident;
+    let tuple = params.tuple;
+    let item_processing_code = params.item_processing_code;
     let max_tuple_len = MAX_TUPLE_LEN;
 
     let mut vars = Vec::<proc_macro2::TokenStream>::new();
@@ -116,7 +117,7 @@ pub(crate) fn tuple_for_each_by_ref_via_tuple_accessor(
                  let option_item_ref = & (#vars);
                  match option_item_ref {
                     None => {}
-                    Some(ref #var_ident) => { #for_each_run_block }
+                    Some(ref #var_ident) => { #item_processing_code }
                  }
             )*
         }
