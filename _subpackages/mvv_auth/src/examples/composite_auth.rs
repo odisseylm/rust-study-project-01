@@ -228,8 +228,6 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
     }
 
     fn propose_authentication_action(&self, req: &Request) -> Option<Self::ProposeAuthAction> {
-        // use tuple_heter_iter_macro::for_each_by_ref;
-        // use tuple_heter_iter_macro::tuple_for_each_by_ref;
         use tuple_heter_iter_macro::tuple_find_some_by_ref;
 
         /*
@@ -249,29 +247,10 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
         let backend = &self.http_basic_auth_backend;
         use if_chain::if_chain;
 
-        let propose_opt = tuple_find_some_by_ref! { $backend, self.backends(), {
-            if let Some(ref backend) = backend {
-                backend.propose_authentication_action(&req).map(|action|action.into())
-            } else { None }
-            /*
-            if_chain! {
-                if let Some(ref backend) = backend;
-                let proposes_auth_action = backend.propose_authentication_action(&req);
-                if let Some(proposes_auth_action) = proposes_auth_action;
-                then { Some(proposes_auth_action.into()) }
-                else { None }
-            }
-            */
-            /*
-            if let Some(ref backend) = backend {
-                let proposes_auth_action = backend.propose_authentication_action(&req);
-                if let Some(proposes_auth_action) = proposes_auth_action {
-                    Some(proposes_auth_action.into())
-                } else {
-                    None
-                }
-            } else { None }
-            */
+        let propose_opt = tuple_find_some_by_ref! { $backend_opt, self.backends(), {
+            backend_opt.as_ref().and_then(|backend|
+                backend.propose_authentication_action(&req)
+                    .map(|action|action.into()))
         }};
 
         propose_opt
