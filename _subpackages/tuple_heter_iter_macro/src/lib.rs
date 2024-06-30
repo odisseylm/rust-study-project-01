@@ -1,7 +1,8 @@
 mod generate_tuple_op_types;
 mod util;
 mod for_each;
-mod feature_cfg;// RustRover does not pick it up (however cargo does)
+mod feature_cfg;
+mod tuple_for_each;// RustRover does not pick it up (however cargo does)
 // #[macro_use]
 // mod compile_log_macros;
 include!("./compile_log_macros.rs");
@@ -14,8 +15,8 @@ use syn::{ LitInt, parse_macro_input };
 // ---------------------------------------------------------------------------------
 
 #[proc_macro]
-pub fn for_each_in_tuple_by_ref(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    for_each::for_each_in_tuple_by_ref(params)
+pub fn tuple_for_each_by_ref(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    tuple_for_each::tuple_for_each_by_ref(params)
 }
 
 #[proc_macro]

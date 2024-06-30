@@ -18,7 +18,7 @@ fn test_for_each_in_tuple_by_ref() {
         #[allow(dead_code, unused_variables)]
             let item_ref22 = &tuple_of_refs.0;
 
-        tuple_heter_iter_macro::for_each_in_tuple_by_ref! { item_ref22, tuple_of_refs, {
+        tuple_heter_iter_macro::tuple_for_each_by_ref! { item_ref22, tuple_of_refs, {
             println!("### tuple_iter_test_125: {:?}", item_ref22); // How to fix 'item_ref' properly??
             res.push(item_ref22.to_string());
         }}
@@ -33,7 +33,7 @@ fn test_for_each_in_tuple_by_ref() {
         #[allow(dead_code, unused_variables)]
             let item_ref22 = &tuple_of_refs.0;
 
-        tuple_heter_iter_macro::for_each_in_tuple_by_ref! { item_ref22, tuple_of_refs, 4, {
+        tuple_heter_iter_macro::tuple_for_each_by_ref! { item_ref22, tuple_of_refs, 4, {
             println!("### tuple_iter_test_125: {:?}", item_ref22); // How to fix 'item_ref' properly??
             res.push(item_ref22.to_string());
         }}

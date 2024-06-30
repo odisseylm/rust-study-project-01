@@ -92,7 +92,7 @@ fn test_for_each_in_tuple_by_ref() {
         () => (3)
     }
 
-    use tuple_heter_iter_macro::for_each_in_tuple_by_ref;
+    use tuple_heter_iter_macro::tuple_for_each_by_ref;
 
     // to test access from 'for each' body
     let internal_var = "internal 789";
@@ -123,7 +123,7 @@ fn test_for_each_in_tuple_by_ref() {
 
     // for_each_in_tuple_by_ref! { tuple_var, tuple_len!(tuple_var), {
     // for_each_in_tuple_by_ref! { tuple_var, tuple_size!(), {
-    for_each_in_tuple_by_ref! { $iteeem_var, tuple_var, 3, {
+    tuple_for_each_by_ref! { $iteeem_var, tuple_var, 3, {
         println!("### print from for_each_by_ref2 {{ internal_var: {:?} }}", internal_var);
         println!("### print from for_each_by_ref2 {{ iterated value: {:?} }}", iteeem_var);
         result.push(iteeem_var.to_string());
