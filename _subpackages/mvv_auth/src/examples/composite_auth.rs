@@ -247,8 +247,17 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
         // Faked (really unused) variable to shut up Idea error notification.
         #[allow(dead_code, unused_variables)]
         let backend = &self.http_basic_auth_backend;
+        use if_chain::if_chain;
 
         let propose_opt = tuple_find_some_by_ref! { $backend, self.backends(), {
+            if_chain! {
+                if let Some(ref backend) = backend;
+                let proposes_auth_action = backend.propose_authentication_action(&req);
+                if let Some(proposes_auth_action) = proposes_auth_action;
+                then { Some(proposes_auth_action.into()) }
+                else { None }
+            }
+            /*
             if let Some(ref backend) = backend {
                 let proposes_auth_action = backend.propose_authentication_action(&req);
                 if let Some(proposes_auth_action) = proposes_auth_action {
@@ -257,6 +266,7 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
                     None
                 }
             } else { None }
+            */
         }};
 
         propose_opt
