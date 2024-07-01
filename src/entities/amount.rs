@@ -1,5 +1,8 @@
 use bigdecimal::BigDecimal;
 use crate::entities::currency::Currency;
+
+pub mod parse;
+pub mod ops;
 // use crate::entities::currency::Currency;       // ++
 // use ::project01::entities::currency::Currency; // --
 // use project01::entities::currency::Currency;   // --
@@ -12,7 +15,7 @@ use crate::entities::currency::Currency;
 #[derive(serde::Serialize, serde::Deserialize)] // TODO: move it to DTO
 #[readonly::make]
 pub struct Amount {
-    #[serde(with = "crate::entities::serde_json_bd::bd_with")]
+    #[serde(with = "crate::json::serde_json_bd::bd_with")]
     pub value: BigDecimal,
     pub currency: Currency,
 }
@@ -175,18 +178,11 @@ impl core::fmt::Debug for Amount {
     }
 }
 
-pub mod parse {
-    pub type ParseAmountError = crate::entities::parse_amount::ParseAmountError;
-    pub type ErrorKind = crate::entities::parse_amount::ErrorKind;
-    pub type ErrorSource = crate::entities::parse_amount::ErrorSource;
-}
-
-pub mod ops {
-    pub type AmountOpsError = crate::entities::amount_ops::ops::AmountOpsError;
-    pub type ErrorKind = crate::entities::amount_ops::ops::ErrorKind;
-    pub type ErrorSource = crate::entities::amount_ops::ops::ErrorSource;
-}
-
+// pub mod parse {
+//     pub type ParseAmountError = crate::entities::amount_parse::ParseAmountError;
+//     pub type ErrorKind = crate::entities::amount_parse::ErrorKind;
+//     pub type ErrorSource = crate::entities::amount_parse::ErrorSource;
+// }
 
 impl core::fmt::Display for Amount {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -262,5 +258,5 @@ impl core::str::FromStr for Amount {
     type Err = parse::ParseAmountError;
 
     #[inline]
-    pub fn from_str(s: &str) -> Result<Amount, parse::ParseAmountError> { crate::entities::parse_amount::parse_amount(s) }
+    pub fn from_str(s: &str) -> Result<Amount, parse::ParseAmountError> { parse::parse_amount(s) }
 }

@@ -2,10 +2,7 @@ use core::fmt;
 use bigdecimal::BigDecimal;
 use chrono::Utc;
 use serde::{ Deserialize, Serialize };
-
-
-// pub type Amount = crate::entities::amount::Amount;
-// pub type Id = crate::entities::id::Id;
+//--------------------------------------------------------------------------------------------------
 
 
 #[derive(Debug)]
@@ -48,7 +45,7 @@ pub async fn pager_from_json(pager: Valid<Json<Pager>>) {
 #[derive(PartialEq, Eq)]
 #[derive(serde::Serialize, serde::Deserialize)] // TODO: move it to DTO
 pub struct Amount {
-    #[serde(with = "crate::entities::serde_json_bd::bd_with")]
+    #[serde(with = "crate::json::serde_json_bd::bd_with")]
     pub value: BigDecimal,
     // currency: Currency,
     pub currency: String, // Now it is String there just for projection's test

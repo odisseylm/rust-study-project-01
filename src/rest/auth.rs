@@ -11,6 +11,7 @@ pub mod backend;
 pub mod user;
 pub mod user_perm_provider;
 pub mod auth_layer;
+pub mod oauth;
 // -------------------------------------------------------------------------------------------------
 
 

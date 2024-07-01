@@ -16,7 +16,7 @@ pub enum AccountsError {
 // #[trait_variant::make(SendAccountService: Send)]
 #[trait_variant::make(Send)]
 // or #[async_trait] // https://github.com/dtolnay/async-trait#dyn-traits
-pub trait AccountService {
+pub trait AccountService: Send + Sync {
     async fn get_user_accounts(&self, user_id: UserId) -> Result<Vec<Account>, AccountsError>;
     async fn get_user_account(&self, account_id: AccountId, user_id: UserId) -> Result<Account, AccountsError>;
     async fn get_account(&self, account_id: AccountId, user_id: UserId) -> Result<Account, AccountsError>;

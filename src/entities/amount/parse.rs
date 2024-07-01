@@ -5,7 +5,7 @@ use crate::entities::currency::Currency;
 
 
 // Just example
-#[path = "./dir1/dir2/some_relative_path_01.rs"]
+#[path = "./../dir1/dir2/some_relative_path_01.rs"]
 mod relative_welcome_home;
 
 #[allow(dead_code)]
