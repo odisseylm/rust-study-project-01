@@ -10,3 +10,4 @@ pub mod auth;
 
 pub mod oauth;
 mod investigation;
+mod path_id;

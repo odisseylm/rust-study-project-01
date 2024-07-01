@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use crate::database::DatabaseConnection;
-use crate::rest::account_rest::AccountRest;
+use crate::rest::account_rest::CurrentUserAccountRest;
 use crate::service::account_service::AccountService;
 
 
@@ -11,7 +11,7 @@ pub struct Dependencies <
 > {
     pub database_connection: Arc<DatabaseConnection>,
     pub account_service: Arc<AccountS>,
-    pub account_rest: Arc<AccountRest<AccountS>>,
+    pub account_rest: Arc<CurrentUserAccountRest<AccountS>>,
 }
 
 

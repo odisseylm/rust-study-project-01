@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use axum::routing::{ get };
+use axum::extract::{ Path, State };
 use tracing::{ debug, info, error };
 use log::{ debug as log_debug, info as log_info, error as log_error };
 use crate::entities::account::AccountId;
@@ -8,10 +8,12 @@ use crate::util::UncheckedResultUnwrap;
 use crate::entities::entity;
 use crate::rest::app_dependencies::Dependencies;
 use crate::rest::dto;
-use crate::rest::error_rest::{RestAppError, test_authenticate_basic};
-use crate::rest::auth::{ RequiredAuthenticationExtension, Role, RolePermissionsSet };
+use crate::rest::error_rest::{ RestAppError };
+use crate::rest::auth::{ RequiredAuthorizationExtension, Role /*, RolePermissionsSet */};
 use crate::service::account_service::{ AccountService };
-use crate::rest::auth::RequiredAuthorizationExtension;
+
+use axum::{ routing::get as GET, Extension, Router, Json };
+use crate::rest::utils::RestFutureToJson;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -19,22 +21,27 @@ pub fn accounts_rest_router<
     AccountS: AccountService + Send + Sync + 'static,
     >(
     dependencies: Dependencies<AccountS>,
-    ) -> axum::Router {
+    ) -> Router {
 
     use axum::Router;
-    use axum::extract::{ Path, State };
     use std::sync::Arc;
     use super::utils::RestFutureToJson;
-    use axum_extra::{ headers::{authorization::Basic, Authorization}, TypedHeader };
+    // use axum_extra::{ headers::{authorization::Basic, Authorization}, TypedHeader };
     use mvv_auth::permission::PermissionSet;
 
-    let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
+    let shared_state: Arc<CurrentUserAccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
 
-    // let accounts_router: Router<_> = Router::new()
     let accounts_router = Router::new()
-        .route("/api/account/all", get(|State(state): State<Arc<AccountRest<AccountS>>>| async move {
+        .route("/api/account/:account_id", GET(call_rest_get_user_account::<AccountS>))
+        .with_state(shared_state.clone())
+        .role_required(Role::Read)
+
+        /*
+        //
+        .route("/api/account/all", GET(|State(state): State<Arc<AccountRest<AccountS>>>| async move {
             state.get_current_user_accounts().to_json().await
         }))
+        //
         .route("/api/account/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
             state.get_user_account(id).to_json().await
         }))
@@ -42,7 +49,7 @@ pub fn accounts_rest_router<
         .authn_required()
         //
         .merge(Router::new()
-            .route("/api/account-read/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
+            .route("/api/account-read/:id", GET(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
                 state.get_user_account(id).to_json().await
             }))
             // .with_state(shared_state.clone()) // TODO: it should fail even with that !!!
@@ -50,26 +57,27 @@ pub fn accounts_rest_router<
         )
         //
         .merge(Router::new()
-            .route("/api/account-write/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
+            .route("/api/account-write/:id", GET(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
                 state.get_user_account(id).to_json().await
             }))
             .role_required(Role::Write)
         )
         //
         .merge(Router::new()
-            .route("/api/account-read-and-write/:id", get(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
+            .route("/api/account-read-and-write/:id", GET(|State(state): State<Arc<AccountRest<AccountS>>>, Path(id): Path<String>| async move {
                 state.get_user_account(id).to_json().await
             }))
             .roles_required(RolePermissionsSet::from_permissions([Role::Read, Role::Write]))
         )
         //
-        .route("/api/manual_auth", get(|State(state): State<Arc<AccountRest<AccountS>>>,
+        .route("/api/manual_auth", GET(|State(state): State<Arc<AccountRest<AccountS>>>,
                                         creds: Option<TypedHeader<Authorization<Basic>>>,
         | async move {
             test_authenticate_basic(&creds) ?;
             state.get_current_user_accounts().to_json().await
         }))
         .with_state(shared_state.clone())
+        */
         ;
 
     accounts_router
@@ -79,12 +87,50 @@ pub fn accounts_rest_router<
 #[static_init::dynamic]
 static TEMP_CURRENT_USER_ID: UserId = UserId::from_str("11").unchecked_unwrap();
 
-pub struct AccountRest <AS: AccountService> {
-    pub account_service: Arc<AS>,
+
+mod path {
+    pub(crate) type AccountId = super::super::path_id::AccountId;
+    pub(crate) type UserId = super::super::path_id::UserId;
 }
 
 
-impl<AS: AccountService> AccountRest<AS> {
+/*
+async fn call_rest_get_user_account_001(Path(path::AccountId { account_id }): Path<path::AccountId>) -> Json<&'static str> {
+    Json("fdfdf")
+}
+async fn call_rest_get_user_account_002 <
+    AccountS: AccountService + Send + Sync + 'static,
+>(State(rest_service): State<Arc<AccountRest<AccountS>>>, Path(path::AccountId { account_id }): Path<path::AccountId>) -> Json<&'static str> {
+    Json("fdfdf")
+}
+async fn call_rest_get_user_account_003 <
+    AccountS: AccountService + Send + Sync + 'static,
+>(State(rest_service): State<Arc<AccountRest<AccountS>>>, Path(path::AccountId { account_id }): Path<path::AccountId>)
+    -> Result<Json<&'static str>, RestAppError> {
+    todo!()
+}
+*/
+
+async fn call_rest_get_user_account <
+    AccountS: AccountService + Send + Sync + 'static,
+>(State(rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>, Path(path::AccountId { account_id }): Path<path::AccountId>)
+    -> Result<Json<dto::Account>, RestAppError> {
+    rest_service.get_user_account(account_id).to_json().await
+}
+
+async fn call_rest_get_user_accounts <
+    AccountS: AccountService + Send + Sync + 'static,
+>(State(rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>)
+    -> Result<Json<Vec<dto::Account>>, RestAppError> {
+    rest_service.get_user_accounts().to_json().await
+}
+
+
+pub struct CurrentUserAccountRest <AS: AccountService> {
+    pub account_service: Arc<AS>,
+}
+
+impl<AS: AccountService> CurrentUserAccountRest<AS> {
     async fn current_user_id(&self) -> UserId {
         TEMP_CURRENT_USER_ID.clone()
     }
@@ -113,7 +159,7 @@ impl<AS: AccountService> AccountRest<AS> {
         Ok(account_dto)
     }
 
-    pub async fn get_current_user_accounts(&self) -> Result<Vec<dto::Account>, RestAppError> {
+    pub async fn get_user_accounts(&self) -> Result<Vec<dto::Account>, RestAppError> {
         let current_user_id = self.current_user_id().await;
         let accounts = self.account_service.get_user_accounts(current_user_id).await;
         let accounts_dto = accounts.map(move|acs|acs.into_iter().map(move |ac| map_account_to_rest(ac)).collect::<Vec<_>>()) ?;
@@ -133,7 +179,7 @@ async fn handler_get_user_account <
 */
 
 
-#[allow(dead_code)] // !!! It is really used ?!
+// #[allow(dead_code)] // !!! It is really used ?!
 fn map_account_to_rest(account: entity::Account) -> dto::Account {
     use crate::entities::account::AccountParts;
     use crate::entities::amount::AmountParts;

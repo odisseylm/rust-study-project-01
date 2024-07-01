@@ -50,8 +50,14 @@ tuple_heter_iter = { version = "0.1.0", path = "_subpackages/tuple_heter_iter" }
 # -------------------------------------------------------------------------
 if_chain = "1.0.2"
 
-static_assertions = "1.1.0"
+static_assertions = "1.1.0" # 4 years gao
+static_assertions_next = "1.1.2" # probably successor of 'static_assertions' ??
+#const-zero = "0.1.1" # dperected, just redirection to 'std/core'
+
 const_format = "0.2.32"
+place_macro = "1.0.0"
+seq-macro = "0.3.5"
+
 bigdecimal = "0.4.3"
 #bigdecimal = {  version = "0.4.3", features = ["default", "serde" ] }
 
@@ -72,7 +78,10 @@ anyhow = { version = "1.0.83", features = ["backtrace"] }
 #anyhow = { version = "1.0.83"} # , features = ["backtrace"] } // it means third-party "backtrace"
 thiserror = "1.0.60"
 #snafu = "0.8.2"
+
+# for creating multiline string
 indoc = "2.0.5"
+derive_more = "0.99.18"
 
 ## !!! Out dated !!!
 ## !!! backtrace = "0.3.71"

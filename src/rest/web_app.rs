@@ -7,7 +7,7 @@ use crate::database::DatabaseConnection;
 use crate::service::account_service::AccountServiceImpl;
 use crate::rest::{
     app_dependencies::Dependencies,
-    account_rest::{ AccountRest, accounts_rest_router },
+    account_rest::{ CurrentUserAccountRest, accounts_rest_router },
 };
 use crate::web::{
     auth::composite_login_router,
@@ -19,7 +19,7 @@ fn create_prod_dependencies() -> Dependencies<AccountServiceImpl> {
 
     let db = Arc::new(DatabaseConnection{});
     let account_service = Arc::new(AccountServiceImpl { database_connection: Arc::clone(&db) });
-    let account_rest = Arc::new(AccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
+    let account_rest = Arc::new(CurrentUserAccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
 
     Dependencies::<AccountServiceImpl> {
         database_connection: Arc::clone(&db),
