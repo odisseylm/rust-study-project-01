@@ -23,8 +23,8 @@ services:
       # - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/mvvbank
       # - SPRING_DATASOURCE_USERNAME=mvvbank
       # - SPRING_DATASOURCE_PASSWORD=psw
-      - ACCOUNT_DATASOURCE_URL=jdbc:postgresql://database:5432/rust-mvvbank
-      - ACCOUNT_DATASOURCE_USERNAME=rust-mvvbank
+      - ACCOUNT_DATASOURCE_URL=jdbc:postgresql://database:5432/rust_mvvbank
+      - ACCOUNT_DATASOURCE_USERNAME=rust_mvvbank
       - ACCOUNT_DATASOURCE_PASSWORD=psw
 
       - SERVER_SSL_KEYALIAS=account-soa
@@ -63,14 +63,16 @@ services:
       - rust-account-soa-net
     hostname: database # required only for fabricio8 plugin
     environment:
-      POSTGRES_DB: rust-mvvbank
-      POSTGRES_USER: rust-mvvbank
+      POSTGRES_DB: rust_mvvbank
+      POSTGRES_USER: rust_mvvbank
       POSTGRES_PASSWORD: psw
     ports:
       # - ${DOCKER_HOST_POSTGRES_DB_PORT_WITH_COLON}5432
       - 5432:5432
     volumes:
-      - ./../src/test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
+      # - ./../src/test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
+      # - ./../test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
+      - ./test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s

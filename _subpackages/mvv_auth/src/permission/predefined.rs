@@ -13,9 +13,9 @@ pub enum Role {
     Anonymous = 1 << 0,
     Read      = 1 << 1,
     Write     = 1 << 2,
-    User      = 1 << 3,
-    Admin     = 1 << 4,
-    SuperUser = 1 << 5,
+    User      = 1 << 3, // ??
+    SuperUser = 1 << 4,
+    Admin     = 1 << 5,
     // !!! Other a few variants can appear in the future. !!!
 
     //

@@ -70,6 +70,20 @@
  - Run tests with output: `cargo test -- --nocapture`
  - Run tests with output: `cargo test test_log_env --test log_env_test -- --nocapture --exact`
  - Run tests with output: `cargo test test_log_env --test log_env_test -- --nocapture`  # ??? --exact
+ - `docker exec -it DOCKER_CONTAINER /bin/bash`
+ - `psql postgresql://rust_mvvbank:psw@localhost:5432/rust_mvvbank`
+   - `\q` - quit
+   - `\l` - list all databases
+   - `\dt` - list tables
+   - `\dv` - list views
+   - `\d <table-name>` - describe table
+   - `\dn` - list schemas
+   - `\df` - list functions
+   - `\i <file-name>` - run commands from file
+   - See also
+     - https://hasura.io/blog/top-psql-commands-and-flags-you-need-to-know-postgresql
+     - https://www.oreilly.com/library/view/practical-postgresql/9781449309770/ch04s01.html
+     - https://www.postgresql.org/docs/current/app-psql.html
 
 
 Docs test

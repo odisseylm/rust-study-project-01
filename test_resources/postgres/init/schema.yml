@@ -1,0 +1,26 @@
+
+spring:
+  sql:
+    init:
+      # for spring-boot >= 2.7.0
+      schema-locations: >
+                      classpath:/postgres/init/001-init-db.sql,
+                      classpath:/postgres/init/005-declare-types.sql,
+                      classpath:/postgres/init/011-create-users-table.sql,
+                      classpath:/postgres/init/012-create-accounts-table.sql
+      data-locations: >
+                      classpath:/postgres/init/101-fill-users.sql,
+                      classpath:/postgres/init/102-fill-accounts.sql
+
+  # for spring-boot < 2.7.0
+  datasource:
+    schema: >
+            classpath:/postgres/init/001-init-db.sql,
+            classpath:/postgres/init/005-declare-types.sql,
+            classpath:/postgres/init/011-create-users-table.sql,
+            classpath:/postgres/init/012-create-accounts-table.sql
+
+    data: >
+            classpath:/postgres/init/101-fill-users.sql,
+            classpath:/postgres/init/102-fill-accounts.sql
+
