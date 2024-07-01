@@ -1,10 +1,12 @@
 use serde::{Deserialize, Serialize};
 use crate::entities::id::Id;
+//--------------------------------------------------------------------------------------------------
 
 
 #[derive(Debug, Clone)]
 #[derive(Serialize, Deserialize)]
-#[derive(PartialEq)]
+#[derive(PartialEq, derive_more::Display)]
+#[display(fmt = "UserId({})", "0")]
 pub struct UserId( #[allow(dead_code)] Id);
 type UserIdFormatError = crate::entities::id::parse::IdFormatError;
 
@@ -22,11 +24,13 @@ impl core::str::FromStr for UserId { // TODO: generate by macro
         Ok(UserId(raw_id))
     }
 }
-impl core::fmt::Display for UserId { // TODO: generate by macro
+/*
+impl core::fmt::Display for UserId { // T O D O: generate by macro
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.0)
     }
 }
+*/
 
 
 pub struct User {

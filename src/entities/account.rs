@@ -35,7 +35,6 @@ impl core::fmt::Display for AccountId {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[readonly::make]
-// #[derive(Send)]
 pub struct Account {
     pub id: AccountId,
     pub user_id: UserId,

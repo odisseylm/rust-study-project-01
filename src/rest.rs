@@ -8,6 +8,5 @@ pub mod web_app;
 
 pub mod auth;
 
-pub mod oauth;
 mod investigation;
-mod path_id;
+mod path;

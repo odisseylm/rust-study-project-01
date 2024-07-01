@@ -111,7 +111,7 @@ mod post {
             session: axum_login::tower_sessions::Session,
             Form(NextUrl { next }): Form<NextUrl>,
         ) -> impl IntoResponse {
-            use crate::rest::oauth::CSRF_STATE_KEY;
+            use crate::rest::auth::oauth::CSRF_STATE_KEY;
 
             let Ok((auth_url, csrf_state)) = auth_session.backend.authorize_url()
                 else { return StatusCode::INTERNAL_SERVER_ERROR.into_response() };

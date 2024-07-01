@@ -17,7 +17,8 @@ use axum_extra::TypedHeader;
 // #[derive(thiserror::Error)]
 #[derive(Debug)]
 pub enum RestAppError {
-    AnyhowError(anyhow::Error),
+    // #[error("AnyhowError({0})")]
+    AnyhowError(/*#[from]*/ anyhow::Error),
 
     // Ideally it should not be used in normal app flow.
     // Authentication should be performed on axum route layer.
@@ -25,14 +26,19 @@ pub enum RestAppError {
     // #[deprecated(note = "mainly for internal/automatic usage in macro when container is cloned.")]
     #[allow(unused_attributes)]
     #[must_use = "Mainly for xxx usage."]
+    // #[error("Unauthenticated")]
     Unauthenticated,
 
     // In most cases authorization also should be processed on axum route layer,
     // but of course in some cases it is possible to do only later
     // (for example if user sends account ID of another client)
+    // #[error("Unauthorized")]
     Unauthorized,
+
+    // #[error("HttpResponseResultError")]
     HttpResponseResultError(Response),
 
+    // #[error("IllegalArgument({0})")]
     IllegalArgument(anyhow::Error),
     // ...
     // Add other errors if it is needed.
@@ -48,9 +54,9 @@ impl fmt::Display for RestAppError {
             RestAppError::Unauthenticated =>
                 write!(f, "NotAuthenticated"),
             RestAppError::IllegalArgument(ref anyhow_err) =>
-                write!(f, "AnyhowError: {}", anyhow_err),
+                write!(f, "IllegalArgument: {}", anyhow_err),
             RestAppError::HttpResponseResultError(ref _r) =>
-                write!(f, "JsonResultError"),
+                write!(f, "HttpResponseResultError"),
         }
     }
 }

@@ -1,8 +1,8 @@
 use core::str::FromStr;
 use assertables:: { assert_starts_with, assert_starts_with_as_result };
 use bigdecimal::BigDecimal;
-use project01::entities::amount::Amount;
-use project01::entities::amount::ops;
+use project01::entities::amount::{ Amount, ops::AmountOpsError, ops::ErrorKind as OpsErrorKind };
+// use project01::entities::amount::ops;
 use project01::util::{ TestOptionUnwrap, TestResultUnwrap };
 
 
@@ -55,7 +55,7 @@ fn test_add_amounts_with_different_currencies_to_see_currencies() {
     let amount2 = Amount::from_str("111.111 EUR").test_unwrap();
     let res = amount1 + amount2;
 
-    let err: ops::AmountOpsError = res.err().test_unwrap();
+    let err: AmountOpsError = res.err().test_unwrap();
 
     let err_as_str = err.to_string();
     // println!("{}", err_as_str);
@@ -145,7 +145,7 @@ fn test_div_amount_by_bd() {
 fn test_div_amount_by_zero() {
     let amount = Amount::from_str("222.22   BRL").test_unwrap();
     let k = BigDecimal::from_str("0").test_unwrap();
-    assert_eq!((&amount / &k).err().test_unwrap().kind, ops::ErrorKind::DivideByZero);
+    assert_eq!((&amount / &k).err().test_unwrap().kind, OpsErrorKind::DivideByZero);
 
     // to test still valid ref (not moved)
     assert_eq!((amount / k).test_unwrap(), Amount::from_str("111.11 BRL").test_unwrap());

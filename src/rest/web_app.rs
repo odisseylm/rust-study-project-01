@@ -30,30 +30,16 @@ fn create_prod_dependencies() -> Dependencies<AccountServiceImpl> {
 }
 
 fn init_logger() {
-    // // Set environment for logging configuration
-    // if std::env::var("RUST_LOG").is_err() {
-    //     std::env::set_var("RUST_LOG", "info,myapp=debug");
-    // }
-
-    // env_logger::init();
-    // env_logger::builder()
-    //     .filter(None, log::LevelFilter::Info)
-    //     .init();
-
-    // tracing_subscriber::fmt()
-    //     // .with_timer() // T O D O: play with it
-    //     // .with_env_filter(EnvFilter::from_default_env())
-    //     .init();
-
-    // tracing-subscriber which will REPLACE the env_logger
-    //
-
-    // tracing_subscriber::fmt::init();
 
     // Set environment for logging configuration
     if std::env::var("RUST_LOG").is_err() {
         std::env::set_var("RUST_LOG", "info");
     }
+
+    // env_logger::init();
+    // env_logger::builder()
+    //     .filter(None, log::LevelFilter::Info)
+    //     .init();
 
     use tracing_subscriber::{
         EnvFilter, layer::SubscriberExt, util::SubscriberInitExt,
@@ -90,19 +76,20 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     let auth_layer = composite_auth_manager_layer().await ?;
     let login_route = composite_login_router();
 
-    // #[allow(non_upper_case_globals)]
-    // const login_url_prefix: &'static str = ""; // "/mvv_auth_555/login_form";
-    // use crate::rest::auth::{ login_form_auth_manager_layer, AuthUser, PswComparator };
-    // use const_format::concatcp;
-    // let auth_layer = login_form_auth_manager_layer(concatcp!(login_url_prefix, "/login")).await ?;
-    // let login_route = Router::new().nest(login_url_prefix,
-    //           mvv_auth::backend::login_form_auth::web::login_router::
-    //             <AuthUser,PswComparator,Role,RolePermissionsSet>());
-
     let app_router = Router::new()
         .merge(login_route)
         .merge(protected_page_01_router())
-        .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))
+        .nest("/api", Router::new()
+            .nest("/current_user", Router::new()
+                .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))
+                // .merge(user details router)
+                // Other current user services
+            )
+            .nest("/admin", Router::new()
+                // .merge()
+                // .merge()
+            )
+        )
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
@@ -121,7 +108,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
 /*
 fn with_histogram() {
     use tracing::*;
-    use tracing_timing::{Builder, Histogram};
+    use tracing_timing::{ Builder, Histogram };
 
     let subscriber = Builder::default().build(|| Histogram::new_with_max(1_000_000, 2).unwrap());
     let dispatcher = Dispatch::new(subscriber);
