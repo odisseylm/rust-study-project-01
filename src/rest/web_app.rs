@@ -9,6 +9,7 @@ use crate::rest::{
     app_dependencies::Dependencies,
     account_rest::{ CurrentUserAccountRest, accounts_rest_router },
 };
+use crate::util::env_var_or_else;
 use crate::web::{
     auth::composite_login_router,
     templates::protected_page_01::protected_page_01_router,
@@ -75,6 +76,10 @@ fn init_logger() {
 }
 
 pub async fn web_app_main() -> Result<(), anyhow::Error> {
+    use core::str::FromStr;
+
+    let port_env = env_var_or_else("SERVER_PORT", || "3000".to_string()) ?;
+    let port: u32 = FromStr::from_str(port_env.as_str()) ?;
 
     init_logger();
     log::info!("Hello from [web_app_main]");
@@ -107,7 +112,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
         );
 
     // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await ?;
+    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await ?;
     axum::serve(listener, app_router).await ?;
     Ok(())
 }
