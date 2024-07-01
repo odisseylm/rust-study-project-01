@@ -13,6 +13,9 @@ COMPOSITE = "${BOOL_VALUE} ${RUST_BACKTRACE}"
 LIST_VALUE = [ "VALUE1", "VALUE2", "VALUE3" ]
 VARIABLE = {unset = true}
 
+# short alias
+PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
+
 # profile based environment override
 [env.development]
 DEV = true
@@ -130,7 +133,6 @@ echo var: ${SOME_ENV_VAR}
 '''
 workspace = false
 dependencies = [
-    #"format",
     "build",
     "test"
 ]
@@ -179,7 +181,6 @@ args = [
     ".",]
 workspace = false
 dependencies = [
-    #"format",
     "build",
     "test",
     "private_docker_build_prepare_labels",
@@ -208,7 +209,6 @@ args = ["build", "--file", "docker/Dockerfile",
     ".",]
 workspace = false
 dependencies = [
-    #"format",
     "build",
     "test",
     "private_docker_build_prepare_labels",
@@ -217,6 +217,45 @@ dependencies = [
 [tasks.docker_build]
 workspace = false
 alias = "docker-build"
+
+
+
+[tasks.docker-compose-up]
+command = "docker-compose"
+args = [
+    "--file", "${PROJECT_DIR}/docker/docker-compose-012.yml",      # ${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose-012.env",  # "${docker-env-file}",
+    "--project-directory", "${PROJECT_DIR}",
+    "--project-name", "rust-account-soa-project",                # "${project.artifactId}",
+    "up",
+    #"rust-account-soa", # "${docker-compose-service-up}",
+    ]
+workspace = false
+#dependencies = [
+#    "build",
+#    "test",
+#    "private_docker_build_prepare_labels",
+#]
+
+
+
+[tasks.docker-compose-down]
+command = "docker-compose"
+args = [
+    "--file", "${PROJECT_DIR}/docker/docker-compose-012.yml",      # ${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose-012.env",  # "${docker-env-file}",
+    "--project-directory", "${PROJECT_DIR}",
+    "--project-name", "rust-account-soa-project",                # "${project.artifactId}",
+    "down",
+    #"rust-account-soa", # "${docker-compose-service-up}",
+    ]
+workspace = false
+#dependencies = [
+#    "build",
+#    "test",
+#    "private_docker_build_prepare_labels",
+#]
+
 
 
 

@@ -10,6 +10,7 @@ pub mod string;
 pub mod obj_ext;
 pub mod fmt;
 pub mod serde_json;
+mod other;
 
 pub use crate::util::result::{ as_printable, as_printable_ptr };
 pub use crate::util::unchecked::{ UncheckedOptionUnwrap, UncheckedResultUnwrap };
@@ -18,3 +19,5 @@ pub use crate::util::test_unwrap::{ TestOptionUnwrap, TestResultUnwrap };
 pub use crate::util::backtrace::{ BacktraceInfo, disable_backtrace, enable_backtrace, print_current_stack_trace };
 
 pub use crate::util::error::{ ToAnyHowError, ToAnyHowErrorFn };
+
+pub use other::env_var_or_else;
