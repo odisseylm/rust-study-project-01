@@ -20,4 +20,8 @@ pub use crate::util::backtrace::{ BacktraceInfo, disable_backtrace, enable_backt
 
 pub use crate::util::error::{ ToAnyHowError, ToAnyHowErrorFn };
 
-pub use other::env_var_or_else;
+pub mod env {
+    pub use super::other::env_var;
+    pub use super::other::env_var_or_else;
+    pub use crate::util::other::EnvVarOps;
+}

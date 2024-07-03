@@ -65,6 +65,10 @@ pub enum AuthBackendError {
 
     #[error("RoleError({0})")]
     RoleError(PermissionProcessError),
+
+    #[doc(hidden)]
+    #[error("__NonExhaustive")]
+    __NonExhaustive
 }
 
 impl From<AuthUserProviderError> for AuthBackendError {

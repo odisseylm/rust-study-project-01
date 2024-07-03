@@ -1,6 +1,6 @@
 use std::sync::Arc;
-use crate::database::DatabaseConnection;
 use crate::rest::account_rest::CurrentUserAccountRest;
+use crate::rest::auth::user_perm_provider::SqlUserProvider;
 use crate::service::account_service::AccountService;
 
 
@@ -9,9 +9,10 @@ pub struct Dependencies <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,
 > {
-    pub database_connection: Arc<DatabaseConnection>,
+    pub database_connection: Arc<sqlx_postgres::PgPool>,
     pub account_service: Arc<AccountS>,
     pub account_rest: Arc<CurrentUserAccountRest<AccountS>>,
+    pub user_perm_provider: Arc<SqlUserProvider>,
 }
 
 
@@ -24,6 +25,7 @@ impl <
             database_connection: Arc::clone(&self.database_connection),
             account_service: Arc::clone(&self.account_service),
             account_rest: Arc::clone(&self.account_rest),
+            user_perm_provider: Arc::clone(&self.user_perm_provider),
         }
     }
 

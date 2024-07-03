@@ -23,9 +23,14 @@ services:
       # - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/mvvbank
       # - SPRING_DATASOURCE_USERNAME=mvvbank
       # - SPRING_DATASOURCE_PASSWORD=psw
-      - ACCOUNT_DATASOURCE_URL=jdbc:postgresql://database:5432/rust_mvvbank
-      - ACCOUNT_DATASOURCE_USERNAME=rust_mvvbank
-      - ACCOUNT_DATASOURCE_PASSWORD=psw
+      # - ACCOUNT_DATASOURCE_URL=jdbc:postgresql://database:5432/rust_mvvbank
+      # - ACCOUNT_DATASOURCE_USERNAME=rust_mvvbank
+      # - ACCOUNT_DATASOURCE_PASSWORD=psw
+
+      - POSTGRES_HOST=database
+      - POSTGRES_DB=rust_mvvbank
+      - POSTGRES_USER=rust_mvvbank
+      - POSTGRES_PASSWORD=psw
 
       - SERVER_SSL_KEYALIAS=account-soa
       - SERVER_SSL_KEYSTORE

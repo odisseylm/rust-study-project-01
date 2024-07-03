@@ -1,32 +1,38 @@
+use std::ffi::OsStr;
 use std::sync::Arc;
+use anyhow::anyhow;
 use axum::Router;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 
-use crate::database::DatabaseConnection;
 use crate::service::account_service::AccountServiceImpl;
 use crate::rest::{
     app_dependencies::Dependencies,
     account_rest::{ CurrentUserAccountRest, accounts_rest_router },
 };
-use crate::util::env_var_or_else;
+use crate::rest::auth::user_perm_provider::SqlUserProvider;
+use crate::util::env::env_var_or_else;
+use crate::util::test_unwrap::TestSringOps;
 use crate::web::{
     auth::composite_login_router,
     templates::protected_page_01::protected_page_01_router,
 };
+//--------------------------------------------------------------------------------------------------
 
 
-fn create_prod_dependencies() -> Dependencies<AccountServiceImpl> {
 
-    let db = Arc::new(DatabaseConnection{});
+fn create_prod_dependencies() -> Result<Dependencies<AccountServiceImpl>, anyhow::Error> {
+
+    let db = Arc::new(crate::database::pg_db_connection() ?);
     let account_service = Arc::new(AccountServiceImpl { database_connection: Arc::clone(&db) });
     let account_rest = Arc::new(CurrentUserAccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
 
-    Dependencies::<AccountServiceImpl> {
+    Ok(Dependencies::<AccountServiceImpl> {
         database_connection: Arc::clone(&db),
         account_service: Arc::clone(&account_service),
         account_rest: Arc::clone(&account_rest),
-    }
+        user_perm_provider: Arc::new(SqlUserProvider::new(db.clone()) ?)
+    })
 }
 
 fn init_logger() {
@@ -64,16 +70,34 @@ fn init_logger() {
 pub async fn web_app_main() -> Result<(), anyhow::Error> {
     use core::str::FromStr;
 
+    let env_filename = format!(".{}.env", current_exe_name() ?);
+    let dotenv_res = dotenv::from_filename(env_filename.as_str());
+
     let port_env = env_var_or_else("SERVER_PORT", || "3000".to_string()) ?;
-    let port: u32 = FromStr::from_str(port_env.as_str()) ?;
+    let port: u32 = FromStr::from_str(port_env.as_str())
+        .map_err(|_|anyhow!("SERVER_PORT value [{}] has wrong format.", port_env)) ?;
 
     init_logger();
     log::info!("Hello from [web_app_main]");
 
-    let dependencies = create_prod_dependencies();
+    match dotenv_res {
+        Ok(ref path) =>
+            log::info!("Env vars are loaded from [{:?}]", path),
+        Err(dotenv::Error::Io(ref io_err))
+            if io_err.kind() == std::io::ErrorKind::NotFound => {
+            log::info!("Env vars are not loaded from .env file.");
+        }
+        Err(ref _err) => {
+            log::error!("Error of loading .env file.");
+            anyhow::bail!("Error of loading .env file.");
+        }
+    }
+
+    let dependencies = create_prod_dependencies() ?;
 
     use crate::rest::auth::auth_layer::{ composite_auth_manager_layer };
-    let auth_layer = composite_auth_manager_layer().await ?;
+    let auth_layer =
+        composite_auth_manager_layer(dependencies.user_perm_provider.clone()).await ?;
     let login_route = composite_login_router();
 
     let app_router = Router::new()
@@ -104,6 +128,18 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+
+// Returns without extension
+fn current_exe_name() -> Result<String, anyhow::Error> {
+    let cur_exe_as_os_str = std::env::current_exe()
+        .map(|ref p| p.file_name().map(|s|s.to_os_string())) ?
+        .ok_or_else(||anyhow!("Cannot find executable name.")) ?;
+    let cur_exe = cur_exe_as_os_str.to_string_lossy().to_string();
+    let cur_exe = cur_exe
+        .strip_suffix(".exe").map(|s|s.to_string()) // TODO: how to avoid unneeded 'to_string'
+        .unwrap_or(cur_exe);
+    Ok(cur_exe)
+}
 
 /*
 fn with_histogram() {

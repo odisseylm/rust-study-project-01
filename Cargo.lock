@@ -598,6 +598,17 @@ dependencies = [
 
 [[package]]
 name = "bigdecimal"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6773ddc0eafc0e509fb60e48dff7f450f8e674a0686ae8605e8d9901bd5eefa"
+dependencies = [
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
+name = "bigdecimal"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9324c8014cd04590682b34f1e9448d38f0674d0f7b2dc553331016ef0e4e9ebc"
@@ -783,6 +794,12 @@ name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
+
+[[package]]
+name = "const-str"
+version = "0.5.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3618cccc083bb987a415d85c02ca6c9994ea5b44731ec28b9ecf09658655fba9"
 
 [[package]]
 name = "const_format"
@@ -3001,11 +3018,12 @@ dependencies = [
  "axum-valid",
  "axum_session_auth",
  "axum_static",
- "bigdecimal",
+ "bigdecimal 0.4.3",
  "by_address",
  "cargo_metadata",
  "chrono",
  "chrono-tz",
+ "const-str",
  "const_format",
  "ctor",
  "derivative",
@@ -3039,6 +3057,7 @@ dependencies = [
  "serde_with",
  "serde_with_macros",
  "sqlx",
+ "sqlx-postgres",
  "static_assertions",
  "static_assertions_next",
  "static_error_macro",
@@ -3857,8 +3876,10 @@ checksum = "7c824eb80b894f926f89a0b9da0c7f435d27cdd35b8c655b114e58223918577e"
 dependencies = [
  "atoi",
  "base64 0.21.7",
+ "bigdecimal 0.3.1",
  "bitflags 2.5.0",
  "byteorder",
+ "chrono",
  "crc",
  "dotenvy",
  "etcetera",
@@ -3874,6 +3895,7 @@ dependencies = [
  "log",
  "md-5",
  "memchr",
+ "num-bigint",
  "once_cell",
  "rand",
  "serde",
@@ -3885,6 +3907,7 @@ dependencies = [
  "thiserror",
  "time",
  "tracing",
+ "uuid",
  "whoami",
 ]
 

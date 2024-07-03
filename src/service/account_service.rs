@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use crate::database::DatabaseConnection;
 use crate::entities::amount::Amount;
 use crate::entities::prelude::{ Account, AccountId, UserId };
 
@@ -23,7 +22,7 @@ pub trait AccountService: Send + Sync {
 }
 
 pub struct AccountServiceImpl {
-    pub database_connection: Arc<DatabaseConnection>,
+    pub database_connection: Arc<sqlx_postgres::PgPool>,
 }
 
 // ??? Hm... cannot use there AccountServiceSafe !?

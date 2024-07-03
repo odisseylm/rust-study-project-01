@@ -1,15 +1,22 @@
 use std::sync::Arc;
-use mvv_auth::AuthUserProviderError;
-use mvv_auth::backend::{LoginFormAuthBackend, LoginFormAuthConfig};
-use mvv_auth::user_provider::InMemAuthUserProvider;
+use mvv_auth::{ AuthUserProvider };
+use mvv_auth::backend::{LoginFormAuthBackend, LoginFormAuthConfig, OAuth2UserStore};
+use mvv_auth::permission::PermissionProvider;
+// use mvv_auth::user_provider::InMemAuthUserProvider;
 
-use super::user::{ AuthUser, Role, RolePermissionsSet, UserRolesExtractor };
+use super::user::{ AuthUser, Role, RolePermissionsSet };
 use super::user_perm_provider::{ PswComparator };
 use super::backend::CompositeAuthBackend;
 //--------------------------------------------------------------------------------------------------
 
 
-pub async fn composite_auth_manager_layer()
+// pub async fn composite_auth_manager_layer<AccountS: AccountService>(dependencies: &Dependencies<AccountS>)
+pub async fn composite_auth_manager_layer <
+    UsrProvider: Send + Sync + 'static
+               + AuthUserProvider<User=AuthUser>
+               + PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet>
+               + OAuth2UserStore,
+> (user_perm_provider: Arc<UsrProvider>)
     -> Result<axum_login::AuthManagerLayer<CompositeAuthBackend, axum_login::tower_sessions::MemoryStore>, anyhow::Error> {
 
     use axum_login::{
@@ -27,18 +34,23 @@ pub async fn composite_auth_manager_layer()
         .with_same_site(SameSite::Lax) // Ensure we send the cookie from the OAuth redirect.
         .with_expiry(Expiry::OnInactivity(Duration::days(1)));
 
-    let backend = CompositeAuthBackend::new(
-        Arc::new(users_and_perm_provider() ?) ) ?;
+    let backend = CompositeAuthBackend::new(user_perm_provider) ?;
     let auth_layer: axum_login::AuthManagerLayer<CompositeAuthBackend, MemoryStore> =
         AuthManagerLayerBuilder::new(backend, session_layer).build();
     Ok(auth_layer)
 }
 
 
-pub async fn login_form_auth_manager_layer(login_url: &'static str)
-    -> Result<axum_login::AuthManagerLayer<
-        LoginFormAuthBackend<AuthUser,PswComparator,RolePermissionsSet>,
-        axum_login::tower_sessions::MemoryStore>, anyhow::Error> {
+pub async fn login_form_auth_manager_layer <
+    UsrProvider: Send + Sync + 'static
+    + AuthUserProvider<User=AuthUser>
+    + PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet>
+    + OAuth2UserStore,
+> (user_perm_provider: Arc<UsrProvider>, login_url: &'static str)
+   -> Result<
+       axum_login::AuthManagerLayer<LoginFormAuthBackend<AuthUser,PswComparator,RolePermissionsSet>, axum_login::tower_sessions::MemoryStore>,
+       anyhow::Error
+   > {
 
     use axum_login::{
         tower_sessions::{ cookie::SameSite, Expiry, MemoryStore, SessionManagerLayer },
@@ -58,7 +70,7 @@ pub async fn login_form_auth_manager_layer(login_url: &'static str)
     // This combines the session layer with our backend to establish the auth service
     // which will provide the auth session as a request extension.
     //
-    let usr_provider = Arc::new(users_and_perm_provider() ?);
+    let usr_provider = user_perm_provider.clone();
     let permission_provider = usr_provider.clone();
 
     let login_form_auth_backend = LoginFormAuthBackend::
@@ -74,7 +86,9 @@ pub async fn login_form_auth_manager_layer(login_url: &'static str)
 }
 
 
+/*
 pub fn users_and_perm_provider()
     -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,UserRolesExtractor>, AuthUserProviderError> {
     super::user_perm_provider::in_memory_test_users()
 }
+*/

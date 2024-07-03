@@ -6,6 +6,7 @@ use mvv_auth::{
     permission::PermissionSet,
     user_provider::mem_user_provider::UserPermissionsExtractor,
 };
+// use diesel::prelude::*;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -16,7 +17,10 @@ pub type RolePermissionsSet = mvv_auth::permission::predefined::RolePermissionsS
 #[derive(Clone)]
 // #[derive(serde::Serialize, serde::Deserialize)]
 // #[derive(sqlx::FromRow)]
-#[readonly::make]
+// #[readonly::make]
+// #[derive(Queryable, Selectable)]
+// #[diesel(table_name = crate::schema::posts)]
+// #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct AuthUser {
     pub id: i64,
     pub username: String,

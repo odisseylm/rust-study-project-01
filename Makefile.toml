@@ -258,6 +258,23 @@ workspace = false
 
 
 
+[tasks.docker-debug-rebuild-rerun-all]
+workspace = false
+dependencies = [
+    "build",
+    # "test",
+    "build-debug-docker",
+    "docker-compose-down",
+    "docker-compose-up",
+]
+
+
+[tasks.docker-compose-down-up]
+workspace = false
+dependencies = [
+    "docker-compose-down",
+    "docker-compose-up",
+]
 
 
 [tasks.task1]

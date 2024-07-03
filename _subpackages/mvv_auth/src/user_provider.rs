@@ -13,13 +13,16 @@ pub enum AuthUserProviderError {
     // 1) It is used only for updates.
     // 2) If user is not found on get operation, just Ok(None) is returned.
     #[error("UserNotFound")]
-    UserNotFound,
+    UserNotFound(String),
 
     #[error(transparent)]
     Sqlx(sqlx::Error),
 
     #[error("LockedResourceError")]
     LockedResourceError,
+
+    #[error("ConfigurationError")]
+    ConfigurationError(anyhow::Error),
 }
 
 impl From<sqlx::Error> for AuthUserProviderError {

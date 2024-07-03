@@ -55,6 +55,7 @@ static_assertions_next = "1.1.2" # probably successor of 'static_assertions' ??
 #const-zero = "0.1.1" # dperected, just redirection to 'std/core'
 
 const_format = "0.2.32"
+const-str = "0.5.7"
 place_macro = "1.0.0"
 seq-macro = "0.3.5"
 
@@ -178,6 +179,7 @@ reqwest = { version = "0.12.4", features = ["json"] }
 url = "2.5.1"
 
 sqlx = { version = "0.7.4", features = ["sqlite", "time", "runtime-tokio"] }
+sqlx-postgres = { version = "0.7.4", features = ["bigdecimal", "chrono", "uuid"] }
 
 
 askama = { version = "0.12.1", features = ["with-axum"] }

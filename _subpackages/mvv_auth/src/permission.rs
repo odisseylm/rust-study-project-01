@@ -12,6 +12,7 @@ use std::collections::HashSet;
 use anyhow::anyhow;
 use axum::response::Response;
 use http::StatusCode;
+use crate::AuthUserProviderError;
 
 // -------------------------------------------------------------------------------------------------
 
@@ -30,6 +31,18 @@ pub enum PermissionProcessError {
 impl From<Infallible> for PermissionProcessError {
     fn from(_value: Infallible) -> Self {
         PermissionProcessError::ConvertError(anyhow!("Internal error: Infallible"))
+    }
+}
+
+impl From<AuthUserProviderError> for PermissionProcessError {
+    fn from(value: AuthUserProviderError) -> Self {
+        // PermissionProcessError::ConvertError(anyhow!("Internal error: Infallible"))
+        match value {
+            AuthUserProviderError::UserNotFound(user) => PermissionProcessError::NoUser(user),
+            AuthUserProviderError::Sqlx(err) => PermissionProcessError::GetUserError(From::from(err)),
+            AuthUserProviderError::LockedResourceError => PermissionProcessError::GetUserError(From::from(value)),
+            AuthUserProviderError::ConfigurationError(conf_err) => PermissionProcessError::GetUserError(conf_err),
+        }
     }
 }
 
