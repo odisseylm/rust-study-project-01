@@ -2,8 +2,8 @@ use std::sync::Arc;
 use axum::{
     Router, Json, routing::get as GET, extract::{ Path, State, },
 };
-use tracing::{ debug, info, error };
-use log::{ debug as log_debug, info as log_info, error as log_error };
+use tracing::{ debug, info /*, error*/ };
+use log::{ debug as log_debug, info as log_info /*, error as log_error*/ };
 
 use crate::{
     entities::{ prelude::UserId, entity, account::AccountId, },
@@ -81,7 +81,7 @@ impl<AS: AccountService> CurrentUserAccountRest<AS> {
 
         log_debug!("LD get_user_account as debug");
         log_info! ("LI get_user_account as info");
-        log_error!("LE get_user_account as error");
+        // log_error!("LE get_user_account as error");
 
         let current_user_id = self.current_user_id().await;
         let account_id = AccountId::from_str(account_id.as_str()) ?;

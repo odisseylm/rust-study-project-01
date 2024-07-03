@@ -1,4 +1,3 @@
-use std::ffi::OsStr;
 use std::sync::Arc;
 use anyhow::anyhow;
 use axum::Router;
@@ -12,7 +11,7 @@ use crate::rest::{
 };
 use crate::rest::auth::user_perm_provider::SqlUserProvider;
 use crate::util::env::env_var_or_else;
-use crate::util::test_unwrap::TestSringOps;
+use crate::util::string::remove_optional_suffix;
 use crate::web::{
     auth::composite_login_router,
     templates::protected_page_01::protected_page_01_router,
@@ -135,9 +134,7 @@ fn current_exe_name() -> Result<String, anyhow::Error> {
         .map(|ref p| p.file_name().map(|s|s.to_os_string())) ?
         .ok_or_else(||anyhow!("Cannot find executable name.")) ?;
     let cur_exe = cur_exe_as_os_str.to_string_lossy().to_string();
-    let cur_exe = cur_exe
-        .strip_suffix(".exe").map(|s|s.to_string()) // TODO: how to avoid unneeded 'to_string'
-        .unwrap_or(cur_exe);
+    let cur_exe = remove_optional_suffix(cur_exe, ".exe");
     Ok(cur_exe)
 }
 

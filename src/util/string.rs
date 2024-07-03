@@ -33,3 +33,35 @@ pub fn ascii_substring_count(str: &str, sub_str: &[u8]) -> usize {
     count
 }
 */
+
+/*
+#[extension_trait::extension_trait]
+pub impl StringOps for String {
+    // Error ?!
+    fn remove_suffix(mut self, suffix: &str) -> Result<String, String> {
+        if self.ends_with(suffix) {
+            self.truncate(self.len() - suffix.len());
+            Ok(self)
+        } else {
+            Err(self)
+        }
+    }
+}
+*/
+
+
+pub fn remove_suffix(mut str: String, suffix: &str) -> Result<String, String> {
+    if str.ends_with(suffix) {
+        str.truncate(str.len() - suffix.len());
+        Ok(str)
+    } else {
+        Err(str)
+    }
+}
+
+pub fn remove_optional_suffix(mut str: String, suffix: &str) -> String {
+    if str.ends_with(suffix) {
+        str.truncate(str.len() - suffix.len());
+    }
+    str
+}
