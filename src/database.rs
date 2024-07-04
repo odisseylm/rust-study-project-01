@@ -35,6 +35,6 @@ fn pg_db_connection_options() -> Result<Option<PgConnectOptions>, anyhow::Error>
 
 pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
     let options = pg_db_connection_options() ?;
-    let options = options.ok_or_else(||anyhow!("No DB connection options.")) ?;
+    let options = options.ok_or_else(||anyhow!("No Postgres DB connection options.")) ?;
     Ok(sqlx_postgres::PgPool::connect_lazy_with(options))
 }

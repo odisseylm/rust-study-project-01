@@ -190,9 +190,9 @@ impl <
     async fn get_user_permissions_by_principal_identity(&self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
         -> Result<Self::PermissionSet, PermissionProcessError> {
         let user_opt = self.get_user_by_principal_identity(&user_principal_id).await
-            .map_err(|err|PermissionProcessError::GetUserError(anyhow::Error::msg(err)))?;
+            .map_err(|err|PermissionProcessError::GetUserError(anyhow::Error::new(err)))?;
         let user = user_opt.ok_or_else(||
-            // in theory it should not happen
+            // in theory, it should not happen
             PermissionProcessError::NoUser(user_principal_id.to_string())) ?;
         self.get_user_permissions(&user).await
     }

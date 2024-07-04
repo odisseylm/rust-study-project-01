@@ -1,4 +1,3 @@
-use anyhow::Error;
 use crate::entities::user::{User, UserId};
 
 
@@ -12,7 +11,7 @@ struct UserServiceImpl {
 }
 
 impl UserService for UserServiceImpl {
-    async fn get_user(user_id: UserId) -> Result<User, Error> {
+    async fn get_user(user_id: UserId) -> Result<User, anyhow::Error> {
         Ok(User {
             id: user_id,
             username: "Cheburan".to_string(),

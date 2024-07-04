@@ -355,7 +355,7 @@ fn from_string_with_wrong_non_ascii_amount_value() {
 }
 
 fn fn_test_parse_amount_01() -> Result<Amount, anyhow::Error> {
-    Amount::from_str(" \t \n Чебуран BRL ").map_err(anyhow::Error::msg)
+    Amount::from_str(" \t \n Чебуран BRL ").map_err(anyhow::Error::new)
 }
 fn fn_test_parse_amount_02() -> Result<Amount, anyhow::Error> { fn_test_parse_amount_01() }
 fn fn_test_parse_amount_03() -> Result<Amount, anyhow::Error> { fn_test_parse_amount_02() }

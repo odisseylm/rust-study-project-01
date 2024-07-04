@@ -45,7 +45,6 @@ impl<
     fn to_anyhow_error(self, err2: Err2) -> Result<Ok, anyhow::Error> {
         let ok = self.map_err(|_cur_err| err2 ) ?;
         Ok(ok)
-        // self.map_err(|json_err| err2 ).map_err(anyhow::Error::msg)
     }
 }
 
@@ -58,7 +57,6 @@ impl<
     fn to_anyhow_error_fn(self, f: F) -> Result<Ok, anyhow::Error> {
         let ok = self.map_err(|err0| f(err0)) ?;
         Ok(ok)
-        // self.map_err(|json_err| err2 ).map_err(anyhow::Error::msg)
     }
 }
 
