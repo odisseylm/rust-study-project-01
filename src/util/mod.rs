@@ -11,6 +11,7 @@ pub mod obj_ext;
 pub mod fmt;
 pub mod serde_json;
 mod other;
+pub mod cache;
 
 pub use crate::util::result::{ as_printable, as_printable_ptr };
 pub use crate::util::unchecked::{ UncheckedOptionUnwrap, UncheckedResultUnwrap };

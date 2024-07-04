@@ -9,6 +9,7 @@ pub trait AuthUserProvider : fmt::Debug {
 
 
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum AuthUserProviderError {
     // 1) It is used only for updates.
     // 2) If user is not found on get operation, just Ok(None) is returned.
@@ -23,6 +24,16 @@ pub enum AuthUserProviderError {
 
     #[error("ConfigurationError")]
     ConfigurationError(anyhow::Error),
+
+    #[error("CacheError")]
+    CacheError(anyhow::Error),
+
+    #[error("UnknownError")]
+    UnknownError(anyhow::Error),
+
+    #[doc(hidden)]
+    #[error("__NonExhaustive")]
+    __NonExhaustive
 }
 
 impl From<sqlx::Error> for AuthUserProviderError {

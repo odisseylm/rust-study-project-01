@@ -72,6 +72,8 @@
  - Run tests with output: `cargo test test_log_env --test log_env_test -- --nocapture`  # ??? --exact
  - `docker exec -it DOCKER_CONTAINER /bin/bash`
  - `psql postgresql://rust_mvvbank:psw@localhost:5432/rust_mvvbank`
+ - `psql --dbname=rust-mvvbank  --username=rust-mvvbank`
+ - `psql rust-mvvbank rust-mvvbank`
    - `\q` - quit
    - `\l` - list all databases
    - `\dt` - list tables
@@ -93,4 +95,7 @@ Should public functions be tested in internal or integration tests ??
  - https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch11-03-test-organization.html
 
 
-
+TODO: investigate
+ - string-builder ?? How overloading is done there??
+ - try to use SmallVec instead of Vec
+ - try to use fixedstr string types

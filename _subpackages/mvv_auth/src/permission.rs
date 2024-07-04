@@ -19,6 +19,7 @@ use crate::AuthUserProviderError;
 
 
 #[derive(thiserror::Error, Debug)]
+#[non_exhaustive]
 pub enum PermissionProcessError {
     #[error("ConvertError({0})")]
     ConvertError(anyhow::Error),
@@ -26,6 +27,14 @@ pub enum PermissionProcessError {
     NoUser(String),
     #[error("GetUserError({0})")]
     GetUserError(anyhow::Error),
+    #[error("CacheError")]
+    CacheError(anyhow::Error),
+    #[error("UnknownError")]
+    UnknownError(anyhow::Error),
+
+    #[doc(hidden)]
+    #[error("__NonExhaustive")]
+    __NonExhaustive
 }
 
 impl From<Infallible> for PermissionProcessError {
@@ -42,6 +51,10 @@ impl From<AuthUserProviderError> for PermissionProcessError {
             AuthUserProviderError::Sqlx(err) => PermissionProcessError::GetUserError(From::from(err)),
             AuthUserProviderError::LockedResourceError => PermissionProcessError::GetUserError(From::from(value)),
             AuthUserProviderError::ConfigurationError(conf_err) => PermissionProcessError::GetUserError(conf_err),
+            AuthUserProviderError::CacheError(err) => PermissionProcessError::CacheError(err),
+            AuthUserProviderError::UnknownError(err) => PermissionProcessError::UnknownError(err),
+            //
+            err => PermissionProcessError::UnknownError(anyhow::anyhow!(err)),
         }
     }
 }

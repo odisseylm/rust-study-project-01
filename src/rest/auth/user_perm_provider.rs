@@ -1,4 +1,7 @@
+use core::time::Duration;
 use std::sync::Arc;
+use log::info;
+use tokio::sync::RwLock;
 use mvv_auth::{
     AuthUserProvider, AuthUserProviderError,
     backend::OAuth2UserStore,
@@ -7,6 +10,7 @@ use mvv_auth::{
 };
 use mvv_auth::permission::{PermissionProcessError, PermissionProvider};
 use super::user::{ AuthUser, Role, RolePermissionsSet, UserRolesExtractor };
+use crate::util::cache::{AsyncCache, CacheOrFetchError, lru};
 // -------------------------------------------------------------------------------------------------
 
 
@@ -24,16 +28,96 @@ pub fn in_memory_test_users()
     ))
 }
 
+// We cache Option<AuthUser> to cache fact that user is not found.
+type Cache = lru::LruAsyncCache<String,Option<AuthUser>>;
+
+
+impl From<CacheOrFetchError<AuthUserProviderError>> for AuthUserProviderError {
+    fn from(value: CacheOrFetchError<AuthUserProviderError>) -> Self {
+        match value {
+            CacheOrFetchError::CacheError(err) =>
+                AuthUserProviderError::CacheError(anyhow::Error::new(err)),
+            CacheOrFetchError::FetchError(err) =>
+                err,
+        }
+    }
+}
+
 
 #[derive(Debug)]
-pub struct SqlUserProvider {
+struct SqlUserProviderState {
     db: Arc<sqlx_postgres::PgPool>,
+    cache: Option<RwLock<Cache>>,
 }
+
+#[derive(Debug)]
+pub struct SqlUserProvider(Arc<SqlUserProviderState>);
 
 impl SqlUserProvider {
     pub fn new(db: Arc<sqlx_postgres::PgPool>) -> Result<SqlUserProvider, anyhow::Error> {
-        Ok(SqlUserProvider { db })
+        Ok(SqlUserProvider(Arc::new(SqlUserProviderState { db, cache: None })))
     }
+    pub fn with_cache(db: Arc<sqlx_postgres::PgPool>) -> Result<SqlUserProvider, anyhow::Error> {
+        Ok(SqlUserProvider(Arc::new(SqlUserProviderState { db, cache: Some(RwLock::new(
+            Cache::with_capacity_and_ttl(
+                nonzero_lit::usize!(100),
+                Duration::from_secs(15),
+            ) ?))
+        })))
+    }
+
+    #[allow(dead_code)]
+    async fn get_cached(&self, user_id: &String) -> Result<Option<Option<AuthUser>>,AuthUserProviderError> {
+        if let Some(ref cache) = self.0.cache {
+            // Can we use 'read' there
+            let mut cache_guarded = cache.write().await;
+            let cached = (*cache_guarded).get(user_id).await ?;
+
+            info!("### Getting user [{}] from cache (found: {})", user_id, cached.is_some());
+            Ok(cached)
+        } else {
+            Ok(None)
+        }
+    }
+
+    #[allow(dead_code)]
+    async fn update_cache(&self, user_id: String, user: Option<AuthUser>)
+        -> Result<(),AuthUserProviderError> {
+        if let Some(ref cache) = self.0.cache {
+            let mut cache_guarded = cache.write().await;
+            (*cache_guarded).put_with_ttl(user_id, user).await ?;
+        }
+        Ok(())
+    }
+
+    async fn get_user_from_db(&self, username: &str) -> Result<Option<AuthUser>, AuthUserProviderError> {
+
+        let username_lc = username.to_lowercase();
+
+        info!("### Loading user [{}] from database", username_lc);
+
+        // TODO: use case-insensitive username comparing in SQL query
+        let res= sqlx::query_as(
+            // sqlx::query_as!(AuthUser,
+            "select \
+                 u.ID, u.NAME, u.PASSWORD, \
+                 ur.READ_ROLE, ur.WRITE_ROLE, ur.USER_ROLE, ur.SUPER_USER_ROLE, ur.ADMIN_ROLE \
+                 from USERS u \
+                 left join USER_ROLES ur on u.ID = ur.USER_ID \
+                 where lower(u.NAME) = $1 ")
+            .bind(username_lc.as_str())
+            .fetch_optional(&*self.0.db)
+            .await
+            .map_err(|err_to_log|{
+                log::error!("### SQLX error: {:?}", err_to_log);
+                err_to_log
+            })
+            // .map_err(Self::Error::Sqlx)?)
+            .map_err(From::<sqlx::Error>::from);
+
+        res
+    }
+
 }
 
 
@@ -46,7 +130,7 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for AuthUser {
 
         use sqlx::Row;
         macro_rules! column_name {
-            // postgres needs lowercase
+            // postgres needs lowercase (Oracle - uppercase, so on)
             ($column_name:literal) => { const_str::convert_ascii_case!(lower, $column_name) };
         }
 
@@ -71,14 +155,6 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for AuthUser {
     }
 }
 
-/*
-#[inline]
-fn set_role(roles: &mut RolePermissionsSet, role: Role, db_role: Option<bool>) {
-    if db_role.unwrap_or(false) {
-        roles.merge_with_mut(RolePermissionsSet::from_permission(role));
-    }
-}
-*/
 #[inline]
 fn set_role(roles: &mut RolePermissionsSet, role: Role, row: &sqlx_postgres::PgRow, column: &'static str)
     -> Result<(), sqlx::Error> {
@@ -95,38 +171,32 @@ fn set_role(roles: &mut RolePermissionsSet, role: Role, row: &sqlx_postgres::PgR
 impl AuthUserProvider for SqlUserProvider {
     type User = AuthUser;
 
-    /*
-    async fn get_user_by_id(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
-        Ok(sqlx::query_as("select * from users where id = ?")
-            .bind(user_id)
-            .fetch_optional(&self.db)
-            .await
-            .map_err(AuthUserProviderError::Sqlx)
-            // or
-            // .map_err(From::<sqlx::Error>::from)
-        ?)
-    }
-    */
     async fn get_user_by_principal_identity(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
-        // TODO: use case-insensitive username comparing
+
         let username_lc = user_id.to_lowercase();
-        sqlx::query_as(
-        // sqlx::query_as!(AuthUser,
-            "select \
-                 u.ID, u.NAME, u.PASSWORD, \
-                 ur.READ_ROLE, ur.WRITE_ROLE, ur.USER_ROLE, ur.SUPER_USER_ROLE, ur.ADMIN_ROLE \
-                 from USERS u \
-                 left join USER_ROLES ur on u.ID = ur.USER_ID \
-                 where lower(u.NAME) = $1 ")
-            .bind(username_lc.as_str())
-            .fetch_optional(&*self.db)
-            .await
-            .map_err(|err_to_log|{
-                log::error!("### SQLX error: {:?}", err_to_log);
-                err_to_log
-            })
-            // .map_err(Self::Error::Sqlx)?)
-            .map_err(From::<sqlx::Error>::from)
+
+        if let Some(ref cache) = self.0.cache {
+            let mut cache = cache.write().await;
+            let cached_or_fetched: Result<Option<Self::User>, CacheOrFetchError<AuthUserProviderError>> =
+                cache.get_or_fetch(username_lc, |username_lc| async move {
+                    self.get_user_from_db(&username_lc).await
+                }).await;
+            let cached_or_fetched = cached_or_fetched?;
+            Ok(cached_or_fetched)
+        } else {
+            self.get_user_from_db(username_lc.as_str()).await
+        }
+
+        /*
+        if let Some(cached_user) = self.get_cached(&username_lc).await ? {
+            return Ok(cached_user);
+        }
+
+        let user_opt = self.get_user_from_db(user_id).await ?;
+
+        self.update_cache(username_lc, user_opt.clone()).await ?;
+        Ok(user_opt)
+        */
     }
 }
 

@@ -30,7 +30,7 @@ fn create_prod_dependencies() -> Result<Dependencies<AccountServiceImpl>, anyhow
         database_connection: Arc::clone(&db),
         account_service: Arc::clone(&account_service),
         account_rest: Arc::clone(&account_rest),
-        user_perm_provider: Arc::new(SqlUserProvider::new(db.clone()) ?)
+        user_perm_provider: Arc::new(SqlUserProvider::with_cache(db.clone()) ?)
     })
 }
 
