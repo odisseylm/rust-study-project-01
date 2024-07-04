@@ -37,8 +37,7 @@ impl From<CacheOrFetchError<AuthUserProviderError>> for AuthUserProviderError {
         match value {
             CacheOrFetchError::CacheError(err) =>
                 AuthUserProviderError::CacheError(anyhow::Error::new(err)),
-            CacheOrFetchError::FetchError(err) =>
-                err,
+            CacheOrFetchError::FetchError(err) => err,
         }
     }
 }
@@ -177,11 +176,10 @@ impl AuthUserProvider for SqlUserProvider {
 
         if let Some(ref cache) = self.0.cache {
             let mut cache = cache.write().await;
-            let cached_or_fetched: Result<Option<Self::User>, CacheOrFetchError<AuthUserProviderError>> =
-                cache.get_or_fetch(username_lc, |username_lc| async move {
-                    self.get_user_from_db(&username_lc).await
-                }).await;
-            let cached_or_fetched = cached_or_fetched?;
+
+            let cached_or_fetched = cache.get_or_fetch(username_lc, |username_lc| async move {
+                self.get_user_from_db(&username_lc).await
+            }).await ?;
             Ok(cached_or_fetched)
         } else {
             self.get_user_from_db(username_lc.as_str()).await
