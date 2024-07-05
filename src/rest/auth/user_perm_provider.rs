@@ -8,9 +8,9 @@ use mvv_auth::{
     permission::PermissionSet,
     user_provider::InMemAuthUserProvider,
 };
-use mvv_auth::permission::{PermissionProcessError, PermissionProvider};
+use mvv_auth::permission::{ PermissionProcessError, PermissionProvider };
 use super::user::{ AuthUser, Role, RolePermissionsSet, UserRolesExtractor };
-use crate::util::cache::{ AsyncCache, CacheOrFetchError, TtlMode, };
+use crate::util::cache::{ AsyncCache, CacheFactory, CacheOrFetchError, TtlMode, };
 // -------------------------------------------------------------------------------------------------
 
 

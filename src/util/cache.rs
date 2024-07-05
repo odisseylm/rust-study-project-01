@@ -1,10 +1,14 @@
+pub mod quick_cache;
+pub mod lru;
+
+
+//--------------------------------------------------------------------------------------------------
 use core::fmt::Debug;
 use core::hash::Hash;
 use core::num::NonZeroUsize;
 use core::time::Duration;
 use std::future::Future;
 use std::time::Instant;
-use ::quick_cache::Equivalent;
 use log::info;
 use mvv_auth::AuthUserProviderError;
 //--------------------------------------------------------------------------------------------------
@@ -43,17 +47,23 @@ pub enum TtlMode {
 }
 
 
+// Optional trait.
+// This functionality moved from AsyncCache trait because some underlying implementations
+// have fixed size as const generic param (for example associative-cache)
+pub trait CacheFactory {
+    fn with_capacity(capacity: NonZeroUsize)
+                     -> Result<Self,CacheError> where Self: Sized;
+    fn with_capacity_and_ttl(capacity: NonZeroUsize, ttl: Duration)
+                             -> Result<Self, CacheError> where Self: Sized;
+}
+
+
 // !!! Actually cache can be synchronized or not !!!
 // Be careful! Probably it should be wrapped with async mutex/RwLock (like in SqlUserProvider)
 #[async_trait::async_trait]
 pub trait AsyncCache {
-    type Key: Debug + Send + Sync;
+    type Key: Debug + Hash + Send + Sync;
     type Value: Debug + Send + Sync;
-
-    fn with_capacity(capacity: NonZeroUsize)
-        -> Result<Self,CacheError> where Self: Sized;
-    fn with_capacity_and_ttl(capacity: NonZeroUsize, ttl: Duration)
-        -> Result<Self, CacheError> where Self: Sized;
 
     async fn put(&mut self, key: Self::Key, ttl: TtlMode, value: Self::Value)
                  -> Result<(),CacheError>;
@@ -90,12 +100,18 @@ pub trait AsyncCache {
 }
 
 
+
+//--------------------------------------------------------------------------------------------------
+//          Utility types/functions for easy writing wrappers over existent cache impls
+//--------------------------------------------------------------------------------------------------
+//
 #[derive(Debug, Clone)]
 struct TtlEntry <V: Clone> {
     value: V,
     updated_at: Instant,
     ttl: Option<Duration>,
 }
+
 impl<V: Clone> TtlEntry<V> {
     fn is_expired(&self) -> bool {
         match self.ttl {
@@ -130,96 +146,4 @@ fn ttl_entry_to_res<V: Clone>(value_entry_opt: Option<TtlEntry<V>>) -> Result<Op
             }
         }
     }
-}
-
-#[derive(derivative::Derivative)]
-#[derivative(Debug)]
-pub struct LruAsyncCacheImpl <K, V:Clone> {
-    default_ttl: Option<Duration>,
-    #[derivative(Debug="ignore")]
-    #[derivative(Debug(format_with="path::to::my_fmt_fn"))]
-    int_cache: ::lru::LruCache<K,TtlEntry<V>>,
-}
-
-
-#[async_trait::async_trait]
-impl <
-    K: Debug + Hash + Eq + Send + Sync,
-    V: Debug + Send + Sync + Clone,
-> AsyncCache for LruAsyncCacheImpl<K,V> {
-    type Key = K;
-    type Value = V;
-
-    fn with_capacity(capacity: NonZeroUsize) -> Result<Self,CacheError> {
-        Ok(LruAsyncCacheImpl { default_ttl: None, int_cache: ::lru::LruCache::new(capacity) })
-    }
-
-    fn with_capacity_and_ttl(capacity: NonZeroUsize, ttl: Duration) -> Result<Self,CacheError> {
-        Ok(LruAsyncCacheImpl { default_ttl: Some(ttl), int_cache: ::lru::LruCache::new(capacity) })
-    }
-
-    async fn put(&mut self, key: Self::Key, ttl: TtlMode, value: Self::Value) -> Result<(), CacheError> where Self: Sized {
-        self.int_cache.put(key, TtlEntry::from(value, ttl, self.default_ttl));
-        Ok(())
-    }
-
-    async fn get(&mut self, key: &Self::Key) -> Result<Option<Self::Value>, CacheError> {
-        ttl_entry_to_res(self.int_cache.get(key).map(|v|v.clone()))
-    }
-}
-
-
-pub mod lru {
-    pub type LruAsyncCache<K,V> = super::LruAsyncCacheImpl<K,V>;
-}
-
-
-#[derive(derivative::Derivative)]
-#[derivative(Debug)]
-pub struct QuickAsyncCacheImpl <K, V:Clone> {
-    default_ttl: Option<Duration>,
-    #[derivative(Debug="ignore")]
-    #[derivative(Debug(format_with="path::to::my_fmt_fn"))]
-    // int_cache: ::quick_cache::sync::Cache<K,TtlEntry<V>>,
-    int_cache: ::quick_cache::unsync::Cache<K,TtlEntry<V>>,
-}
-
-
-#[async_trait::async_trait]
-impl <
-    K: Debug + Hash + Eq + Equivalent<K> + Send + Sync,
-    V: Debug + Send + Sync + Clone,
-> AsyncCache for QuickAsyncCacheImpl<K,V> {
-    type Key = K;
-    type Value = V;
-
-    fn with_capacity(capacity: NonZeroUsize) -> Result<Self,CacheError> {
-        Ok(QuickAsyncCacheImpl {
-            default_ttl: None,
-            int_cache: ::quick_cache::unsync::Cache::new(capacity.get()),
-        })
-    }
-
-    fn with_capacity_and_ttl(capacity: NonZeroUsize, ttl: Duration) -> Result<Self,CacheError> {
-        Ok(QuickAsyncCacheImpl {
-            default_ttl: Some(ttl),
-            int_cache: ::quick_cache::unsync::Cache::new(capacity.get()),
-        })
-    }
-
-    async fn put(&mut self, key: Self::Key, ttl: TtlMode, value: Self::Value)
-        -> Result<(), CacheError> {
-        self.int_cache.insert(key, TtlEntry::from(value, ttl, self.default_ttl));
-        Ok(())
-    }
-
-    async fn get(&mut self, key: &Self::Key) -> Result<Option<Self::Value>, CacheError> {
-        let option = self.int_cache.get(key).map(|v|v.clone());
-        ttl_entry_to_res(option)
-    }
-}
-
-
-pub mod quick_cache {
-    pub type QuickAsyncCache<K,V> = super::QuickAsyncCacheImpl<K,V>;
 }
