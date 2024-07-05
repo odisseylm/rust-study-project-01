@@ -11,6 +11,7 @@
    - `docker build --file docker/Dockerfile_02 --tag rust-mvv-webapp-02 .`
    - `docker build --file docker/Dockerfile_04 --tag rust-mvv-webapp-04 .`
    - `docker run rust-mvv-webapp-04`
+   - `docker rmi $(docker images -f "dangling=true" -q)`
 
  - Docker https://docs.docker.com/language/rust/
    - `docker build -t rust_docker .`

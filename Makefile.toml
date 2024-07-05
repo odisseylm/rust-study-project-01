@@ -220,6 +220,33 @@ alias = "docker-build"
 
 
 
+[tasks.build-debug-local-docker]
+command = "docker"
+args = ["build", "--file", "docker/Dockerfile-local",
+    "--tag", "rust-mvv-webapp-debug",
+    # ?? How to reuse it?
+    #${DOCKER_IMAGE_LABELS},
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
+    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+    ".",]
+workspace = false
+dependencies = [
+    "build",
+    # "test",
+    "private_docker_build_prepare_labels",
+]
+
+
+
 [tasks.docker-compose-up]
 command = "docker-compose"
 args = [
@@ -255,6 +282,18 @@ workspace = false
 #    "test",
 #    "private_docker_build_prepare_labels",
 #]
+
+
+
+[tasks.docker-compose-rerun]
+workspace = false
+dependencies = [
+    # "build",
+    # "test",
+    # "build-debug-docker",
+    "docker-compose-down",
+    "docker-compose-up",
+]
 
 
 
