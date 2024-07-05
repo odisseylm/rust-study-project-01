@@ -10,7 +10,7 @@ use mvv_auth::{
 };
 use mvv_auth::permission::{ PermissionProcessError, PermissionProvider };
 use super::user::{ AuthUser, Role, RolePermissionsSet, UserRolesExtractor };
-use crate::util::cache::{ AsyncCache, CacheFactory, CacheOrFetchError, TtlMode, };
+use crate::util::cache::{ AsyncCache, CacheOrFetchError, TtlMode, };
 // -------------------------------------------------------------------------------------------------
 
 
@@ -30,7 +30,9 @@ pub fn in_memory_test_users()
 
 // We cache Option<AuthUser> to cache fact that user is not found.
 // type Cache = crate::util::cache::lru::LruAsyncCache<String,Option<AuthUser>>;
-type Cache = crate::util::cache::quick_cache::QuickAsyncCache<String,Option<AuthUser>>;
+// type Cache = crate::util::cache::quick_cache::QuickAsyncCache<String,Option<AuthUser>>;
+type Cache = crate::util::cache::associative_cache::AssociativeAsyncCache
+                <associative_cache::Capacity128, String,Option<AuthUser>>;
 
 
 impl From<CacheOrFetchError<AuthUserProviderError>> for AuthUserProviderError {
@@ -58,9 +60,10 @@ impl SqlUserProvider {
         Ok(SqlUserProvider(Arc::new(SqlUserProviderState { db, cache: None })))
     }
     pub fn with_cache(db: Arc<sqlx_postgres::PgPool>) -> Result<SqlUserProvider, anyhow::Error> {
+        // use crate::util::cache::CacheFactory;
         Ok(SqlUserProvider(Arc::new(SqlUserProviderState { db, cache: Some(RwLock::new(
             Cache::with_capacity_and_ttl(
-                nonzero_lit::usize!(100),
+                // nonzero_lit::usize!(100),
                 Duration::from_secs(15),
             ) ?))
         })))

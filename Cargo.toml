@@ -197,6 +197,7 @@ lru = "0.12.3"
 #lfu = "0.2.5"
 #async_cache = "0.3.1"
 #faststr = "0.2.19"
+associative-cache = "2.0.0"
 
 #inline-xml = "0.3.2"
 ## similars

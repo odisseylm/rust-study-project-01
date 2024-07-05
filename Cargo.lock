@@ -255,6 +255,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c24e9d990669fbd16806bff449e4ac644fd9b1fca014760087732fe4102f131"
 
 [[package]]
+name = "associative-cache"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b993cd767a2bc7307dd87622311ca22c44329cc7a21366206bfa0896827b2bad"
+
+[[package]]
 name = "async-lock"
 version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3024,6 +3030,7 @@ dependencies = [
  "askama_axum",
  "assert-json-diff",
  "assertables",
+ "associative-cache",
  "async-trait",
  "axum",
  "axum-ctx",
