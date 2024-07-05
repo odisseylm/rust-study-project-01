@@ -3066,6 +3066,7 @@ dependencies = [
  "once_cell",
  "password-auth",
  "place_macro",
+ "quick_cache",
  "readonly",
  "reqwest 0.12.4",
  "seq-macro",
@@ -3115,6 +3116,18 @@ dependencies = [
  "wasi 0.10.2+wasi-snapshot-preview1",
  "web-sys",
  "winapi",
+]
+
+[[package]]
+name = "quick_cache"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e00e03be638aaab399c951dba6bea0161f99f26df0ccab4ab0fc6eb9535bd48"
+dependencies = [
+ "ahash",
+ "equivalent",
+ "hashbrown 0.14.5",
+ "parking_lot 0.12.3",
 ]
 
 [[package]]

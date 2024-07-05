@@ -10,7 +10,7 @@ use mvv_auth::{
 };
 use mvv_auth::permission::{PermissionProcessError, PermissionProvider};
 use super::user::{ AuthUser, Role, RolePermissionsSet, UserRolesExtractor };
-use crate::util::cache::{AsyncCache, CacheOrFetchError, lru};
+use crate::util::cache::{ AsyncCache, CacheOrFetchError, TtlMode, };
 // -------------------------------------------------------------------------------------------------
 
 
@@ -29,7 +29,8 @@ pub fn in_memory_test_users()
 }
 
 // We cache Option<AuthUser> to cache fact that user is not found.
-type Cache = lru::LruAsyncCache<String,Option<AuthUser>>;
+// type Cache = crate::util::cache::lru::LruAsyncCache<String,Option<AuthUser>>;
+type Cache = crate::util::cache::quick_cache::QuickAsyncCache<String,Option<AuthUser>>;
 
 
 impl From<CacheOrFetchError<AuthUserProviderError>> for AuthUserProviderError {
@@ -84,7 +85,7 @@ impl SqlUserProvider {
         -> Result<(),AuthUserProviderError> {
         if let Some(ref cache) = self.0.cache {
             let mut cache_guarded = cache.write().await;
-            (*cache_guarded).put_with_ttl(user_id, user).await ?;
+            (*cache_guarded).put(user_id, TtlMode::DefaultCacheTtl, user).await ?;
         }
         Ok(())
     }
@@ -177,9 +178,9 @@ impl AuthUserProvider for SqlUserProvider {
         if let Some(ref cache) = self.0.cache {
             let mut cache = cache.write().await;
 
-            let cached_or_fetched = cache.get_or_fetch(username_lc, |username_lc| async move {
-                self.get_user_from_db(&username_lc).await
-            }).await ?;
+            let cached_or_fetched = cache.get_or_fetch(username_lc, TtlMode::DefaultCacheTtl,
+                |username_lc| async move { self.get_user_from_db(&username_lc).await }
+            ).await ?;
             Ok(cached_or_fetched)
         } else {
             self.get_user_from_db(username_lc.as_str()).await
