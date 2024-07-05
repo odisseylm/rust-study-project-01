@@ -7,12 +7,9 @@ use super::{ AsyncCache, CacheError, ttl_entry_to_res, TtlEntry, TtlMode };
 
 
 
-#[derive(derivative::Derivative)]
-#[derivative(Debug)]
+#[derive(Debug)]
 pub struct AssociativeAsyncCache <Capacity: associative_cache::Capacity, K, V: Clone> {
     default_ttl: Option<Duration>,
-    #[derivative(Debug="ignore")]
-    // #[derivative(Debug(format_with="path::to::my_fmt_fn"))] // TODO: print capacity and current size if possible
     int_cache: associative_cache::AssociativeCache <
         K, TtlEntry<V>,
         Capacity,

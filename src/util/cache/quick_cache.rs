@@ -8,12 +8,9 @@ use super::{AsyncCache, CacheError, CacheFactory, ttl_entry_to_res, TtlEntry, Tt
 
 
 
-#[derive(derivative::Derivative)]
-#[derivative(Debug)]
+#[derive(Debug)]
 pub struct QuickAsyncCache <K, V:Clone> {
     default_ttl: Option<Duration>,
-    #[derivative(Debug="ignore")]
-    // #[derivative(Debug(format_with="path::to::my_fmt_fn"))] // TODO: print capacity and current size if possible
     int_cache: quick_cache::unsync::Cache<K,TtlEntry<V>>,
 }
 

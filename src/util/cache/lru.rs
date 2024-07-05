@@ -7,12 +7,9 @@ use super::{ AsyncCache, CacheFactory, CacheError, ttl_entry_to_res, TtlEntry, T
 
 
 
-#[derive(derivative::Derivative)]
-#[derivative(Debug)]
-pub struct LruAsyncCache <K, V:Clone> {
+#[derive(Debug)]
+pub struct LruAsyncCache <K: Hash + Eq, V:Clone> {
     default_ttl: Option<Duration>,
-    #[derivative(Debug="ignore")]
-    // #[derivative(Debug(format_with="path::to::my_fmt_fn"))] // TODO: print capacity and current size if possible
     int_cache: lru::LruCache<K,TtlEntry<V>>,
 }
 
@@ -43,6 +40,7 @@ impl <
         self.int_cache.put(key, TtlEntry::from(value, ttl, self.default_ttl));
         Ok(())
     }
+    //noinspection DuplicatedCode
     async fn get(&mut self, key: &Self::Key) -> Result<Option<Self::Value>, CacheError> {
         ttl_entry_to_res(self.int_cache.get(key).map(|v|v.clone()))
     }
