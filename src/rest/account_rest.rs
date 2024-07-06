@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use axum::{
-    Router, Json, routing::get as GET, extract::{ Path, State, },
+    Router, Json, routing::{ get as GET, post as POST }, extract::{ Path, State, },
 };
 use tracing::{ debug, info /*, error*/ };
 use log::{ debug as log_debug, info as log_info /*, error as log_error*/ };
@@ -32,6 +32,11 @@ pub fn accounts_rest_router <
         .route("/account/:account_id", GET(call_rest_get_user_account::<AccountS>))
         .with_state(shared_state.clone())
         .role_required(Role::Read)
+        .merge(Router::new()
+            .route("/validate_test/input_validate_1", POST(call_rest_input_validate_by_validator::<AccountS>))
+            // .route("/validate_test/input_validate_2", POST(call_rest_input_validate_by_garde::<AccountS>))
+            .route("/validate_test/input_validate_3", POST(call_rest_input_validate_by_validify::<AccountS>))
+        ).with_state(shared_state.clone())
         ;
 
     accounts_router
@@ -112,4 +117,73 @@ fn map_account_to_rest(account: entity::Account) -> dto::Account {
         created_at,
         updated_at,
     }
+}
+
+use axum_valid::Valid;
+async fn call_rest_input_validate_by_validator <
+    AccountS: AccountService + 'static,
+>(State(_rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>, Valid(Json(input)): Valid<Json<ValidatedInput1>>)
+  -> Result<Json<String>, RestAppError> {
+    info!("call_rest_input_validate: input = {:?}", input);
+
+    // rest_service.input_validate().to_json().await
+    Ok(Json("Ok_1".to_string()))
+}
+use validator::Validate;
+#[derive(Debug, validator::Validate)]
+#[derive(serde::Serialize, serde::Deserialize)]
+struct ValidatedInput1 {
+    #[validate(nested)]
+    email_parent_filed: ValidatedSubInput1,
+}
+#[derive(Debug, validator::Validate)]
+#[derive(serde::Serialize, serde::Deserialize)]
+struct ValidatedSubInput1 {
+    #[validate(email)]
+    email33: String,
+}
+
+// !! Grade does not work for me and there strange tricks for 'state'.
+/*
+// use garde::Valid;
+use axum_valid::Garde;
+// use axum_valid::ValidationRejection::Valid;
+async fn call_rest_input_validate_by_garde <
+    AccountS: AccountService + 'static,
+>(State(rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>, Garde(Json(input)): Garde<Json<ValidatedInput2>>)
+    -> Result<Json<String>, RestAppError> {
+    info!("call_rest_input_validate: input = {:?}", input);
+
+    // rest_service.input_validate().to_json().await
+    Ok(Json("Ok".to_string()))
+}
+#[derive(Debug, garde::Validate)]
+#[derive(serde::Serialize, serde::Deserialize)]
+struct ValidatedInput2 {
+    #[garde(skip)]
+    email: String,
+}
+*/
+
+use axum_valid::{ Validified, Modified };
+async fn call_rest_input_validate_by_validify <
+    AccountS: AccountService + 'static,
+>(State(_rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>, Validified(Json(input)): Validified<Json<ValidatedInput3>>)
+  -> Result<Json<String>, RestAppError> {
+    info!("call_rest_input_validate: input = {:?}", input);
+    Ok(Json("Ok_3".to_string()))
+}
+
+#[derive(Debug, validify::Validify, validify::Payload)]
+#[derive(serde::Deserialize)]
+struct ValidatedInput3 {
+    #[validate]
+    email_parent_filed: ValidatedSubInput3,
+}
+#[derive(Debug, validify::Validify, validify::Payload)]
+#[derive(serde::Deserialize)]
+struct ValidatedSubInput3 {
+    #[validate(email)]
+    // #[validate(length(min = 1, max = 4))]
+    email33: String,
 }

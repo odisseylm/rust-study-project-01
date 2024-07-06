@@ -127,7 +127,7 @@ time = "0.3.36"
 #type-rules = { version = "0.2.3", features = ["derive", "regex", "serde"] }
 type-rules = { version = "0.2.3", features = ["derive", "regex"] }
 
-axum = "0.7.5"
+axum = {  version = "0.7.5" , features = ["default", "macros"] }
 async-trait = "0.1.80"
 #axum = {  version = "0.7.5", features = ["default", "tracing", ] }
 #tower = "0.4.13"
@@ -158,8 +158,12 @@ axum-typed-routing = "0.2.1"
 axum_session_auth = "0.14.0"
 axum_static = "1.7.1"
 #axum-request-validator = "0.1.0"
-axum-valid = "0.18.0"
+axum-valid = { version = "0.18.0", features = ["default", "validify", "validator", "basic"] }
+#axum-valid = { version = "0.18.0", features = ["default", "full_garde", "basic"] }
+#axum-valid = { version = "0.18.0", features = ["garde", "basic"], default-features = false }
 validator = {  version = "0.18.1", features = ["derive", "validator_derive"] }
+#garde = { version = "0.20.0", features = ["derive"] }
+validify = "1.4.0"
 #axum_typed_multipart = "0.11.1"
 #axum_static_include = "0.3.0"
 jsonwebtoken = "9.3.0"
