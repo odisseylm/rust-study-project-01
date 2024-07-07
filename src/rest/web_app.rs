@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use anyhow::anyhow;
+use axum::error_handling::{HandleError, HandleErrorLayer};
 use axum::Router;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
@@ -37,9 +38,9 @@ fn create_prod_dependencies() -> Result<Dependencies<AccountServiceImpl>, anyhow
 fn init_logger() {
 
     // Set environment for logging configuration
-    if std::env::var("RUST_LOG").is_err() {
-        std::env::set_var("RUST_LOG", "info");
-    }
+    // if std::env::var("RUST_LOG").is_err() {
+    //     std::env::set_var("RUST_LOG", "info");
+    // }
 
     // env_logger::init();
     // env_logger::builder()
@@ -52,7 +53,11 @@ fn init_logger() {
 
     // Start logging to console
     tracing_subscriber::registry()
-        .with(EnvFilter::from_default_env())
+        .with(
+            EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "info,example_error_handling=debug,tower_http=debug,validator=debug,validify=debug,axum_valid=debug".into()),
+        )
+        //.with(EnvFilter::from_default_env())
         .with(tracing_subscriber::fmt::Layer::default().compact())
         .init();
 
@@ -100,6 +105,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     let login_route = composite_login_router();
 
     let app_router = Router::new()
+        // .route_service("/", HandleError::new(fallible_service, handle_error) )
         .merge(login_route)
         .merge(protected_page_01_router())
         .nest("/api", Router::new()
@@ -115,16 +121,126 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
         )
         .layer(
             ServiceBuilder::new()
-                .layer(TraceLayer::new_for_http())
+                .map_err(|err| {
+                    error!("### error: {:?}", err);
+                    err
+                })
+                .layer(TraceLayer::new_for_http()
+                    /*
+                    // From https://github.com/tokio-rs/axum/blob/main/examples/error-handling/src/main.rs
+                    //
+                    //
+                    // Create our own span for the request and include the matched path. The matched
+                    // path is useful for figuring out which handler the request was routed to.
+                    .make_span_with(|req: &Request| {
+                        let method = req.method();
+                        let uri = req.uri();
+
+                        // axum automatically adds this extension.
+                        let matched_path = req
+                            .extensions()
+                            .get::<MatchedPath>()
+                            .map(|matched_path| matched_path.as_str());
+
+                        tracing::debug_span!("request", %method, %uri, matched_path)
+                    })
+                    // By default `TraceLayer` will log 5xx responses but we're doing our specific
+                    // logging of errors so disable that
+                    .on_failure(())
+                    */
+                )
                 .layer(auth_layer)
                 // additional state which will/can be accessible for ALL route methods
                 // .layer(Extension(Arc::new(State22 { x: "963" })))
+                //.layer(HandleErrorLayer::new(handle_error))
+                //.timeout(Duration::from_secs(10))
+                // .map_err(|err: validator::ValidationError| {
+                .map_err(|err| {
+                    error!("### error 455: {:?}", err);
+                    err
+                })
+                // .map_result(|result: Result<Self::Response, Self::Error>| match result {
+                /*
+                .map_result(|result: Result<_, _>| match result {
+                    // If the error indicates that no records matched the query, return an empty
+                    // `Vec` instead.
+                    // Err(DbError::NoRecordsFound) => Ok(Vec::new()),
+                    // Propagate all other responses (`Ok` and `Err`) unchanged
+
+                    // x => x,
+                    Ok(ref _ok) => {
+                        let temp: &axum::response::Response = _ok;
+                        info!("### error 456: {:?}", _ok);
+                        if _ok.status() != 200 {
+
+                        }
+                        result},
+                    Err(ref _err) =>
+                        result,
+                })
+                */
+                /*
+                .map_result(|result: Result<_, validator::ValidationError>| match result {
+                    // If the error indicates that no records matched the query, return an empty
+                    // `Vec` instead.
+                    // Err(DbError::NoRecordsFound) => Ok(Vec::new()),
+                    // Propagate all other responses (`Ok` and `Err`) unchanged
+
+                    // x => x,
+                    Ok(ref _ok) => {
+                        // let temp: &axum::response::Response = _ok;
+                        // info!("### error 456: {:?}", _ok);
+                        // if _ok.status() != 200 {
+                        //
+                        // }
+                        result},
+                    Err(ref _err) =>
+                        result,
+                })
+                */
         );
 
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await ?;
     axum::serve(listener, app_router).await ?;
     Ok(())
+}
+
+
+use axum::{
+    BoxError,
+    response::IntoResponse,
+    http::{StatusCode, Method, Uri},
+    routing::get,
+};
+use tower::{ timeout::error::Elapsed};
+use std::time::Duration;
+use askama_axum::Response;
+use log::{error, info};
+// use axum_handle_error_extract::HandleErrorLayer;
+
+async fn handle_error_2() -> Result<String, StatusCode> {
+    // ...
+    todo!()
+}
+
+
+async fn handle_error(
+    method: Method,
+    uri: Uri,
+    error: BoxError,
+) -> impl IntoResponse {
+    if error.is::<Elapsed>() {
+        (
+            StatusCode::REQUEST_TIMEOUT,
+            format!("{} {} took too long", method, uri),
+        )
+    } else {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("{} {} failed: {}", method, uri, error),
+        )
+    }
 }
 
 

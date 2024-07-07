@@ -219,11 +219,18 @@ workspace = false
 alias = "docker-build"
 
 
+[tasks.get-ubuntu-info-vars]
+workspace = false
+# get Ubuntu bersion => cat /etc/os-release | grep VERSION_ID | sed -e "s/^VERSION_ID=\"//" -e "s/\"//"
+env = { UBUNTU_VERSION = { script = ["cat /etc/os-release | grep VERSION_ID | sed -e \"s/^VERSION_ID=\\\"//\"  -e \"s/\\\"//\""] } }
+script = "echo UBUNTU_VERSION: ${UBUNTU_VERSION}"
+
 
 [tasks.build-debug-local-docker]
 command = "docker"
 args = ["build", "--file", "docker/Dockerfile-local",
     "--tag", "rust-mvv-webapp-debug",
+    "--build-arg", "UBUNTU_VERSION=${UBUNTU_VERSION}",
     # ?? How to reuse it?
     #${DOCKER_IMAGE_LABELS},
     "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
@@ -240,6 +247,7 @@ args = ["build", "--file", "docker/Dockerfile-local",
     ".",]
 workspace = false
 dependencies = [
+    "get-ubuntu-info-vars",
     "build",
     # "test",
     "private_docker_build_prepare_labels",

@@ -2,6 +2,11 @@
 
 
 
+Investigate
+
+ - crate typewit
+ - crate derivative
+   - try to replace manual written Debug/Display by macros
 # Build
 
  - `cargo build`
@@ -87,6 +92,9 @@
      - https://hasura.io/blog/top-psql-commands-and-flags-you-need-to-know-postgresql
      - https://www.oreilly.com/library/view/practical-postgresql/9781449309770/ch04s01.html
      - https://www.postgresql.org/docs/current/app-psql.html
+ - `curl -H "Authorization: Basic dm92YW4tcmVhZDpxd2VydHk=" http://localhost:3000/api/current_user/account/456`
+ - `curl -H "Authorization: Basic dm92YW4tcmVhZDpxd2VydHk=" http://localhost:8101/api/current_user/account/456`
+ - `curl --verbose -X POST -H "Content-Type: application/json" -d '{"email_parent_filed":{"email33":"a@b@c"}}' http://localhost:3000/api/current_user/validate_test/input_validate_1`
 
 
 Docs test

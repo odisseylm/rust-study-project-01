@@ -119,7 +119,8 @@ fn map_account_to_rest(account: entity::Account) -> dto::Account {
     }
 }
 
-use axum_valid::Valid;
+// use axum_valid::Valid as Valid;
+use crate::rest::valid::validator::Valid as Valid;
 async fn call_rest_input_validate_by_validator <
     AccountS: AccountService + 'static,
 >(State(_rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>, Valid(Json(input)): Valid<Json<ValidatedInput1>>)
