@@ -1,5 +1,4 @@
 
-
 pub mod validator {
     use core::fmt;
     use core::fmt::Display;
@@ -11,6 +10,7 @@ pub mod validator {
     use http::request::Parts;
     use log::error;
     use validator::Validate;
+    use crate::rest::log::{ ConnectionInfo, ConnectionInfoRef };
 
 
     #[derive(Debug, Clone, Copy, Default)]
@@ -26,12 +26,13 @@ pub mod validator {
     }
 
     impl<T: Display> Display for Valid<T> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             self.0.fmt(f)
         }
     }
 
     impl<E> Valid<E> {
+        #[allow(dead_code)]
         /// Consume the `Valid` extractor and returns the inner type.
         pub fn into_inner(self) -> E { self.0 }
     }
@@ -74,11 +75,11 @@ pub mod validator {
         fn into_response(self) -> Response {
             match self {
                 ValidationRejection::Valid(v) => {
-                    error!("### error 567, ValidationRejection::into_response() : {}", v);
+                    // error!("### error 567, ValidationRejection::into_response() : {}", v);
                     (VALIDATION_ERROR_STATUS, v.to_string()).into_response()
                 }
                 ValidationRejection::Inner(e) => {
-                    error!("### error 568, ValidationRejection::into_response() ");
+                    // error!("### error 568, ValidationRejection::into_response() ");
                     e.into_response()
                 },
             }
@@ -89,18 +90,25 @@ pub mod validator {
     impl<State, Extractor> FromRequest<State> for Valid<Extractor>
     where
         State: Send + Sync,
-        Extractor: HasValidate + FromRequest<State>,
+        Extractor: HasValidate + FromRequest<State> + Send + Sync,
         Extractor::Validate: Validate,
     {
         type Rejection = ValidRejection<<Extractor as FromRequest<State>>::Rejection>;
 
         async fn from_request(req: Request, state: &State) -> Result<Self, Self::Rejection> {
+            // optional: tracing can show connection info (without user) automatically
+            let connect_info = ConnectionInfo::from_request(&req);
+
             let inner = Extractor::from_request(req, state)
                 .await
                 .map_err(ValidRejection::Inner)?;
-            let v_err = inner.get_validate().validate();
-            error!("### Valid::from_request(), 890 v_err: {:?}", v_err);
-            v_err ?;
+            let v_res = inner.get_validate().validate();
+
+            if v_res.is_err() {
+                error!("### ValidationError (1) [{connect_info:?}] : {v_res:?}");
+            }
+
+            v_res ?;
             Ok(Valid(inner))
         }
     }
@@ -109,7 +117,7 @@ pub mod validator {
     impl<State, Extractor> FromRequestParts<State> for Valid<Extractor>
     where
         State: Send + Sync,
-        Extractor: HasValidate + FromRequestParts<State>,
+        Extractor: HasValidate + FromRequestParts<State> + Send + Sync,
         Extractor::Validate: Validate,
     {
         type Rejection = ValidRejection<<Extractor as FromRequestParts<State>>::Rejection>;
@@ -118,9 +126,13 @@ pub mod validator {
             let inner = Extractor::from_request_parts(parts, state)
                 .await
                 .map_err(ValidRejection::Inner)?;
-            let v_err = inner.get_validate().validate();
-            error!("### Valid::from_request(), 891 v_err: {:?}", v_err);
-            v_err ?;
+            let v_res = inner.get_validate().validate();
+            if v_res.is_err() {
+                // optional: tracing can show connection info (without user) automatically
+                let connect_info = ConnectionInfoRef::from_request_parts(parts);
+                error!("### ValidationError (2) [{connect_info:?}] : {v_res:?}");
+            }
+            v_res?;
             Ok(Valid(inner))
         }
     }

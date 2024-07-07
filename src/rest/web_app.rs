@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use anyhow::anyhow;
-use axum::error_handling::{HandleError, HandleErrorLayer};
+// use axum::error_handling::{ HandleError, HandleErrorLayer };
 use axum::Router;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
@@ -207,18 +207,17 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
 }
 
 
-use axum::{
-    BoxError,
-    response::IntoResponse,
-    http::{StatusCode, Method, Uri},
-    routing::get,
-};
-use tower::{ timeout::error::Elapsed};
-use std::time::Duration;
-use askama_axum::Response;
-use log::{error, info};
+// use axum::{
+//     // BoxError,
+//     // response::IntoResponse,
+//     // http::{StatusCode, Method, Uri},
+//     // routing::get,
+// };
+// use tower::{ timeout::error::Elapsed};
+use log::{ error /*, info*/ };
 // use axum_handle_error_extract::HandleErrorLayer;
 
+/*
 async fn handle_error_2() -> Result<String, StatusCode> {
     // ...
     todo!()
@@ -242,6 +241,7 @@ async fn handle_error(
         )
     }
 }
+*/
 
 
 // Returns without extension
