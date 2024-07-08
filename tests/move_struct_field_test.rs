@@ -32,7 +32,7 @@ impl S2 {
 fn test_moving_mut_struct_field() {
 
     let mut s1 = S1 {
-        s_f: "1".to_string(),
+        s_f: "1".to_test_string(),
         bt_f: std::backtrace::Backtrace::force_capture(),
     };
     println!("s: {:?}", s1);
@@ -51,7 +51,7 @@ fn test_moving_mut_struct_field() {
 fn test_moving_struct_field() {
 
     let s1 = S2 {
-        s_f: "1".to_string(),
+        s_f: "1".to_test_string(),
         bt_f: std::cell::Cell::new(std::backtrace::Backtrace::force_capture()),
     };
     println!("s: {:?}", s1);
@@ -78,10 +78,11 @@ impl<'a> Into<Cow<'a, str>> for String {
 
 
 use std::borrow::Cow;
+use project01::util::test_unwrap::TestSringOps;
 
 #[test]
 fn cow_test() {
-    let s: String = "qwerty".to_string();
+    let s: String = "qwerty".to_test_string();
     println!("s: {}", s);
 
     let b = Cow::Borrowed(&s);
@@ -108,7 +109,7 @@ fn _modulo_3(input: u8) -> Cow<'static, str> {
 #[test]
 fn move_to_slice_test() {
 
-    let string = "qwerty"; //.to_string();
+    let string = "qwerty";
     println!("### string: {}", string);
 
     // let str = string[0..2];

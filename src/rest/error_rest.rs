@@ -71,7 +71,7 @@ impl IntoResponse for RestAppError {
             RestAppError::Unauthenticated =>
                 StatusCode::UNAUTHORIZED.into_response(),
             RestAppError::Unauthorized =>
-                ( StatusCode::FORBIDDEN, "Unauthorized".to_string() ).into_response(),
+                ( StatusCode::FORBIDDEN, "Unauthorized" ).into_response(),
             RestAppError::IllegalArgument(ref err) =>
                 ( StatusCode::BAD_REQUEST, format!("Illegal arguments: {}", err) ).into_response(),
             RestAppError::HttpResponseResultError(response) => response,

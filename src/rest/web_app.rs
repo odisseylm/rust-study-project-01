@@ -11,7 +11,7 @@ use crate::rest::{
     account_rest::{ CurrentUserAccountRest, accounts_rest_router },
 };
 use crate::rest::auth::user_perm_provider::SqlUserProvider;
-use crate::util::env::env_var_or_else;
+use crate::util::env::env_var;
 use crate::util::string::remove_optional_suffix;
 use crate::web::{
     auth::composite_login_router,
@@ -77,8 +77,9 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     let env_filename = format!(".{}.env", current_exe_name() ?);
     let dotenv_res = dotenv::from_filename(env_filename.as_str());
 
-    let port_env = env_var_or_else("SERVER_PORT", || "3000".to_string()) ?;
-    let port: u32 = FromStr::from_str(port_env.as_str())
+    let port_env = env_var("SERVER_PORT") ?;
+    let port_env = port_env.as_deref().unwrap_or("3000");
+    let port: u32 = FromStr::from_str(port_env)
         .map_err(|_|anyhow!("SERVER_PORT value [{}] has wrong format.", port_env)) ?;
 
     init_logger();
@@ -220,7 +221,7 @@ use log::{ error /*, info*/ };
 /*
 async fn handle_error_2() -> Result<String, StatusCode> {
     // ...
-    todo!()
+    t o d o!()
 }
 
 

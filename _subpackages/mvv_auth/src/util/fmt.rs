@@ -85,12 +85,12 @@ mod tests {
     fn test_iter_to_display() {
 
         let v = TestIterVec(vec!(1, 2, 3));
-        assert_eq!(v.to_string(), "TestIterVec { 1, 2, 3 }");
+        assert_eq!(v.to_test_string(), "TestIterVec { 1, 2, 3 }");
 
         let s = TestIterSet(HashSet::from([3, 4, 5]));
         // It is unstable test since order in hash set is unpredictable
-        // assert_eq!(s.to_string(), "TestIterSet { 5, 4, 3 }")
-        let display_str = s.to_string();
+        // assert_eq!(s.to_test_string(), "TestIterSet { 5, 4, 3 }")
+        let display_str = s.to_test_string();
         assert_contains!(display_str, "TestIterSet { ");
         assert_contains!(display_str, "3");
         assert_contains!(display_str, "4");
@@ -101,12 +101,12 @@ mod tests {
     fn test_into_iter_to_display() {
 
         let v = TestIntoIterVec(vec!(1, 2, 3));
-        assert_eq!(v.to_string(), "TestIntoIterVec { 1, 2, 3 }");
+        assert_eq!(v.to_test_string(), "TestIntoIterVec { 1, 2, 3 }");
 
         let s = TestIntoIterSet(HashSet::from([3, 4, 5]));
         // It is unstable test since order in hash set is unpredictable
-        // assert_eq!(s.to_string(), "TestIntoIterSet { 5, 4, 3 }")
-        let display_str = s.to_string();
+        // assert_eq!(s.to_test_string(), "TestIntoIterSet { 5, 4, 3 }")
+        let display_str = s.to_test_string();
         assert_contains!(display_str, "TestIntoIterSet { ");
         assert_contains!(display_str, "3");
         assert_contains!(display_str, "4");

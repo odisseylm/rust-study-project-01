@@ -99,30 +99,30 @@ macro_rules! login_required23 {
 
 
 async fn handler(state22: State<State22>) {}
-async fn handler_1_protected_with_state(state: Extension<Arc<State22>>, auth_session: AuthSession) -> Json<String> {
+async fn handler_1_protected_with_state(state: Extension<Arc<State22>>, auth_session: AuthSession) -> Json<&'static str> {
     println!("### handler1 PROTECTED with_state, state: {}", state.x);
     // ...
-    Json("bla-bla 22".to_string())
+    Json("bla-bla 22")
 }
-async fn handler_2_open_with_state(state: Extension<Arc<State22>>, _auth_session: AuthSession) -> Json<String> {
+async fn handler_2_open_with_state(state: Extension<Arc<State22>>, _auth_session: AuthSession) -> Json<&'static str> {
     println!("### handler2 OPEN state, state: {}", state.x);
     // ...
-    Json("bla-bla 23".to_string())
+    Json("bla-bla 23")
 }
-async fn handler_3_protected_with_state(state: State<State11>, _auth_session: AuthSession) -> Json<String> {
+async fn handler_3_protected_with_state(state: State<State11>, _auth_session: AuthSession) -> Json<&'static str> {
     println!("### handler3 PROTECTED with_state, state11: {}", state.x);
     // ...
-    Json("bla-bla 22".to_string())
+    Json("bla-bla 22")
 }
-async fn handler_4_open_with_state(state: Extension<Arc<State22>>, _auth_session: AuthSession) -> Json<String> {
+async fn handler_4_open_with_state(state: Extension<Arc<State22>>, _auth_session: AuthSession) -> Json<&'static str> {
     println!("### handler4 OPEN with_state, state: {}", state.x);
     // ...
-    Json("bla-bla 23".to_string())
+    Json("bla-bla 23")
 }
-async fn handler22(auth_session: AuthSession) -> Json<String> {
+async fn handler22(auth_session: AuthSession) -> Json<&'static str> {
     println!("### handler22");
     // ...
-    Json("bla-bla 22".to_string())
+    Json("bla-bla 22")
 }
 
 

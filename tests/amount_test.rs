@@ -16,6 +16,7 @@ use assertables::{ assert_contains, assert_contains_as_result };
 use assertables::{ assert_starts_with, assert_starts_with_as_result };
 use project01::util::backtrace::is_anyhow_backtrace_enabled;
 use project01::util::enable_backtrace;
+use project01::util::test_unwrap::TestSringOps;
 
 
 // private for testing
@@ -25,18 +26,18 @@ fn bd(v: &str) -> BigDecimal { BigDecimal::from_str(v).test_unwrap() }
 #[test]
 fn amount_create() {
     let amount1 = Amount::new(bd("123.456"), USD);
-    assert_eq!(amount1.to_string(), "123.456 USD");
+    assert_eq!(amount1.to_test_string(), "123.456 USD");
 
     let amount1 = amount(bd("124.456"), EUR);
-    assert_eq!(amount1.to_string(), "124.456 EUR");
+    assert_eq!(amount1.to_test_string(), "124.456 EUR");
 
-    assert_eq!(Amount::with_str_amount("10.050", USD).test_unwrap().to_string(), "10.050 USD");
+    assert_eq!(Amount::with_str_amount("10.050", USD).test_unwrap().to_test_string(), "10.050 USD");
 
-    let amount_string: String = "10.0501".to_string();
-    assert_eq!(Amount::with_str_amount(amount_string.as_str(), USD).test_unwrap().to_string(), "10.0501 USD");
+    let amount_string: String = "10.0501".to_test_string();
+    assert_eq!(Amount::with_str_amount(amount_string.as_str(), USD).test_unwrap().to_test_string(), "10.0501 USD");
 
-    // assert_eq!(Amount::with_str_amount("10.050", USD).test_unwrap().to_string(), "10.050 USD");
-    // assert_eq!(Amount::with_string_amount2("10.0501".to_string(), USD).test_unwrap().to_string(), "10.0501 USD");
+    // assert_eq!(Amount::with_str_amount("10.050", USD).test_unwrap().to_test_string(), "10.050 USD");
+    // assert_eq!(Amount::with_string_amount2("10.0501".to_test_string(), USD).test_unwrap().to_test_string(), "10.0501 USD");
 }
 
 
@@ -45,19 +46,19 @@ fn amount_base_test() {
     let am = Amount::with_str_amount("10.050", USD);
 
     let amount = am.test_unwrap();
-    assert_eq!(amount.to_string(), "10.050 USD");
+    assert_eq!(amount.to_test_string(), "10.050 USD");
 
-    // assert_eq!(amount.value.to_string(), "10.050");
-    // assert_eq!(amount.value.to_string(), "10.050");
+    // assert_eq!(amount.value.to_test_string(), "10.050");
+    // assert_eq!(amount.value.to_test_string(), "10.050");
 
-    assert_eq!(amount.value_ref().to_string(), "10.050");
-    assert_eq!(amount.value_ref().to_string(), "10.050");
+    assert_eq!(amount.value_ref().to_test_string(), "10.050");
+    assert_eq!(amount.value_ref().to_test_string(), "10.050");
 
     // repeatable calls, to test borrowing/moving
-    assert_eq!(amount.value_bd_ref().to_string(), "10.050");
-    assert_eq!(amount.value_bd_ref().to_string(), "10.050");
+    assert_eq!(amount.value_bd_ref().to_test_string(), "10.050");
+    assert_eq!(amount.value_bd_ref().to_test_string(), "10.050");
 
-    assert_eq!(amount.currency().to_string(), "USD");
+    assert_eq!(amount.currency().to_test_string(), "USD");
 }
 
 
@@ -65,25 +66,25 @@ fn amount_base_test() {
 fn amount_should_be_immutable() {
     let amount = Amount::with_str_amount_unchecked("10.050", EUR);
 
-    assert_eq!(amount.to_string(), "10.050 EUR");
+    assert_eq!(amount.to_test_string(), "10.050 EUR");
 
     // amount.currency() = EUR; // compilation error 'invalid left-hand side of assignment' - OK
-    // assert_eq!(amount.to_string(), "10.050 EUR"); // not changed
+    // assert_eq!(amount.to_test_string(), "10.050 EUR"); // not changed
 
     // amount.value() = &bd("22.022"); // compilation error 'invalid left-hand side of assignment' - OK
-    // assert_eq!(amount.to_string(), "10.050 EUR"); // not changed
+    // assert_eq!(amount.to_test_string(), "10.050 EUR"); // not changed
 
     // amount.value_ref() = bd("22.022").to_ref(); // compilation error 'invalid left-hand side of assignment' - OK
-    // assert_eq!(amount.to_string(), "10.050 EUR"); // not changed
+    // assert_eq!(amount.to_test_string(), "10.050 EUR"); // not changed
 
     amount.value_ref().inverse();
-    assert_eq!(amount.to_string(), "10.050 EUR"); // not changed
+    assert_eq!(amount.to_test_string(), "10.050 EUR"); // not changed
 
     amount.with_value(bd("22.22"));
-    assert_eq!(amount.to_string(), "10.050 EUR"); // not changed
+    assert_eq!(amount.to_test_string(), "10.050 EUR"); // not changed
 
     // amount.with_currency(USD);
-    // assert_eq!(amount.to_string(), "10.050 EUR"); // not changed
+    // assert_eq!(amount.to_test_string(), "10.050 EUR"); // not changed
 }
 
 
@@ -93,34 +94,34 @@ fn amount_mutability_test() {
     let am = Amount::with_str_amount("10.050", make_currency!("JPY"));
 
     let mut amount = am.test_unwrap();
-    assert_eq!(amount.to_string(), "10.050 JPY");
+    assert_eq!(amount.to_test_string(), "10.050 JPY");
 
     // amount.currency() = EUR; // compilation error 'invalid left-hand side of assignment' - OK
-    // assert_eq!(amount.to_string(), "10.050 JPY"); // not changed
+    // assert_eq!(amount.to_test_string(), "10.050 JPY"); // not changed
 
     // amount.value() = &bd("22.022"); // compilation error 'invalid left-hand side of assignment' - OK
-    // assert_eq!(amount.to_string(), "10.050 JPY"); // not changed
+    // assert_eq!(amount.to_test_string(), "10.050 JPY"); // not changed
 
     // amount.value_ref() = bd("22.022").to_ref(); // compilation error 'invalid left-hand side of assignment' - OK
-    // assert_eq!(amount.to_string(), "10.050 JPY"); // not changed
+    // assert_eq!(amount.to_test_string(), "10.050 JPY"); // not changed
 
     amount.value_ref().inverse();
-    assert_eq!(amount.to_string(), "10.050 JPY"); // not changed
+    assert_eq!(amount.to_test_string(), "10.050 JPY"); // not changed
 
     let new_amount = amount.with_value(bd("22.22"));
-    assert_eq!(amount.to_string(), "10.050 JPY"); // not changed
-    assert_eq!(new_amount.to_string(), "22.22 JPY"); // not changed
+    assert_eq!(amount.to_test_string(), "10.050 JPY"); // not changed
+    assert_eq!(new_amount.to_test_string(), "22.22 JPY"); // not changed
 
     // let new_amount = amount.with_currency(make_currency!("BRL"));
-    // assert_eq!(amount.to_string(), "10.050 JPY"); // not changed
-    // assert_eq!(new_amount.to_string(), "10.050 BRL"); // not changed
+    // assert_eq!(amount.to_test_string(), "10.050 JPY"); // not changed
+    // assert_eq!(new_amount.to_test_string(), "10.050 BRL"); // not changed
 }
 
 
 #[test]
 fn from_string() {
     let am = Amount::from_str(" \t \n 122.350  \tJPY ").test_unwrap();
-    assert_eq!(am.to_string(), "122.350 JPY");
+    assert_eq!(am.to_test_string(), "122.350 JPY");
     assert_eq!(*am.value_ref(), bd("122.350"));
     assert_eq!(am.value_bd_ref(), bd("122.350").to_ref());
     assert_eq!(am.currency(), make_currency!("JPY"));

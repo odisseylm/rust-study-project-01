@@ -39,7 +39,7 @@ mod arc_test {
     fn capture_and_to_string_backtrace_performance_test() {
         test_impl(N, "capture backtrace and convert to string", ||{
             let bt = Backtrace::force_capture();
-            bt.to_string();
+            bt.to_test_string();
         });
     }
 

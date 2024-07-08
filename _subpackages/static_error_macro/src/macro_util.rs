@@ -60,7 +60,8 @@ pub fn attr_list_as_string(attr: &syn::Attribute) -> Option<String> {
             use quote::ToTokens;
 
             let tokens: &proc_macro2::TokenStream = &meta_list.tokens;
-            let as_token_tee_2_vector: String = tokens.to_token_stream().into_iter().map(|t|{t.to_string()}).collect::<String>();
+            let as_token_tee_2_vector: String = tokens.to_token_stream().into_iter()
+                .map(|t|t.to_string()).collect::<String>();
             Some(as_token_tee_2_vector)
         }
         _ => None
@@ -76,7 +77,6 @@ pub fn find_enum_variant_attr<'a>(variant: & 'a syn::Variant, attr_name: & str) 
 pub fn type_path_to_string(path: &syn::TypePath) -> String {
     use quote::ToTokens;
     path.to_token_stream().to_string()
-    // path.path.segments.iter().map(|s| s.ident.to_string() ).collect::<String>()
 }
 #[allow(dead_code)]
 pub fn type_path_to_string_without_spaces(path: &syn::TypePath) -> String {
@@ -387,7 +387,7 @@ mod tests {
     use super::*;
 
     fn remove_spaces_from_type_str(str_type: &str) -> String {
-        remove_spaces_from_type_string(&str_type.to_string())
+        remove_spaces_from_type_string(&str_type.to_test_string())
     }
 
     #[test]

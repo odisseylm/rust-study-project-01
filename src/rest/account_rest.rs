@@ -124,11 +124,11 @@ use crate::rest::valid::validator::Valid as Valid;
 async fn call_rest_input_validate_by_validator <
     AccountS: AccountService + 'static,
 >(State(_rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>, Valid(Json(input)): Valid<Json<ValidatedInput1>>)
-  -> Result<Json<String>, RestAppError> {
+  -> Result<Json<&'static str>, RestAppError> {
     info!("call_rest_input_validate: input = {:?}", input);
 
     // rest_service.input_validate().to_json().await
-    Ok(Json("Ok_1".to_string()))
+    Ok(Json("Ok_1"))
 }
 use validator::Validate;
 #[derive(Debug, validator::Validate)]
@@ -156,7 +156,7 @@ async fn call_rest_input_validate_by_garde <
     info!("call_rest_input_validate: input = {:?}", input);
 
     // rest_service.input_validate().to_json().await
-    Ok(Json("Ok".to_string()))
+    Ok(Json("Ok"))
 }
 #[derive(Debug, garde::Validate)]
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -170,9 +170,9 @@ use axum_valid::{ Validified, /*Modified,*/ };
 async fn call_rest_input_validate_by_validify <
     AccountS: AccountService + 'static,
 >(State(_rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>, Validified(Json(input)): Validified<Json<ValidatedInput3>>)
-  -> Result<Json<String>, RestAppError> {
+  -> Result<Json<&'static str>, RestAppError> {
     info!("call_rest_input_validate: input = {:?}", input);
-    Ok(Json("Ok_3".to_string()))
+    Ok(Json("Ok_3"))
 }
 
 #[derive(Debug, validify::Validify, validify::Payload)]

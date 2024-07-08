@@ -347,6 +347,7 @@ trait Borrow222<T> {
 mod mutability_check {
     use std::borrow::Cow;
     use std::cell::RefCell;
+    use project01::util::test_unwrap::TestSringOps;
     // use std::ops::{Deref, DerefMut };
     // use project01::util::TestResultUnwrap;
 
@@ -497,8 +498,8 @@ mod mutability_check {
         // fdfdf = 124;
         // println!("### s: {:?}", fdfdf);
 
-        let s = "eggplant".to_string();
-        let s2 = "eggplant".to_string();
+        let s = "eggplant".to_test_string();
+        let s2 = "eggplant".to_test_string();
         assert_eq!(Cow::from(s), Cow::<'static, str>::Owned(s2));
 
         let mut v = 123;

@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use core::fmt::{ self, Debug, Display};
 use core::hash::Hash;
+use std::borrow::Borrow;
 
 use crate::{
     util::fmt::iterable_to_display,
@@ -10,6 +11,17 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct HashPermissionSet<Perm: Clone + Debug + Eq + Hash>(HashSet<Perm>);
+
+impl <Perm: Clone + Debug + Eq + Hash + Send + Sync> HashPermissionSet<Perm> {
+    #[inline]
+    #[allow(dead_code)] // it is optional method and is not used in prod code (sine HashPermissionSet is not used)
+    fn has_permission<Q: ?Sized>(&self, permission: &Q) -> bool
+        where
+            Perm: Borrow<Q>,
+            Q: Hash + Eq,    {
+        self.0.contains(permission)
+    }
+}
 
 impl <Perm: Clone + Debug + Eq + Hash + Send + Sync> PermissionSet for HashPermissionSet<Perm> {
     type Permission = Perm;
@@ -159,24 +171,28 @@ mod tests {
     fn hash_permission_set_for_string() {
 
         let ps = HashPermissionSet::<String>::new();
-        assert!(!ps.has_permission(&"1".to_string()));
-        assert!(!ps.has_permission(&"2".to_string()));
-        assert!(!ps.has_permission(&"4".to_string()));
+        assert!(!ps.has_permission("1"));
+        assert!(!ps.has_permission(&"1".to_test_string()));
+        assert!(!ps.has_permission("2"));
+        assert!(!ps.has_permission("4"));
 
-        let ps = HashPermissionSet::<String>::from_permission("2".to_string());
-        assert!(!ps.has_permission(&"1".to_string()));
-        assert!( ps.has_permission(&"2".to_string()));
-        assert!(!ps.has_permission(&"4".to_string()));
+        let ps = HashPermissionSet::<String>::from_permission("2".to_test_string());
+        assert!(! <HashPermissionSet<String> as PermissionSet>::has_permission(&ps, "1"));
+        // assert!(! <HashPermissionSet<String> as PermissionSet>::has_permission(&ps, &"1"));
+        assert!(!ps.has_permission(&"1".to_test_string()));
+        assert!(!ps.has_permission("1"));
+        assert!( ps.has_permission("2"));
+        assert!(!ps.has_permission("4"));
 
         let ps = HashPermissionSet::<String>::merge(
-            HashPermissionSet::<String>::from_permission("2".to_string()),
-            HashPermissionSet::<String>::from_permission("8".to_string()),
+            HashPermissionSet::<String>::from_permission("2".to_test_string()),
+            HashPermissionSet::<String>::from_permission("8".to_test_string()),
         );
-        assert!(!ps.has_permission(&"1".to_string()));
-        assert!( ps.has_permission(&"2".to_string()));
-        assert!(!ps.has_permission(&"4".to_string()));
-        assert!( ps.has_permission(&"8".to_string()));
-        assert!(!ps.has_permission(&"16".to_string()));
+        assert!(!ps.has_permission("1"));
+        assert!( ps.has_permission("2"));
+        assert!(!ps.has_permission("4"));
+        assert!( ps.has_permission("8"));
+        assert!(!ps.has_permission("16"));
         assert_eq!(ps.0.len(), 2);
     }
 

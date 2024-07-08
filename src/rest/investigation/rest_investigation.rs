@@ -57,7 +57,7 @@ async fn handler3 <
     axum::extract::State(_state): axum::extract::State<Arc<CurrentUserAccountRest<AccountS>>>,
 ) -> String {
     // ...
-    "Hello, World!".to_string()
+    "Hello, World!".to_test_string()
 }
 
 async fn handler4 <
@@ -67,7 +67,7 @@ async fn handler4 <
     axum::extract::State(_state): axum::extract::State<Arc<CurrentUserAccountRest<AccountS>>>,
 ) -> Json<String> {
     // ...
-    Json("Hello, World!".to_string())
+    Json("Hello, World!".to_test_string())
 }
 
 
@@ -98,7 +98,7 @@ async fn handler5 <
 
 ) -> Json<AccountDTO> {
     // ...
-    //Json("Hello, World!".to_string())
+    //Json("Hello, World!".to_test_string())
     todo!()
 }
 
@@ -118,7 +118,7 @@ async fn handler6 <
 // ) -> Result<Json< crate::rest::dto::Account >, anyhow::Error> {
     let aa: Result<(), anyhow::Error> = Ok(());
     let _aa2 = aa ?;
-    let ac: AccountDTO = state.get_user_account("678".to_string()).await.unwrap();
+    let ac: AccountDTO = state.get_user_account("678".to_test_string()).await.unwrap();
     Ok(Json(ac))
 
     // Ok(Json(ac))
@@ -263,6 +263,7 @@ impl Default for Pagination {
 // -------------------------------------------------------------------------------
 
 use core::future::Future;
+use crate::util::test_unwrap::TestSringOps;
 
 trait AsyncFnOnce0 {
     type Output;

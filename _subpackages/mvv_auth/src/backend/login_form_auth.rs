@@ -254,7 +254,7 @@ static REDIRECT_LOGIN_PAGE_CONTENT: & 'static str = r#"
 
 
 pub mod web {
-    use std::fmt::Debug;
+    use std::fmt::{Debug, Display};
     use core::hash::Hash;
     use askama::Template;
     use axum::{
@@ -275,8 +275,8 @@ pub mod web {
 
     #[derive(Template)]
     #[template(path = "mvv_auth/login_form/login.html")]
-    pub struct LoginTemplate {
-        pub message: Option<String>,
+    pub struct LoginTemplate <Msg: Display> {
+        pub message: Option<Msg>,
         pub next: Option<String>,
     }
 
@@ -335,7 +335,7 @@ pub mod web {
                 Ok(Some(user)) => user,
                 Ok(None) => {
                     return LoginTemplate {
-                            message: Some("Invalid credentials.".to_string()),
+                            message: Some("Invalid credentials."),
                             next: creds.next,
                         }
                         .into_response()
@@ -376,7 +376,7 @@ pub mod web {
         use crate::backend::{ LoginFormAuthBackend, psw_auth::PswUser };
         use crate::permission::PermissionSet;
 
-        pub async fn login(Query(NextUrl { next }): Query<NextUrl>) -> LoginTemplate {
+        pub async fn login(Query(NextUrl { next }): Query<NextUrl>) -> LoginTemplate<&'static str> {
             LoginTemplate { message: None, next }
         }
 

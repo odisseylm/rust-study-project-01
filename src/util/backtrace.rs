@@ -535,7 +535,8 @@ impl BacktraceCopyProvider for &usize {
 // T O D O: seems it does NOT work at all or are not stable
 pub fn enable_backtrace() {
     let to_enable_value = "full"; // or "1" or "full" ??
-    let rust_backtrace_cur_value: String = std::env::var("RUST_BACKTRACE").unwrap_or("".to_string());
+    let rust_backtrace_cur_value = std::env::var("RUST_BACKTRACE");
+    let rust_backtrace_cur_value: &str = rust_backtrace_cur_value.as_deref().unwrap_or("");
 
     if rust_backtrace_cur_value != to_enable_value {
         std::env::set_var("RUST_BACKTRACE", to_enable_value);

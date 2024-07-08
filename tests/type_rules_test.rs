@@ -3,6 +3,7 @@
 
 use chrono::prelude::*;
 use type_rules::prelude::*;
+use project01::util::test_unwrap::TestSringOps;
 use project01::util::TestResultUnwrap;
 
 #[derive(Validator)]
@@ -20,15 +21,15 @@ struct NewUser {
 #[ignore]
 fn validation_test_01() {
     let new_user = NewUser {
-        email: "examples@examples.com".to_string(),
-        password: "OPw$5%hJ".to_string(),
+        email: "examples@examples.com".to_test_string(),
+        password: "OPw$5%hJ".to_test_string(),
         birth_date: None,
     };
     assert!(new_user.check_validity().is_ok());
 
     let new_user = NewUser {
-        email: "examples@examples.com".to_string(),
-        password: "O".to_string(),
+        email: "examples@examples.com".to_test_string(),
+        password: "O".to_test_string(),
         birth_date: None,
     };
     assert!(new_user.check_validity().is_err()); //Value is too short

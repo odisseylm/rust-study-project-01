@@ -1,4 +1,5 @@
 use std::f64::consts::PI;
+use project01::util::test_unwrap::TestSringOps;
 use project01::util::TestOptionUnwrap;
 // use tuple_length::TupLen;
 use tuple_heter_iter;
@@ -8,7 +9,7 @@ use tuple_heter_iter;
 fn test_for_each_in_tuple_by_ref() {
     use tuple_heter_iter::{ TupleAccess, TupleLen };
 
-    let tuple_v = (123u8, "John", "Vovan".to_string(), PI);
+    let tuple_v = (123u8, "John", "Vovan".to_test_string(), PI);
     let tuple_of_refs = (&tuple_v.0, &tuple_v.1, &tuple_v.2, &tuple_v.3);
 
     {
@@ -20,10 +21,10 @@ fn test_for_each_in_tuple_by_ref() {
 
         tuple_heter_iter_macro::tuple_for_each_by_ref! { item_ref22, tuple_of_refs, {
             println!("### tuple_iter_test_125: {:?}", item_ref22); // How to fix 'item_ref' properly??
-            res.push(item_ref22.to_string());
+            res.push(item_ref22.to_test_string());
         }}
 
-        assert_eq!(res, vec!("123".to_string(), "John".to_string(), "Vovan".to_string(), PI.to_string()));
+        assert_eq!(res, vec!("123".to_test_string(), "John".to_test_string(), "Vovan".to_test_string(), PI.to_test_string()));
     }
 
     {
@@ -35,10 +36,10 @@ fn test_for_each_in_tuple_by_ref() {
 
         tuple_heter_iter_macro::tuple_for_each_by_ref! { item_ref22, tuple_of_refs, 4, {
             println!("### tuple_iter_test_125: {:?}", item_ref22); // How to fix 'item_ref' properly??
-            res.push(item_ref22.to_string());
+            res.push(item_ref22.to_test_string());
         }}
 
-        assert_eq!(res, vec!("123".to_string(), "John".to_string(), "Vovan".to_string(), PI.to_string()));
+        assert_eq!(res, vec!("123".to_test_string(), "John".to_test_string(), "Vovan".to_test_string(), PI.to_test_string()));
     }
 
     tuple_heter_iter::assert_tuple_len_is_4(&tuple_v);
@@ -57,12 +58,12 @@ fn test_for_each_in_tuple_by_ref() {
 fn forr_tuple_iter_test_125() {
     use tuple_heter_iter::TupleLen;
 
-    // let tuple_v = (123u8, "John", "Vovan".to_string(), PI);
+    // let tuple_v = (123u8, "John", "Vovan".to_test_string(), PI);
     // let tuple_of_refs = (&tuple_v.0, &tuple_v.1, &tuple_v.2, &tuple_v.3);
 
     use forr::forr;
 
-    // forr! { $ in (123u8, "John", "Vovan".to_string(), PI) {
+    // forr! { $ in (123u8, "John", "Vovan".to_test_string(), PI) {
     //
     //     }
     // }
@@ -83,7 +84,7 @@ fn forr_tuple_iter_test_125() {
 
     // forr! { $val:expr, $i:idx in [(2,), (2,3), ""] $*
     //     // println!("### in forr: {:?}", $val.tuple_len());
-    //     println!("### in forr: {:?}", $val.to_string());
+    //     println!("### in forr: {:?}", $val.to_test_string());
     // }
 
     let mut res = Vec::new();

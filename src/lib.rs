@@ -35,7 +35,7 @@ fn just_usage() {
     let usd_code_as_string = currency::EUR.code_as_string();
     println!("{}", usd_code_as_string);
 
-    let usd = Currency::new("USD".to_string());
+    let usd = Currency::new("USD".to__string());
     println!("{}", usd.u n w r a p());
 
     let brl = make_currency("BRL");

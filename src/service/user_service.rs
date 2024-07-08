@@ -12,9 +12,10 @@ struct UserServiceImpl {
 
 impl UserService for UserServiceImpl {
     async fn get_user(user_id: UserId) -> Result<User, anyhow::Error> {
+        use crate::util::test_unwrap::TestSringOps;
         Ok(User {
             id: user_id,
-            username: "Cheburan".to_string(),
+            username: "Cheburan".to_test_string(),
         })
     }
 }

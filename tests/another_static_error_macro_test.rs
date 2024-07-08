@@ -221,15 +221,16 @@ pub mod parse_amount_another_01 {
 
 use project01::util::backtrace::{is_anyhow_backtrace_enabled, NewBacktracePolicy};
 use project01::util::backtrace::BacktraceCopyProvider;
+use project01::util::test_unwrap::TestSringOps;
 
 #[test]
 fn test_currency_format_error_new() {
     use parse_currency_another_01::*;
 
     let err = CurrencyFormatError::new(ErrorKind::NoCurrency);
-    assert_contains!(err.backtrace.to_string(), "capture");
+    assert_contains!(err.backtrace.to_test_string(), "capture");
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_contains!(err.provide_backtrace().to_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "capture");
 }
 
 #[test]
@@ -237,25 +238,25 @@ fn test_currency_format_error_with_backtrace() {
     use parse_currency_another_01::*;
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::IncorrectCurrencyFormat, NewBacktracePolicy::Default);
-    assert_contains!(err.backtrace.to_string(), "capture");
+    assert_contains!(err.backtrace.to_test_string(), "capture");
     assert_eq!(err.kind, ErrorKind::IncorrectCurrencyFormat);
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Capture);
     if is_anyhow_backtrace_enabled() {
-        assert_contains!(err.backtrace.to_string(), "capture");
-        assert_contains!(err.provide_backtrace().to_string(), "capture");
+        assert_contains!(err.backtrace.to_test_string(), "capture");
+        assert_contains!(err.provide_backtrace().to_test_string(), "capture");
     } else {
-        assert_contains!(err.backtrace.to_string(), "Backtrace disabled");
-        assert_contains!(err.provide_backtrace().to_string(), "Backtrace disabled");
+        assert_contains!(err.backtrace.to_test_string(), "Backtrace disabled");
+        assert_contains!(err.provide_backtrace().to_test_string(), "Backtrace disabled");
     }
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::NoBacktrace);
-    assert_eq!(err.backtrace.to_string(), "Backtrace disabled");
-    assert_eq!(err.provide_backtrace().to_string(), "Backtrace disabled");
+    assert_eq!(err.backtrace.to_test_string(), "Backtrace disabled");
+    assert_eq!(err.provide_backtrace().to_test_string(), "Backtrace disabled");
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture);
-    assert_contains!(err.backtrace.to_string(), "force_capture");
-    assert_contains!(err.provide_backtrace().to_string(), "force_capture");
+    assert_contains!(err.backtrace.to_test_string(), "force_capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "force_capture");
 }
 
 #[test]
@@ -297,9 +298,9 @@ fn test_amount_format_error_new() {
     use parse_amount_another_01::*;
 
     let err = ParseAmountError::new(ErrorKind::NoCurrency);
-    assert_contains!(err.backtrace.to_string(), "capture");
+    assert_contains!(err.backtrace.to_test_string(), "capture");
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_contains!(err.provide_backtrace().to_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "capture");
 }
 
 
@@ -308,25 +309,25 @@ fn test_amount_format_error_with_backtrace() {
     use parse_amount_another_01::*;
 
     let err = ParseAmountError::with_backtrace(ErrorKind::IncorrectCurrency, NewBacktracePolicy::Default);
-    assert_contains!(err.backtrace.to_string(), "capture");
+    assert_contains!(err.backtrace.to_test_string(), "capture");
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
 
     let err = ParseAmountError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Capture);
     if is_anyhow_backtrace_enabled() {
-        assert_contains!(err.backtrace.to_string(), "capture");
-        assert_contains!(err.provide_backtrace().to_string(), "capture");
+        assert_contains!(err.backtrace.to_test_string(), "capture");
+        assert_contains!(err.provide_backtrace().to_test_string(), "capture");
     } else {
-        assert_contains!(err.backtrace.to_string(), "Backtrace disabled");
-        assert_contains!(err.provide_backtrace().to_string(), "Backtrace disabled");
+        assert_contains!(err.backtrace.to_test_string(), "Backtrace disabled");
+        assert_contains!(err.provide_backtrace().to_test_string(), "Backtrace disabled");
     }
 
     let err = ParseAmountError::with_backtrace(ErrorKind::IncorrectAmount, NewBacktracePolicy::NoBacktrace);
-    assert_eq!(err.backtrace.to_string(), "Backtrace disabled");
-    assert_eq!(err.provide_backtrace().to_string(), "Backtrace disabled");
+    assert_eq!(err.backtrace.to_test_string(), "Backtrace disabled");
+    assert_eq!(err.provide_backtrace().to_test_string(), "Backtrace disabled");
 
     let err = ParseAmountError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture);
-    assert_contains!(err.backtrace.to_string(), "force_capture");
-    assert_contains!(err.provide_backtrace().to_string(), "force_capture");
+    assert_contains!(err.backtrace.to_test_string(), "force_capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "force_capture");
 }
 
 
@@ -336,44 +337,44 @@ fn test_amount_format_error_with_source() {
 
     let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::NoSource);
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_contains!(err.backtrace.to_string(), "capture");
-    assert_contains!(err.provide_backtrace().to_string(), "capture");
+    assert_contains!(err.backtrace.to_test_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "capture");
 
     let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::CurrencyFormatError(
         parse_currency_another_01::CurrencyFormatError::with_backtrace(parse_currency_another_01::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture)));
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_contains!(err.backtrace.to_string(), "force_capture");
-    assert_contains!(err.provide_backtrace().to_string(), "force_capture");
+    assert_contains!(err.backtrace.to_test_string(), "force_capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "force_capture");
 
     let err = ParseAmountError::with_from(ErrorKind::NoCurrency,
         parse_currency_another_01::CurrencyFormatError::with_backtrace(parse_currency_another_01::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture));
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_contains!(err.backtrace.to_string(), "force_capture");
-    assert_contains!(err.provide_backtrace().to_string(), "force_capture");
+    assert_contains!(err.backtrace.to_test_string(), "force_capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "force_capture");
 
     let err = ParseAmountError::with_source(ErrorKind::IncorrectCurrency, ErrorSource::CurrencyFormatError(
         parse_currency_another_01::CurrencyFormatError::with_backtrace(parse_currency_another_01::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture)));
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
-    assert_contains!(err.backtrace.to_string(), "force_capture");
-    assert_contains!(err.provide_backtrace().to_string(), "force_capture");
+    assert_contains!(err.backtrace.to_test_string(), "force_capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "force_capture");
 
     let err = ParseAmountError::with_from(ErrorKind::IncorrectCurrency,
         parse_currency_another_01::CurrencyFormatError::with_backtrace(parse_currency_another_01::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture));
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
-    assert_contains!(err.backtrace.to_string(), "force_capture");
-    assert_contains!(err.provide_backtrace().to_string(), "force_capture");
+    assert_contains!(err.backtrace.to_test_string(), "force_capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "force_capture");
 
     let err = ParseAmountError::with_source(ErrorKind::IncorrectAmount, ErrorSource::ParseBigDecimalError(
-        bigdecimal::ParseBigDecimalError::Other("some decimal error".to_string())));
+        bigdecimal::ParseBigDecimalError::Other("some decimal error".to_test_string())));
     assert_eq!(err.kind, ErrorKind::IncorrectAmount);
-    assert_contains!(err.backtrace.to_string(), "capture");
-    assert_contains!(err.provide_backtrace().to_string(), "capture");
+    assert_contains!(err.backtrace.to_test_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "capture");
 
     let err = ParseAmountError::with_from(ErrorKind::IncorrectAmount,
-        bigdecimal::ParseBigDecimalError::Other("some decimal error".to_string()));
+        bigdecimal::ParseBigDecimalError::Other("some decimal error".to_test_string()));
     assert_eq!(err.kind, ErrorKind::IncorrectAmount);
-    assert_contains!(err.backtrace.to_string(), "capture");
-    assert_contains!(err.provide_backtrace().to_string(), "capture");
+    assert_contains!(err.backtrace.to_test_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "capture");
 }
 
 
@@ -384,8 +385,8 @@ fn test_amount_format_error_with_source_666() {
     let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::SomeWithoutSource);
     // let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::Some1FromInt(666));
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_contains!(err.backtrace.to_string(), "capture");
-    assert_contains!(err.provide_backtrace().to_string(), "capture");
+    assert_contains!(err.backtrace.to_test_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "capture");
 }
 
 
@@ -395,7 +396,7 @@ fn test_amount_format_error_src() {
     use parse_currency_another_01::{ CurrencyFormatError, ErrorKind };
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Default);
-    assert_contains!(err.provide_backtrace().to_string(), "capture");
+    assert_contains!(err.provide_backtrace().to_test_string(), "capture");
 
     let err_src: ErrorSource = err.into();
     // assert_eq!(err_src.type_id(), ErrorSource::CurrencyFormatError())

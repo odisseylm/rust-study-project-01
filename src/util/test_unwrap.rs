@@ -55,6 +55,10 @@ pub impl<T> TestSringOps for T /* where T: Debug */ {
         write!(str_buf, "{}", self).test_unwrap();
         str_buf
     }
+    #[track_caller]
+    fn to_test_string(&self) -> String where Self: core::fmt::Display {
+        self.to_string()
+    }
 }
 
 #[extension_trait::extension_trait]

@@ -1,9 +1,9 @@
-
+use project01::util::test_unwrap::TestSringOps;
 
 #[test]
 fn test_123() {
 
-    let tuple_v = (1, "str", "string".to_string(), std::f64::consts::PI);
+    let tuple_v = (1, "str", "string".to_test_string(), std::f64::consts::PI);
     // TODO: add such function
     let tuple_of_refs = (tuple_v.0, tuple_v.1, tuple_v.2, tuple_v.3, );
 
@@ -23,7 +23,7 @@ fn test_123() {
 #[test]
 fn test_124() {
 
-    let tuple_v = (1, "str", "string".to_string(), std::f64::consts::PI);
+    let tuple_v = (1, "str", "string".to_test_string(), std::f64::consts::PI);
     // TODO: add such function
     let tuple_of_refs = (tuple_v.0, tuple_v.1, tuple_v.2, tuple_v.3, );
 

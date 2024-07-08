@@ -1,3 +1,4 @@
+use project01::util::test_unwrap::TestSringOps;
 
 struct AAA {
     val1: &'static str,
@@ -45,7 +46,7 @@ fn test_1_for_each_by_ref() {
     for_each_by_ref! { $item_ref, s.val1, s.val2, {
         println!("### print from for_each_by_ref2 {{ internal_var: {:?} }}", internal_var);
         println!("### print from for_each_by_ref2 {{ iterated value: {:?} }}", item_ref);
-        result.push(item_ref.to_string());
+        result.push(item_ref.to_test_string());
     }}
     let _var_after_for_each_by_ref2 = 346;
 
@@ -73,7 +74,7 @@ fn test_literals_for_each_by_ref() {
     for_each_by_ref! { $item_ref, "John", 568, {
         println!("### print from for_each_by_ref2 {{ internal_var: {:?} }}", internal_var);
         println!("### print from for_each_by_ref2 {{ iterated value: {:?} }}", item_ref);
-        result.push(item_ref.to_string());
+        result.push(item_ref.to_test_string());
     }}
 
     assert_eq!(result, vec!("John", "568"));
@@ -126,7 +127,7 @@ fn test_for_each_in_tuple_by_ref() {
     tuple_for_each_by_ref! { $iteeem_var, tuple_var, 3, {
         println!("### print from for_each_by_ref2 {{ internal_var: {:?} }}", internal_var);
         println!("### print from for_each_by_ref2 {{ iterated value: {:?} }}", iteeem_var);
-        result.push(iteeem_var.to_string());
+        result.push(iteeem_var.to_test_string());
     }}
 
     assert_eq!(result, vec!("John", "568", "Smith"));

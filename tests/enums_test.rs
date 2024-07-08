@@ -1,5 +1,7 @@
 // #![feature(offset_of_enum, offset_of_nested)]
 
+use project01::util::test_unwrap::TestSringOps;
+
 // C like enum
 // #[repr(u8)]
 // #[repr(u32)] // long C type
@@ -51,8 +53,8 @@ fn print_enum_with_string() {
 fn print_size_of_string() {
     println!("{}", core::mem::size_of_val("abcdef abcdef abcdef abcdef abcdef abcdef"));
     println!("{}", core::mem::size_of::<String>());
-    println!("{}", core::mem::size_of_val(&"abcdef abcdef abcdef abcdef abcdef abcdef".to_string()));
-    println!("{}", core::mem::size_of_val(&"abcdef abcdef abcdef abcdef abcdef abcdef abcdef abcdef abcdef abcdef abcdef".to_string()));
+    println!("{}", core::mem::size_of_val(&"abcdef abcdef abcdef abcdef abcdef abcdef".to_test_string()));
+    println!("{}", core::mem::size_of_val(&"abcdef abcdef abcdef abcdef abcdef abcdef abcdef abcdef abcdef abcdef abcdef".to_test_string()));
 }
 
 

@@ -22,6 +22,7 @@ use errors::{ fn_wrap_by_anyhow_error_using_map_err_and_anyhow_macro_05 };
 use errors::{ fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn_05 };
 use errors::Entity1;
 use project01::util::backtrace::is_anyhow_backtrace_enabled;
+use project01::util::test_unwrap::TestSringOps;
 
 
 // #[derive(Deserialize)]
@@ -108,7 +109,7 @@ fn test_find_my_error_in_error_chain_01() {
         Ok(_) => { assert!(false, "Error is expected.") }
         Err(err) => {
             let my_err: Option<&MyError334> = find_my_error_in_chain(&err);
-            assert_eq!(my_err.unwrap().to_string(), "Json error 2");
+            assert_eq!(my_err.unwrap().to_test_string(), "Json error 2");
         }
     }
 }
@@ -192,7 +193,7 @@ fn test_impl<Ok: core::fmt::Debug>(fun: fn()->Result<Ok,anyhow::Error>, test_ste
             Err(err) => {
                 let my_err: Option<&MyError334> = find_my_error_in_chain(&err);
                 assert!(my_err.is_some(), "Error MyError334 is not found.");
-                assert_eq!(my_err.unwrap().to_string(), "Json error 2");
+                assert_eq!(my_err.unwrap().to_test_string(), "Json error 2");
             }
         }
     }
@@ -204,7 +205,7 @@ fn test_impl<Ok: core::fmt::Debug>(fun: fn()->Result<Ok,anyhow::Error>, test_ste
             Err(err) => {
                 let my_err: Option<&serde_json::Error> = find_serde_error_in_chain(&err);
                 assert!(my_err.is_some(), "Error serde_json::Error is not found.");
-                assert_eq!(my_err.unwrap().to_string(), "missing field `int_field` at line 1 column 48");
+                assert_eq!(my_err.unwrap().to_test_string(), "missing field `int_field` at line 1 column 48");
             }
         }
     }
@@ -231,7 +232,7 @@ fn test_fn_wrap_by_my_error_using_map_err_and_with_context() {
 fn test_fn_wrap_by_my_error_using_map_err() {
     // no chain
     // even no my error!!
-    // it just created standard error with MyError.to_string() as message
+    // it just created standard error with MyError.to_test_string() as message
     test_impl(fn_wrap_by_my_error_using_map_err_05, ASSERT_CHAIN_COUNT_EQ_1_ASSERTION);
 }
 

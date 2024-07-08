@@ -2,7 +2,8 @@ use crate::util::string::DisplayValueExample;
 
 pub fn serialize_as_display_string<S,T>(serializer: S, value: &T) -> Result<S::Ok, S::Error>
     where S: serde::Serializer, T: core::fmt::Display {
-    let value_as_str = value.to_string(); // TODO: try to avoid using heap allocation
+    let value_as_str = value.to_string();
+    // It is impossible to pass it as Display to avoid to_string() :-( (no such method)
     serializer.serialize_str(&value_as_str)
 }
 

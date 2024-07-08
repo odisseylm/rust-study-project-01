@@ -51,7 +51,7 @@ use crate::entities::currency::parse::CurrencyFormatError;
 // Duplicated since copy of this code (in amount_parse_old.rs) is also used for testing MyStaticStructError
 // noinspection DuplicatedCode
 //
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, PartialEq)]
 #[derive(Copy, Clone)]
 pub enum ErrorKind {
     #[error("No currency in amount")]

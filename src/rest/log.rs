@@ -2,7 +2,6 @@ use core::fmt::{ self, Debug, Display };
 use axum::extract::Request;
 use http::{Extensions, Method, Uri};
 use http::request::Parts;
-use mvv_auth::backend::RequestAuthenticated;
 
 use crate::rest::auth::AuthUser;
 type AuthSession = axum_login::AuthSession<crate::rest::auth::AuthBackend>;

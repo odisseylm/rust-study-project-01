@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use askama::Template;
 use axum::{
     extract::Query,
@@ -14,8 +15,8 @@ pub const NEXT_URL_KEY: &str = "auth.next-url";
 
 #[derive(Template)]
 #[template(path = "login.html")]
-pub struct LoginTemplate {
-    pub message: Option<String>,
+pub struct LoginTemplate <Msg: Display> {
+    pub message: Option<Msg>,
     pub next: Option<String>,
 }
 
@@ -54,7 +55,7 @@ mod post {
                 Ok(Some(user)) => user,
                 Ok(None) => {
                     return LoginTemplate {
-                            message: Some("Invalid credentials.".to_string()),
+                            message: Some("Invalid credentials."),
                             next: creds.next,
                         }
                         .into_response()
@@ -62,32 +63,10 @@ mod post {
                 Err(err) => {
                     match err {
                         axum_login::Error::Session(err) => {
-                            let err2 = err.to_string();
-                            println!("{}", err2);
                             error!("Authentication session error [{}]", err)
                         }
                         axum_login::Error::Backend(err) => {
-                            let err2 = err.to_string();
-                            println!("{}", err2);
-                            match err {
-                                // AuthBackendError::NoUser | AuthBackendError::IncorrectUsernameOrPsw => {
-                                //     return LoginTemplate {
-                                //             message: Some("Invalid credentials.".to_string()),
-                                //             next: creds.next,
-                                //         }
-                                //         .into_response()
-                                // }
-                                // AuthBackendError::UserProviderError(_) => {}
-                                // AuthBackendError::Sqlx(_) => {}
-                                // AuthBackendError::Reqwest(_) => {}
-                                // AuthBackendError::OAuth2(_) => {}
-                                // AuthBackendError::NoRequestedBackend => {}
-                                // AuthBackendError::TaskJoin(_) => {}
-                                // AuthBackendError::ConfigError(_) => {}
-                                err => {
-                                    error!("Authentication backend error [{}]", err)
-                                }
-                            }
+                            error!("Authentication backend error [{}]", err)
                         }
                     }
                     return StatusCode::INTERNAL_SERVER_ERROR.into_response()
@@ -135,7 +114,7 @@ mod get {
     use super::*;
     use crate::rest::auth::CompositeAuthBackend;
 
-    pub async fn login(Query(NextUrl { next }): Query<NextUrl>) -> LoginTemplate {
+    pub async fn login(Query(NextUrl { next }): Query<NextUrl>) -> LoginTemplate<&'static str> {
         LoginTemplate { message: None, next }
     }
 

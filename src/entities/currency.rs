@@ -5,12 +5,16 @@ use core::str::FromStr;
 use crate::util::serde_json::{ deserialize_as_from_str, serialize_as_display_string };
 use crate::util::string::DisplayValueExample;
 
+type FixedRawStr = fixedstr::str4;
+// type FixedRawStr = fixedstr::tstr<3>;
+
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 // #[derive(Serialize, Deserialize)]
 // #[serde(with = crate::util::serde_json::as_str)]
 // #[serde(deserialize_with = "string_or_struct")]
-pub struct Currency([u8;3]);
+// pub struct Currency([u8;3]);
+pub struct Currency(FixedRawStr);
 
 impl core::fmt::Debug for Currency {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -39,7 +43,15 @@ impl Currency {
     }
 
     pub fn code_as_ascii_bytes(&self) -> [u8;3] {
-        self.0
+        // self.0
+        let s = self.0.as_str().as_bytes();
+        let bytes: [u8;3] = [s[0], s[1], s[2]];
+        bytes
+    }
+
+    pub fn as_str(&self) -> &str {
+        // unsafe { std::str::from_utf8_unchecked(&self.0) }
+        self.0.as_str()
     }
 
     /*
@@ -58,7 +70,8 @@ impl Currency {
 
 impl core::fmt::Display for Currency {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}{}{}", self.0[0] as char, self.0[1] as char, self.0[2] as char)
+        // write!(f, "{}{}{}", self.0[0] as char, self.0[1] as char, self.0[2] as char)
+        write!(f, "{}", self.0)
     }
 }
 impl DisplayValueExample for Currency {
@@ -77,8 +90,11 @@ fn parse_currency(currency_code: & str) -> Result<Currency, CurrencyFormatError>
 
     if !is_valid { Err(CurrencyFormatError::new(ErrorKind::IncorrectCurrencyFormat)) }
     else {
-        let as_bytes = currency_code.as_bytes();
-        Ok(Currency([as_bytes[0], as_bytes[1], as_bytes[2]]))
+        // let as_bytes = currency_code.as_bytes();
+        // Ok(Currency([as_bytes[0], as_bytes[1], as_bytes[2]]))
+        let s = FixedRawStr::try_make(currency_code)
+            .map_err(|_|CurrencyFormatError::new(ErrorKind::IncorrectCurrencyFormat)) ?;
+        Ok(Currency(s))
     }
 }
 
@@ -127,7 +143,7 @@ const fn is_valid_currency_ascii(cur: &[u8]) -> bool {
 /// ```
 /// use project01::entities::currency::{ Currency, make_currency };
 /// const PLN: Currency = make_currency("PLN");
-/// assert_eq!(PLN.to_string(), "PLN");
+/// assert_eq!(PLN.as_str(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
@@ -143,8 +159,7 @@ pub const fn make_currency(currency_code: & 'static str) -> Currency {
     let is_valid = if currency_code.len() != 3 { false }
                  else { is_valid_currency_ascii(currency_code.as_bytes()) };
     if !is_valid { const_panic_wrong_currency(currency_code) }
-    let bytes = currency_code.as_bytes();
-    return Currency([bytes[0], bytes[1], bytes[2]]);
+    return Currency(FixedRawStr::const_make(currency_code));
 }
 
 
@@ -156,7 +171,7 @@ pub const fn make_currency(currency_code: & 'static str) -> Currency {
 /// ```
 /// use project01::entities::currency::{ Currency, make_currency_b };
 /// const PLN: Currency = make_currency_b(b"PLN");
-/// assert_eq!(PLN.to_string(), "PLN");
+/// assert_eq!(PLN.as_str(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
@@ -170,7 +185,14 @@ pub const fn make_currency(currency_code: & 'static str) -> Currency {
 pub const fn make_currency_b(cur: & 'static [u8;3]) -> Currency {
     let is_valid = is_valid_currency_ascii(cur);
     if !is_valid { const_panic_wrong_currency_ascii(cur) }
-    return Currency([cur[0], cur[1], cur[2]]);
+    // return Currency([cur[0], cur[1], cur[2]]);
+
+    match std::str::from_utf8(cur) {
+        Ok(as_str) => Currency(FixedRawStr::const_make(as_str)),
+        Err(_) =>
+            // It should never happen just there
+            const_panic_wrong_currency_ascii(cur)
+    }
 }
 
 
@@ -185,7 +207,7 @@ pub const fn make_currency_b(cur: & 'static [u8;3]) -> Currency {
 /// use project01::entities::currency::make_currency; // required inline function
 ///
 /// const PLN: Currency = make_currency!("PLN");
-/// assert_eq!(PLN.to_string(), "PLN");
+/// assert_eq!(PLN.as_str(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
@@ -265,7 +287,7 @@ pub mod parse {
     use crate::util::backtrace::BacktraceInfo;
 
     // #[derive(Debug, PartialEq, Copy, Clone)]
-    #[derive(Debug, thiserror::Error)]
+    #[derive(Debug, thiserror::Error, PartialEq)]
     #[derive(Copy, Clone)]
     pub enum ErrorKind {
         #[error("no currency")]
@@ -328,8 +350,10 @@ pub mod parse {
 //
 #[cfg(test)]
 mod tests {
+    use crate::util::test_unwrap::TestSringOps;
     use super::*;
 
+    /*
     #[test]
     fn make_currency2_test() {
         let ascii = b"UAH";
@@ -337,7 +361,17 @@ mod tests {
         Currency(*ascii);
         Currency(*ascii);
     }
+    */
 
+    #[test]
+    fn make_currency3_test() {
+        let ascii = b"UAH";
+        make_currency_b(ascii);
+        make_currency_b(ascii);
+        make_currency_b(ascii);
+    }
+
+    /*
     #[test]
     #[ignore] // It fails because it has access to 'private' (rust-specific behavior, hm...),
     // but it is not critical, you need to do it mutable, watch is not usual case.
@@ -346,7 +380,7 @@ mod tests {
         temp_obj.0[0] = 'W' as u8;  // Compilation error as expected (impossible to change currency object).
         //assert_eq!(4, internal_adder(2, 2));
         // assert_eq!(temp_obj.code_as_string(), "USD");
-        assert_eq!(temp_obj.to_string(), "USD");
+        assert_eq!(temp_obj.to_test_string(), "USD");
     }
 
     #[test]
@@ -355,8 +389,9 @@ mod tests {
         USD.0[0] = 'W' as u8;  // Compilation warning 'attempting to modify a `const` item'
         // without modification 'const' object.
         // assert_eq!(USD.code_as_string(), "USD");
-        assert_eq!(USD.to_string(), "USD");
+        assert_eq!(USD.to_test_string(), "USD");
     }
+    */
 
     // #[test]
     // fn impossible_to_change_const_currency() {
@@ -372,10 +407,10 @@ mod tests {
         let mut temp_obj: Currency = USD;
         temp_obj.code_as_ascii_bytes()[0] = 'W' as u8;
         // temp_obj.code_as_string().push('Z'); // As expected it does not change currency object.
-        temp_obj.to_string().push('Z'); // As expected it does not change currency object.
+        temp_obj.to_test_string().push('Z'); // As expected it does not change currency object.
         println!("{}", temp_obj);
 
         // assert_eq!(temp_obj.code_as_string(), "USD");
-        assert_eq!(temp_obj.to_string(), "USD");
+        assert_eq!(temp_obj.to_test_string(), "USD");
     }
 }

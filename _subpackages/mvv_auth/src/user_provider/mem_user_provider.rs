@@ -251,7 +251,7 @@ mod tests {
 
         // -----------------------------------------------------------------------------------------
         // let usr_opt_res = users.get_user_by_id(&1i64).await;
-        let usr_opt_res = users.get_user_by_principal_identity(&"in-mem-vovan".to_string()).await;
+        let usr_opt_res = users.get_user_by_principal_identity(&"in-mem-vovan".to_test_string()).await;
 
         assert!(usr_opt_res.is_ok()); // no error
         let usr_opt = usr_opt_res.test_unwrap();
@@ -260,11 +260,11 @@ mod tests {
         let usr = usr_opt.test_unwrap();
         assert_eq!(usr.id, 1i64);
         assert_eq!(usr.username.as_str(), "in-mem-vovan");
-        assert_eq!(usr.password, Some("qwerty".to_string()));
+        assert_eq!(usr.password, Some("qwerty".to_test_string()));
         assert_eq!(usr.access_token, None);
 
         // -----------------------------------------------------------------------------------------
-        let usr_opt_res = users.update_user_access_token("in-mem-vovan".to_string(), "token1").await;
+        let usr_opt_res = users.update_user_access_token("in-mem-vovan".to_test_string(), "token1").await;
         println!("### usr_opt_res: {:?}", usr_opt_res);
 
         assert!(usr_opt_res.is_ok()); // no error
@@ -274,13 +274,13 @@ mod tests {
         let usr = usr_opt.test_unwrap();
         assert_eq!(usr.id, 1i64);
         assert_eq!(usr.username.as_str(), "in-mem-vovan");
-        assert_eq!(usr.password, Some("qwerty".to_string()));
+        assert_eq!(usr.password, Some("qwerty".to_test_string()));
         assert_ne!(usr.access_token, None);
-        assert_eq!(usr.access_token, Some("token1".to_string()));
+        assert_eq!(usr.access_token, Some("token1".to_test_string()));
 
         // -----------------------------------------------------------------------------------------
         // let usr_opt_res = users.get_user_by_id(&1i64).await;
-        let usr_opt_res = users.get_user_by_principal_identity(&"in-mem-vovan".to_string()).await;
+        let usr_opt_res = users.get_user_by_principal_identity(&"in-mem-vovan".to_test_string()).await;
 
         assert!(usr_opt_res.is_ok()); // no error
         let usr_opt = usr_opt_res.test_unwrap();
@@ -289,9 +289,9 @@ mod tests {
         let usr = usr_opt.test_unwrap();
         assert_eq!(usr.id, 1i64);
         assert_eq!(usr.username.as_str(), "in-mem-vovan");
-        assert_eq!(usr.password, Some("qwerty".to_string()));
+        assert_eq!(usr.password, Some("qwerty".to_test_string()));
         assert_ne!(usr.access_token, None);
-        assert_eq!(usr.access_token, Some("token1".to_string()));
+        assert_eq!(usr.access_token, Some("token1".to_test_string()));
 
         println!("Test tests_TestAuthUserProvider is completed.")
     }

@@ -64,12 +64,14 @@ pub fn serialize_json_bd_as_raw_value<'se,S>(bd: &BigDecimal, serializer: S) -> 
     use serde::ser::Error;
 
     let as_string = bd.to_string();
-    let raw_value = serde_json::value::RawValue::from_string(as_string).map_err(|err| Error::custom(err.to_string()) ) ?;
+    let raw_value = serde_json::value::RawValue::from_string(as_string)
+        .map_err(|err| Error::custom(err) ) ?;
 
     serde::Serializer::serialize_newtype_struct(serializer, "BigDecimal", &raw_value)
 }
 
 pub fn serialize_json_bd_as_string<'se,S>(bd: &BigDecimal, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+    // It is impossible to pass it as Display to avoid to_string() :-( (no such method)
     let as_string = bd.to_string();
     serde::Serializer::serialize_str(serializer, as_string.as_str())
 }

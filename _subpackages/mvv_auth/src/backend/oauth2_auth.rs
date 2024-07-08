@@ -234,9 +234,9 @@ impl OAuth2Config {
         let client_secret = std::env::var("CLIENT_SECRET")
             .map_err(|_|Oauth2ConfigError::Error("CLIENT_SECRET should be provided")) ?;
 
-        let auth_url = "https://github.com/login/oauth/authorize".to_string();
-        let token_url = "https://github.com/login/oauth/access_token".to_string();
-        let get_auth_user_url = "https://api.github.com/user".to_string();
+        let auth_url = "https://github.com/login/oauth/authorize".to_owned();
+        let token_url = "https://github.com/login/oauth/access_token".to_owned();
+        let get_auth_user_url = "https://api.github.com/user".to_owned();
 
         Ok(Some(OAuth2Config {
             auth_mode: AuthBackendMode::AuthSupported,

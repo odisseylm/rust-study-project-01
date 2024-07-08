@@ -66,7 +66,7 @@ fn serialize_amount_as_struct<S>(amount: &Amount, serializer: S) -> Result<S::Ok
     use crate::entities::serde_json_bd::BDRefSerdeWrapper;
 
     // let bd_wrapper = BDRefSerdeWrapper(&amount.value);
-    // let currency = amount.currency.to_string();
+    // let currency = amount.currency.to_test_string();
     //
     // let mut s = serializer.serialize_struct("amount", 2) ?;
     // s.serialize_field("value", &bd_wrapper) ?;  // T O D O: use Display
@@ -74,7 +74,7 @@ fn serialize_amount_as_struct<S>(amount: &Amount, serializer: S) -> Result<S::Ok
     // s.end()
 
     // let bd_wrapper = BDRefSerdeWrapper(&amount.value);
-    // let currency = amount.currency.to_string();
+    // let currency = amount.currency.to_test_string();
 
     let mut s = serializer.serialize_struct("amount", 2) ?;
     s.serialize_field("value", &BDRefSerdeWrapper(&amount.value)) ?;

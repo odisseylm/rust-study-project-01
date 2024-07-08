@@ -96,8 +96,9 @@ impl<
         match usr_opt {
             None => Ok(None),
             Some(usr) => {
-                let usr_psw = usr.password().unwrap_or("".to_string());
-                if !usr_psw.is_empty() && PswComp::passwords_equal(usr_psw.as_str(), creds.password.as_str()) {
+                let usr_psw = usr.password();
+                let usr_psw = usr_psw.as_deref().unwrap_or("");
+                if !usr_psw.is_empty() && PswComp::passwords_equal(usr_psw, creds.password.as_str()) {
                     Ok(Some(usr.clone()))
                 } else {
                     Ok(None)

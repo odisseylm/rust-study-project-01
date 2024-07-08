@@ -4,6 +4,7 @@ use bigdecimal::BigDecimal;
 use project01::entities::amount::{ Amount, ops::AmountOpsError, ops::ErrorKind as OpsErrorKind };
 // use project01::entities::amount::ops;
 use project01::util::{ TestOptionUnwrap, TestResultUnwrap };
+use project01::util::test_unwrap::TestSringOps;
 
 
 #[test]
@@ -57,7 +58,7 @@ fn test_add_amounts_with_different_currencies_to_see_currencies() {
 
     let err: AmountOpsError = res.err().test_unwrap();
 
-    let err_as_str = err.to_string();
+    let err_as_str = err.to_test_string();
     // println!("{}", err_as_str);
     assert_eq!(err_as_str, "AmountOpsError { Different currencies (BRL,EUR) }");
 
