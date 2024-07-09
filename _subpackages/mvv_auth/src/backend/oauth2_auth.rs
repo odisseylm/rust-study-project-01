@@ -81,7 +81,7 @@ impl <
         oauth2_user_store: Arc<dyn OAuth2UserStore<User=Usr> + Send + Sync>,
         config: OAuth2Config,
         client: Option<BasicClient>,
-        permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=<PermSet as PermissionSet>::Permission,PermissionSet=PermSet>>,
+        permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=<PermSet as PermissionSet>::Permission,PermissionSet=PermSet> + Send + Sync>,
     ) -> Result<Self, AuthBackendError> {
 
         // ?? Strange... no Option.or_else_res() function.
@@ -263,7 +263,7 @@ impl <
     type ProposeAuthAction = super::login_form_auth::ProposeLoginFormAuthAction;
 
     fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=Usr> + Sync + Send> {
-        self.state.user_provider.clone()
+        Arc::clone(&self.state.user_provider)
     }
     fn user_provider_ref<'a>(&'a self) -> &'a Arc<dyn AuthUserProvider<User=Self::User> + Sync + Send> {
         &self.state.user_provider
@@ -292,9 +292,9 @@ impl<
     #[inline]
     //noinspection DuplicatedCode
     fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {
-        self.state.permission_provider.clone()
+        Arc::clone(&self.state.permission_provider)
     }
-    #[inline]
+    #[inline] // for local/non-async usage
     //noinspection DuplicatedCode
     fn permission_provider_ref<'a>(&'a self) -> &'a Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {
         &self.state.permission_provider

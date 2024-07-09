@@ -41,13 +41,13 @@ impl <
 > Clone for PswAuthBackendImpl<Usr,PswComp,PermSet> {
     fn clone(&self) -> Self {
         PswAuthBackendImpl::<Usr,PswComp,PermSet> {
-            users_provider: self.users_provider.clone(),
-            permission_provider: self.permission_provider.clone(),
+            users_provider: Arc::clone(&self.users_provider),
+            permission_provider: Arc::clone(&self.permission_provider),
             _pd: PhantomData,
         }
     }
     fn clone_from(&mut self, source: &Self) {
-        self.users_provider = source.users_provider.clone();
+        self.users_provider = Arc::clone(&source.users_provider);
     }
 }
 
@@ -62,13 +62,13 @@ impl <
         permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=<PermSet as PermissionSet>::Permission,PermissionSet=PermSet> + Send + Sync>,
     ) -> PswAuthBackendImpl<Usr,PswComp,PermSet> {
         PswAuthBackendImpl::<Usr,PswComp,PermSet> {
-            users_provider: users_provider.clone(),
-            permission_provider: permission_provider.clone(),
+            users_provider: Arc::clone(&users_provider),
+            permission_provider: Arc::clone(&permission_provider),
             _pd: PhantomData,
         }
     }
     pub(crate) fn users_provider(&self) -> Arc<dyn AuthUserProvider<User=Usr> + Send + Sync> {
-        self.users_provider.clone()
+        Arc::clone(&self.users_provider)
     }
 }
 
@@ -132,9 +132,9 @@ impl<
     //noinspection DuplicatedCode
     fn permission_provider(&self)
         -> Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {
-        self.permission_provider.clone()
+        Arc::clone(&self.permission_provider)
     }
-    #[inline]
+    #[inline] // for local/non-async usage
     //noinspection DuplicatedCode
     fn permission_provider_ref<'a>(&'a self)
         -> &'a Arc<dyn PermissionProvider<User=Self::User, Permission=Self::Permission, PermissionSet=Self::PermissionSet> + Send + Sync> {

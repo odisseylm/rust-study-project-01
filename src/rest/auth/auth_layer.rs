@@ -70,8 +70,8 @@ pub async fn login_form_auth_manager_layer <
     // This combines the session layer with our backend to establish the auth service
     // which will provide the auth session as a request extension.
     //
-    let usr_provider = user_perm_provider.clone();
-    let permission_provider = usr_provider.clone();
+    let usr_provider = Arc::clone(&user_perm_provider);
+    let permission_provider = Arc::clone(&usr_provider);
 
     let login_form_auth_backend = LoginFormAuthBackend::
             <AuthUser,PswComparator,RolePermissionsSet>::new(

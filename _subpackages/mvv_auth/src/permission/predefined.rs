@@ -2,7 +2,7 @@ use anyhow::anyhow;
 use crate::permission::{ PermissionProcessError, bits_perm_set::BitsPermissionSet, };
 
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, implicit_clone::ImplicitClone)]
 // #[derive(serde::Serialize, serde::Deserialize)]
 #[derive(strum_macros::FromRepr, strum_macros::Display)]
 // #[derive(sqlx::FromRow)]
@@ -22,6 +22,8 @@ pub enum Role {
     // If you need 'match' (by some reason...) for this enum, please create your own enum
     // and use it instead of this enum.
 }
+// impl implicit_clone::ImplicitClone for Role {}
+
 
 // Actually it contains just roles, because it is expected there Permission=Role.
 // If you need more complicated behavior, please define your own separate types

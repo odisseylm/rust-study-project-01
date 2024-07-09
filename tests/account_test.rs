@@ -6,7 +6,7 @@ use project01::entities::account::{ self, Account };
 use project01::entities::amount::Amount;
 use project01::entities::prelude::{ AccountId, UserId };
 use project01::util::{ TestResultUnwrap };
-use project01::util::test_unwrap::{ TestResultDebugErrOps, TestResultDisplayErrOps };
+use project01::util::test_unwrap::{TestOps, TestResultDebugErrOps, TestResultDisplayErrOps};
 
 
 #[test]
@@ -89,11 +89,11 @@ fn test_to_json() { // T O D O: split to several tests or use soft assertions
 
     let account33 = account_01();
     let account1 = Account::new(account::new::Args {
-        id: account33.id.clone(),
-        user_id: account33.user_id.clone(),
+        id: account33.id.test_clone(),
+        user_id: account33.user_id.test_clone(),
         amount: Amount::from_str("123.55555555555555555666666666666666677777 EUR").test_unwrap(),
-        created_at: account33.created_at.clone(),
-        updated_at: account33.updated_at.clone(),
+        created_at: account33.created_at.test_clone(),
+        updated_at: account33.updated_at.test_clone(),
     });
 
     let s = serde_json::to_string(&account1).test_unwrap();

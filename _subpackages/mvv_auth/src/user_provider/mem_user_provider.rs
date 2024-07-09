@@ -156,7 +156,7 @@ impl <
 > OAuth2UserStore for InMemAuthUserProvider<Usr,Perm,PermSet,PermExtract> where Usr::Id : Hash + Eq {
     async fn update_user_access_token(&self, user_principal_id: Usr::Id, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
         let state = self.state.write().await;
-        let map_value = state.users_by_principal_id.get(&user_principal_id.clone());
+        let map_value = state.users_by_principal_id.get(&user_principal_id);
         match map_value {
             None => Ok(None),
             Some(map_value) => {

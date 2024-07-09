@@ -10,7 +10,7 @@ pub mod validator {
     use http::request::Parts;
     use log::error;
     use validator::Validate;
-    use crate::rest::log::{ ConnectionInfo, ConnectionInfoRef };
+    use crate::rest::log::{ ConnectionInfoRef };
 
 
     #[derive(Debug, Clone, Copy, Default)]
@@ -97,7 +97,8 @@ pub mod validator {
 
         async fn from_request(req: Request, state: &State) -> Result<Self, Self::Rejection> {
             // optional: tracing can show connection info (without user) automatically
-            let connect_info = ConnectionInfo::from_request(&req);
+            // let connect_info = ConnectionInfo::from_request(&req);
+            // let connect_info = ConnectionInfoRef::from_request(&req);
 
             let inner = Extractor::from_request(req, state)
                 .await
@@ -105,7 +106,8 @@ pub mod validator {
             let v_res = inner.get_validate().validate();
 
             if v_res.is_err() {
-                error!("### ValidationError (1) [{connect_info:?}] : {v_res:?}");
+                // error!("### ValidationError (1) [{connect_info:?}] : {v_res:?}");
+                error!("### ValidationError (1) : {v_res:?}");
             }
 
             v_res ?;

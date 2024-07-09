@@ -1,5 +1,6 @@
 use core::time::Duration;
 use std::sync::Arc;
+use implicit_clone::ImplicitClone;
 use log::info;
 use tokio::sync::RwLock;
 use mvv_auth::{
@@ -243,7 +244,7 @@ impl PermissionProvider for SqlUserProvider {
 
     async fn get_user_permissions(&self, user: &Self::User)
         -> Result<Self::PermissionSet, PermissionProcessError> {
-        Ok(user.permissions.clone())
+        Ok(user.permissions.implicit_clone())
     }
 
     async fn get_user_permissions_by_principal_identity(
@@ -252,7 +253,7 @@ impl PermissionProvider for SqlUserProvider {
         let user: Option<AuthUser> = self.get_user_by_principal_identity(&user_principal_id).await ?;
         match user {
             None => Err(PermissionProcessError::NoUser(user_principal_id.to_string())),
-            Some(ref user) => Ok(user.permissions.clone()),
+            Some(ref user) => Ok(user.permissions.implicit_clone()),
         }
     }
 

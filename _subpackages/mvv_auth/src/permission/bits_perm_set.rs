@@ -19,10 +19,10 @@ pub type IntegerBitsPermissionSet<IntType/*: PrimInt*/> = BitsPermissionSet<IntT
 // pub type U32BitsPermissionSet = IntegerBitsPermissionSet<u32>;
 // pub type U64BitsPermissionSet = IntegerBitsPermissionSet<u64>;
 
-#[derive(Copy)]
+#[derive(Copy)] // , implicit_clone::ImplicitClone)]
 pub struct BitsPermissionSet <
     // Usually BitsIntType is u8, u16, u32, u64,..
-    BitsIntType: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
+    BitsIntType: PrimInt + Binary + Hash + Debug + Copy + Clone + Sync + Send,
     // Usually SingleBitPermType it is enum where enum-variant represents one bit.
     SingleBitPermType: Into<BitsIntType> + TryFrom<BitsIntType,Error=ConvertBitToPermTypeError> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
     ConvertBitToPermTypeError: std::error::Error + Sync + Send,
@@ -45,6 +45,14 @@ impl <
         self.value = source.value;
     }
 }
+
+impl <
+    BitsType: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,
+    Perm: Into<BitsType> + TryFrom<BitsType,Error=CErr> + Eq + Hash + Copy + Debug + Clone + Sync + Send,
+    CErr: std::error::Error + Sync + Send,
+> implicit_clone::ImplicitClone for BitsPermissionSet<BitsType, Perm,CErr>
+    where PermissionProcessError: From<CErr> // Or Rust stupid or I am ??!! Why I have to add it there??
+{}
 
 impl <
     BitsType: PrimInt + Binary + Hash + Debug + Clone + Sync + Send,

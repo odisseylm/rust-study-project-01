@@ -1,4 +1,4 @@
-
+use project01::util::test_unwrap::TestOps;
 
 #[ctor::ctor]
 static INITIAL_CTOR_2: bool = {
@@ -11,7 +11,7 @@ static INITIAL_CTOR_2: bool = {
 static L1: Vec<i32> = vec![1,2,3,4,5,6];
 
 #[static_init::dynamic(drop)]
-static mut L2: Vec<i32> = {let mut v = L1.clone(); v.push(43); v};
+static mut L2: Vec<i32> = {let mut v = L1.test_clone(); v.push(43); v};
 
 
 #[static_init::dynamic]

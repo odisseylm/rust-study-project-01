@@ -25,18 +25,18 @@ pub fn accounts_rest_router <
     dependencies: Dependencies<AccountS>,
 ) -> Router {
 
-    let shared_state: Arc<CurrentUserAccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
+    let shared_state: Arc<CurrentUserAccountRest<AccountS>> = Arc::clone(&dependencies.state.account_rest);
 
     let accounts_router = Router::new()
         .route("/account/all", GET(call_rest_get_user_accounts::<AccountS>))
         .route("/account/:account_id", GET(call_rest_get_user_account::<AccountS>))
-        .with_state(shared_state.clone())
+        .with_state(Arc::clone(&shared_state))
         .role_required(Role::Read)
         .merge(Router::new()
             .route("/validate_test/input_validate_1", POST(call_rest_input_validate_by_validator::<AccountS>))
             // .route("/validate_test/input_validate_2", POST(call_rest_input_validate_by_garde::<AccountS>))
             .route("/validate_test/input_validate_3", POST(call_rest_input_validate_by_validify::<AccountS>))
-        ).with_state(shared_state.clone())
+        ).with_state(Arc::clone(&shared_state))
         ;
 
     accounts_router
@@ -71,7 +71,7 @@ pub struct CurrentUserAccountRest <AS: AccountService> {
 
 impl<AS: AccountService> CurrentUserAccountRest<AS> {
     async fn current_user_id(&self) -> UserId {
-        TEMP_CURRENT_USER_ID.clone()
+        TEMP_CURRENT_USER_ID.test_clone()
     }
 
     #[tracing::instrument(
@@ -167,6 +167,8 @@ struct ValidatedInput2 {
 */
 
 use axum_valid::{ Validified, /*Modified,*/ };
+use crate::util::test_unwrap::TestOps;
+
 async fn call_rest_input_validate_by_validify <
     AccountS: AccountService + 'static,
 >(State(_rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>, Validified(Json(input)): Validified<Json<ValidatedInput3>>)

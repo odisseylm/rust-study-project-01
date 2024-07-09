@@ -62,6 +62,13 @@ pub impl<T> TestSringOps for T /* where T: Debug */ {
 }
 
 #[extension_trait::extension_trait]
+pub impl<T> TestOps for T where T: Clone {
+    fn test_clone(&self) -> Self {
+        self.clone()
+    }
+}
+
+#[extension_trait::extension_trait]
 pub impl<V,E> TestResultDebugErrOps for Result<V,E> where E: Debug {
     // #[inline] // warning: `#[inline]` is ignored on function prototypes
     #[track_caller]

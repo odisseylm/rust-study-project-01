@@ -32,6 +32,15 @@ impl ConnectionInfoRef<'_> {
         ConnectionInfoRef { uri, method, user, user_ref: None }
     }
 }
+impl ConnectionInfoRef<'_> {
+    #[allow(dead_code)]
+    pub(crate) fn from_request(req: &Request) -> ConnectionInfoRef {
+        let uri = Some(req.uri());
+        let method = Some(req.method());
+        let user: Option<AuthUser> = get_req_user(req.extensions());
+        ConnectionInfoRef { uri, method, user, user_ref: None }
+    }
+}
 impl Display for ConnectionInfoRef<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(ref method) = self.method {
@@ -68,6 +77,7 @@ impl Debug for ConnectionInfoRef<'_> {
 }
 
 
+/*
 pub(crate) struct ConnectionInfo {
     uri: Option<Uri>,
     method: Option<Method>,
@@ -75,9 +85,10 @@ pub(crate) struct ConnectionInfo {
 }
 impl ConnectionInfo {
     pub(crate) fn from_request(req: &Request) -> ConnectionInfo {
-        let uri = Some(req.uri().clone());  // TODO: how to avoid 'clone'?? because it is needed only in case of error, but we have to clone it in any case ???
+        let uri = Some(req.uri().clone());  // T O D O: how to avoid 'clone'?? because it is needed only in case of error, but we have to clone it in any case ???
         let method = Some(req.method().clone());
         let user: Option<AuthUser> = get_req_user(req.extensions());
+        // try to use ConnectionInfoRef
         ConnectionInfo { uri, method, user, }
     }
 }
@@ -93,3 +104,4 @@ impl Debug for ConnectionInfo {
         <ConnectionInfoRef as Debug>::fmt(&as_ref, f)
     }
 }
+*/

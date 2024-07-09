@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use axum::extract::Request;
 use axum::response::{ IntoResponse, Response };
+use implicit_clone::ImplicitClone;
 
 use super::auth_user::{ AuthUserExample };
 use crate::{
@@ -51,15 +52,15 @@ impl CompositeAuthnBackendExample {
 
     pub fn test_users() -> Result<CompositeAuthnBackendExample, anyhow::Error> {
         let in_mem_users = Arc::new(test::in_memory_test_users() ?);
-        let user_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send> = in_mem_users.clone();
-        let permission_provider: Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send> = in_mem_users.clone();
+        let user_provider: Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send> = in_mem_users.implicit_clone();
+        let permission_provider: Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send> = in_mem_users.implicit_clone();
 
         Ok(CompositeAuthnBackendExample {
-            http_basic_auth_backend: Some(HttpBasicAuthBackend::new(user_provider.clone(), AuthBackendMode::AuthProposed, permission_provider.clone())),
-            login_form_auth_backend: Some(LoginFormAuthBackend::new(user_provider.clone(), LoginFormAuthConfig {
+            http_basic_auth_backend: Some(HttpBasicAuthBackend::new(Arc::clone(&user_provider), AuthBackendMode::AuthProposed, Arc::clone(&permission_provider))),
+            login_form_auth_backend: Some(LoginFormAuthBackend::new(Arc::clone(&user_provider), LoginFormAuthConfig {
                 auth_mode: AuthBackendMode::AuthSupported,
                 login_url: "/form/login",
-            }, permission_provider.clone())),
+            }, Arc::clone(&permission_provider))),
             users_provider: user_provider,
             permission_provider,
             oauth2_backend: None,
@@ -86,13 +87,13 @@ impl CompositeAuthnBackendExample {
             backend_usr_prov_ref(&http_basic_auth_backend),
             backend_usr_prov_ref(&login_form_auth_backend),
             backend_usr_prov_ref(&oauth2_backend),
-        ]) ? .clone();
+        ]) ? .implicit_clone();
 
         let permission_provider_ref = get_unique_permission_provider_ref([
             backend_perm_prov_ref(&http_basic_auth_backend),
             backend_perm_prov_ref(&login_form_auth_backend),
             backend_perm_prov_ref(&oauth2_backend),
-        ]) ? .clone();
+        ]) ? .implicit_clone();
 
         Ok(CompositeAuthnBackendExample {
             users_provider: users_provider_ref,
@@ -220,7 +221,7 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
     type ProposeAuthAction = CompositeProposeAuthAction;
 
     fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=AuthUserExample> + Sync + Send> {
-        self.users_provider.clone()
+        Arc::clone(&self.users_provider)
     }
     fn user_provider_ref<'a>(&'a self) -> &'a Arc<dyn AuthUserProvider<User=Self::User> + Sync + Send> {
         &self.users_provider
@@ -243,7 +244,7 @@ impl AuthnBackendAttributes for CompositeAuthnBackendExample {
 
         // Faked (really unused) variable to shut up Idea error notification.
         #[allow(dead_code, unused_variables)]
-        let backend = &self.http_basic_auth_backend;
+        let backend_opt = &self.http_basic_auth_backend;
 
         let propose_opt = tuple_find_some_by_ref! { $backend_opt, self.backends(), {
             backend_opt.as_ref().and_then(|backend|
@@ -266,7 +267,7 @@ impl PermissionProviderSource for CompositeAuthnBackendExample {
     #[inline]
     //noinspection DuplicatedCode
     fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=AuthUserExample,Permission=Role,PermissionSet=RolePermissionsSet> + Send + Sync> {
-        self.permission_provider.clone()
+        Arc::clone(&self.permission_provider)
     }
     #[inline]
     //noinspection DuplicatedCode

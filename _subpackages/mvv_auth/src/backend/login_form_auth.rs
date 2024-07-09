@@ -227,11 +227,13 @@ impl axum::response::IntoResponse for ProposeLoginFormAuthAction {
             Some(ref initial_url) => format!("{login_url}?next={}", url_encode(initial_url.as_str())),
         };
 
+        let redirect_http_resp_body = Body::from(REDIRECT_LOGIN_PAGE_CONTENT.replace("{login_url}", login_url.as_str()));
+
         axum::response::Response::builder()
             .status(StatusCode::UNAUTHORIZED)
-            .header("Location", login_url.clone()) // redirect
+            .header("Location", login_url) // redirect
             .header("Content-Type", "text/html; charset=utf-8")
-            .body(Body::from(REDIRECT_LOGIN_PAGE_CONTENT.replace("{login_url}", login_url.as_str())))
+            .body(redirect_http_resp_body)
             .unwrap_or_else(|_err| StatusCode::UNAUTHORIZED.into_response())
 
     }
@@ -331,6 +333,7 @@ pub mod web {
         {
             let auth_res: Result<Option<User>, axum_login::Error<LoginFormAuthBackend<User,PswComparator,PermSet>>> =
                 auth_session.authenticate(creds.clone()).await;
+
             let user = match auth_res {
                 Ok(Some(user)) => user,
                 Ok(None) => {

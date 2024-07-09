@@ -178,8 +178,8 @@ mod tests {
             = Arc::new(test::in_memory_test_users().test_unwrap());
         let as_raw_ptr = Arc::as_ptr(&in_mem_users);
 
-        let as_dyn_1: Arc<UsrProvider> = in_mem_users.clone();
-        let as_dyn_2: Arc<dyn AuthUserProvider<User=AuthUserExample> + Send + Sync> = in_mem_users.clone();
+        let as_dyn_1: Arc<UsrProvider> = in_mem_users.test_clone();
+        let as_dyn_2: Arc<dyn AuthUserProvider<User=AuthUserExample> + Send + Sync> = in_mem_users.test_clone();
         let as_dyn_3: Arc<dyn AuthUserProvider<User=AuthUserExample> + Send + Sync> = in_mem_users;
 
         let unique = get_unique_user_provider_ref([

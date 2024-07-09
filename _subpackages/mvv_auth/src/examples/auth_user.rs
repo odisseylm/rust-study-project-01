@@ -1,4 +1,5 @@
 use core::fmt;
+use implicit_clone::ImplicitClone;
 use crate::{
     permission::{
         PermissionSet, predefined::{ Role, RolePermissionsSet },
@@ -30,7 +31,7 @@ impl UserPermissionsExtractor for AuthUserExamplePswExtractor {
     type PermissionSet = RolePermissionsSet;
 
     fn extract_permissions_from_user(user: &Self::User) -> Self::PermissionSet {
-        user.permissions.clone()
+        user.permissions.implicit_clone()
     }
 }
 

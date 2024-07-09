@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use axum::extract::Request;
 use axum::response::{ IntoResponse, Response };
+use implicit_clone::ImplicitClone;
 
 use mvv_auth::{
     AuthBackendError, PlainPasswordComparator,
@@ -60,10 +61,10 @@ impl CompositeAuthBackend {
         // This combines the session layer with our backend to establish the auth service
         // which will provide the auth session as a request extension.
         //
-        let user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Send + Sync> = users_and_perm_provider.clone();
-        let oauth_user_provider: Arc<dyn OAuth2UserStore<User=AuthUser> + Send + Sync> = users_and_perm_provider.clone();
+        let user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Send + Sync> = users_and_perm_provider.implicit_clone();
+        let oauth_user_provider: Arc<dyn OAuth2UserStore<User=AuthUser> + Send + Sync> = users_and_perm_provider.implicit_clone();
         let permission_provider: Arc<dyn PermissionProvider<User=AuthUser, Permission=Role, PermissionSet=RolePermissionsSet> + Send + Sync> =
-            users_and_perm_provider.clone();
+            users_and_perm_provider.implicit_clone();
 
         // Rust does not support casting dyn sub-trait to dyn super-trait :-(
         // let std_usr_provider: Arc<dyn crate::auth::AuthUserProvider<User = AuthUser> + Send + Sync> = wrap_static_ptr_auth_user_provider(Arc::clone(&usr_provider_impl));
@@ -80,29 +81,29 @@ impl CompositeAuthBackend {
                 config.login_url = "/login";
 
                 Some(OAuth2AuthBackend::new(
-                    user_provider.clone(),
-                    oauth_user_provider.clone(), // it is automatically cast to another 'dyn' object. It should be done THERE!
+                    Arc::clone(&user_provider),
+                    Arc::clone(&oauth_user_provider), // it is automatically cast to another 'dyn' object. It should be done THERE!
                     config,
                     None, // default will be created
-                    permission_provider.clone(),
+                    Arc::clone(&permission_provider),
                 ) ?)
             }
         };
 
         let http_basic_auth_backend = HttpBasicAuthBackend::<AuthUser, PswComparator, RolePermissionsSet>::new(
-            user_provider.clone(),
+            Arc::clone(&user_provider),
             // AuthBackendMode::AuthProposed, // It makes sense for pure server SOA (especially for testing)
             AuthBackendMode::AuthSupported,
-            permission_provider.clone(),
+            Arc::clone(&permission_provider),
         );
         let login_form_auth_backend = LoginFormAuthBackend::<AuthUser, PswComparator, RolePermissionsSet>::new(
-            user_provider.clone(),
+            Arc::clone(&user_provider),
             // It makes sense for web-app
             LoginFormAuthConfig {
                 auth_mode: AuthBackendMode::AuthProposed,
                 login_url: "/login",
             },
-            permission_provider.clone(),
+            Arc::clone(&permission_provider),
         );
 
         Ok(CompositeAuthBackend {
@@ -117,15 +118,15 @@ impl CompositeAuthBackend {
 
     pub fn test_users() -> Result<CompositeAuthBackend, anyhow::Error> {
         let in_mem_users = Arc::new(test::in_memory_test_users() ?);
-        let user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> = in_mem_users.clone();
-        let permission_provider: Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send> = in_mem_users.clone();
+        let user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> = in_mem_users.implicit_clone();
+        let permission_provider: Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send> = in_mem_users.implicit_clone();
 
         Ok(CompositeAuthBackend {
-            http_basic_auth_backend: Some(HttpBasicAuthBackend::new(user_provider.clone(), AuthBackendMode::AuthProposed, permission_provider.clone())),
-            login_form_auth_backend: Some(LoginFormAuthBackend::new(user_provider.clone(), LoginFormAuthConfig {
+            http_basic_auth_backend: Some(HttpBasicAuthBackend::new(Arc::clone(&user_provider), AuthBackendMode::AuthProposed, Arc::clone(&permission_provider))),
+            login_form_auth_backend: Some(LoginFormAuthBackend::new(Arc::clone(&user_provider), LoginFormAuthConfig {
                 auth_mode: AuthBackendMode::AuthSupported,
                 login_url: "/login",
-            }, permission_provider.clone())),
+            }, Arc::clone(&permission_provider))),
             user_provider,
             permission_provider,
             oauth2_backend: None,
@@ -250,7 +251,7 @@ impl AuthnBackendAttributes for CompositeAuthBackend {
     type ProposeAuthAction = CompositeProposeAuthAction;
 
     fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> {
-        self.user_provider.clone()
+        Arc::clone(&self.user_provider)
     }
     fn user_provider_ref<'a>(&'a self) -> &'a Arc<dyn AuthUserProvider<User=Self::User> + Sync + Send> {
         &self.user_provider
@@ -284,7 +285,7 @@ impl PermissionProviderSource for CompositeAuthBackend {
     #[inline]
     //noinspection DuplicatedCode
     fn permission_provider(&self) -> Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet> + Send + Sync> {
-        self.permission_provider.clone()
+        Arc::clone(&self.permission_provider)
     }
     #[inline]
     //noinspection DuplicatedCode

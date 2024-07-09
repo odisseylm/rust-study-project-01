@@ -2004,6 +2004,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb56e1aa765b4b4f3aadfab769793b7087bb03a4ea4920644a6d238e2df5b9ed"
 
 [[package]]
+name = "implicit-clone"
+version = "0.4.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8a9aa791c7b5a71b636b7a68207fdebf171ddfc593d9c8506ec4cbc527b6a84"
+dependencies = [
+ "implicit-clone-derive",
+]
+
+[[package]]
+name = "implicit-clone-derive"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9311685eb9a34808bbb0608ad2fcab9ae216266beca5848613e95553ac914e3b"
+dependencies = [
+ "quote",
+ "syn 2.0.65",
+]
+
+[[package]]
 name = "indexmap"
 version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2427,6 +2446,7 @@ dependencies = [
  "http 1.1.0",
  "hyper 1.3.1",
  "if_chain",
+ "implicit-clone",
  "indoc",
  "inherent",
  "itertools 0.13.0",
@@ -3130,6 +3150,7 @@ dependencies = [
  "http 1.1.0",
  "hyper 1.3.1",
  "if_chain",
+ "implicit-clone",
  "indoc",
  "inherent",
  "itertools 0.13.0",

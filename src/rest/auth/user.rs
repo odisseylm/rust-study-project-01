@@ -1,4 +1,5 @@
 use core::fmt;
+use implicit_clone::ImplicitClone;
 use mvv_auth::{
     PasswordComparator,
     backend::psw_auth::PswUser,
@@ -74,7 +75,7 @@ impl UserPermissionsExtractor for UserRolesExtractor {
     type PermissionSet = RolePermissionsSet;
 
     fn extract_permissions_from_user(user: &Self::User) -> Self::PermissionSet {
-        user.permissions.clone()
+        user.permissions.implicit_clone()
     }
 }
 
@@ -94,7 +95,7 @@ impl axum_login::AuthUser for AuthUser {
     type Id = String;
 
     fn id(&self) -> Self::Id {
-        self.username.to_lowercase().clone()
+        self.username.to_lowercase().to_owned()
     }
     fn session_auth_hash(&self) -> &[u8] {
         if let Some(access_token) = &self.access_token {

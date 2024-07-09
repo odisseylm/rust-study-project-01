@@ -77,6 +77,7 @@ inherent = "1.0.11"
 readonly = "0.2.12"
 extension-trait = "1.0.2"
 ambassador = { version = "0.4.0",  optional = true }
+implicit-clone = {  version = "0.4.9", features = ["default", "derive", "implicit-clone-derive"] }
 
 num = "0.4.3"
 nutype = "0.4.2"

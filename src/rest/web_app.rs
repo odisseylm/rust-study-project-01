@@ -27,12 +27,12 @@ fn create_prod_dependencies() -> Result<Dependencies<AccountServiceImpl>, anyhow
     let account_service = Arc::new(AccountServiceImpl { database_connection: Arc::clone(&db) });
     let account_rest = Arc::new(CurrentUserAccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
 
-    Ok(Dependencies::<AccountServiceImpl> {
+    Ok(Dependencies::<AccountServiceImpl> { state: Arc::new(DependenciesState {
         database_connection: Arc::clone(&db),
         account_service: Arc::clone(&account_service),
         account_rest: Arc::clone(&account_rest),
-        user_perm_provider: Arc::new(SqlUserProvider::with_cache(db.clone()) ?)
-    })
+        user_perm_provider: Arc::new(SqlUserProvider::with_cache(Arc::clone(&db)) ?)
+    })})
 }
 
 fn init_logger() {
@@ -102,7 +102,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
 
     use crate::rest::auth::auth_layer::{ composite_auth_manager_layer };
     let auth_layer =
-        composite_auth_manager_layer(dependencies.user_perm_provider.clone()).await ?;
+        composite_auth_manager_layer(Arc::clone(&dependencies.state.user_perm_provider)).await ?;
     let login_route = composite_login_router();
 
     let app_router = Router::new()
@@ -216,6 +216,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
 // };
 // use tower::{ timeout::error::Elapsed};
 use log::{ error /*, info*/ };
+use crate::rest::app_dependencies::DependenciesState;
 // use axum_handle_error_extract::HandleErrorLayer;
 
 /*

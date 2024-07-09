@@ -239,7 +239,7 @@ impl Amount {
     // I do not see sense to have function to 'change' currency (there are no such user/bank cases).
     // Having such method just can provoke making incorrect/senseless operations.
     // pub fn with_currency(&self, currency: Currency) -> Amount {
-    //     Amount { value: self.value.clone(), currency }
+    //     Amount { value: self.value.c l o n e(), currency }
     // }
 
     pub fn move_out(self) -> AmountParts {
