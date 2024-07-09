@@ -21,3 +21,18 @@ pub use error::AuthBackendError;
 pub use user_provider::{AuthUserProvider, AuthUserProviderError};
 
 pub use psw::{PasswordComparator, PlainPasswordComparator};
+
+pub mod http {
+    use axum::extract::OriginalUri;
+
+    pub fn req_original_uri(req: &axum::extract::Request) -> Option<String> {
+        let url: Option<String> = req.extensions().get::<OriginalUri>()
+            .map(|uri|uri.to_string());
+        url
+    }
+
+    pub fn req_original_uri_or_empty(req: &axum::extract::Request) -> String {
+        req_original_uri(req).unwrap_or_else(||String::new())
+    }
+
+}

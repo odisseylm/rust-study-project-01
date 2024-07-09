@@ -3,7 +3,6 @@ use core::hash::Hash;
 use std::env::VarError;
 use std::sync::Arc;
 
-use axum::extract::OriginalUri;
 use oauth2::basic::BasicClient;
 
 use crate::{
@@ -18,6 +17,7 @@ use crate::{
     user_provider::{ AuthUserProvider, AuthUserProviderError, },
     error::AuthBackendError,
 };
+use crate::http::req_original_uri;
 
 
 pub trait OAuth2User {
@@ -271,7 +271,7 @@ impl <
 
     fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {
         // TODO: add simple oauth2 login form
-        let initial_uri: Option<String> = req.extensions().get::<OriginalUri>().map(|uri|uri.to_string());
+        let initial_uri: Option<String> = req_original_uri(&req);
         Some(super::login_form_auth::ProposeLoginFormAuthAction { login_url: Some(self.state.config.login_url), initial_url: initial_uri })
     }
 }

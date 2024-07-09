@@ -1,8 +1,9 @@
 use core::fmt::Display;
-use axum::extract::{OriginalUri, Request};
+use axum::extract::Request;
 use log::warn;
 
 use crate::backend::authz_backend::AuthorizationResult;
+use crate::http::req_original_uri_or_empty;
 use crate::permission::PermissionSet;
 
 
@@ -31,9 +32,7 @@ pub fn log_unauthorized_access <
     -> (Request,)
     where <PermSet as PermissionSet>::Permission: Display
 {
-    let url: String = req.extensions().get::<OriginalUri>()
-        .map(|uri|uri.to_string())
-        .unwrap_or_else(||String::new());
+    let url: String = req_original_uri_or_empty(&req);
 
     match res {
         AuthorizationResult::Authorized => {}

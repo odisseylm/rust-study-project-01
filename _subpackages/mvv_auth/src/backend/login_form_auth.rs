@@ -2,7 +2,6 @@ use core::fmt::Debug;
 use core::hash::Hash;
 use std::sync::Arc;
 use axum::body::Body;
-use axum::extract::OriginalUri;
 use axum::http::StatusCode;
 
 use super::{ psw_auth::PswAuthBackendImpl, RequestAuthenticated };
@@ -27,6 +26,7 @@ use axum_login::AuthnBackend;
 use crate::backend::{
     axum_login_delegatable::ambassador_impl_AuthnBackend,
 };
+use crate::http::req_original_uri;
 #[cfg(feature = "ambassador22")]
 use super::{
     super::{
@@ -202,7 +202,7 @@ impl <
 
     fn propose_authentication_action(&self, req: &axum::extract::Request) -> Option<Self::ProposeAuthAction> {
         if let AuthBackendMode::AuthProposed = self.config.auth_mode {
-            let initial_url: Option<String> = req.extensions().get::<OriginalUri>().map(|uri|uri.to_string());
+            let initial_url: Option<String> = req_original_uri(&req);
             Some(ProposeLoginFormAuthAction { login_url: Some(self.config.login_url), initial_url })
         } else { None }
     }
