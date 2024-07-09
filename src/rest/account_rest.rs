@@ -113,7 +113,7 @@ fn map_account_to_rest(account: entity::Account) -> dto::Account {
     dto::Account {
         id: id.move_string_out(),
         user_id: user_id.move_string_out(),
-        amount: dto::Amount { value: amount_value, currency: currency.to_string() },
+        amount: dto::Amount { value: amount_value, currency: currency.move_out() },
         created_at,
         updated_at,
     }

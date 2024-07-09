@@ -5,7 +5,7 @@ use core::str::FromStr;
 use crate::util::serde_json::{ deserialize_as_from_str, serialize_as_display_string };
 use crate::util::string::DisplayValueExample;
 
-type FixedRawStr = fixedstr::str4;
+pub type InnerCurStr = fixedstr::str4;
 // type FixedRawStr = fixedstr::tstr<3>;
 
 
@@ -14,7 +14,7 @@ type FixedRawStr = fixedstr::str4;
 // #[serde(with = crate::util::serde_json::as_str)]
 // #[serde(deserialize_with = "string_or_struct")]
 // pub struct Currency([u8;3]);
-pub struct Currency(FixedRawStr);
+pub struct Currency(InnerCurStr);
 
 impl core::fmt::Debug for Currency {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -66,6 +66,11 @@ impl Currency {
         return s;
     }
     */
+
+    pub fn move_out(self) -> InnerCurStr {
+        self.0
+    }
+
 }
 
 impl core::fmt::Display for Currency {
@@ -92,7 +97,7 @@ fn parse_currency(currency_code: & str) -> Result<Currency, CurrencyFormatError>
     else {
         // let as_bytes = currency_code.as_bytes();
         // Ok(Currency([as_bytes[0], as_bytes[1], as_bytes[2]]))
-        let s = FixedRawStr::try_make(currency_code)
+        let s = InnerCurStr::try_make(currency_code)
             .map_err(|_|CurrencyFormatError::new(ErrorKind::IncorrectCurrencyFormat)) ?;
         Ok(Currency(s))
     }
@@ -159,7 +164,7 @@ pub const fn make_currency(currency_code: & 'static str) -> Currency {
     let is_valid = if currency_code.len() != 3 { false }
                  else { is_valid_currency_ascii(currency_code.as_bytes()) };
     if !is_valid { const_panic_wrong_currency(currency_code) }
-    return Currency(FixedRawStr::const_make(currency_code));
+    return Currency(InnerCurStr::const_make(currency_code));
 }
 
 
@@ -188,7 +193,7 @@ pub const fn make_currency_b(cur: & 'static [u8;3]) -> Currency {
     // return Currency([cur[0], cur[1], cur[2]]);
 
     match std::str::from_utf8(cur) {
-        Ok(as_str) => Currency(FixedRawStr::const_make(as_str)),
+        Ok(as_str) => Currency(InnerCurStr::const_make(as_str)),
         Err(_) =>
             // It should never happen just there
             const_panic_wrong_currency_ascii(cur)

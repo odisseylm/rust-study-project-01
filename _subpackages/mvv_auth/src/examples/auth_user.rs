@@ -36,18 +36,10 @@ impl UserPermissionsExtractor for AuthUserExamplePswExtractor {
 
 impl AuthUserExample {
     pub fn new(id: i64, username: &'static str, password: &'static str) -> AuthUserExample {
-        AuthUserExample {
-            id, username: username.to_string(), password: Some(password.to_string()),
-            access_token: None,
-            permissions: RolePermissionsSet::new(),
-        }
+        Self::with_roles(id, username, password, RolePermissionsSet::new())
     }
     pub fn with_role(id: i64, username: &'static str, password: &'static str, role: Role) -> AuthUserExample {
-        AuthUserExample {
-            id, username: username.to_string(), password: Some(password.to_string()),
-            access_token: None,
-            permissions: RolePermissionsSet::from_permission(role),
-        }
+        Self::with_roles(id, username, password, RolePermissionsSet::from_permission(role))
     }
     pub fn with_roles(id: i64, username: &'static str, password: &'static str, roles: RolePermissionsSet) -> AuthUserExample {
         AuthUserExample {

@@ -1270,6 +1270,9 @@ name = "fixedstr"
 version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54e049f021908beff8f8c430a99f5c136d3be69f1667346e581f446b173bc012"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "flate2"

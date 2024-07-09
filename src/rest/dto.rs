@@ -2,6 +2,7 @@ use core::fmt;
 use bigdecimal::BigDecimal;
 use chrono::Utc;
 use serde::{ Deserialize, Serialize };
+use crate::entities::currency::InnerCurStr;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -48,7 +49,7 @@ pub struct Amount {
     #[serde(with = "crate::json::serde_json_bd::bd_with")]
     pub value: BigDecimal,
     // currency: Currency,
-    pub currency: String, // Now it is String there just for projection's test
+    pub currency: InnerCurStr, // Now it is String there just for projection's test
 }
 impl fmt::Debug for Amount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
