@@ -7,7 +7,7 @@ use crate::entities::user::UserId;
 
 
 #[derive(Debug, Clone, PartialEq, derive_more::Display)] // derive_more::FromStr)]
-#[derive(Serialize, Deserialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 #[display(fmt = "{}", "0")]
 pub struct AccountId( #[allow(dead_code)] Id);
 type AccountIdFormatError = crate::entities::id::parse::IdFormatError;

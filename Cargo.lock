@@ -2690,6 +2690,7 @@ dependencies = [
  "kinded",
  "proc-macro2",
  "quote",
+ "regex",
  "syn 2.0.65",
  "urlencoding",
 ]
@@ -3188,6 +3189,7 @@ dependencies = [
  "inherent",
  "itertools 0.13.0",
  "jsonwebtoken",
+ "lazy_static",
  "log",
  "log4rs",
  "lru",
@@ -3202,6 +3204,7 @@ dependencies = [
  "place_macro",
  "quick_cache",
  "readonly",
+ "regex",
  "reqwest 0.12.4",
  "seq-macro",
  "serde",
@@ -3361,9 +3364,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.10.4"
+version = "1.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c117dbdfde9c8308975b6a18d71f3f385c89461f7b3fb054288ecf2a2058ba4c"
+checksum = "b91213439dad192326a0d7c6ee3955910425f441d7038e0d6933b0aec5c4517f"
 dependencies = [
  "aho-corasick",
  "memchr",

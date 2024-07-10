@@ -98,8 +98,10 @@ strum_macros = "0.26"
 # static (mutable) varibales support
 ctor = "0.2.8"
 once_cell = "1.19.0"
-#lazy_static = "1.4.0"
+lazy_static = "1.4.0" # required for nutype
 static_init = "1.0.3"
+
+regex = "1.10.5" # required for nutype
 
 log = "0.4.21"
 env_logger = "0.11.3"
@@ -122,7 +124,7 @@ ambassador = { version = "0.4.0",  optional = true }  # Delegation support
 fixedstr = {  version = "0.5.7", features = ["serde"] }
 
 num = "0.4.3"
-nutype = "0.4.2"
+nutype = {  version = "0.4.2", features = ["default", "regex", "serde", ] }
 nonzero_lit = "0.1.2"
 
 implicit-clone = {  version = "0.4.9", features = ["default", "derive", "implicit-clone-derive"] }

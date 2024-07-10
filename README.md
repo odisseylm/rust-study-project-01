@@ -32,6 +32,7 @@ Investigate
  - `cargo expand auth::login_form_auth --lib`
  - `cargo expand auth::internal_delegatable_traits::aaa --lib`
  - `cargo expand auth::examples::usage --lib`
+ - `cargo expand entities::id --lib`
  - `cargo expand --test tuple_test2`
  - `cargo expand --lib  --ugly > temp_all_app.rs`
 

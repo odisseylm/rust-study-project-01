@@ -10,14 +10,17 @@ use core::fmt::Debug;
 /// Try not use pure unwrap() at all production code (to avoid unpredictable panic).
 ///
 pub trait UncheckedResultUnwrap <Ok, Err: Debug> {
+    #[track_caller]
     fn unchecked_unwrap(self) -> Ok;
 }
 pub trait UncheckedOptionUnwrap <Ok> {
+    #[track_caller]
     fn unchecked_unwrap(self) -> Ok;
 }
 
 impl<Ok,Err: Debug> UncheckedResultUnwrap<Ok,Err> for Result<Ok,Err> {
     #[inline]
+    #[track_caller]
     fn unchecked_unwrap(self) -> Ok {
         self.unwrap() // allowed
     }
@@ -25,6 +28,7 @@ impl<Ok,Err: Debug> UncheckedResultUnwrap<Ok,Err> for Result<Ok,Err> {
 
 impl<Ok> UncheckedOptionUnwrap<Ok> for Option<Ok> {
     #[inline]
+    #[track_caller]
     fn unchecked_unwrap(self) -> Ok {
         self.unwrap() // allowed
     }
