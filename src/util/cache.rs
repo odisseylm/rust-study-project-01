@@ -74,11 +74,10 @@ pub trait AsyncCache {
     //
     // 'ttl' param is used for new fetched value.
     //    For validating current value expiration, previous ttl is used.
-    async fn get_or_fetch<F, Fut, FetchErr>(&mut self, key: Self::Key, ttl: TtlMode, fetch: F)
+    async fn get_or_fetch<Fut, FetchErr>(&mut self, key: Self::Key, ttl: TtlMode, fetch: impl FnOnce(Self::Key) -> Fut + Send)
                                             -> Result<Self::Value,CacheOrFetchError<FetchErr>>
         where
-            F: FnOnce(Self::Key) -> Fut + Send,
-            // TODO: try to minimize generic params count
+            // F: FnOnce(Self::Key) -> Fut + Send,
             Fut: Future<Output = Result<Self::Value,FetchErr>> + Send,
             FetchErr: std::error::Error,
             Self::Key: Clone,

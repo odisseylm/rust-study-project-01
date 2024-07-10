@@ -7,11 +7,11 @@ use core::fmt;
 use std::env;
 use std::fmt::write;
 use std::io::Write;
-use project01::{make_currency, make_currency_b };
-use project01::entities::currency::{Currency, make_currency_b, make_currency, CurrencyFormatError};
-use project01::entities::currency::{ EUR, USD, };
+use project01::{ make_currency, make_currency_b };
+use project01::entities::currency::{ Currency, make_currency_b, make_currency, CurrencyFormatError };
+use project01::entities::currency::predefined::{ EUR, USD, };
 use common::TestResultUnwrap;
-use project01::util::{as_printable, as_printable_ptr, UncheckedResultUnwrap};
+use project01::util::{ as_printable, as_printable_ptr, UncheckedResultUnwrap };
 use project01::util::result::PrintableResult;
 use project01::util::test_unwrap::TestSringOps;
 

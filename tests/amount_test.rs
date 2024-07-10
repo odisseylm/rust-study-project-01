@@ -7,7 +7,7 @@ use bigdecimal::BigDecimal;
 use project01::entities::amount::{ Amount, amount };
 use project01::entities::amount::parse;
 use project01::entities::amount::parse::{ ParseAmountError };
-use project01::entities::currency::{ EUR, USD, make_currency };
+use project01::entities::currency::{ predefined::{ EUR, USD }, make_currency };
 use project01::make_currency;
 
 use common::{ TestOptionUnwrap, TestResultUnwrap };

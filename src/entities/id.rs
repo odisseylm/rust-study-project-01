@@ -2,9 +2,9 @@ use core::str::FromStr;
 use serde::Deserialize;
 use serde_with::serde_derive::Serialize;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, derive_more::Display)]
 #[derive(Serialize, Deserialize)]
-#[derive(PartialEq)]
+#[display(fmt = "{}", "0")]
 // #[nutype(
 //     validate(not_empty, len_char_max = 20),
 //     derive(Debug, PartialEq),
@@ -23,13 +23,6 @@ impl FromStr for Id {
     pub fn from_str(str: &str) -> Result<Self, parse::IdFormatError> {
         // TODO: impl validation
         Ok(Id(str.to_string()))
-    }
-}
-
-// TODO: use nu-type crate
-impl core::fmt::Display for Id {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.0)
     }
 }
 

@@ -40,7 +40,7 @@ fn test_add_amounts() {
 }
 
 #[test]
-#[should_panic(expected = "AmountOpsError { kind: DifferentCurrencies(Currency { BRL }, Currency { EUR }),")]
+#[should_panic(expected = "AmountOpsError { kind: DifferentCurrencies(Currency(BRL), Currency(EUR)),")]
 fn test_add_amounts_with_different_currencies() {
 
     let amount1 = Amount::from_str("123.45  BRL").test_unwrap();
@@ -68,7 +68,7 @@ fn test_add_amounts_with_different_currencies_to_see_currencies() {
 
     let mut str_buf = String::new();
     write!(str_buf, "{:?}", err).test_unwrap();
-    assert_starts_with!(str_buf, "AmountOpsError { kind: DifferentCurrencies(Currency { BRL }, Currency { EUR }),");
+    assert_starts_with!(str_buf, "AmountOpsError { kind: DifferentCurrencies(Currency(BRL), Currency(EUR)),");
 }
 
 
@@ -88,7 +88,7 @@ fn test_sub_amounts() {
 
 
 #[test]
-#[should_panic(expected = "AmountOpsError { kind: DifferentCurrencies(Currency { BRL }, Currency { EUR }),")]
+#[should_panic(expected = "AmountOpsError { kind: DifferentCurrencies(Currency(BRL), Currency(EUR)),")]
 fn test_sub_amounts_with_different_currencies() {
 
     let amount1 = Amount::from_str("123.45  BRL").test_unwrap();

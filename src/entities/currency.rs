@@ -2,27 +2,27 @@
 
 use core::char;
 use core::str::FromStr;
-use crate::util::serde_json::{ deserialize_as_from_str, serialize_as_display_string };
+use crate::json_str_ser_deser_impl;
 use crate::util::string::DisplayValueExample;
 
+
+// Ideally it would be nice to use fixedstr::tstr<3> but I do not want to enable
+// corresponding not recommended 'fixedstr' feature.
 pub type InnerCurStr = fixedstr::str4;
-// type FixedRawStr = fixedstr::tstr<3>;
 
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-// #[derive(Serialize, Deserialize)]
-// #[serde(with = crate::util::serde_json::as_str)]
-// #[serde(deserialize_with = "string_or_struct")]
-// pub struct Currency([u8;3]);
-pub struct Currency(InnerCurStr);
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, derive_more::Display)]
+#[display(fmt = "{}", _0)]
+pub struct Currency(InnerCurStr); // ([u8;3]);
 
-impl core::fmt::Debug for Currency {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Currency {{ {} }}", self)
-    }
-}
+json_str_ser_deser_impl! { Currency }
 
-// TODO: how simplify it? I wanna have only one line instead of 4.
+/*
+// T O D O: how simplify it? I want to have only one line instead of 4!!
+// I didn't find already implemented crates for it.
+//
+use crate::util::serde_json::{deserialize_as_from_str, serialize_as_display_string };
+
 impl serde::ser::Serialize for Currency {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
         serialize_as_display_string(serializer, &self)
@@ -33,6 +33,7 @@ impl<'de> serde::Deserialize<'de> for Currency {
         deserialize_as_from_str(deserializer)
     }
 }
+*/
 
 pub type CurrencyFormatError = parse::CurrencyFormatError;
 
@@ -43,42 +44,20 @@ impl Currency {
     }
 
     pub fn code_as_ascii_bytes(&self) -> [u8;3] {
-        // self.0
         let s = self.0.as_str().as_bytes();
         let bytes: [u8;3] = [s[0], s[1], s[2]];
         bytes
     }
 
     pub fn as_str(&self) -> &str {
-        // unsafe { std::str::from_utf8_unchecked(&self.0) }
-        self.0.as_str()
+        self.0.as_str()  // unsafe { std::str::from_utf8_unchecked(&self.0) }
     }
-
-    /*
-    pub fn code_as_string(&self) -> String {
-        // a bit overcomplicated and needs risky unwrap...
-        //String::from_utf8(Vec::from(self.0))
-
-        let mut s: String = String::with_capacity(3);
-        s.push(self.0[0] as char);
-        s.push(self.0[1] as char);
-        s.push(self.0[2] as char);
-        return s;
-    }
-    */
 
     pub fn move_out(self) -> InnerCurStr {
         self.0
     }
-
 }
 
-impl core::fmt::Display for Currency {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        // write!(f, "{}{}{}", self.0[0] as char, self.0[1] as char, self.0[2] as char)
-        write!(f, "{}", self.0)
-    }
-}
 impl DisplayValueExample for Currency {
     fn display_value_example() -> &'static str { "AUD" }
 }
@@ -95,8 +74,6 @@ fn parse_currency(currency_code: & str) -> Result<Currency, CurrencyFormatError>
 
     if !is_valid { Err(CurrencyFormatError::new(ErrorKind::IncorrectCurrencyFormat)) }
     else {
-        // let as_bytes = currency_code.as_bytes();
-        // Ok(Currency([as_bytes[0], as_bytes[1], as_bytes[2]]))
         let s = InnerCurStr::try_make(currency_code)
             .map_err(|_|CurrencyFormatError::new(ErrorKind::IncorrectCurrencyFormat)) ?;
         Ok(Currency(s))
@@ -107,7 +84,6 @@ fn parse_currency(currency_code: & str) -> Result<Currency, CurrencyFormatError>
 #[inherent::inherent]
 impl FromStr for Currency {
     type Err = CurrencyFormatError;
-
     #[inline]
     pub fn from_str(s: &str) -> Result<Currency, CurrencyFormatError> {
         parse_currency(s)
@@ -131,7 +107,7 @@ const fn const_panic_wrong_currency_ascii(_currency: & 'static [u8]) -> ! {
 const fn is_valid_cur_char(ch: char) -> bool {
     ch.is_ascii_alphabetic() && ch.is_ascii_uppercase()
 }
-#[inline]
+#[inline(always)]
 const fn is_valid_cur_byte(ch: u8) -> bool { is_valid_cur_char(ch as char) }
 
 // hm... like kotlin inline dependent functions, this validate_currency should be also published.
@@ -272,9 +248,12 @@ macro_rules! make_currency_b {
     }};
 }
 
+pub mod predefined {
+    use super::{ Currency, make_currency };
 
-pub const USD: Currency = make_currency("USD");
-pub const EUR: Currency = make_currency("EUR");
+    pub const USD: Currency = make_currency("USD");
+    pub const EUR: Currency = make_currency("EUR");
+}
 
 
 // -------------------------------------------------------------------------------------------------
@@ -357,6 +336,7 @@ pub mod parse {
 mod tests {
     use crate::util::test_unwrap::TestSringOps;
     use super::*;
+    use super::predefined::*;
 
     /*
     #[test]
@@ -417,5 +397,10 @@ mod tests {
 
         // assert_eq!(temp_obj.code_as_string(), "USD");
         assert_eq!(temp_obj.to_test_string(), "USD");
+    }
+
+    #[test]
+    fn debug_test() {
+        assert_eq!(make_currency!("USD").to_test_debug_string(), "Currency(USD)");
     }
 }

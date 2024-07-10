@@ -2,7 +2,7 @@
 pub mod result;
 mod unchecked;
 pub mod error;
-mod json;
+pub mod json;
 
 pub mod backtrace;
 pub mod test_unwrap;

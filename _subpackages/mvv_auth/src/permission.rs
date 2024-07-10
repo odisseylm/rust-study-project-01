@@ -12,6 +12,7 @@ use std::collections::HashSet;
 use anyhow::anyhow;
 use axum::response::Response;
 use http::StatusCode;
+use log::error;
 use crate::AuthUserProviderError;
 
 // -------------------------------------------------------------------------------------------------
@@ -61,7 +62,7 @@ impl From<AuthUserProviderError> for PermissionProcessError {
 
 impl axum::response::IntoResponse for PermissionProcessError {
     fn into_response(self) -> Response {
-        // TODO: add logging
+        error!("PermissionProcess internal error: {}", &self);
         StatusCode::INTERNAL_SERVER_ERROR.into_response()
     }
 }

@@ -4,8 +4,8 @@ use project01::util::test_unwrap::TestSringOps;
 fn test_123() {
 
     let tuple_v = (1, "str", "string".to_test_string(), std::f64::consts::PI);
-    // TODO: add such function
-    let tuple_of_refs = (tuple_v.0, tuple_v.1, tuple_v.2, tuple_v.3, );
+    // T O D O: add such function
+    let tuple_of_refs = (&tuple_v.0, &tuple_v.1, &tuple_v.2, &tuple_v.3, );
 
     use tuple_heter_iter::TupleAccess;
 
@@ -24,14 +24,14 @@ fn test_123() {
 fn test_124() {
 
     let tuple_v = (1, "str", "string".to_test_string(), std::f64::consts::PI);
-    // TODO: add such function
-    let tuple_of_refs = (tuple_v.0, tuple_v.1, tuple_v.2, tuple_v.3, );
+    // T O D O: add such function
+    let tuple_of_refs = (&tuple_v.0, &tuple_v.1, &tuple_v.2, &tuple_v.3, );
 
     // use tuple_heter_iter::TupleAccess;
 
     // Faked (really unused) variable to shut up Idea error notification.
     #[allow(dead_code, unused_variables)]
-    let item = &tuple_of_refs.0;
+    let item = tuple_of_refs.0;
 
     tuple_heter_iter_macro::tuple_for_each_by_ref! ($item, tuple_of_refs, {
         println!("### test_124: {:?}", item); // How to fix 'item_ref' properly

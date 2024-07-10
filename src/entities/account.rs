@@ -6,9 +6,9 @@ use crate::entities::user::UserId;
 // use chrono::serde::*;
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, derive_more::Display)] // derive_more::FromStr)]
 #[derive(Serialize, Deserialize)]
-#[derive(PartialEq)]
+#[display(fmt = "{}", "0")]
 pub struct AccountId( #[allow(dead_code)] Id);
 type AccountIdFormatError = crate::entities::id::parse::IdFormatError;
 
@@ -23,11 +23,6 @@ impl core::str::FromStr for AccountId { // TODO: create macros for it
     pub fn from_str(str: &str) -> Result<AccountId, AccountIdFormatError> {
         let raw_id = Id::from_str(str) ?;
         Ok(AccountId(raw_id))
-    }
-}
-impl core::fmt::Display for AccountId {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.0)
     }
 }
 
