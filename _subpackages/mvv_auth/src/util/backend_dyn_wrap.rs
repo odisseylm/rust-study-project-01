@@ -88,6 +88,7 @@ mod tests {
 
     type PermSet = IntegerBitsPermissionSet<u32>;
     use crate::test::TestResultUnwrap;
+    use crate::util::test_unwrap::TestSringOps;
 
     pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
         InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "dyn-wrap-vovan", "qwerty")))

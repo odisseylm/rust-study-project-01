@@ -219,6 +219,7 @@ mod tests {
         permission::predefined::{ Role, RolePermissionsSet, },
     };
     use crate::test::{ TestOptionUnwrap, TestResultUnwrap, };
+    use crate::util::test_unwrap::TestSringOps;
 
     pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
         InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "in-mem-vovan", "qwerty")))

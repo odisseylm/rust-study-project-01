@@ -166,6 +166,7 @@ mod tests {
     use crate::examples::composite_auth::{ Role, RolePermissionsSet, test };
     use crate::user_provider::InMemAuthUserProvider;
     use crate::test::{ TestOptionUnwrap, TestResultUnwrap, };
+    use crate::util::test_unwrap::TestOps;
 
     type UsrProvider = dyn AuthUserProvider<User=AuthUserExample> + Send + Sync;
     type ArcUsrProvider = Arc<dyn AuthUserProvider<User=AuthUserExample> + Send + Sync>;

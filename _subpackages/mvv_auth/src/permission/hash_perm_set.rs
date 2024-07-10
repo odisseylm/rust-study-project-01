@@ -142,7 +142,7 @@ mod tests {
     use super::HashPermissionSet;
     use crate::permission::{ PermissionSet, PermissionsToHashSet, predefined::Role, };
     use crate::test::TestResultUnwrap;
-
+    use crate::util::test_unwrap::TestSringOps;
 
     #[test]
     fn hash_permission_set_for_u32() {
@@ -177,7 +177,7 @@ mod tests {
         assert!(!ps.has_permission("4"));
 
         let ps = HashPermissionSet::<String>::from_permission("2".to_test_string());
-        assert!(! <HashPermissionSet<String> as PermissionSet>::has_permission(&ps, "1"));
+        assert!(! <HashPermissionSet<String> as PermissionSet>::has_permission(&ps, &"1".to_test_string()));
         // assert!(! <HashPermissionSet<String> as PermissionSet>::has_permission(&ps, &"1"));
         assert!(!ps.has_permission(&"1".to_test_string()));
         assert!(!ps.has_permission("1"));

@@ -54,6 +54,7 @@ mod tests {
     use core::fmt;
     use std::collections::HashSet;
     use assertables::{ assert_contains, assert_contains_as_result };
+    use crate::util::test_unwrap::TestSringOps;
 
     struct TestIterVec(Vec<i32>);
     impl Display for TestIterVec {
