@@ -39,3 +39,14 @@ pub mod entity {
     pub use super::amount::parse::ParseAmountError as AmountFormatError;
     pub use super::account::Account;
 }
+
+
+pub mod bd {
+    use core::fmt::{ self, Formatter };
+    use bigdecimal::BigDecimal;
+
+    // Default BigDecimal Debug impl shows very unfriendly info
+    pub fn bd_dbg_fmt(bd: &BigDecimal, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{bd} ({bd:?})")
+    }
+}

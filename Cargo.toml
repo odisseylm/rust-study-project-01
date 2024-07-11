@@ -89,6 +89,11 @@ educe = "0.6.0"
 strum = "0.26"    # Enum Display, and so on easy impl
 strum_macros = "0.26"
 
+# Display generating by format
+#display_attr = "0.1.1"
+#parse-display = "0.9.1"
+#derive_more = ...
+
 ## !!! Out dated !!!
 ## !!! backtrace = "0.3.71"
 
