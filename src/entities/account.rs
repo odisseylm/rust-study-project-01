@@ -17,6 +17,10 @@ impl AccountId {
     pub fn move_string_out(self) -> String { self.0.into_inner() }
 }
 
+use crate::generate_delegate_new_type_from_str;
+generate_delegate_new_type_from_str! { AccountId, Id, AccountIdFormatError }
+
+/*
 #[inherent::inherent]
 impl core::str::FromStr for AccountId { // TODO: create macros for it
     type Err = AccountIdFormatError;
@@ -25,6 +29,7 @@ impl core::str::FromStr for AccountId { // TODO: create macros for it
         Ok(AccountId(raw_id))
     }
 }
+*/
 
 #[derive(Debug)]
 #[derive(Serialize, Deserialize)]

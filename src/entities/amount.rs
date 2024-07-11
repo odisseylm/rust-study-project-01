@@ -256,7 +256,6 @@ pub fn amount(amount: BigDecimal, currency: Currency) -> Amount { Amount::new(am
 #[inherent::inherent]
 impl core::str::FromStr for Amount {
     type Err = parse::ParseAmountError;
-
     #[inline]
     pub fn from_str(s: &str) -> Result<Amount, parse::ParseAmountError> { parse::parse_amount(s) }
 }

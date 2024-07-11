@@ -572,6 +572,8 @@ static INITIAL_RUST_BACKTRACE_ENABLED_OLD: once_cell::sync::Lazy<bool> = once_ce
 static INITIAL_RUST_BACKTRACE_ENABLED: bool = {
     use crate::util::obj_ext::ValExt;
 
+    print!("### TEMP std::env::var(\"RUST_BACKTRACE\") = {:?}", std::env::var("RUST_BACKTRACE"));
+
     std::env::var("RUST_BACKTRACE")
         .map(|rust_bt_val| rust_bt_val.as_str().is_one_of3("1", "full", "short"))
         .unwrap_or(false)

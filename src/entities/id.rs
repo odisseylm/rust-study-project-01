@@ -1,5 +1,4 @@
 use core::str::FromStr;
-use crate::util::UncheckedResultUnwrap;
 // -------------------------------------------------------------------------------------------------
 
 
@@ -63,8 +62,7 @@ pub mod parse {
 #[cfg(test)]
 mod tests {
     use regex::Regex;
-    use crate::util::test_unwrap::TestSringOps;
-    use crate::util::TestResultUnwrap;
+    use crate::util::{ TestResultUnwrap, UncheckedResultUnwrap, test_unwrap::TestSringOps };
     use super::*;
 
     lazy_static::lazy_static! {
@@ -129,6 +127,6 @@ mod tests {
     #[test]
     #[should_panic(expected = "Error(\"Id violated the regular expression. Expected valid Id\"")]
     fn deserialize_wrong_id() {
-        let id: Id = serde_json::from_str(r#""abcd-12_34 ЗапорізькийКозак""#).test_unwrap();
+        let _id: Id = serde_json::from_str(r#""abcd-12_34 ЗапорізькийКозак""#).test_unwrap();
     }
 }

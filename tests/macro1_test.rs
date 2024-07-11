@@ -19,6 +19,21 @@ use project01::entities::currency::{CurrencyFormatError, parse::ErrorKind as Cur
 use project01::util::backtrace::{BacktraceCopyProvider, NewBacktracePolicy};
 use project01::util::test_unwrap::TestSringOps;
 
+/*
+lazy_static::lazy_static! {
+    static ref expected_default_bt_capture_part: &'static str =
+        if is_anyhow_backtrace_enabled() { "macro1_test.rs" }
+        else { "disabled" };
+}
+*/
+
+fn expected_sys_default_bt_capture_part() -> &'static str {
+    let contains_bt_by_default = std::backtrace::Backtrace::capture().to_string()
+        .contains("macro1_test.rs");
+    if contains_bt_by_default { "macro1_test.rs" }
+    else { "disabled" }
+}
+
 #[test]
 fn test_currency_format_error_new() {
     let err = CurrencyFormatError::new(CurErrorKind::NoCurrency);
@@ -36,8 +51,8 @@ fn test_currency_format_error_with_backtrace() {
     assert_eq!(err.kind, ErrorKind::IncorrectCurrencyFormat);
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Capture);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); //  "\ncapture");
-    assert_contains!(err.provide_backtrace().to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    assert_contains!(err.backtrace.to_test_string(), expected_sys_default_bt_capture_part()); //  "\ncapture");
+    assert_contains!(err.provide_backtrace().to_test_string(), expected_sys_default_bt_capture_part()); //  , "macro1_test.rs"); //  "\ncapture");
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::NoBacktrace);
     assert_eq!(err.backtrace.to_test_string(), "Backtrace disabled");
@@ -95,12 +110,12 @@ fn test_amount_format_error_with_backtrace() {
     use project01::entities::amount::parse::{ ErrorKind };
 
     let err = ParseAmountError::with_backtrace(ErrorKind::IncorrectCurrency, NewBacktracePolicy::Default);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs");
+    assert_contains!(err.backtrace.to_test_string(),  "macro1_test.rs"); // expected_default_bt_capture_part());
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
 
     let err = ParseAmountError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Capture);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
-    assert_contains!(err.provide_backtrace().to_test_string(), "macro1_test.rs"); // "\ncapture");
+    assert_contains!(err.backtrace.to_test_string(), expected_sys_default_bt_capture_part()); //  "macro1_test.rs"); // "\ncapture");
+    assert_contains!(err.provide_backtrace().to_test_string(), expected_sys_default_bt_capture_part()); // , "macro1_test.rs"); // "\ncapture");
 
     let err = ParseAmountError::with_backtrace(ErrorKind::IncorrectAmount, NewBacktracePolicy::NoBacktrace);
     assert_eq!(err.backtrace.to_test_string(), "Backtrace disabled");
