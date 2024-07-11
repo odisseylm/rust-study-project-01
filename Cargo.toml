@@ -93,6 +93,7 @@ strum_macros = "0.26"
 #display_attr = "0.1.1"
 #parse-display = "0.9.1"
 #derive_more = ...
+#displaythis = "1.0.23"
 
 ## !!! Out dated !!!
 ## !!! backtrace = "0.3.71"

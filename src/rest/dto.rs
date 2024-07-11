@@ -9,7 +9,7 @@ use crate::entities::currency::InnerCurStr;
 #[derive(PartialEq, Eq, Serialize, Deserialize)]
 #[derive(educe::Educe)] #[educe(Debug)]
 #[derive(derive_more::Display)]
-#[display(fmt = "Amount {{ {} {} }}", value, currency)]
+#[display(fmt = "{} {}", value, currency)]
 pub struct Amount {
     #[serde(with = "crate::json::serde_json_bd::bd_with")]
     #[educe(Debug(method(crate::entities::bd::bd_dbg_fmt)))]
@@ -19,8 +19,10 @@ pub struct Amount {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[derive(Serialize, Deserialize)]
+#[derive(derive_more::Display)]
+#[display(fmt = "Account {{ {id}, user: {user_id}, amount: {amount}, created/updated at: {created_at}/{updated_at} }}")]
 #[serde(rename_all = "camelCase")]
 pub struct Account {
     pub id: String,
