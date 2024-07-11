@@ -3,7 +3,10 @@ use serde::{ Deserialize, Serialize };
 use crate::entities::amount::Amount;
 use crate::entities::id::Id;
 use crate::entities::user::UserId;
+use crate::generate_delegate_new_type_from_str;
 // use chrono::serde::*;
+// -------------------------------------------------------------------------------------------------
+
 
 
 #[derive(Debug, Clone, PartialEq, derive_more::Display)] // derive_more::FromStr)]
@@ -17,19 +20,8 @@ impl AccountId {
     pub fn move_string_out(self) -> String { self.0.into_inner() }
 }
 
-use crate::generate_delegate_new_type_from_str;
 generate_delegate_new_type_from_str! { AccountId, Id, AccountIdFormatError }
 
-/*
-#[inherent::inherent]
-impl core::str::FromStr for AccountId { // TODO: create macros for it
-    type Err = AccountIdFormatError;
-    pub fn from_str(str: &str) -> Result<AccountId, AccountIdFormatError> {
-        let raw_id = Id::from_str(str) ?;
-        Ok(AccountId(raw_id))
-    }
-}
-*/
 
 #[derive(Debug)]
 #[derive(Serialize, Deserialize)]
