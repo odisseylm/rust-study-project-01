@@ -14,7 +14,7 @@ type AccountIdFormatError = crate::entities::id::parse::IdFormatError;
 
 impl AccountId {
     pub fn move_out(self) -> Id { self.0 }
-    pub fn move_string_out(self) -> String { self.0.move_out() }
+    pub fn move_string_out(self) -> String { self.0.into_inner() }
 }
 
 #[inherent::inherent]

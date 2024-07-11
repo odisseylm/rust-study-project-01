@@ -1,16 +1,16 @@
 use core::str::FromStr;
-use regex::Regex;
 use crate::util::UncheckedResultUnwrap;
 // -------------------------------------------------------------------------------------------------
 
 
-
-lazy_static::lazy_static! {
-    static ref ID_REGEX: Regex = Regex::new(r#"^[0-9A-Za-z_\-]+$"#).unchecked_unwrap();
-}
+// Using separate manual var makes sense if we plan to reuse it (in several validators).
+//
+// lazy_static::lazy_static! {
+//     static ref ID_REGEX: regex::Regex = regex::Regex::new(r#"^[0-9A-Za-z_\-]+$"#).unchecked_unwrap();
+// }
 
 #[nutype::nutype(
-    validate(not_empty, len_char_min = 1, len_char_max = 320, regex = ID_REGEX),
+    validate(not_empty, len_char_min = 1, len_char_max = 320, regex = r#"^[0-9A-Za-z_\-]+$"#),
     derive(Debug, Display, PartialEq, Clone, Serialize, Deserialize),
 )]
 pub struct Id (
@@ -19,9 +19,6 @@ pub struct Id (
     // For that reason 'nutype' is used.
     String);
 
-impl /* std::sys_common::IntoInner<String> for */ Id {
-    pub fn into_inner(self) -> String { self.into_inner() }
-}
 
 
 #[inherent::inherent]
@@ -65,9 +62,14 @@ pub mod parse {
 
 #[cfg(test)]
 mod tests {
+    use regex::Regex;
     use crate::util::test_unwrap::TestSringOps;
     use crate::util::TestResultUnwrap;
     use super::*;
+
+    lazy_static::lazy_static! {
+        static ref ID_REGEX: Regex = Regex::new(r#"^[0-9A-Za-z_\-]+$"#).unchecked_unwrap();
+    }
 
     #[test]
     fn validate_id_regex() {

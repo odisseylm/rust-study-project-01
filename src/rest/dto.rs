@@ -44,14 +44,15 @@ pub async fn pager_from_json(pager: Valid<Json<Pager>>) {
 
 
 #[derive(PartialEq, Eq)]
-#[derive(serde::Serialize, serde::Deserialize)] // TODO: move it to DTO
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Amount {
     #[serde(with = "crate::json::serde_json_bd::bd_with")]
     pub value: BigDecimal,
     // currency: Currency,
+    // TODO: use simple validation
     pub currency: InnerCurStr, // Now it is String there just for projection's test
 }
-impl fmt::Debug for Amount {
+impl fmt::Debug for Amount { // TODO: why it manually written?
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Amount {{ {} {}  ({:?}) }}", self.value, self.currency, self.value)
     }
