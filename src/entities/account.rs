@@ -16,8 +16,8 @@ pub struct AccountId( #[allow(dead_code)] Id);
 type AccountIdFormatError = crate::entities::id::parse::IdFormatError;
 
 impl AccountId {
-    pub fn move_out(self) -> Id { self.0 }
-    pub fn move_string_out(self) -> String { self.0.into_inner() }
+    pub fn into_inner(self) -> Id { self.0 }
+    pub fn into_inner_inner(self) -> String { self.0.into_inner() }
 }
 
 generate_delegate_new_type_from_str! { AccountId, Id, AccountIdFormatError }
@@ -70,7 +70,7 @@ impl Account {
 pub type AccountParts = new::Args;
 
 impl Account {
-    pub fn move_out(self) -> AccountParts {
+    pub fn into_parts(self) -> AccountParts {
         AccountParts {
             id: self.id,
             user_id: self.user_id,

@@ -35,7 +35,7 @@ impl Currency {
         self.0.as_str()  // unsafe { std::str::from_utf8_unchecked(&self.0) }
     }
 
-    pub fn move_out(self) -> InnerCurStr {
+    pub fn into_inner(self) -> InnerCurStr {
         self.0
     }
 }

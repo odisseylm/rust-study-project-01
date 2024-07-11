@@ -108,12 +108,12 @@ fn map_account_to_rest(account: entity::Account) -> dto::Account {
     use crate::entities::account::AccountParts;
     use crate::entities::amount::AmountParts;
 
-    let AccountParts { id, user_id, amount, created_at, updated_at } = account.move_out();
-    let AmountParts { value: amount_value, currency } = amount.move_out();
+    let AccountParts { id, user_id, amount, created_at, updated_at } = account.into_parts();
+    let AmountParts { value: amount_value, currency } = amount.into_parts();
     dto::Account {
-        id: id.move_string_out(),
-        user_id: user_id.move_string_out(),
-        amount: dto::Amount { value: amount_value, currency: currency.move_out() },
+        id: id.into_inner_inner(),
+        user_id: user_id.into_inner_inner(),
+        amount: dto::Amount { value: amount_value, currency: currency.into_inner() },
         created_at,
         updated_at,
     }

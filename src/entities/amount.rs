@@ -242,7 +242,7 @@ impl Amount {
     //     Amount { value: self.value.c l o n e(), currency }
     // }
 
-    pub fn move_out(self) -> AmountParts {
+    pub fn into_parts(self) -> AmountParts {
         AmountParts { value: self.value, currency: self.currency }
     }
 }

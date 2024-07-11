@@ -387,7 +387,7 @@ mod tests {
     use super::*;
 
     fn remove_spaces_from_type_str(str_type: &str) -> String {
-        remove_spaces_from_type_string(&str_type.to_test_string())
+        remove_spaces_from_type_string(&str_type.to_owned())
     }
 
     #[test]

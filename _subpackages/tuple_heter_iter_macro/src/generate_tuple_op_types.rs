@@ -99,7 +99,7 @@ pub(crate) fn generate_tuple_access_trait_impl(max_tuple_len: usize) -> proc_mac
 
 /**
 Generates code like
-``
+```no_build
 impl <T0,T1> TupleAccess for (T0,T1) {
     type Elem0 = T0;
     #[inline(always)]
@@ -114,7 +114,7 @@ impl <T0,T1> TupleAccess for (T0,T1) {
     #[inline(always)]
     fn _2(&self) -> Option<&Self::Elem02> { None }
 }
-``
+```
 */
 fn generate_tuple_access_impl(max_tuple_len: usize, current_tuple_len: usize)
                            -> proc_macro2::TokenStream {

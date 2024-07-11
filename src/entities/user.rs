@@ -13,8 +13,8 @@ pub struct UserId( #[allow(dead_code)] Id);
 type UserIdFormatError = crate::entities::id::parse::IdFormatError;
 
 impl UserId {
-    pub fn move_out(self) -> Id { self.0 }
-    pub fn move_string_out(self) -> String { self.0.into_inner() }
+    pub fn into_inner(self) -> Id { self.0 }
+    pub fn into_inner_inner(self) -> String { self.0.into_inner() }
 }
 
 generate_delegate_new_type_from_str! { UserId, Id, UserIdFormatError }
