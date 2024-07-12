@@ -1,8 +1,30 @@
 use bigdecimal::BigDecimal;
 use chrono::Utc;
 use serde::{ Deserialize, Serialize };
+use once_cell::sync::Lazy;
+use regex::Regex;
+use validator::Validate; // Need to do it manually since 'validator' does not import it by itself ?!
 use crate::entities::currency::InnerCurStr;
+use crate::util::UncheckedResultUnwrap;
 //--------------------------------------------------------------------------------------------------
+
+
+
+static CURRENCY_PATTERN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"^[A-Z]{3}$"#).unchecked_unwrap()  // r"[a-z]{2}$"
+});
+static ID_PATTERN: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"^[0-9A-Za-z_\-]+$"#).unchecked_unwrap()  // r"[a-z]{2}$"
+});
+
+
+// Need to have such function since 'validator' is not smart enough
+// to use third-party strings.
+#[inline]
+fn cur_regex_validate(s: &str) -> Result<(), validator::ValidationError> {
+    use crate::rest::valid::validator;
+    validator::regex_validate(s, &CURRENCY_PATTERN)
+}
 
 
 
@@ -10,11 +32,14 @@ use crate::entities::currency::InnerCurStr;
 #[derive(educe::Educe)] #[educe(Debug)]
 #[derive(derive_more::Display)]
 #[display(fmt = "{} {}", value, currency)]
+#[derive(validator::Validate)]
 pub struct Amount {
     #[serde(with = "crate::json::serde_json_bd::bd_with")]
     #[educe(Debug(method(crate::entities::bd::bd_dbg_fmt)))]
+    #[validate(skip)]
     pub value: BigDecimal,
-    // TODO: use simple validation
+    // 'validator' cannot automatically use third-party string, even if it has 'as_str()'...
+    #[validate(length(min=3, max=3), custom(function = cur_regex_validate))]
     pub currency: InnerCurStr, // , Currency  // Now it is String there just for projection's test
 }
 
@@ -24,9 +49,13 @@ pub struct Amount {
 #[derive(derive_more::Display)]
 #[display(fmt = "Account {{ {id}, user: {user_id}, amount: {amount}, created/updated at: {created_at}/{updated_at} }}")]
 #[serde(rename_all = "camelCase")]
+#[derive(validator::Validate)]
 pub struct Account {
+    #[validate(length(min=1, max=320), regex(path = *ID_PATTERN))]
     pub id: String,
+    #[validate(length(min=1, max=320), regex(path = *ID_PATTERN))]
     pub user_id: String,
+    #[validate(nested)]
     pub amount: Amount,
     pub created_at: chrono::DateTime<Utc>,
     // #[serde(serialize_with = "serialize_fn...")]

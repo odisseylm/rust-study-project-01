@@ -5,7 +5,7 @@ use chrono::{ Utc, FixedOffset };
 use project01::entities::currency::InnerCurStr;
 use project01::rest::dto::{Account, Amount};
 use project01::util::test_unwrap::TestSringOps;
-use project01::util::TestResultUnwrap;
+use project01::util::{TestOptionUnwrap, TestResultUnwrap};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -178,6 +178,35 @@ fn account_from_json() {
 
     assert_eq!(account_from_json, orig_account);
 }
+
+
+#[test]
+fn validate_account_test() {
+    let as_json = serde_json::json!(
+            {
+            "id": "abcdef-123",
+            "userId": "qwerty-456",
+            "amount": { "value": 123.0456, "currency":"us2" },// "ДОЛ" },
+            // "amount": "123.0456 USD",
+            "createdAt": "2024-05-30T20:29:57Z",
+            "updatedAt": "2024-05-31T20:29:57Z",
+            }
+        );
+
+    let account_dirty_obj: Account = serde_json::from_str(&as_json.to_test_string()).test_unwrap();
+
+    use validator::Validate;
+    let valid_res = account_dirty_obj.validate();
+    assert_eq!(
+        valid_res.clone().err().test_unwrap().to_test_display_string(),
+        r#"amount.currency: Validation error: regex [{"value": String("us2")}]"#,
+    );
+    assert_eq!(
+        valid_res.err().test_unwrap().to_test_debug_string(),
+        r#"ValidationErrors({"amount": Struct(ValidationErrors({"currency": Field([ValidationError { code: "regex", message: None, params: {"value": String("us2")} }])}))})"#,
+    );
+}
+
 
 /*
 #[test]

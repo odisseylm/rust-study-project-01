@@ -13,6 +13,12 @@ pub mod validator {
     use crate::rest::log::{ ConnectionInfoRef };
 
 
+    #[inline]
+    pub fn regex_validate(s: &str, regex: &regex::Regex) -> Result<(), validator::ValidationError> {
+        if regex.is_match(s) { Ok(()) }
+        else { Err(validator::ValidationError::new("regex")) }
+    }
+
     #[derive(Debug, Clone, Copy, Default)]
     pub struct Valid<E>(pub E);
 
