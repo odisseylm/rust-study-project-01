@@ -1,7 +1,7 @@
 
 
 
-#[macro_export] macro_rules! generate_delegate_new_type_from_str {
+#[macro_export] macro_rules! generate_from_str_new_type_delegate {
     ($Type:ty, $InnerType:ty, $Err:ty) => {
 
         #[inherent::inherent]

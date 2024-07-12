@@ -182,6 +182,30 @@ fn account_from_json() {
 
 /*
 #[test]
+fn account_from_json_with_alt_amount_format() {
+
+    let as_json = serde_json::json!(
+            {
+            "id": "abcdef-123",
+            "userId": "qwerty-456",
+            "amount": "123.0456 BRL", // alt format
+            "createdAt": "2024-05-30T20:29:57Z",
+            "updatedAt": "2024-05-31T20:29:57Z",
+            }
+        );
+
+    let account_from_json: Account = serde_json::from_str(&as_json.to_test_string()).test_unwrap();
+
+    assert_eq!(account_from_json.amount, Amount {
+        value: BigDecimal::from_str("123.0456").test_unwrap(),
+        currency: InnerCurStr::from_str("BRL").test_unwrap(),
+    });
+}
+*/
+
+
+/*
+#[test]
 fn validate_account_by_validator_test() {
     let as_json = serde_json::json!(
             {

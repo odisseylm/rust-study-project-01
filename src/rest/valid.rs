@@ -14,6 +14,7 @@ pub mod validator {
 
 
     #[inline]
+    #[allow(dead_code)]
     pub fn regex_validate(s: &str, regex: &regex::Regex) -> Result<(), validator::ValidationError> {
         if regex.is_match(s) { Ok(()) }
         else { Err(validator::ValidationError::new("regex")) }

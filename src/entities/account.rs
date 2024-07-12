@@ -1,9 +1,8 @@
 use chrono::Utc;
-use serde::{ Deserialize, Serialize };
 use crate::entities::amount::Amount;
 use crate::entities::id::Id;
 use crate::entities::user::UserId;
-use crate::generate_delegate_new_type_from_str;
+use crate::generate_from_str_new_type_delegate;
 // use chrono::serde::*;
 // -------------------------------------------------------------------------------------------------
 
@@ -11,7 +10,7 @@ use crate::generate_delegate_new_type_from_str;
 
 #[derive(Debug, Clone, PartialEq, derive_more::Display)] // derive_more::FromStr)]
 #[derive(serde::Serialize, serde::Deserialize)]
-#[display(fmt = "{}", "0")]
+#[display(fmt = "{}", _0)]
 pub struct AccountId( #[allow(dead_code)] Id);
 type AccountIdFormatError = crate::entities::id::parse::IdFormatError;
 
@@ -20,28 +19,20 @@ impl AccountId {
     pub fn into_inner_inner(self) -> String { self.0.into_inner() }
 }
 
-generate_delegate_new_type_from_str! { AccountId, Id, AccountIdFormatError }
+generate_from_str_new_type_delegate! { AccountId, Id, AccountIdFormatError }
 
 
 #[derive(Debug)]
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+// #[derive(Serialize, Deserialize)]
+// #[serde(rename_all = "camelCase")]
 #[readonly::make]
 pub struct Account {
     pub id: AccountId,
     pub user_id: UserId,
     pub amount: Amount,
     pub created_at: chrono::DateTime<Utc>,
-    // #[serde(serialize_with = "serialize_fn...")]
     pub updated_at: chrono::DateTime<Utc>,
 
-    // // Never serialized.
-    // #[serde(skip_serializing)]
-    // hash: String,
-    //
-    // // Use a method to decide whether the field should be skipped.
-    // #[serde(skip_serializing_if = "Map::is_empty")]
-    // metadata: Map<String, String>,
 }
 
 
@@ -57,15 +48,6 @@ impl Account {
     }
 }
 
-
-// pub struct AccountValues {
-//     pub id: String,
-//     pub user_id: String,
-//     pub amount: crate::rest::dto::Amount,
-//     pub created_at: chrono::DateTime<Utc>,
-//     // #[serde(serialize_with = "serialize_fn...")]
-//     pub updated_at: chrono::DateTime<Utc>,
-// }
 
 pub type AccountParts = new::Args;
 

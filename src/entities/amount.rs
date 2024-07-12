@@ -3,21 +3,21 @@ use crate::entities::currency::Currency;
 
 pub mod parse;
 pub mod ops;
-// use crate::entities::currency::Currency;       // ++
-// use ::project01::entities::currency::Currency; // --
-// use project01::entities::currency::Currency;   // --
-// use self::super::currency::Currency;           // ++
-// use super::currency::Currency;                 // ++
 
 
-// #[derive(Debug)]
 #[derive(PartialEq, Eq)]
-#[derive(serde::Serialize, serde::Deserialize)] // TODO: move it to DTO
+#[derive(educe::Educe)] #[educe(Debug)]
+#[derive(derive_more::Display)]
+#[display(fmt = "{} {}", value, currency)]
 #[readonly::make]
 pub struct Amount {
-    #[serde(with = "crate::json::serde_json_bd::bd_with")]
+    #[educe(Debug(method(crate::entities::bd::bd_dbg_fmt)))]
     pub value: BigDecimal,
     pub currency: Currency,
+}
+
+impl crate::util::string::DisplayValueExample for Amount {
+    fn display_value_example() -> &'static str { r#""1234.5678 EUR""# }
 }
 
 pub struct AmountParts {
@@ -25,27 +25,7 @@ pub struct AmountParts {
     pub currency: Currency,
 }
 
-/*
-struct Person {
-    name: String,
-    age: u8,
-    phones: Vec<String>,
-}
 
-// This is what #[derive(Serialize)] would generate.
-impl Serialize for Person {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer,
-    {
-        let mut s = serializer. serialize_struct("Person", 3)?;
-        s. serialize_field("name", &self.name)?;
-        s. serialize_field("age", &self.age)?;
-        s. serialize_field("phones", &self.phones)?;
-        s. end()
-    }
-}
-*/
 /*
 impl serde::Serialize for Amount {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
@@ -172,26 +152,12 @@ fn deserialize_amount_as_struct<'de, D>(deserializer: D) -> Result<Amount, D::Er
 }
 */
 
-impl core::fmt::Debug for Amount {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "Amount {{ {} {} ({:?}) }}", self.value, self.currency, self.value)
-    }
-}
-
 // pub mod parse {
 //     pub type ParseAmountError = crate::entities::amount_parse::ParseAmountError;
 //     pub type ErrorKind = crate::entities::amount_parse::ErrorKind;
 //     pub type ErrorSource = crate::entities::amount_parse::ErrorSource;
 // }
 
-impl core::fmt::Display for Amount {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{} {}", self.value, self.currency)
-    }
-}
-impl crate::util::string::DisplayValueExample for Amount {
-    fn display_value_example() -> &'static str { r#""1234.5678 EUR""# }
-}
 
 
 impl Amount {

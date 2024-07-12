@@ -18,6 +18,7 @@ static ID_PATTERN: Lazy<Regex> = Lazy::new(|| {
 });
 
 
+/*
 // Need to have such function since 'validator' is not smart enough
 // to use third-party strings.
 #[inline]
@@ -25,6 +26,7 @@ fn cur_regex_validate(s: &str) -> Result<(), validator::ValidationError> {
     use crate::rest::valid::validator;
     validator::regex_validate(s, &CURRENCY_PATTERN)
 }
+*/
 
 
 
