@@ -16,7 +16,7 @@ pub mod database;
 pub mod rest;
 pub mod web;
 pub mod json;
-
+mod mvv_axum_valid;
 // by full path
 // use crate::entities::currency::{ Currency, make_currency };
 // by shorter path
