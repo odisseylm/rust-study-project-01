@@ -180,8 +180,9 @@ fn account_from_json() {
 }
 
 
+/*
 #[test]
-fn validate_account_test() {
+fn validate_account_by_validator_test() {
     let as_json = serde_json::json!(
             {
             "id": "abcdef-123",
@@ -204,6 +205,35 @@ fn validate_account_test() {
     assert_eq!(
         valid_res.err().test_unwrap().to_test_debug_string(),
         r#"ValidationErrors({"amount": Struct(ValidationErrors({"currency": Field([ValidationError { code: "regex", message: None, params: {"value": String("us2")} }])}))})"#,
+    );
+}
+*/
+
+
+#[test]
+fn validate_account_by_validify_test() {
+    let as_json = serde_json::json!(
+            {
+            "id": "abcdef-123",
+            "userId": "qwerty-456",
+            "amount": { "value": 123.0456, "currency":"us2" },// "ДОЛ" },
+            // "amount": "123.0456 USD",
+            "createdAt": "2024-05-30T20:29:57Z",
+            "updatedAt": "2024-05-31T20:29:57Z",
+            }
+        );
+
+    let account_dirty_obj: Account = serde_json::from_str(&as_json.to_test_string()).test_unwrap();
+
+    use validify::Validate;
+    let valid_res = account_dirty_obj.validate();
+    assert_eq!(
+        valid_res.clone().err().test_unwrap().to_test_display_string().trim(),
+        r#"Validation error: { code: regex location: /amount/currency, field: currency, message: , params: {"actual": String("us2")} }"#,
+    );
+    assert_eq!(
+        valid_res.err().test_unwrap().to_test_debug_string(),
+        r#"ValidationErrors([Field { field: Some("currency"), code: "regex", params: {"actual": String("us2")}, message: None, location: "/amount/currency" }])"#,
     );
 }
 
