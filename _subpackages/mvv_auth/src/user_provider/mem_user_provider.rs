@@ -140,8 +140,7 @@ impl <
     type User = Usr;
     async fn get_user_by_principal_identity(&self, user_id: &<Self::User as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
         let state = self.state.read().await;
-        // let username_lc = user_id.to_lowercase();
-        // extract_cloned_user(state.users_by_principal_id.get(username_lc.as_str())).await
+        // extract_cloned_user(state.users_by_principal_id.get(user_id)).await
 
         extract_cloned_user(state.users_by_principal_id.get(&user_id)).await
     }

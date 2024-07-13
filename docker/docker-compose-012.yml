@@ -61,7 +61,7 @@ services:
     #  service: database
     #  file: ${BASE_DIR}/../account-soa/src/main/docker/docker-compose.yml
     #
-    image: postgres:9
+    image: postgres:16
     #container_name: database
     #restart: no
     networks:

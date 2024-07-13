@@ -1,4 +1,16 @@
 
+
+-- See https://www.postgresql.org/docs/current/collation.html
+CREATE COLLATION ENGLISH_CI (
+   PROVIDER = icu, -- if the server was built with ICU support
+   -- provider = libc,
+   -- 'en-US@colStrength=secondary' for old ICU versions
+   -- '@colStrength=secondary'
+   locale = 'en-US-u-ks-level2',
+   deterministic = false
+);
+---------------------------------------------------------------------------------
+
 create domain US_POSTAL_CODE as TEXT
     check (
         value ~ '^\d{5}$'

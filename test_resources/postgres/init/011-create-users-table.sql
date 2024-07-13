@@ -1,10 +1,12 @@
 
 create table USERS (
   ID       BIGSERIAL primary key,
-  NAME     VARCHAR(256) unique,
+  NAME     VARCHAR(256) collate ENGLISH_CI not null unique, -- unique primary key,
   PASSWORD VARCHAR(256) not null
 );
 
+-- or
+-- CREATE UNIQUE INDEX users_name_uniq on USERS(lower(name));
 
 create table USER_ROLES (
   USER_ID         BIGSERIAL primary key,

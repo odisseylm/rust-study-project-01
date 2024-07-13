@@ -31,10 +31,9 @@ impl AuthUserProvider for SqlUserProvider {
     }
     */
     async fn get_user_by_principal_identity(&self, user_id: &<AuthUserExample as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
-        // T O D O: use case-insensitive username comparing
-        let username_lc = user_id.to_lowercase();
-        sqlx::query_as("select * from users where lowercase(username) = ?")
-            .bind(username_lc)
+        // 'username' column should be case-insensitive in database
+        sqlx::query_as("select * from users where username = ?")
+            .bind(&username)
             .fetch_optional(&self.db)
             .await
             // .map_err(Self::Error::Sqlx)?)
@@ -49,10 +48,8 @@ impl OAuth2UserStore for SqlUserProvider {
     // async fn update_user_access_token22(&self, username: &String, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
     async fn update_user_access_token(&self, user_principal_id: <<Self as AuthUserProvider>::User as axum_login::AuthUser>::Id, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
 
-        let user_principal_id = user_principal_id.to_lowercase();
-
         // Persist user in our database, so we can use `get_user`.
-        // T O D O: use case-insensitive username comparing
+        // Column 'username' should be case-insensitive
         let user: AuthUserExample = sqlx::query_as(
                 r#"
                 insert into users (username, access_token)

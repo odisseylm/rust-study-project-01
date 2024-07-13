@@ -96,11 +96,9 @@ impl SqlUserProvider {
 
     async fn get_user_from_db(&self, username: &str) -> Result<Option<AuthUser>, AuthUserProviderError> {
 
-        let username_lc = username.to_lowercase();
+        info!("### Loading user [{}] from database", username);
 
-        info!("### Loading user [{}] from database", username_lc);
-
-        // TODO: use case-insensitive username comparing in SQL query
+        // Column 'u.name' should be case-insensitive
         let res= sqlx::query_as(
             // sqlx::query_as!(AuthUser,
             "select \
@@ -109,7 +107,7 @@ impl SqlUserProvider {
                  from USERS u \
                  left join USER_ROLES ur on u.ID = ur.USER_ID \
                  where lower(u.NAME) = $1 ")
-            .bind(username_lc.as_str())
+            .bind(&username)
             .fetch_optional(&*self.0.db)
             .await
             .map_err(|err_to_log|{
@@ -177,17 +175,17 @@ impl AuthUserProvider for SqlUserProvider {
 
     async fn get_user_by_principal_identity(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
 
-        let username_lc = user_id.to_lowercase();
-
         if let Some(ref cache) = self.0.cache {
             let mut cache = cache.write().await;
+            // lower-case for cache key (for database it is not needed)
+            let username_lc = user_id.to_lowercase();
 
             let cached_or_fetched = cache.get_or_fetch(username_lc, TtlMode::DefaultCacheTtl,
                 |username_lc| async move { self.get_user_from_db(&username_lc).await }
             ).await ?;
             Ok(cached_or_fetched)
         } else {
-            self.get_user_from_db(username_lc.as_str()).await
+            self.get_user_from_db(&user_id).await
         }
 
         /*
@@ -209,13 +207,12 @@ impl OAuth2UserStore for SqlUserProvider {
 
     // async fn update_user_access_token22(&self, username: &String, secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
     async fn update_user_access_token(&self, _user_principal_id: <<Self as AuthUserProvider>::User as axum_login::AuthUser>::Id, _secret_token: &str) -> Result<Option<Self::User>, AuthUserProviderError> {
-        todo!()
+        todo!() // TODO: impl
 
         /*
-        let user_principal_id = user_principal_id.to_lowercase();
 
         // Persist user in our database, so we can use `get_user`.
-        // TODO: use case-insensitive username comparing
+        // Column 'username' should be case-insensitive.
         let user: AuthUser = sqlx::query_as(
             r#"
                 insert into users (username, access_token)
