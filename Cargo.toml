@@ -1,12 +1,12 @@
 
 [workspace]
 members = [
-    "_subpackages/tuple_heter_iter_macro",
-    "_subpackages/tuple_heter_iter",
-    "_subpackages/static_error_macro",
-    "_subpackages/auth",
-    "_subpackages/common",
-    "_subpackages/account_soa",
+    "tuple_heter_iter_macro",
+    "tuple_heter_iter",
+    "static_error_macro",
+    "auth",
+    "common",
+    "account_soa",
 ]
 #resolver = "1"
 resolver = "2"

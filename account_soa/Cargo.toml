@@ -1,5 +1,5 @@
 [package]
-name = "mvv_common"
+name = "mvv_account_soa"
 version = "0.1.0"
 edition = "2021"
 
@@ -34,10 +34,11 @@ cargo_metadata = "0.18.1"
 
 
 [dependencies]
-mvv_static_error_macro = { version = "0.1.0", path = "../../_subpackages/static_error_macro" }
-mvv_auth = { version = "0.1.0", path = "../../_subpackages/auth" }
-mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../../_subpackages/tuple_heter_iter_macro" }
-mvv_tuple_heter_iter = { version = "0.1.0", path = "../../_subpackages/tuple_heter_iter" }
+mvv_static_error_macro = { version = "0.1.0", path = "../static_error_macro" }
+mvv_common = { version = "0.1.0", path = "../common" }
+mvv_auth = { version = "0.1.0", path = "../auth" }
+mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
+mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
 
 # -------------------------------------------------------------------------
 if_chain = "1.0.2"
@@ -59,8 +60,8 @@ bigdecimal = "0.4.3"
 trait-variant = "0.1.2"  # ???
 
 serde = { version = "1.0.201", features = ["derive", "std", "rc", "serde_derive" ] }
-serde_json = { version = "1.0.117", features = [ "default", ] }
-#serde_json = { version = "1.0.117", features = ["default", ] }
+#serde_json = { version = "1.0.117", features = ["default", "raw_value", ] }
+serde_json = { version = "1.0.117", features = ["default" ] }
 #serde_json5 = "0.1.0
 #serde_as = "0.0.1"
 serde_with = "3.8.1"

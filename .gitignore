@@ -2,10 +2,11 @@
 /target/**
 /vendor
 /vendor/**
-/_subpackages/mvv_auth/target/**
-/_subpackages/static_error_macro/target/**
-/_subpackages/tuple_heter_iter/target/**
-/_subpackages/tuple_heter_iter_macro/target/**
+/mvv_auth/target/**
+/static_error_macro/target/**
+/tuple_heter_iter/target/**
+/tuple_heter_iter_macro/target/**
 /.idea/**
 /.log/**
+/temp/**
 *.log
