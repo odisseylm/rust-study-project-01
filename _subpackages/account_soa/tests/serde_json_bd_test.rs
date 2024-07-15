@@ -1,14 +1,14 @@
 use assertables::{ assert_in_epsilon, assert_in_epsilon_as_result };
 use bigdecimal::BigDecimal;
 use serde::{ Deserialize, Serialize };
-use project01::util::{TestOptionUnwrap, TestResultUnwrap};
+use mvv_common::test::{ TestOptionUnwrap, TestResultUnwrap };
 
 
 #[derive(Debug, Serialize, Deserialize)]
 struct StructBDSerByFn {
     #[serde(
-        serialize_with = "project01::json::serde_json_bd::serialize_json_bd",
-        deserialize_with = "project01::json::serde_json_bd::deserialize_json_bd",
+        serialize_with = "mvv_common::json::serde_json_bd::serialize_json_bd",
+        deserialize_with = "mvv_common::json::serde_json_bd::deserialize_json_bd",
     )]
     bd: BigDecimal,
 }
@@ -32,8 +32,8 @@ fn test_big_decimal_fields_as_ser_by_fn() {
 #[derive(Debug, Serialize, Deserialize)]
 struct StructBDSerByStrFn {
     #[serde(
-        serialize_with = "project01::json::serde_json_bd::serialize_json_bd_as_string",
-        deserialize_with = "project01::json::serde_json_bd::deserialize_json_bd_as_std_json_value",
+        serialize_with = "mvv_common::json::serde_json_bd::serialize_json_bd_as_string",
+        deserialize_with = "mvv_common::json::serde_json_bd::deserialize_json_bd_as_std_json_value",
     )]
     bd: BigDecimal,
 }
@@ -57,8 +57,8 @@ fn test_big_decimal_fields_as_ser_by_str_fn() {
 #[derive(Debug, Serialize, Deserialize)]
 struct StructBDDeSerByF64 {
     #[serde(
-        serialize_with = "project01::json::serde_json_bd::serialize_json_bd_as_f64",
-        deserialize_with = "project01::json::serde_json_bd::deserialize_json_bd_as_std_json_value",
+        serialize_with = "mvv_common::json::serde_json_bd::serialize_json_bd_as_f64",
+        deserialize_with = "mvv_common::json::serde_json_bd::deserialize_json_bd_as_std_json_value",
     )]
     bd: BigDecimal,
 }
@@ -96,7 +96,7 @@ fn test_big_decimal_fields_as_ser_by_f64_fn() {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct StructBDWithSerModule {
-    #[serde(with = "project01::json::serde_json_bd::bd_with")]
+    #[serde(with = "mvv_common::json::serde_json_bd::bd_with")]
     bd: BigDecimal,
 }
 
@@ -120,8 +120,8 @@ fn test_big_decimal_fields_as_with_ser_module() {
 #[derive(Debug, Serialize, Deserialize)]
 struct StructBDDeSerByRawValue {
     #[serde(
-        serialize_with = "project01::json::serde_json_bd::serialize_json_bd_as_raw_value",
-        deserialize_with = "project01::json::serde_json_bd::deserialize_json_bd_as_raw_value",
+        serialize_with = "mvv_common::json::serde_json_bd::serialize_json_bd_as_raw_value",
+        deserialize_with = "mvv_common::json::serde_json_bd::deserialize_json_bd_as_raw_value",
     )]
     bd: BigDecimal,
 }

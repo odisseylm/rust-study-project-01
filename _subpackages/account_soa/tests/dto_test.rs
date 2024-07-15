@@ -2,10 +2,9 @@ use core::str::FromStr;
 use indoc::indoc;
 use bigdecimal::BigDecimal;
 use chrono::{ Utc, FixedOffset };
-use project01::entities::currency::InnerCurStr;
-use project01::rest::dto::{Account, Amount};
-use project01::util::test_unwrap::TestSringOps;
-use project01::util::{TestOptionUnwrap, TestResultUnwrap};
+use mvv_account_soa::entities::currency::InnerCurStr;
+use mvv_account_soa::rest::dto::{Account, Amount};
+use mvv_common::test::{ TestSringOps, TestOptionUnwrap, TestResultUnwrap };
 //--------------------------------------------------------------------------------------------------
 
 

@@ -1,8 +1,8 @@
 // #![feature(macro_rules)]
 mod common;
 
-use project01::{ add678, make_currency };
-use project01::entities::currency::make_currency;
+use mvv_account_soa::{ add678, make_currency };
+use mvv_account_soa::entities::currency::make_currency;
 
 // https://doc.rust-lang.org/book/ch11-03-test-organization.html
 

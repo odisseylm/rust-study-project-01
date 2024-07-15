@@ -1,10 +1,9 @@
 use core::str::FromStr;
 use assertables:: { assert_starts_with, assert_starts_with_as_result };
 use bigdecimal::BigDecimal;
-use project01::entities::amount::{ Amount, ops::AmountOpsError, ops::ErrorKind as OpsErrorKind };
+use mvv_account_soa::entities::amount::{ Amount, ops::AmountOpsError, ops::ErrorKind as OpsErrorKind };
 // use project01::entities::amount::ops;
-use project01::util::{ TestOptionUnwrap, TestResultUnwrap };
-use project01::util::test_unwrap::TestSringOps;
+use mvv_common::test::{ TestOptionUnwrap, TestResultUnwrap, TestSringOps };
 
 
 #[test]

@@ -1,5 +1,5 @@
 
-use project01::util::obj_ext::*;
+use mvv_common::obj_ext::*;
 
 
 #[test]

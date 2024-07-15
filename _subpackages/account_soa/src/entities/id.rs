@@ -91,7 +91,7 @@ mod tests {
     #[test]
     fn validate_id_by_new() {
         assert_eq!(
-            Id::new("abcdef  non-ascii-alphas : forbidden ЗапорізькийКозак".to_owned()),
+            Id::try_new("abcdef  non-ascii-alphas : forbidden ЗапорізькийКозак".to_owned()),
             Err(IdError::RegexViolated),
         )
     }
@@ -105,14 +105,14 @@ mod tests {
 
     #[test]
     fn validate_id_2() {
-        let id = Id::new("abcd-12_34".to_owned()).test_unwrap();
+        let id = Id::try_new("abcd-12_34".to_owned()).test_unwrap();
         assert_eq!(id.to_test_string(), "abcd-12_34");
         assert_eq!(id.to_test_debug_string(), r#"Id("abcd-12_34")"#);
     }
 
     #[test]
     fn serialize_id() {
-        let id = Id::new("abcd-12_34".to_owned()).test_unwrap();
+        let id = Id::try_new("abcd-12_34".to_owned()).test_unwrap();
 
         let json_str = serde_json::to_string(&id).test_unwrap();
         assert_eq!(json_str, r#""abcd-12_34""#);
@@ -121,7 +121,7 @@ mod tests {
     #[test]
     fn deserialize_id() {
         let id: Id = serde_json::from_str(r#""abcd-12_34""#).test_unwrap();
-        assert_eq!(id, Id::new("abcd-12_34").test_unwrap());
+        assert_eq!(id, Id::try_new("abcd-12_34").test_unwrap());
         assert_eq!(id.to_test_string(), "abcd-12_34");
     }
 

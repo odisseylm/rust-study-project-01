@@ -7,13 +7,13 @@ use core::fmt;
 use std::env;
 use std::fmt::write;
 use std::io::Write;
-use project01::{ make_currency, make_currency_b };
-use project01::entities::currency::{ Currency, make_currency_b, make_currency, CurrencyFormatError };
-use project01::entities::currency::predefined::{ EUR, USD, };
-use common::TestResultUnwrap;
-use project01::util::{ as_printable, as_printable_ptr, UncheckedResultUnwrap };
-use project01::util::result::PrintableResult;
-use project01::util::test_unwrap::TestSringOps;
+use mvv_account_soa::{ make_currency, make_currency_b };
+use mvv_account_soa::entities::currency::{ Currency, make_currency_b, make_currency, CurrencyFormatError };
+use mvv_account_soa::entities::currency::predefined::{ EUR, USD, };
+use mvv_common::result::{ as_printable, as_printable_ptr };
+// use mvv_common::unchecked::UncheckedResultUnwrap;
+use mvv_common::result::PrintableResult;
+use mvv_common::test::{ TestSringOps, TestResultUnwrap };
 
 
 #[test]
@@ -315,8 +315,8 @@ fn test_main_2() {
     }
 
     let buf: &[u8] = output.as_str().as_bytes();
-    std::io::stdout().write(buf).unchecked_unwrap();
-    std::io::stdout().flush().unchecked_unwrap();
+    std::io::stdout().write(buf).test_unwrap();
+    std::io::stdout().flush().test_unwrap();
 }
 
 /*

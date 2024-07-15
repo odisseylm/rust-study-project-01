@@ -33,7 +33,6 @@ pub trait ToAnyHowErrorFn <
     Err2: Debug + Display + std::error::Error + Send + Sync + 'static,
     F: Fn(Err)->Err2,
     > {
-    #[inline]
     fn to_anyhow_error_fn(self, f: F) -> Result<Ok, anyhow::Error>;
 }
 
