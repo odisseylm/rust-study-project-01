@@ -121,4 +121,4 @@ pub fn get_internal_type_path_mode(ast: &syn::DeriveInput) -> InternalTypePathMo
 }
 
 
-const MY_BACKTRACE_AND_ERR_CRATE: &str = "project01";
+const MY_BACKTRACE_AND_ERR_CRATE: &str = "mvv_common";

@@ -80,7 +80,7 @@ pub(crate) fn tuple_for_each_by_ref_n (
 
     let for_each_code = quote! {
         #(
-            tuple_heter_iter::#assert_tuple_len_is_xxx( &(#tuple) );
+            mvv_tuple_heter_iter::#assert_tuple_len_is_xxx( &(#tuple) );
 
              let #var_ident = & (#vars);
              #item_processing_code
@@ -109,7 +109,7 @@ pub(crate) fn tuple_for_each_by_ref_via_tuple_accessor (
 
     let for_each_code = quote! {
         {
-            use tuple_heter_iter::TupleAccess;
+            use mvv_tuple_heter_iter::TupleAccess;
             // It is need if 'tuple' expr is function (to avoid loosing temp object).
             let tuple_as_var_123456789 = (#tuple);
 

@@ -1,5 +1,5 @@
 [package]
-name = "tuple_heter_iter"
+name = "mvv_tuple_heter_iter"
 version = "0.1.0"
 edition = "2021"
 
@@ -10,9 +10,9 @@ edition = "2021"
 
 [features]
 # possible values: tuple_len_16, tuple_len_32, tuple_len_64
-tuple_len_16 = ["tuple_heter_iter_macro/tuple_len_16"]
-tuple_len_32 = ["tuple_heter_iter_macro/tuple_len_32"]
-tuple_len_64 = ["tuple_heter_iter_macro/tuple_len_64"]
+tuple_len_16 = ["mvv_tuple_heter_iter_macro/tuple_len_16"]
+tuple_len_32 = ["mvv_tuple_heter_iter_macro/tuple_len_32"]
+tuple_len_64 = ["mvv_tuple_heter_iter_macro/tuple_len_64"]
 
 default = ["tuple_len_16", ]
 
@@ -22,7 +22,7 @@ cargo_metadata = "0.18.1"
 
 
 [dependencies]
-tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
+mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
 
 # -------------------------------------------------------------------------
 if_chain = "1.0.2"

@@ -1,5 +1,5 @@
 [package]
-name = "tuple_heter_iter_macro"
+name = "mvv_tuple_heter_iter_macro"
 version = "0.1.0"
 edition = "2021"
 

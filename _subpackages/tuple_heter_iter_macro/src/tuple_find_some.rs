@@ -35,7 +35,7 @@ pub(crate) fn tuple_find_some_by_ref_n (params: ForEachInputParams) -> proc_macr
     let for_each_code = quote! {
         {
             let tuple_as_var_123456789 = (#tuple);
-            tuple_heter_iter::#assert_tuple_len_is_xxx( &tuple_as_var_123456789 );
+            mvv_tuple_heter_iter::#assert_tuple_len_is_xxx( &tuple_as_var_123456789 );
 
             let mut comlex_result_123456789 = None;
             #(
@@ -73,7 +73,7 @@ pub(crate) fn tuple_find_some_by_ref_via_tuple_accessor (params: ForEachInputPar
 
     let for_each_code = quote! {
         {
-            use tuple_heter_iter::TupleAccess;
+            use mvv_tuple_heter_iter::TupleAccess;
             // It is need if 'tuple' expr is function (to avoid loosing temp object).
 
             let tuple_as_var_123456789 = (#tuple);

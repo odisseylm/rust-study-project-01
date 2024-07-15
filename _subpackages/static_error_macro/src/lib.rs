@@ -21,21 +21,21 @@ use crate::error_source::*;
 fn bt_root_path_segment(path_mode: InternalTypePathMode) -> proc_macro2::TokenStream {
     match path_mode {
         InternalTypePathMode::InternalCratePath => quote! { crate },
-        InternalTypePathMode::ExternalCratePath => quote! { :: project01 },
+        InternalTypePathMode::ExternalCratePath => quote! { :: mvv_common },
     }
 }
 
 fn bt_type(path_mode: InternalTypePathMode, type_name: &str) -> proc_macro2::TokenStream {
     let root = bt_root_path_segment(path_mode);
     let type_name_ident: syn::Ident = syn::parse_str(type_name).expect(&format!("Error of converting [{}] to Ident.", type_name));
-    quote! { #root ::util::backtrace:: #type_name_ident }
+    quote! { #root ::backtrace:: #type_name_ident }
 }
 
 /*
 
 // The same but with direct using syn::Type.
 fn bt_type(path_mode: InternalTypePathMode, type_name: &str) -> syn::Type {
-    let use_path_expr_str = &format!("{}::util::backtrace::{}", bt_root_path_segment(path_mode), type_name);
+    let use_path_expr_str = &format!("{}::backtrace::{}", bt_root_path_segment(path_mode), type_name);
     let as_expr: syn::Type = syn::parse_str(use_path_expr_str)
         .expect(&format!("Internal error: invalid 'type' expr [{}].", use_path_expr_str));
     as_expr
@@ -54,7 +54,7 @@ fn use_bt_types_expr(path_mode: InternalTypePathMode) -> Vec<proc_macro2::TokenS
 */
 fn use_bt_types_expr(path_mode: InternalTypePathMode) -> proc_macro2::TokenStream {
     let root = bt_root_path_segment(path_mode);
-    quote! { use #root ::util::backtrace::{ BacktraceInfo, NewBacktracePolicy, InheritBacktracePolicy, BacktraceCopyProvider, BacktraceBorrowedProvider } ; }
+    quote! { use #root ::backtrace::{ BacktraceInfo, NewBacktracePolicy, InheritBacktracePolicy, BacktraceCopyProvider, BacktraceBorrowedProvider } ; }
 }
 
 
@@ -183,7 +183,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         impl core::fmt::Debug for #error_type_name {
 
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                #root_type_path ::util::error::__private::error_debug_fmt_impl(
+                #root_type_path ::error::__private::error_debug_fmt_impl(
                     f, self, stringify!(#error_type_name), |er|&er.kind, |er|&er.source, |er|&er.backtrace)
             }
 
