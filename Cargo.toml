@@ -4,8 +4,8 @@ members = [
     "_subpackages/tuple_heter_iter_macro",
     "_subpackages/tuple_heter_iter",
     "_subpackages/static_error_macro",
-    "_subpackages/mvv_auth",
-    "_subpackages/mvv_common",
+    "_subpackages/auth",
+    "_subpackages/common",
     "_subpackages/account_soa",
 ]
 #resolver = "1"

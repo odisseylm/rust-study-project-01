@@ -148,7 +148,8 @@ pub mod parse_amount_old {
     #[derive(thiserror::Error)]
     #[derive(mvv_static_error_macro::MyStaticStructError)]
     #[do_not_generate_debug]
-    #[static_struct_error_internal_type_path_mode(InternalCratePath)]
+    // #[static_struct_error_internal_type_path_mode(InternalCratePath)]
+    #[static_struct_error_internal_type_path_mode(ExternalCratePath)]
     pub struct ParseAmountError {
         pub kind: ErrorKind,
         #[source]
@@ -162,7 +163,8 @@ pub mod parse_amount_old {
     #[derive(mvv_static_error_macro::MyStaticStructErrorSource)]
     // Full type or short type can be used: ParseAmountError/crate::entities::amount::parse::ParseAmountError
     #[struct_error_type(ParseAmountError)]
-    #[static_struct_error_internal_type_path_mode(InternalCratePath)]
+    // #[static_struct_error_internal_type_path_mode(InternalCratePath)]
+    #[static_struct_error_internal_type_path_mode(ExternalCratePath)]
     // #[do_not_generate_std_error]
     pub enum ErrorSource {
         //#[error("No source")]

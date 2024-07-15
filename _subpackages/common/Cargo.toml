@@ -35,7 +35,7 @@ cargo_metadata = "0.18.1"
 
 [dependencies]
 mvv_static_error_macro = { version = "0.1.0", path = "../../_subpackages/static_error_macro" }
-mvv_auth = { version = "0.1.0", path = "../../_subpackages/mvv_auth" }
+mvv_auth = { version = "0.1.0", path = "../../_subpackages/auth" }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../../_subpackages/tuple_heter_iter_macro" }
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../../_subpackages/tuple_heter_iter" }
 
