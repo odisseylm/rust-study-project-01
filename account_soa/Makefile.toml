@@ -269,8 +269,8 @@ dependencies = [
 [tasks.docker-compose-up]
 command = "docker-compose"
 args = [
-    "--file", "${PROJECT_DIR}/docker/docker-compose-012.yml",      # ${docker-compose-file}",
-    "--env-file", "${PROJECT_DIR}/docker/docker-compose-012.env",  # "${docker-env-file}",
+    "--file", "${PROJECT_DIR}/docker/docker-compose.yml",      # ${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose.env",  # "${docker-env-file}",
     "--project-directory", "${PROJECT_DIR}",
     "--project-name", "rust-account-soa-project",                # "${project.artifactId}",
     "up",
@@ -289,8 +289,8 @@ dependencies = [
 [tasks.docker-compose-down]
 command = "docker-compose"
 args = [
-    "--file", "${PROJECT_DIR}/docker/docker-compose-012.yml",      # ${docker-compose-file}",
-    "--env-file", "${PROJECT_DIR}/docker/docker-compose-012.env",  # "${docker-env-file}",
+    "--file", "${PROJECT_DIR}/docker/docker-compose.yml",      # ${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose.env",  # "${docker-env-file}",
     "--project-directory", "${PROJECT_DIR}",
     "--project-name", "rust-account-soa-project",                # "${project.artifactId}",
     "down",
