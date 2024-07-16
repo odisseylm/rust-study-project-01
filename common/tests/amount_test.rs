@@ -1,22 +1,17 @@
-mod common;
-
 use core::fmt::write;
 use core::str::FromStr;
 use bigdecimal::BigDecimal;
 
-use mvv_account_soa::entities::amount::{ Amount, amount };
-use mvv_account_soa::entities::amount::parse;
-use mvv_account_soa::entities::amount::parse::{ ParseAmountError };
-use mvv_account_soa::entities::currency::{ predefined::{ EUR, USD }, make_currency };
-use mvv_account_soa::make_currency;
-
-use mvv_common::test::{ TestOptionUnwrap, TestResultUnwrap };
+use mvv_common::entity::amount::{ Amount, amount, parse::AmountFormatError, parse };
+use mvv_common::entity::currency::{ predefined::{ EUR, USD }, make_currency };
+use mvv_common::make_currency;
+use mvv_common::test::{ TestOptionUnwrap, TestResultUnwrap, TestSringOps };
 
 use assertables::{ assert_contains, assert_contains_as_result };
 use assertables::{ assert_starts_with, assert_starts_with_as_result };
-use mvv_common::backtrace::is_anyhow_backtrace_enabled;
-use mvv_common::backtrace::enable_backtrace;
-use mvv_common::test::TestSringOps;
+use mvv_common::backtrace::{ is_anyhow_backtrace_enabled, enable_backtrace };
+//--------------------------------------------------------------------------------------------------
+
 
 
 // private for testing
@@ -35,9 +30,6 @@ fn amount_create() {
 
     let amount_string: String = "10.0501".to_test_string();
     assert_eq!(Amount::with_str_amount(amount_string.as_str(), USD).test_unwrap().to_test_string(), "10.0501 USD");
-
-    // assert_eq!(Amount::with_str_amount("10.050", USD).test_unwrap().to_test_string(), "10.050 USD");
-    // assert_eq!(Amount::with_string_amount2("10.0501".to_test_string(), USD).test_unwrap().to_test_string(), "10.0501 USD");
 }
 
 
@@ -47,9 +39,6 @@ fn amount_base_test() {
 
     let amount = am.test_unwrap();
     assert_eq!(amount.to_test_string(), "10.050 USD");
-
-    // assert_eq!(amount.value.to_test_string(), "10.050");
-    // assert_eq!(amount.value.to_test_string(), "10.050");
 
     assert_eq!(amount.value_ref().to_test_string(), "10.050");
     assert_eq!(amount.value_ref().to_test_string(), "10.050");
@@ -128,12 +117,7 @@ fn from_string() {
 }
 
 #[test]
-// #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseCurrencyError")]
-// #[should_panic(expected = "`Err` value: ParseAmountError { kind: ParseCurrencyError { source: CurrencyFormatError { kind: CurrencyFormatError")]
-// #[should_panic(expected = "`Err` value: ParseAmountError { kind: ParseCurrencyError, source: CurrencyFormatError(CurrencyFormatError { kind: CurrencyFormatError")]
-// #[should_panic(expected = "`Err` value: ParseAmountError { kind: ParseCurrencyError, source: CurrencyFormatError { kind: CurrencyFormatError")]
-// #[should_panic(expected = "`Err` value: ParseAmountError { kind: IncorrectCurrency, source: CurrencyFormatError { kind: CurrencyFormatError")]
-#[should_panic(expected = "`Err` value: ParseAmountError { kind: IncorrectCurrency, source: CurrencyFormatError { kind: IncorrectCurrencyFormat")]
+#[should_panic(expected = "`Err` value: AmountFormatError { kind: IncorrectCurrency, source: CurrencyFormatError { kind: IncorrectCurrencyFormat")]
 fn from_string_with_wrong_formed_currency() {
     enable_backtrace();
     Amount::from_str(" \t \n 122.350 USSD ").test_unwrap();
@@ -173,10 +157,7 @@ fn from_string_with_wrong_formed_currency_do_not_print_stack_trace_twice() {
         println!("--------------------------------------------------------------------------------");
         println!("err.source (debug)  : {:?}", err.source);
 
-        // assert_display_stack_trace_is_only_one(&err);
         assert_debug_stack_trace_is_only_one(&err);
-
-        // assert_display_stack_trace_is_only_one(&err.source);
         assert_debug_stack_trace_is_only_one(&err.source);
 
         if let parse::ErrorSource::CurrencyFormatError(ref err) = err.source {
@@ -186,17 +167,8 @@ fn from_string_with_wrong_formed_currency_do_not_print_stack_trace_twice() {
             println!("--------------------------------------------------------------------------------");
             println!("err (debug)  : {:?}", err);
 
-            // println!("--------------------------------------------------------------------------------");
-            // println!("err.source (display): {}", err.source);
-            // println!("--------------------------------------------------------------------------------");
-            // println!("err.source (debug)  : {:?}", err.source);
-
-            // assert_display_stack_trace_is_only_one(&err);
             assert_display_no_stack_trace(&err);
             assert_debug_stack_trace_is_only_one(&err);
-
-            // assert_display_stack_trace_is_only_one(&err.source);
-            // assert_debug_stack_trace_is_only_one(&err.source);
         } else {
             assert!(false, "Unexpected flow.")
         }
@@ -234,17 +206,9 @@ fn from_string_with_wrong_amount_value_do_not_print_stack_trace_twice() {
             println!("--------------------------------------------------------------------------------");
             println!("err (debug)  : {:?}", err);
 
-            // println!("--------------------------------------------------------------------------------");
-            // println!("err.source (display): {}", err.source);
-            // println!("--------------------------------------------------------------------------------");
-            // println!("err.source (debug)  : {:?}", err.source);
-
             // if it fails in the future we will need to verify other 'print' backtrace cases
             assert_display_no_stack_trace(&err);
             assert_debug_no_stack_trace(&err);
-
-            // assert_display_no_stack_trace(&err.source);
-            // assert_debug_no_stack_trace(&err.source);
         } else {
             assert!(false, "Unexpected flow.")
         }
@@ -334,22 +298,18 @@ fn assert_no_stack_trace(str: &str) {
 
 
 #[test]
-// #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: NoCurrencyError")]
-// #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseAmountError { kind: NoCurrencyError")]
-#[should_panic(expected = "`Err` value: ParseAmountError { kind: NoCurrency, source: NoSource")]
+#[should_panic(expected = "`Err` value: AmountFormatError { kind: NoCurrency, source: NoSource")]
 fn from_string_without_currency() {
     Amount::from_str(" \t \n 122.350  ").test_unwrap();
 }
 
 #[test]
-// #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
 #[should_panic(expected = "ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
 fn from_string_with_wrong_amount_value() {
     Amount::from_str(" \t \n 12_John_2.350 BRL ").test_unwrap();
 }
 
 #[test]
-// #[should_panic(expected = "called `Result::unwrap()` on an `Err` value: ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
 #[should_panic(expected = "ParseBigInt(ParseBigIntError { kind: InvalidDigit })")]
 fn from_string_with_wrong_non_ascii_amount_value() {
     Amount::from_str(" \t \n Чебуран BRL ").test_unwrap();
@@ -380,7 +340,7 @@ fn test_anyhow_stacktrace() {
     println!("err as str:\n{}", output);
     println!("-------------------------------------------------------------------\n");
 
-    assert_starts_with!(output, "ParseAmountError { Incorrect amount format }");
+    assert_starts_with!(output, "AmountFormatError { Incorrect amount format }");
 
     if is_anyhow_backtrace_enabled() {
         assert_contains!(output, "Stack backtrace:");
@@ -395,11 +355,11 @@ fn test_anyhow_stacktrace() {
 }
 
 
-fn fn_test_parse_amount_101() -> Result<Amount, ParseAmountError> {
+fn fn_test_parse_amount_101() -> Result<Amount, AmountFormatError> {
     Amount::from_str(" \t \n Чебуран BRL ")
 }
-fn fn_test_parse_amount_102() -> Result<Amount, ParseAmountError> { fn_test_parse_amount_101() }
-fn fn_test_parse_amount_103() -> Result<Amount, ParseAmountError> { fn_test_parse_amount_102() }
+fn fn_test_parse_amount_102() -> Result<Amount, AmountFormatError> { fn_test_parse_amount_101() }
+fn fn_test_parse_amount_103() -> Result<Amount, AmountFormatError> { fn_test_parse_amount_102() }
 
 
 
@@ -422,27 +382,16 @@ fn test_my_stacktrace() {
     println!("err as str:\n{}", output);
     println!("-------------------------------------------------------------------\n");
 
-    // assert_starts_with!(output, "ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
-    // assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit }) }");
-    // assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError, source: ParseBigDecimalError(ParseBigInt(ParseBigIntError { kind: InvalidDigit }))");
-    // assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError, source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
-    assert_starts_with!(output, "ParseAmountError { kind: IncorrectAmount, source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
+    assert_starts_with!(output, "AmountFormatError { kind: IncorrectAmount, source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
     assert_contains!(output, "backtrace:");
 
     assert_contains!(output, "amount_test::fn_test_parse_amount_101\n             at ./tests/amount_test.rs:");
     assert_contains!(output, "amount_test::fn_test_parse_amount_102\n             at ./tests/amount_test.rs:");
     assert_contains!(output, "amount_test::fn_test_parse_amount_103\n             at ./tests/amount_test.rs:");
     assert_contains!(output, "amount_test::test_my_stacktrace\n             at ./tests/amount_test.rs:");
-    // it is risky/dependant
-    // assert_contains!(output, "amount_test::test_my_stacktrace::{{closure}}\n             at ./tests/amount_test.rs:");
 
     println!("\n--------------------------------------------------------\n");
     println!("err: {err}");
-    // let backtrace = match err {
-    //     ParseAmountError::NoCurrencyError { backtrace } => { backtrace }
-    //     ParseAmountError::ParseCurrencyError { source:_, backtrace } => {backtrace}
-    //     ParseAmountError::ParseAmountError { source:_, backtrace } => { backtrace}
-    // };
     let backtrace = err.backtrace ;
     println!("my stacktrace: {}", backtrace);
 
@@ -458,7 +407,6 @@ fn test_my_stacktrace() {
     println!("my stacktrace backtrace: {:?}", backtrace.backtrace());
     println!("my stacktrace backtrace: {:?}", backtrace.std_backtrace().test_unwrap());
 }
-
 
 
 fn fn_test_parse_amount_201() -> Result<Amount, Box<dyn std::error::Error>> {
@@ -487,11 +435,7 @@ fn test_std_error() {
     println!("err as str:\n{}", output);
     println!("-------------------------------------------------------------------\n");
 
-    // assert_starts_with!(output, "ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
-    // assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError { source: ParseBigInt(ParseBigIntError { kind: InvalidDigit }) }");
-    // assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError, source: ParseBigDecimalError(ParseBigInt(ParseBigIntError { kind: InvalidDigit }))");
-    // assert_starts_with!(output, "ParseAmountError { kind: ParseAmountError, source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
-    assert_starts_with!(output, "ParseAmountError { kind: IncorrectAmount, source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
+    assert_starts_with!(output, "AmountFormatError { kind: IncorrectAmount, source: ParseBigInt(ParseBigIntError { kind: InvalidDigit })");
     assert_contains!(output, "backtrace:");
 
     if is_anyhow_backtrace_enabled() {
@@ -502,32 +446,13 @@ fn test_std_error() {
         // it is risky/dependant
         // assert_contains!(output, "amount_test::test_std_error::{{closure}}\n             at ./tests/amount_test.rs:");
     }
-
-    // println!("\n--------------------------------------------------------\n");
-    // println!("err: {err}");
-    // let backtrace = match err {
-    //     ParseAmountError::NoCurrencyError { backtrace } => { backtrace }
-    //     ParseAmountError::ParseCurrencyError { source, backtrace } => {backtrace}
-    //     ParseAmountError::ParseAmountError { source, backtrace } => { backtrace}
-    // };
-    // println!("my stacktrace: {}", backtrace);
-    //
-    // println!("\n----------------------------------------------\n");
-    // println!("my stacktrace as Debug");
-    // println!("my stacktrace backtrace_status: {:?}", backtrace.backtrace_status());
-    // println!("my stacktrace backtrace: {}", backtrace.backtrace());
-    //
-    // println!("\n----------------------------------------------\n");
-    // println!("my stacktrace as Display");
-    // println!("my stacktrace backtrace_status: {:?}", backtrace.backtrace_status());
-    // println!("my stacktrace backtrace: {:?}", backtrace.backtrace());
 }
 
 
 #[test]
 fn test_parse_amount_error() {
-    use mvv_account_soa::entities::amount::parse::*;
+    use mvv_common::entity::amount::parse::*;
 
-    let err = ParseAmountError::new(ErrorKind::IncorrectAmount);
+    let err = AmountFormatError::new(ErrorKind::IncorrectAmount);
     println!("err: {:?}", err)
 }

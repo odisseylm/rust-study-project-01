@@ -23,7 +23,7 @@ use crate::web::{
 
 fn create_prod_dependencies() -> Result<Dependencies<AccountServiceImpl>, anyhow::Error> {
 
-    let db = Arc::new(crate::database::pg_db_connection() ?);
+    let db = Arc::new(mvv_common::db::pg::pg_db_connection() ?);
     let account_service = Arc::new(AccountServiceImpl { database_connection: Arc::clone(&db) });
     let account_rest = Arc::new(CurrentUserAccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
 

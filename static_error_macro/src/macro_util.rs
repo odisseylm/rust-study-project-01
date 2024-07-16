@@ -233,7 +233,7 @@ pub fn determine_internal_type_path_mode_by_macro_src_pos(_ast: &syn::DeriveInpu
 
     // let source_file: Option<PathBuf> = None;
     // let source_file: Option<PathBuf> = Some(PathBuf::from_str("/home/vmelnykov/projects/rust/rust-study-project-01/tests/another_static_error_macro_test.rs").unwrap());
-    // let source_file: Option<PathBuf> = Some(PathBuf::from_str("/home/vmelnykov/projects/rust/rust-study-project-01/src/entities/currency.rs").unwrap());
+    // let source_file: Option<PathBuf> = Some(PathBuf::from_str("/home/vmelnykov/projects/rust/rust-study-project-01/src/entity/currency.rs").unwrap());
     let is_test_source_file: bool = source_file.map(|path| is_test_source(path)).unwrap_or(false);
 
     let carte_name_opt: Result<FoundCrate, PMCError> = proc_macro_crate::crate_name(crate_name);

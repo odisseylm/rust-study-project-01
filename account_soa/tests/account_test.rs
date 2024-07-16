@@ -1,9 +1,11 @@
 use chrono::{ FixedOffset, Utc };
-use mvv_account_soa::entities::account::{ self, Account };
-use mvv_account_soa::entities::amount::Amount;
-use mvv_account_soa::entities::prelude::{ AccountId, UserId };
+use mvv_account_soa::entity::{
+    prelude::{ AccountId, UserId },
+    account::{ self, Account },
+};
+use mvv_common::entity::amount::Amount;
 use mvv_common::test::{ TestResultUnwrap };
-// use project01::util::test_unwrap::{TestOps, TestResultDebugErrOps, TestResultDisplayErrOps};
+//--------------------------------------------------------------------------------------------------
 
 
 

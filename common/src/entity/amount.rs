@@ -1,5 +1,5 @@
 use bigdecimal::BigDecimal;
-use crate::entities::currency::Currency;
+use crate::entity::currency::Currency;
 
 pub mod parse;
 pub mod ops;
@@ -11,12 +11,12 @@ pub mod ops;
 #[display(fmt = "{} {}", value, currency)]
 #[readonly::make]
 pub struct Amount {
-    #[educe(Debug(method(crate::entities::bd::bd_dbg_fmt)))]
+    #[educe(Debug(method(crate::entity::bd::bd_dbg_fmt)))]
     pub value: BigDecimal,
     pub currency: Currency,
 }
 
-impl mvv_common::string::DisplayValueExample for Amount {
+impl crate::string::DisplayValueExample for Amount {
     fn display_value_example() -> &'static str { r#""1234.5678 EUR""# }
 }
 
@@ -43,7 +43,7 @@ impl<'de> serde::Deserialize<'de> for Amount {
 
 fn serialize_amount_as_struct<S>(amount: &Amount, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
     use serde::ser::SerializeStruct;
-    use crate::entities::serde_json_bd::BDRefSerdeWrapper;
+    use crate::entity::serde_json_bd::BDRefSerdeWrapper;
 
     // let bd_wrapper = BDRefSerdeWrapper(&amount.value);
     // let currency = amount.currency.to_test_string();
@@ -81,8 +81,8 @@ fn deserialize_amount_as_string<'de, D>(deserializer: D) -> Result<Amount, D::Er
 fn deserialize_amount_as_struct<'de, D>(deserializer: D) -> Result<Amount, D::Error>
     where D: serde::Deserializer<'de> {
 
-    use crate::entities::serde_json_bd::BDSerdeWrapper;
-    use crate::entities::currency::CurrencyFormatError;
+    use crate::entity::serde_json_bd::BDSerdeWrapper;
+    use crate::entity::currency::CurrencyFormatError;
     use bigdecimal::ParseBigDecimalError;
     use serde::de::{ Visitor, MapAccess, Error };
 
@@ -96,7 +96,7 @@ fn deserialize_amount_as_struct<'de, D>(deserializer: D) -> Result<Amount, D::Er
         }
         fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error> where A: MapAccess<'de> {
 
-            use parse::{ ParseAmountError, ErrorKind };
+            use parse::{ AmountFormatError, ErrorKind };
 
             let mut unexpected_count = 0;
             let mut amount_value: Option<Result<BigDecimal, ParseBigDecimalError>> = None;
@@ -124,19 +124,19 @@ fn deserialize_amount_as_struct<'de, D>(deserializer: D) -> Result<Amount, D::Er
             };
 
             let amount_value: Result<BigDecimal, ParseBigDecimalError> = amount_value
-                .ok_or_else(|| ParseAmountError::new(ErrorKind::NoAmount))
+                .ok_or_else(|| AmountFormatError::new(ErrorKind::NoAmount))
                 .map_err(Error::custom) ?;
 
             let amount_currency = amount_currency
-                .ok_or_else(|| ParseAmountError::new(ErrorKind::NoCurrency))
+                .ok_or_else(|| AmountFormatError::new(ErrorKind::NoCurrency))
                 .map_err(Error::custom) ?;
 
             let amount_value    = amount_value
-                .map_err(|amount_err| ParseAmountError::with_from(ErrorKind::IncorrectAmount, amount_err))
+                .map_err(|amount_err| AmountFormatError::with_from(ErrorKind::IncorrectAmount, amount_err))
                 .map_err(Error::custom) ?;
 
             let amount_currency = amount_currency
-                .map_err(|cur_err| ParseAmountError::with_from(ErrorKind::IncorrectCurrency, cur_err))
+                .map_err(|cur_err| AmountFormatError::with_from(ErrorKind::IncorrectCurrency, cur_err))
                 .map_err(Error::custom) ?;
 
             if unexpected_count != 0 {
@@ -152,27 +152,20 @@ fn deserialize_amount_as_struct<'de, D>(deserializer: D) -> Result<Amount, D::Er
 }
 */
 
-// pub mod parse {
-//     pub type ParseAmountError = crate::entities::amount_parse::ParseAmountError;
-//     pub type ErrorKind = crate::entities::amount_parse::ErrorKind;
-//     pub type ErrorSource = crate::entities::amount_parse::ErrorSource;
-// }
-
-
 
 impl Amount {
 
-    pub fn with_str_amount(amount: &str, currency: Currency) -> Result<Self, parse::ParseAmountError> {
+    pub fn with_str_amount(amount: &str, currency: Currency) -> Result<Self, parse::AmountFormatError> {
         use core::str::FromStr;
 
-        let bd: Result<BigDecimal, parse::ParseAmountError> = BigDecimal::from_str(amount)
-            .map_err(|bd_err|parse::ParseAmountError::with_from(
+        let bd: Result<BigDecimal, parse::AmountFormatError> = BigDecimal::from_str(amount)
+            .map_err(|bd_err|parse::AmountFormatError::with_from(
                 parse::ErrorKind::IncorrectAmount, bd_err));
         return bd.map(|am| Amount { value: am, currency } );
     }
 
     pub fn with_str_amount_unchecked(amount: &str, currency: Currency) -> Self {
-        use mvv_common::unchecked::UncheckedResultUnwrap;
+        use crate::unchecked::UncheckedResultUnwrap;
         Amount::with_str_amount(amount, currency).unchecked_unwrap()
     }
 
@@ -221,7 +214,7 @@ pub fn amount(amount: BigDecimal, currency: Currency) -> Amount { Amount::new(am
 
 #[inherent::inherent]
 impl core::str::FromStr for Amount {
-    type Err = parse::ParseAmountError;
+    type Err = parse::AmountFormatError;
     #[inline]
-    pub fn from_str(s: &str) -> Result<Amount, parse::ParseAmountError> { parse::parse_amount(s) }
+    pub fn from_str(s: &str) -> Result<Amount, parse::AmountFormatError> { parse::parse_amount(s) }
 }

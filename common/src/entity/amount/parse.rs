@@ -1,27 +1,18 @@
 use core::str::FromStr;
 use bigdecimal::BigDecimal;
-use crate::entities::amount::Amount;
-use crate::entities::currency::Currency;
+use crate::entity::{ amount::Amount, currency::Currency };
+//--------------------------------------------------------------------------------------------------
 
-
-// Just example
-#[path = "./../dir1/dir2/some_relative_path_01.rs"]
-mod relative_welcome_home;
-
-#[allow(dead_code)]
-fn usage_nf_from_relative_path() {
-    relative_welcome_home::fn_from_rs_path_01()
-}
 
 
 // For internal usage, Use Amount::from_str() in production code.
 //
-pub fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
+pub fn parse_amount(s: &str) -> Result<Amount, AmountFormatError> {
 
     let s = s.trim();
 
     let last_space_bytes_offset = s.rfind(|ch: char|{ ch.is_ascii_whitespace() })
-        .ok_or_else(|| ParseAmountError::new(ErrorKind::NoCurrency)) ?;
+        .ok_or_else(|| AmountFormatError::new(ErrorKind::NoCurrency)) ?;
 
     let (str_amount, str_cur) = s.split_at(last_space_bytes_offset);
 
@@ -44,8 +35,8 @@ pub fn parse_amount(s: &str) -> Result<Amount, ParseAmountError> {
 //pub mod parse_amount {
 
 use bigdecimal::ParseBigDecimalError;
-use mvv_common::backtrace::BacktraceInfo;
-use crate::entities::currency::parse::CurrencyFormatError;
+use crate::backtrace::BacktraceInfo;
+use crate::entity::currency::parse::CurrencyFormatError;
 
 
 // Duplicated since copy of this code (in amount_parse_old.rs) is also used for testing MyStaticStructError
@@ -71,7 +62,7 @@ pub enum ErrorKind {
 #[derive(thiserror::Error)]
 #[derive(mvv_static_error_macro::MyStaticStructError)]
 // #[do_not_generate_debug]
-pub struct ParseAmountError {
+pub struct AmountFormatError {
     pub kind: ErrorKind,
     #[source]
     // #[from]
@@ -85,7 +76,7 @@ pub struct ParseAmountError {
 //
 // #[derive(thiserror::Error)]
 #[derive(mvv_static_error_macro::MyStaticStructErrorSource)]
-#[struct_error_type(ParseAmountError)]
+#[struct_error_type(AmountFormatError)]
 // #[derive(Debug)]
 pub enum ErrorSource {
     // #[error("No source")]

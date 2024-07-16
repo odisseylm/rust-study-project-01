@@ -14,3 +14,5 @@ pub mod unchecked;
 pub mod mvv_axum_valid;
 mod http;
 pub mod rest;
+pub mod entity;
+pub mod db;

@@ -1,15 +1,15 @@
 extern crate core;
 
-mod common;
+// mod test_common;
 
 use core::any::Any;
 use core::fmt;
 use std::env;
 use std::fmt::write;
 use std::io::Write;
-use mvv_account_soa::{ make_currency, make_currency_b };
-use mvv_account_soa::entities::currency::{ Currency, make_currency_b, make_currency, CurrencyFormatError };
-use mvv_account_soa::entities::currency::predefined::{ EUR, USD, };
+use mvv_common::{ make_currency, make_currency_b };
+use mvv_common::entity::currency::{Currency, make_currency_b, make_currency, CurrencyFormatError };
+use mvv_common::entity::currency::predefined::{EUR, USD, };
 use mvv_common::result::{ as_printable, as_printable_ptr };
 // use mvv_common::unchecked::UncheckedResultUnwrap;
 use mvv_common::result::PrintableResult;

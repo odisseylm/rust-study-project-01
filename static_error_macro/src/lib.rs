@@ -434,8 +434,8 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         }
 
         quote! {
-            // impl From<CurrencyFormatError> for ParseAmountError {
-            //     fn from(error: CurrencyFormatError) -> Self { ParseAmountError::with_from(ErrorKind::IncorrectCurrency, error) }
+            // impl From<CurrencyFormatError> for AmountFormatError {
+            //     fn from(error: CurrencyFormatError) -> Self { AmountFormatError::with_from(ErrorKind::IncorrectCurrency, error) }
             // }
 
             #[allow(unused_imports)]

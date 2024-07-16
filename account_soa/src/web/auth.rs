@@ -3,8 +3,8 @@ use askama::Template;
 use axum::{
     extract::Query,
     http::StatusCode,
-    response::{IntoResponse, Redirect},
-    routing::{get as GET, post as POST},
+    response::{ IntoResponse, Redirect },
+    routing::{ get as GET, post as POST },
     Form, Router,
 };
 use serde::Deserialize;

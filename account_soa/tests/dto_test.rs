@@ -2,7 +2,7 @@ use core::str::FromStr;
 use indoc::indoc;
 use bigdecimal::BigDecimal;
 use chrono::{ Utc, FixedOffset };
-use mvv_account_soa::entities::currency::InnerCurStr;
+use mvv_common::entity::currency::InnerCurStr;
 use mvv_account_soa::rest::dto::{Account, Amount};
 use mvv_common::test::{ TestSringOps, TestOptionUnwrap, TestResultUnwrap };
 //--------------------------------------------------------------------------------------------------

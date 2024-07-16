@@ -1,7 +1,7 @@
 use chrono::Utc;
-use crate::entities::amount::Amount;
-use crate::entities::id::Id;
-use crate::entities::user::UserId;
+use mvv_common::entity::amount::Amount;
+use mvv_common::entity::id::Id;
+use crate::entity::user::UserId;
 use mvv_common::generate_from_str_new_type_delegate;
 // use chrono::serde::*;
 // -------------------------------------------------------------------------------------------------
@@ -12,7 +12,7 @@ use mvv_common::generate_from_str_new_type_delegate;
 #[derive(serde::Serialize, serde::Deserialize)]
 #[display(fmt = "{}", _0)]
 pub struct AccountId( #[allow(dead_code)] Id);
-type AccountIdFormatError = crate::entities::id::parse::IdFormatError;
+type AccountIdFormatError = mvv_common::entity::id::parse::IdFormatError;
 
 impl AccountId {
     pub fn into_inner(self) -> Id { self.0 }
@@ -67,9 +67,9 @@ impl Account {
 
 pub mod new {
     use chrono::Utc;
-    use crate::entities::account::AccountId;
-    use crate::entities::amount::Amount;
-    use crate::entities::user::UserId;
+    use crate::entity::account::AccountId;
+    use mvv_common::entity::amount::Amount;
+    use crate::entity::user::UserId;
 
     pub struct Args {
         pub id: AccountId,
@@ -135,9 +135,9 @@ const _: () = {
 #[cfg(test)]
 mod tests {
     use chrono::{ FixedOffset, Utc };
-    use crate::entities::account::{ Account, AccountId, new };
-    use crate::entities::amount::Amount;
-    use crate::entities::user::UserId;
+    use crate::entity::account::{ Account, AccountId, new };
+    use mvv_common::entity::amount::Amount;
+    use crate::entity::user::UserId;
     use mvv_common::test::TestResultUnwrap;
 
     fn _aa() {

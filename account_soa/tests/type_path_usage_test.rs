@@ -17,7 +17,7 @@ pub mod usage_test_is_main_src {
 mod usage_test_is_main_src2 {
     // use super::usage_test_is_main_src::*;
     use super::*;
-    // use crate::entities::type_path_usage::usage_test_is_main_src;
+    // use crate::entity::type_path_usage::usage_test_is_main_src;
 
     // pub fn temp_fn1() -> usage_test_is_main_src::TypeAliasByInternalCrateTypePath { unimplemented!() }
     pub fn temp_fn2() -> usage_test_is_main_src::TypeAliasByExternCrateTypePath1 { unimplemented!() }

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::entities::id::Id;
+use mvv_common::entity::id::Id;
 use mvv_common::generate_from_str_new_type_delegate;
 //--------------------------------------------------------------------------------------------------
 
@@ -10,7 +10,7 @@ use mvv_common::generate_from_str_new_type_delegate;
 #[derive(PartialEq, derive_more::Display)]
 #[display(fmt = "UserId({})", _0)]
 pub struct UserId( #[allow(dead_code)] Id);
-type UserIdFormatError = crate::entities::id::parse::IdFormatError;
+type UserIdFormatError = mvv_common::entity::id::parse::IdFormatError;
 
 impl UserId {
     pub fn into_inner(self) -> Id { self.0 }

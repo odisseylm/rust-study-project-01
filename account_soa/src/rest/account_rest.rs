@@ -6,7 +6,7 @@ use tracing::{ debug, info /*, error*/ };
 use log::{ debug as log_debug, info as log_info /*, error as log_error*/ };
 
 use crate::{
-    entities::{ prelude::UserId, entity, account::AccountId, },
+    entity::{ prelude::UserId, entity, account::AccountId, },
     rest::{
         auth::{ RequiredAuthorizationExtension, Role, },
         app_dependencies::Dependencies,
@@ -104,8 +104,8 @@ impl<AS: AccountService> CurrentUserAccountRest<AS> {
 
 
 fn map_account_to_rest(account: entity::Account) -> dto::Account {
-    use crate::entities::account::AccountParts;
-    use crate::entities::amount::AmountParts;
+    use crate::entity::account::AccountParts;
+    use mvv_common::entity::amount::AmountParts;
 
     let AccountParts { id, user_id, amount, created_at, updated_at } = account.into_parts();
     let AmountParts { value: amount_value, currency } = amount.into_parts();

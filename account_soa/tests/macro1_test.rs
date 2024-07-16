@@ -14,8 +14,8 @@
 
 
 use assertables::{ assert_contains, assert_contains_as_result, };
-use mvv_account_soa::entities::amount::parse::ParseAmountError;
-use mvv_account_soa::entities::currency::{CurrencyFormatError, parse::ErrorKind as CurErrorKind };
+use mvv_common::entity::amount::parse::AmountFormatError;
+use mvv_common::entity::currency::{CurrencyFormatError, parse::ErrorKind as CurErrorKind };
 use mvv_common::backtrace::{BacktraceCopyProvider, NewBacktracePolicy};
 use mvv_common::test::TestSringOps;
 
@@ -44,7 +44,7 @@ fn test_currency_format_error_new() {
 
 #[test]
 fn test_currency_format_error_with_backtrace() {
-    use mvv_account_soa::entities::currency::parse::{ CurrencyFormatError, ErrorKind };
+    use mvv_common::entity::currency::parse::{CurrencyFormatError, ErrorKind };
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::IncorrectCurrencyFormat, NewBacktracePolicy::Default);
     assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); //  "\ncapture");
@@ -69,7 +69,7 @@ fn test_currency_format_error_other() {
     use thiserror::__private::AsDynError;
     use core::any::Any;
     use std::error::Error;
-    use mvv_account_soa::entities::currency::parse::{ CurrencyFormatError, ErrorKind };
+    use mvv_common::entity::currency::parse::{CurrencyFormatError, ErrorKind };
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Default);
 
@@ -96,9 +96,9 @@ fn test_currency_format_error_other() {
 
 #[test]
 fn test_amount_format_error_new() {
-    use mvv_account_soa::entities::amount::parse::{ ErrorKind };
+    use mvv_common::entity::amount::parse::{ ErrorKind };
 
-    let err = ParseAmountError::new(ErrorKind::NoCurrency);
+    let err = AmountFormatError::new(ErrorKind::NoCurrency);
     assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
     assert_eq!(err.kind, ErrorKind::NoCurrency);
     assert_contains!(err.provide_backtrace().to_test_string(), "macro1_test.rs"); // "\ncapture");
@@ -107,21 +107,21 @@ fn test_amount_format_error_new() {
 
 #[test]
 fn test_amount_format_error_with_backtrace() {
-    use mvv_account_soa::entities::amount::parse::{ ErrorKind };
+    use mvv_common::entity::amount::parse::{ ErrorKind };
 
-    let err = ParseAmountError::with_backtrace(ErrorKind::IncorrectCurrency, NewBacktracePolicy::Default);
+    let err = AmountFormatError::with_backtrace(ErrorKind::IncorrectCurrency, NewBacktracePolicy::Default);
     assert_contains!(err.backtrace.to_test_string(),  "macro1_test.rs"); // expected_default_bt_capture_part());
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
 
-    let err = ParseAmountError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Capture);
+    let err = AmountFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Capture);
     assert_contains!(err.backtrace.to_test_string(), expected_sys_default_bt_capture_part()); //  "macro1_test.rs"); // "\ncapture");
     assert_contains!(err.provide_backtrace().to_test_string(), expected_sys_default_bt_capture_part()); // , "macro1_test.rs"); // "\ncapture");
 
-    let err = ParseAmountError::with_backtrace(ErrorKind::IncorrectAmount, NewBacktracePolicy::NoBacktrace);
+    let err = AmountFormatError::with_backtrace(ErrorKind::IncorrectAmount, NewBacktracePolicy::NoBacktrace);
     assert_eq!(err.backtrace.to_test_string(), "Backtrace disabled");
     assert_eq!(err.provide_backtrace().to_test_string(), "Backtrace disabled");
 
-    let err = ParseAmountError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture);
+    let err = AmountFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture);
     assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\nforce_capture");
     assert_contains!(err.provide_backtrace().to_test_string(), "macro1_test.rs"); // "\nforce_capture");
 }
@@ -132,46 +132,46 @@ fn test_amount_format_error_with_source() {
     // use parse::*;
     // use mvv_common::backtrace::NewBacktracePolicy;
     // use mvv_common::backtrace::BacktraceCopyProvider;
-    use mvv_account_soa::entities::currency::{ self, parse::CurrencyFormatError };
-    use mvv_account_soa::entities::amount::parse::{ ErrorKind, ErrorSource };
+    use mvv_common::entity::currency::{self, parse::CurrencyFormatError };
+    use mvv_common::entity::amount::parse::{ErrorKind, ErrorSource };
 
-    let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::NoSource);
+    let err = AmountFormatError::with_source(ErrorKind::NoCurrency, ErrorSource::NoSource);
     assert_eq!(err.kind, ErrorKind::NoCurrency);
     assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
     assert_contains!(err.provide_backtrace().to_test_string(), "macro1_test.rs"); //  "\ncapture");
 
-    let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::CurrencyFormatError(
+    let err = AmountFormatError::with_source(ErrorKind::NoCurrency, ErrorSource::CurrencyFormatError(
         CurrencyFormatError::with_backtrace(currency::parse::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture)));
     assert_eq!(err.kind, ErrorKind::NoCurrency);
     assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\nforce_capture");
     assert_contains!(err.provide_backtrace().to_test_string(), "macro1_test.rs"); // "\nforce_capture");
 
-    let err = ParseAmountError::with_from(ErrorKind::NoCurrency,
-        CurrencyFormatError::with_backtrace(currency::parse::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture));
+    let err = AmountFormatError::with_from(ErrorKind::NoCurrency,
+                                           CurrencyFormatError::with_backtrace(currency::parse::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture));
     assert_eq!(err.kind, ErrorKind::NoCurrency);
     assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\nforce_capture");
     assert_contains!(err.provide_backtrace().to_test_string(), "macro1_test.rs"); // "\nforce_capture");
 
-    let err = ParseAmountError::with_source(ErrorKind::IncorrectCurrency, ErrorSource::CurrencyFormatError(
+    let err = AmountFormatError::with_source(ErrorKind::IncorrectCurrency, ErrorSource::CurrencyFormatError(
         CurrencyFormatError::with_backtrace(currency::parse::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture)));
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
     assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\nforce_capture");
     assert_contains!(err.provide_backtrace().to_test_string(), "macro1_test.rs"); // "\nforce_capture");
 
-    let err = ParseAmountError::with_from(ErrorKind::IncorrectCurrency,
-        CurrencyFormatError::with_backtrace(currency::parse::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture));
+    let err = AmountFormatError::with_from(ErrorKind::IncorrectCurrency,
+                                           CurrencyFormatError::with_backtrace(currency::parse::ErrorKind::NoCurrency, NewBacktracePolicy::ForceCapture));
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
     assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\nforce_capture");
     assert_contains!(err.provide_backtrace().to_test_string(), "macro1_test.rs"); // "\nforce_capture");
 
-    let err = ParseAmountError::with_source(ErrorKind::IncorrectAmount, ErrorSource::ParseBigDecimalError(
+    let err = AmountFormatError::with_source(ErrorKind::IncorrectAmount, ErrorSource::ParseBigDecimalError(
         bigdecimal::ParseBigDecimalError::Other("some decimal error".to_test_string())));
     assert_eq!(err.kind, ErrorKind::IncorrectAmount);
     assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
     assert_contains!(err.provide_backtrace().to_test_string(), "macro1_test.rs"); // "\ncapture");
 
-    let err = ParseAmountError::with_from(ErrorKind::IncorrectAmount,
-        bigdecimal::ParseBigDecimalError::Other("some decimal error".to_test_string()));
+    let err = AmountFormatError::with_from(ErrorKind::IncorrectAmount,
+                                           bigdecimal::ParseBigDecimalError::Other("some decimal error".to_test_string()));
     assert_eq!(err.kind, ErrorKind::IncorrectAmount);
     assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
     assert_contains!(err.provide_backtrace().to_test_string(), "macro1_test.rs"); // "\ncapture");
@@ -184,8 +184,8 @@ fn test_amount_format_error_with_source_666() {
     // use parse::*;
     // // use mvv_common::backtrace::NewBacktracePolicy;
     // use mvv_common::backtrace::BacktraceCopyProvider;
-    use project01::entities::currency;
-    use project01::entities::amount::parse::{ CurrencyFormatError, ErrorKind, ErrorSource };
+    use project01::entity::currency;
+    use project01::entity::amount::parse::{ CurrencyFormatError, ErrorKind, ErrorSource };
 
     // let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::SomeWithoutSource);
     let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::Some1FromInt(666));
@@ -198,8 +198,8 @@ fn test_amount_format_error_with_source_666() {
 
 #[test]
 fn test_amount_format_error_src() {
-    use mvv_account_soa::entities::currency::parse::{ CurrencyFormatError, ErrorKind };
-    use mvv_account_soa::entities::amount::parse::{ ErrorSource };
+    use mvv_common::entity::currency::parse::{CurrencyFormatError, ErrorKind };
+    use mvv_common::entity::amount::parse::{ ErrorSource };
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency, NewBacktracePolicy::Default);
     assert_contains!(err.provide_backtrace().to_test_string(), "macro1_test.rs"); // "\ncapture");
@@ -226,8 +226,8 @@ fn test_amount_format_error_src_from_anyhow() {
     // use parse::*;
     //
     //
-    use project01::entities::currency::parse::{ CurrencyFormatError, ErrorKind };
-    use project01::entities::amount::parse::{ ErrorSource };
+    use project01::entity::currency::parse::{ CurrencyFormatError, ErrorKind };
+    use project01::entity::amount::parse::{ ErrorSource };
 
     use core::fmt::Write;
 

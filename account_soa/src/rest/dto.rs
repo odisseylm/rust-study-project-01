@@ -4,7 +4,7 @@ use serde::{ Deserialize, Serialize };
 use once_cell::sync::Lazy;
 use regex::Regex;
 // use validator::Validate; // Need to do it manually since 'validator' does not import it by itself ?!
-use crate::entities::currency::InnerCurStr;
+use mvv_common::entity::currency::InnerCurStr;
 use mvv_common::unchecked::UncheckedResultUnwrap;
 //--------------------------------------------------------------------------------------------------
 
@@ -38,7 +38,7 @@ fn cur_regex_validate(s: &str) -> Result<(), validator::ValidationError> {
 #[derive(validify::Validify)]
 pub struct Amount {
     #[serde(with = "mvv_common::json::serde_json_bd::bd_with")]
-    #[educe(Debug(method(crate::entities::bd::bd_dbg_fmt)))]
+    #[educe(Debug(method(mvv_common::entity::bd::bd_dbg_fmt)))]
     // #[validate(skip)] // for 'validator'
     pub value: BigDecimal,
     // 'validator' cannot automatically use third-party string, even if it has 'as_str()'...

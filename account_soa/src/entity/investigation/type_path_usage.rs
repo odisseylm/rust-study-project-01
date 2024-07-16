@@ -1,5 +1,14 @@
 
 
+// Just example
+#[path = "./../dir1/dir2/some_relative_path_01.rs"]
+mod relative_welcome_home;
+
+#[allow(dead_code)]
+fn usage_nf_from_relative_path() {
+    relative_welcome_home::fn_from_rs_path_01()
+}
+
 #[allow(dead_code)]
 pub mod usage_test_is_main_src {
     extern crate self as project01;
@@ -11,7 +20,7 @@ pub mod usage_test_is_main_src {
 
 #[allow(dead_code)]
 mod usage_test_is_main_src2 {
-    use crate::entities::investigation::type_path_usage::usage_test_is_main_src;
+    use crate::entity::investigation::type_path_usage::usage_test_is_main_src;
 
     pub fn temp_fn1() -> usage_test_is_main_src::TypeAliasByInternalCrateTypePath { unimplemented!() }
     pub fn temp_fn2() -> usage_test_is_main_src::TypeAliasByExternCrateTypePath1 { unimplemented!() }

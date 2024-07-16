@@ -90,11 +90,11 @@ RUN    touch ./account_soa/src/lib.rs             \
 
 
 RUN cargo build $RELEASE_OR_DEBUG_BUILD_PARAM --workspace
-RUN cp $RELEASE_OR_DEBUG_TARGET_DIR/web_main_1 /bin/web_main_1
+RUN cp $RELEASE_OR_DEBUG_TARGET_DIR/mvv_account_soa /bin/mvv_account_soa
 
 ##ENV ROCKET_ADDRESS=0.0.0.0
-#CMD ["/bin/web_main_1"]
-#ENTRYPOINT /bin/web_main_1 arg1 arg2
+#CMD ["/bin/mvv_account_soa"]
+#ENTRYPOINT /bin/mvv_account_soa arg1 arg2
 
 # Start a new stage to create a smaller image without unnecessary build dependencies
 FROM debian:bullseye-slim AS final
@@ -112,12 +112,12 @@ RUN adduser                   \
     appuser
 USER appuser
 
-COPY --from=build /bin/web_main_1 /bin/
+COPY --from=build /bin/mvv_account_soa /bin/
 #ENV ROCKET_ADDRESS=0.0.0.0
 #CMD ["/bin/server"]
 
 ENV RUST_BACKTRACE=$RUN_RUST_BACKTRACE
-ENTRYPOINT ["/bin/web_main_1", "arg1", "arg2"]
+ENTRYPOINT ["/bin/mvv_account_soa", "arg1", "arg2"]
 
 # interval=1m
 #HEALTHCHECK --interval=5s --timeout=3s CMD wget --quiet --no-check-certificate --tries=1 --spider https://localhost/${PROJECT_CONTEXT_PATH}/api/ping || exit 1

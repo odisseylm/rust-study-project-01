@@ -25,7 +25,7 @@ RUN adduser \
 USER appuser
 
 
-COPY target/debug/web_main_1  ./bin/
+COPY target/debug/mvv_account_soa  ./bin/
 
 ENV RUST_BACKTRACE=$RUN_RUST_BACKTRACE
-ENTRYPOINT ["/bin/web_main_1", "arg1", "arg2"]
+ENTRYPOINT ["/bin/mvv_account_soa", "arg1", "arg2"]

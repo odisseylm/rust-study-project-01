@@ -1,7 +1,7 @@
 use core::char;
 use core::str::FromStr;
-use mvv_common::json_str_ser_deser_impl;
-use mvv_common::string::DisplayValueExample;
+use crate::json_str_ser_deser_impl;
+use crate::string::DisplayValueExample;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -104,13 +104,13 @@ const fn is_valid_currency_ascii(cur: &[u8]) -> bool {
 ///
 /// # Examples
 /// ```
-/// use mvv_account_soa::entities::currency::{ Currency, make_currency };
+/// use mvv_common::entity::currency::{ Currency, make_currency };
 /// const PLN: Currency = make_currency("PLN");
 /// assert_eq!(PLN.as_str(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
-/// use mvv_account_soa::entities::currency::{ Currency, make_currency };
+/// use mvv_common::entity::currency::{ Currency, make_currency };
 ///
 /// // lowercase - error, in case of 'const' there will be compilation error.
 /// // The best approach!!! (but not for tests)
@@ -132,13 +132,13 @@ pub const fn make_currency(currency_code: & 'static str) -> Currency {
 ///
 /// # Examples
 /// ```
-/// use mvv_account_soa::entities::currency::{ Currency, make_currency_b };
+/// use mvv_common::entity::currency::{ Currency, make_currency_b };
 /// const PLN: Currency = make_currency_b(b"PLN");
 /// assert_eq!(PLN.as_str(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
-/// use mvv_account_soa::entities::currency::{ Currency, make_currency_b };
+/// use mvv_common::entity::currency::{ Currency, make_currency_b };
 /// // lowercase - error, in case of 'const' there will be compilation error.
 /// // The best approach!!! (but not for tests)
 /// // const PLN: Currency = make_currency_b(b"pln");
@@ -164,18 +164,18 @@ pub const fn make_currency_b(cur: & 'static [u8;3]) -> Currency {
 ///
 /// # Examples
 /// ```
-/// use mvv_account_soa::entities::currency::Currency;
-/// use mvv_account_soa::make_currency; // macro
-/// use mvv_account_soa::entities::currency::make_currency; // required inline function
+/// use mvv_common::entity::currency::Currency;
+/// use mvv_common::make_currency; // macro
+/// use mvv_common::entity::currency::make_currency; // required inline function
 ///
 /// const PLN: Currency = make_currency!("PLN");
 /// assert_eq!(PLN.as_str(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
-/// use mvv_account_soa::entities::currency::Currency;
-/// use mvv_account_soa::make_currency; // macro
-/// use mvv_account_soa::entities::currency::make_currency; // required inline function
+/// use mvv_common::entity::currency::Currency;
+/// use mvv_common::make_currency; // macro
+/// use mvv_common::entity::currency::make_currency; // required inline function
 ///
 /// // lowercase - error, in case of 'const' there will be compilation error.
 /// // The best approach!!! (but not for tests)
@@ -246,7 +246,7 @@ pub mod predefined {
 // As workaround, I decided to use sub-namespace.
 //
 pub mod parse {
-    use mvv_common::backtrace::BacktraceInfo;
+    use crate::backtrace::BacktraceInfo;
 
     // #[derive(Debug, PartialEq, Copy, Clone)]
     #[derive(Debug, thiserror::Error, PartialEq)]
@@ -281,7 +281,7 @@ pub mod parse {
 //
 #[cfg(test)]
 mod tests {
-    use mvv_common::test::TestSringOps;
+    use crate::test::TestSringOps;
     use super::*;
     use super::predefined::*;
 
