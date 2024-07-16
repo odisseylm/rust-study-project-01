@@ -1,0 +1,338 @@
+
+[env]
+# Vars
+RUST_BACKTRACE = 1
+
+# short alias
+ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
+# It does not work... I do not know why.
+# PROJECT_DIR = "${CARGO_MAKE_CURRENT_TASK_INITIAL_MAKEFILE_DIRECTORY}"
+
+
+# -----------------------------------------------------------------------------
+[tasks.format]
+condition_script = [" 0 "]
+[tasks.format-flow]
+condition_script = [" 0 "]
+[tasks.format-toml]
+condition_script = [" 0 "]
+[tasks.format-toml-flow]
+condition_script = [" 0 "]
+# ------------------------------------------------------------------------------
+
+
+
+# -----------------------------------------------------------------------------
+[tasks.generate-ssl-certs-prepare]
+private = true
+workspace = false
+env = { "TEST_CERTS_DIR" = "${ROOT_PROJECT_DIR}/target/debug/generated-test-resources" }
+command = "mkdir"
+args = ["-p", "${TEST_CERTS_DIR}"]
+
+
+[tasks.delete-ssl-certs-prepare]
+private = true
+workspace = false
+command = "/bin/sh"
+cwd = "${TEST_CERTS_DIR}"
+args = [
+    "-c",
+    # " rm -f ${TEST_CERTS_DIR}/*.key ${TEST_CERTS_DIR}/*.crt ${TEST_CERTS_DIR}/*.cert ",
+    " rm -f *.key *.crt *.cert ",
+]
+dependencies = ["generate-ssl-certs-prepare"]
+
+### Doe NOT work
+#[tasks.delete-ssl-certs-prepare]
+#workspace = false
+#command = "rm"
+#cwd = "${TEST_CERTS_DIR}"
+#args = [
+#    "-f", "*.key", "*.crt", "*.cert ",
+#]
+#dependencies = ["generate-ssl-certs-prepare"]
+
+
+[tasks.generate-ssl-certs]
+workspace = false
+dependencies = [
+    "generate-ssl-certs-prepare",
+    "generate-ssl-certs--for-account-soa",
+    "generate-ssl-certs--for-database",
+]
+
+
+[tasks.regenerate-ssl-certs]
+workspace = false
+dependencies = [
+    "generate-ssl-certs-prepare",
+    "delete-ssl-certs-prepare",
+    "generate-ssl-certs--for-account-soa",
+    "generate-ssl-certs--for-database",
+]
+
+
+[tasks.generate-ssl-certs--for-account-soa]
+private = true
+workspace = false
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-soa.key", "${TEST_CERTS_DIR}/rust-account-soa.crt"] }
+command = "openssl"
+args = [
+    "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "30",
+    "-nodes",
+    "-keyout", "${TEST_CERTS_DIR}/rust-account-soa.key",
+    "-out", "${TEST_CERTS_DIR}/rust-account-soa.crt", "-subj", "/CN=rust-account-soa",
+    "-addext", "subjectAltName=DNS:rust-account-soa-0,DNS:rust-account-soa_0,DNS:rust-account-soa-1,DNS:rust-account-soa_1,DNS:rust-account-soa-2,DNS:rust-account-soa_2",
+    # "-addext", "subjectAltName=DNS:rust-account-soa-0,DNS:*.example.com,IP:10.0.0.1",
+
+    # account-soa_0
+    # account-soa-0 bank-plugin-account-soa_0
+    # bank-plugin-account-soa-0 bank-plugin-tests-1661111370-account-soa_0 bank-plugin-tests-1661111370-account-soa-0
+    # account-soa_1
+    # account-soa-1 bank-plugin-account-soa_1
+    # bank-plugin-account-soa-1 bank-plugin-tests-1661111370-account-soa_1 bank-plugin-tests-1661111370-account-soa-1
+    # account-soa_2
+    # account-soa-2 bank-plugin-account-soa_2
+    # bank-plugin-account-soa-2 bank-plugin-tests-1661111370-account-soa_2 bank-plugin-tests-1661111370-account-soa-2
+
+    #
+    # mvv-bank localhost
+    # mvv-bank_0 mvv-bank-0 bank-plugin-mvv-bank_0 bank-plugin-mvv-bank-0 bank-plugin-tests-1661111370-mvv-bank_0 bank-plugin-tests-1661111370-mvv-bank-0
+    # mvv-bank_1 mvv-bank-1 bank-plugin-mvv-bank_1 bank-plugin-mvv-bank-1 bank-plugin-tests-1661111370-mvv-bank_1 bank-plugin-tests-1661111370-mvv-bank-1
+    # mvv-bank_2 mvv-bank-2 bank-plugin-mvv-bank_2 bank-plugin-mvv-bank-2 bank-plugin-tests-1661111370-mvv-bank_2 bank-plugin-tests-1661111370-mvv-bank-2
+]
+# <hosts>${generated-dev-certs-hosts}</hosts>
+# <generated-dev-certs-hosts>localhost,database,${project.build.finalName}</generated-dev-certs-hosts>
+dependencies = ["generate-ssl-certs-prepare"]
+
+
+[tasks.generate-ssl-certs--for-database]
+private = true
+workspace = false
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/database.key", "${TEST_CERTS_DIR}/database.crt"] }
+command = "openssl"
+args = [
+    "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "30",
+    "-nodes",
+    "-keyout", "${TEST_CERTS_DIR}/database.key",
+    "-out", "${TEST_CERTS_DIR}/database.crt", "-subj", "/CN=database",
+    "-addext", "subjectAltName=DNS:database-0,DNS:database_0,DNS:database-1,DNS:database_1",
+]
+dependencies = ["generate-ssl-certs-prepare"]
+# -----------------------------------------------------------------------------
+
+
+
+# -----------------------------------------------------------------------------
+[tasks.init_docker_vars]
+env = { PROJECT_DIR = "${CARGO_MAKE_CURRENT_TASK_INITIAL_MAKEFILE_DIRECTORY}" } # short alias
+
+
+# TODO: How to reuse it?
+[tasks.private_docker_build_prepare_labels]
+env = { DOCKER_IMAGE_LABELS = [
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
+    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+] }
+
+
+
+[tasks.build-docker]
+cwd = "${ROOT_PROJECT_DIR}"
+command = "docker"
+args = [
+    "build",
+    "--file", "${PROJECT_DIR}/docker/Dockerfile",
+    "--tag", "rust-mvv-webapp",
+    # ?? How to reuse it?
+    #    ${DOCKER_IMAGE_LABELS},
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
+    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+    ".",]
+workspace = false
+dependencies = [
+    "build",
+    "test",
+    "init_docker_vars",
+    "private_docker_build_prepare_labels",
+]
+
+[tasks.build-docker-prod]
+workspace = false
+alias = "build-docker"
+
+[tasks.build-prod-docker]
+workspace = false
+alias = "build-docker"
+
+
+[tasks.build-debug-docker]
+cwd = "${ROOT_PROJECT_DIR}"
+command = "docker"
+args = ["build",
+    "--file", "${PROJECT_DIR}/docker/Dockerfile",
+    "--tag", "rust-mvv-webapp-debug",
+    "--build-arg", "RELEASE_OR_DEBUG_BUILD_PARAM=",
+    "--build-arg", "RELEASE_OR_DEBUG_TARGET_DIR=./target/debug",
+    # ?? How to reuse it?
+    #${DOCKER_IMAGE_LABELS},
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
+    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+    ".",]
+workspace = false
+dependencies = [
+    "build",
+    "test",
+    "init_docker_vars",
+    "private_docker_build_prepare_labels",
+]
+
+[tasks.build-docker-debug]
+workspace = false
+alias = "build-debug-docker"
+
+
+[tasks.get-ubuntu-info-vars]
+workspace = false
+# get Ubuntu bersion => cat /etc/os-release | grep VERSION_ID | sed -e "s/^VERSION_ID=\"//" -e "s/\"//"
+env = { UBUNTU_VERSION = { script = ["cat /etc/os-release | grep VERSION_ID | sed -e \"s/^VERSION_ID=\\\"//\"  -e \"s/\\\"//\""] } }
+script = "echo UBUNTU_VERSION: ${UBUNTU_VERSION}"
+
+# CARGO_MAKE_CRATE_TARGET_DIRECTORY
+# ${CARGO_TARGET_DIR}
+# CARGO_MAKE_CRATE_CURRENT_WORKSPACE_MEMBER
+# CARGO_MAKE_WORKSPACE_PACKAGE_NAME
+#
+#
+[tasks.build-debug-local-docker]
+command = "docker"
+cwd = "${ROOT_PROJECT_DIR}"
+args = [
+    "build",
+    "--file", "${PROJECT_DIR}/docker/Dockerfile-local",
+    "--tag", "rust-mvv-webapp-debug",
+    "--build-arg", "UBUNTU_VERSION=${UBUNTU_VERSION}",
+    # ?? How to reuse it?
+    #${DOCKER_IMAGE_LABELS},
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
+    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+    ".",]
+workspace = false
+dependencies = [
+    "get-ubuntu-info-vars",
+    "init_docker_vars",
+    "build",
+    # "test",
+    "private_docker_build_prepare_labels",
+]
+
+
+
+# -----------------------------------------------------------------------------
+[tasks.docker-compose-up]
+command = "docker-compose"
+args = [
+    "--file", "${PROJECT_DIR}/docker/docker-compose-012.yml",      # ${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose-012.env",  # "${docker-env-file}",
+    "--project-directory", "${PROJECT_DIR}",
+    "--project-name", "rust-account-soa-project",                # "${project.artifactId}",
+    "up",
+    #"rust-account-soa", # "${docker-compose-service-up}",
+    ]
+workspace = false
+dependencies = [
+    "init_docker_vars",
+#    "build",
+#    "test",
+#    "private_docker_build_prepare_labels",
+]
+
+
+
+[tasks.docker-compose-down]
+command = "docker-compose"
+args = [
+    "--file", "${PROJECT_DIR}/docker/docker-compose-012.yml",      # ${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose-012.env",  # "${docker-env-file}",
+    "--project-directory", "${PROJECT_DIR}",
+    "--project-name", "rust-account-soa-project",                # "${project.artifactId}",
+    "down",
+    #"rust-account-soa", # "${docker-compose-service-up}",
+    ]
+workspace = false
+dependencies = [
+    "init_docker_vars",
+#    "build",
+#    "test",
+#    "private_docker_build_prepare_labels",
+]
+
+
+
+[tasks.docker-compose-rerun]
+workspace = false
+dependencies = [
+    # "build",
+    # "test",
+    # "build-debug-docker",
+    "docker-compose-down",
+    "docker-compose-up",
+]
+
+
+
+[tasks.docker-debug-rebuild-rerun-all]
+workspace = false
+dependencies = [
+    "build",
+    # "test",
+    "build-debug-docker",
+    "docker-compose-down",
+    "docker-compose-up",
+]
+
+
+[tasks.docker-compose-down-up]
+workspace = false
+dependencies = [
+    "docker-compose-down",
+    "docker-compose-up",
+]
+# -----------------------------------------------------------------------------

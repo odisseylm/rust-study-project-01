@@ -25,57 +25,68 @@ RUN echo "Build mode '${RELEASE_OR_DEBUG_BUILD_PARAM:-debug}'"
 
 #COPY . .
 
-COPY Cargo.lock Cargo.toml build.rs ./
+# COPY Cargo.lock Cargo.toml build.rs ./
+COPY Cargo.lock Cargo.toml ./
 
-RUN    mkdir ./src                                                              \
-    && mkdir ./src/bin                                                          \
-    && mkdir ./_subpackages                                                     \
-    && mkdir ./_subpackages/mvv_auth                                            \
-    && mkdir ./_subpackages/static_error_macro                                  \
-    && mkdir ./_subpackages/tuple_heter_iter                                    \
-    && mkdir ./_subpackages/tuple_heter_iter_macro                              \
-    && mkdir ./_subpackages/mvv_auth/src                                        \
-    && mkdir ./_subpackages/static_error_macro/src                              \
-    && mkdir ./_subpackages/tuple_heter_iter/src                                \
-    && mkdir ./_subpackages/tuple_heter_iter_macro/src                          \
-    && echo "fn main() { }" > ./src/bin/main.rs                                 \
-    && echo "// dummy file" > ./src/lib.rs                                      \
-    && echo "// dummy file" > ./_subpackages/mvv_auth/src/lib.rs                \
-    && echo "// dummy file" > ./_subpackages/static_error_macro/src/lib.rs      \
-    && echo "// dummy file" > ./_subpackages/tuple_heter_iter/src/lib.rs        \
-    && echo "// dummy file" > ./_subpackages/tuple_heter_iter_macro/src/lib.rs
+RUN    mkdir ./src                                                 \
+    && mkdir ./account_soa                                         \
+    && mkdir ./account_soa/src                                     \
+    && mkdir ./account_soa/src/bin                                 \
+    && mkdir ./auth                                                \
+    && mkdir ./auth/src                                            \
+    && mkdir ./common                                              \
+    && mkdir ./common/src                                          \
+    && mkdir ./static_error_macro                                  \
+    && mkdir ./static_error_macro/src                              \
+    && mkdir ./tuple_heter_iter                                    \
+    && mkdir ./tuple_heter_iter/src                                \
+    && mkdir ./tuple_heter_iter_macro                              \
+    && mkdir ./tuple_heter_iter_macro/src                          \
+    && echo "fn main() { }" > ./account_soa/src/bin/main.rs        \
+    && echo "// dummy file" > ./account_soa/src/lib.rs             \
+    && echo "// dummy file" > ./auth/src/lib.rs                    \
+    && echo "// dummy file" > ./common/src/lib.rs                  \
+    && echo "// dummy file" > ./static_error_macro/src/lib.rs      \
+    && echo "// dummy file" > ./tuple_heter_iter/src/lib.rs        \
+    && echo "// dummy file" > ./tuple_heter_iter_macro/src/lib.rs
 
 # COPY static_error_macro/Cargo.lock static_error_macro/Cargo.toml ./static_error_macro/
-COPY _subpackages/mvv_auth/Cargo.toml                ./_subpackages/mvv_auth/
-COPY _subpackages/static_error_macro/Cargo.toml      ./_subpackages/static_error_macro/
-COPY _subpackages/tuple_heter_iter/Cargo.toml        ./_subpackages/tuple_heter_iter/
-COPY _subpackages/tuple_heter_iter_macro/Cargo.toml  ./_subpackages/tuple_heter_iter_macro/
+COPY account_soa/Cargo.toml             ./account_soa/
+COPY auth/Cargo.toml                    ./auth/
+COPY common/Cargo.toml                  ./common/
+COPY static_error_macro/Cargo.toml      ./static_error_macro/
+COPY tuple_heter_iter/Cargo.toml        ./tuple_heter_iter/
+COPY tuple_heter_iter_macro/Cargo.toml  ./tuple_heter_iter_macro/
 
 
 # Build the dependencies without the actual source code to cache dependencies separately
 RUN    cargo check $RELEASE_OR_DEBUG_BUILD_PARAM --workspace --all-targets --all-features \
     && cargo build $RELEASE_OR_DEBUG_BUILD_PARAM --workspace
 
-RUN rm ./src/*.rs && rm ./src/bin/*.rs                         \
-    && rm ./_subpackages/mvv_auth/src/*.rs                     \
-    && rm ./_subpackages/static_error_macro/src/*.rs           \
-    && rm ./_subpackages/tuple_heter_iter/src/*.rs             \
-    && rm ./_subpackages/tuple_heter_iter_macro/src/*.rs
+RUN    rm ./account_soa/src/*.rs                  \
+    && rm ./account_soa/src/bin/*.rs              \
+    && rm ./auth/src/*.rs                         \
+    && rm ./common/src/*.rs                       \
+    && rm ./static_error_macro/src/*.rs           \
+    && rm ./tuple_heter_iter/src/*.rs             \
+    && rm ./tuple_heter_iter_macro/src/*.rs
 
-COPY src/ ./src/
-COPY templates/ ./templates/
 #RUN ls --recursive ./src/
-COPY _subpackages/mvv_auth/src/                ./_subpackages/mvv_auth/src/
-COPY _subpackages/mvv_auth/templates/          ./_subpackages/mvv_auth/templates/
-COPY _subpackages/static_error_macro/src/      ./_subpackages/static_error_macro/src/
-COPY _subpackages/tuple_heter_iter/src/        ./_subpackages/tuple_heter_iter/src/
-COPY _subpackages/tuple_heter_iter_macro/src/  ./_subpackages/tuple_heter_iter_macro/src/
+COPY account_soa/src/             ./account_soa/src/
+COPY account_soa/templates/       ./account_soa/templates/
+COPY auth/src/                    ./auth/src/
+COPY auth/templates/              ./auth/templates/
+COPY common/src/                  ./common/src/
+COPY static_error_macro/src/      ./static_error_macro/src/
+COPY tuple_heter_iter/src/        ./tuple_heter_iter/src/
+COPY tuple_heter_iter_macro/src/  ./tuple_heter_iter_macro/src/
 
-RUN    touch ./src/lib.rs                                      \
-    && touch ./_subpackages/mvv_auth/src/lib.rs                \
-    && touch ./_subpackages/static_error_macro/src/lib.rs      \
-    && touch ./_subpackages/tuple_heter_iter/src/lib.rs        \
-    && touch ./_subpackages/tuple_heter_iter_macro/src/lib.rs
+RUN    touch ./account_soa/src/lib.rs             \
+    && touch ./auth/src/lib.rs                    \
+    && touch ./common/src/lib.rs                  \
+    && touch ./static_error_macro/src/lib.rs      \
+    && touch ./tuple_heter_iter/src/lib.rs        \
+    && touch ./tuple_heter_iter_macro/src/lib.rs
 
 
 RUN cargo build $RELEASE_OR_DEBUG_BUILD_PARAM --workspace
@@ -91,13 +102,13 @@ FROM debian:bullseye-slim AS final
 #FROM debian:bookworm-slim
 
 
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "10001" \
+RUN adduser                   \
+    --disabled-password       \
+    --gecos ""                \
+    --home "/nonexistent"     \
+    --shell "/sbin/nologin"   \
+    --no-create-home          \
+    --uid "10001"             \
     appuser
 USER appuser
 
@@ -110,4 +121,3 @@ ENTRYPOINT ["/bin/web_main_1", "arg1", "arg2"]
 
 # interval=1m
 #HEALTHCHECK --interval=5s --timeout=3s CMD wget --quiet --no-check-certificate --tries=1 --spider https://localhost/${PROJECT_CONTEXT_PATH}/api/ping || exit 1
-
