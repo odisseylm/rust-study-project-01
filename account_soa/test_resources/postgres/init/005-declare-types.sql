@@ -17,6 +17,8 @@ create domain US_POSTAL_CODE as TEXT
      or value ~ '^\d{5}-\d{4}$'
 );
 
+create domain CLIENT_ID as UUID;
+
 create domain IBAN as VARCHAR(34)
     check (length(value) >= 16 and length(value) <= 34);
 
@@ -24,4 +26,5 @@ create domain ACCOUNT_ID as IBAN;
 
 create domain AMOUNT as NUMERIC(15,6);
 
+-- T O D O: specify all allowed/possible currencies
 create domain CURRENCY as CHAR(3);

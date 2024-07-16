@@ -53,22 +53,22 @@ pub struct Amount {
 #[derive(Debug, PartialEq)]
 #[derive(Serialize, Deserialize)]
 #[derive(derive_more::Display)]
-#[display(fmt = "Account {{ {id}, user: {user_id}, amount: {amount}, created/updated at: {created_at}/{updated_at} }}")]
+#[display(fmt = "Account {{ {id}, iban: {iban}, client: {client_id}, amount: {amount}, created/updated at: {created_at}/{updated_at} }}")]
 #[serde(rename_all = "camelCase")]
 // #[derive(validator::Validate)]
 #[derive(validify::Validify)]
 pub struct Account {
-    // #[validate(length(min=1, max=320), regex(path = *ID_PATTERN))] // for 'validator'
-    #[validate(length(min=1, max=320), regex(ID_PATTERN))] // for 'validify'
-    pub id: String,
-    // #[validate(length(min=1, max=320), regex(path = *ID_PATTERN))] // for 'validator'
-    #[validate(length(min=1, max=320), regex(ID_PATTERN))] // for 'validify'
-    pub user_id: String,
-    // #[validate(nested)] // for 'validator'
-    #[validify] // for 'validify'
+    #[validate(length(min=1, max=320), regex(ID_PATTERN))]
+    pub id: String, // TODO: use uuid
+    #[validate(length(min=16, max=34), regex(ID_PATTERN))]
+    pub iban: String,
+    #[validate(length(min=1, max=320), regex(ID_PATTERN))]
+    pub client_id: String, // TODO: use uuid
+    #[validate(length(min=1, max=320))] // TODO: add simple validation // , regex(ID_PATTERN))]
+    pub name: String,
+    #[validify]
     pub amount: Amount,
     pub created_at: chrono::DateTime<Utc>,
-    // #[serde(serialize_with = "serialize_fn...")]
     pub updated_at: chrono::DateTime<Utc>,
 }
 

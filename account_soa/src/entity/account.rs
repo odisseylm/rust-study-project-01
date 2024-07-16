@@ -1,46 +1,56 @@
 use chrono::Utc;
 use mvv_common::entity::amount::Amount;
-use mvv_common::entity::id::Id;
-use crate::entity::user::UserId;
 use mvv_common::generate_from_str_new_type_delegate;
-// use chrono::serde::*;
+use crate::entity::ClientId;
 // -------------------------------------------------------------------------------------------------
 
 
 
 #[derive(Debug, Clone, PartialEq, derive_more::Display)] // derive_more::FromStr)]
-#[derive(serde::Serialize, serde::Deserialize)]
 #[display(fmt = "{}", _0)]
-pub struct AccountId( #[allow(dead_code)] Id);
-type AccountIdFormatError = mvv_common::entity::id::parse::IdFormatError;
+pub struct AccountId( #[allow(dead_code)] uuid::Uuid);
+// pub type AccountIdFormatError = mvv_common::entity::id::parse::IdFormatError;
+pub type AccountIdFormatError = uuid::Error;
 
 impl AccountId {
-    pub fn into_inner(self) -> Id { self.0 }
-    pub fn into_inner_inner(self) -> String { self.0.into_inner() }
+    pub fn into_inner(self) -> uuid::Uuid { self.0 }
 }
 
-generate_from_str_new_type_delegate! { AccountId, Id, AccountIdFormatError }
+// generate_from_str_new_type_delegate! { AccountId, Id, AccountIdFormatError }
+generate_from_str_new_type_delegate! { AccountId, uuid::Uuid, parse_str, uuid::Error }
 
 
 #[derive(Debug)]
-// #[derive(Serialize, Deserialize)]
-// #[serde(rename_all = "camelCase")]
 #[readonly::make]
 pub struct Account {
-    pub id: AccountId,
-    pub user_id: UserId,
+    pub id: AccountId, // internal ID
+    pub iban: iban::Iban,
+    pub client_id: ClientId,
+    pub name: String, // TODO: Use type AccountName
     pub amount: Amount,
     pub created_at: chrono::DateTime<Utc>,
     pub updated_at: chrono::DateTime<Utc>,
+}
 
+pub struct AccountParts {
+    pub id: AccountId, // internal ID
+    pub iban: iban::Iban,
+    pub client_id: ClientId,
+    pub name: String,
+    pub amount: Amount,
+    pub created_at: chrono::DateTime<Utc>,
+    pub updated_at: chrono::DateTime<Utc>,
 }
 
 
 impl Account {
+    #[inline]
     pub fn new(args: new::Args) -> Self {
         Account {
             id: args.id,
-            user_id: args.user_id,
+            iban: args.iban,
+            client_id: args.client_id,
+            name: args.name,
             amount: args.amount,
             created_at: args.created_at,
             updated_at: args.updated_at,
@@ -49,13 +59,13 @@ impl Account {
 }
 
 
-pub type AccountParts = new::Args;
-
 impl Account {
     pub fn into_parts(self) -> AccountParts {
         AccountParts {
             id: self.id,
-            user_id: self.user_id,
+            iban: self.iban,
+            client_id: self.client_id,
+            name: self.name,
             amount: self.amount,
             created_at: self.created_at,
             updated_at: self.updated_at,
@@ -64,23 +74,13 @@ impl Account {
 }
 
 
-
+// Attempt to emulate named args in rust.
 pub mod new {
-    use chrono::Utc;
-    use crate::entity::account::AccountId;
-    use mvv_common::entity::amount::Amount;
-    use crate::entity::user::UserId;
-
-    pub struct Args {
-        pub id: AccountId,
-        pub user_id: UserId,
-        pub amount: Amount,
-        pub created_at: chrono::DateTime<Utc>,
-        pub updated_at: chrono::DateTime<Utc>,
-    }
+    pub type Args = super::AccountParts;
 }
 
 
+/*
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
 #[readonly::make]
@@ -95,7 +95,7 @@ pub struct SSS_RO {
 pub struct SSS_RO2 {
     pub x: i32,
 }
-
+*/
 
 
 /*
@@ -132,6 +132,7 @@ const _: () = {
 */
 
 
+/*
 #[cfg(test)]
 mod tests {
     use chrono::{ FixedOffset, Utc };
@@ -162,3 +163,4 @@ mod tests {
         chrono::DateTime::<FixedOffset>::from_str(str).test_unwrap().to_utc()
     }
 }
+*/

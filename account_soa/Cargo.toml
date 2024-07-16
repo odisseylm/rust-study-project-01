@@ -55,7 +55,7 @@ seq-macro = "0.3.5"
 forr = "0.2.3"
 
 bigdecimal = "0.4.3"
-#bigdecimal = {  version = "0.4.3", features = ["default", "serde" ] }
+iban = "0.1.7"
 
 trait-variant = "0.1.2"  # ???
 
@@ -219,6 +219,7 @@ associative-cache = "2.0.0"
 
 itertools = "0.13.0"
 by_address = "1.2.1"
+uuid = { version = "1.10.0", features = ["default", "v4", "serde", ] }
 
 #tuple_len = "3.0.0"
 #tuple_length = "0.2.0"

@@ -11,3 +11,9 @@ pub struct UserId {
 pub struct AccountId {
     pub account_id: String,
 }
+
+#[derive(Debug, derive_more::Display, Clone, serde::Deserialize)]
+#[display(fmt = "PathClientId({})", client_id)]
+pub struct ClientId {
+    pub client_id: String,
+}

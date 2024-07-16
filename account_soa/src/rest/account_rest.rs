@@ -6,7 +6,7 @@ use tracing::{ debug, info /*, error*/ };
 use log::{ debug as log_debug, info as log_info /*, error as log_error*/ };
 
 use crate::{
-    entity::{ prelude::UserId, entity, account::AccountId, },
+    entity::{ self, prelude::UserId, AccountId, ClientId },
     rest::{
         auth::{ RequiredAuthorizationExtension, Role, },
         app_dependencies::Dependencies,
@@ -15,6 +15,7 @@ use crate::{
     service::{ account_service::{ AccountService }, },
 };
 use super::path;
+use mvv_common::rest::RestFutureToJson;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -51,16 +52,22 @@ static TEMP_CURRENT_USER_ID: UserId = {
 
 async fn call_rest_get_user_account <
     AccountS: AccountService + 'static,
->(State(rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>, Path(path::AccountId { account_id }): Path<path::AccountId>)
-    -> Result<Json<dto::Account>, RestAppError> {
-    rest_service.get_user_account(account_id).to_json().await
+>(
+    State(rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>,
+    Path(path::ClientId { client_id }): Path<path::ClientId>,
+    Path(path::AccountId { account_id }): Path<path::AccountId>,
+) -> Result<Json<dto::Account>, RestAppError> {
+    rest_service.get_account(client_id, account_id).to_json().await
 }
 
 async fn call_rest_get_user_accounts <
     AccountS: AccountService + 'static,
->(State(rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>)
+>(
+    State(rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>,
+    Path(path::ClientId { client_id }): Path<path::ClientId>,
+)
     -> Result<Json<Vec<dto::Account>>, RestAppError> {
-    rest_service.get_user_accounts().to_json().await
+    rest_service.get_accounts(client_id).to_json().await
 }
 
 
@@ -69,15 +76,15 @@ pub struct CurrentUserAccountRest <AS: AccountService> {
 }
 
 impl<AS: AccountService> CurrentUserAccountRest<AS> {
-    async fn current_user_id(&self) -> UserId {
-        TEMP_CURRENT_USER_ID.test_clone()
-    }
+    // async fn current_user_id(&self) -> UserId {
+    //     TEMP_CURRENT_USER_ID.test_clone()
+    // }
 
     #[tracing::instrument(
         // skip(dependencies),
         skip(self),
     )]
-    pub async fn get_user_account(&self, account_id: String) -> Result<dto::Account, RestAppError> {
+    pub async fn get_account(&self, client_id: String, account_id: String) -> Result<dto::Account, RestAppError> {
 
         debug!("TD get_user_account as debug");
         info! ("TI get_user_account as info");
@@ -87,16 +94,19 @@ impl<AS: AccountService> CurrentUserAccountRest<AS> {
         log_info! ("LI get_user_account as info");
         // log_error!("LE get_user_account as error");
 
-        let current_user_id = self.current_user_id().await;
+        // let current_user_id = self.current_user_id().await;
+        let client_id = ClientId::from_str(client_id.as_str()) ?;
         let account_id = AccountId::from_str(account_id.as_str()) ?;
-        let account = self.account_service.get_user_account(account_id, current_user_id).await ?;
+        let account = self.account_service.get_user_account(
+            client_id, account_id).await ?;
         let account_dto = map_account_to_rest(account);
         Ok(account_dto)
     }
 
-    pub async fn get_user_accounts(&self) -> Result<Vec<dto::Account>, RestAppError> {
-        let current_user_id = self.current_user_id().await;
-        let accounts = self.account_service.get_user_accounts(current_user_id).await;
+    pub async fn get_accounts(&self, client_id: String) -> Result<Vec<dto::Account>, RestAppError> {
+        // let current_user_id = self.current_user_id().await;
+        let client_id = ClientId::from_str(client_id.as_str()) ?;
+        let accounts = self.account_service.get_user_accounts(client_id).await;
         let accounts_dto = accounts.map(move|acs|acs.into_iter().map(move |ac| map_account_to_rest(ac)).collect::<Vec<_>>()) ?;
         Ok(accounts_dto)
     }
@@ -107,11 +117,13 @@ fn map_account_to_rest(account: entity::Account) -> dto::Account {
     use crate::entity::account::AccountParts;
     use mvv_common::entity::amount::AmountParts;
 
-    let AccountParts { id, user_id, amount, created_at, updated_at } = account.into_parts();
+    let AccountParts { id, iban, client_id, name, amount, created_at, updated_at } = account.into_parts();
     let AmountParts { value: amount_value, currency } = amount.into_parts();
     dto::Account {
-        id: id.into_inner_inner(),
-        user_id: user_id.into_inner_inner(),
+        id: id.into_inner().to_string(),
+        iban: iban.to_string(), // hm... where 'into_inner()' ??
+        client_id: client_id.into_inner().to_string(),
+        name,
         amount: dto::Amount { value: amount_value, currency: currency.into_inner() },
         created_at,
         updated_at,
@@ -166,10 +178,7 @@ struct ValidatedInput2 {
 */
 
 // use axum_valid::{ Validified, /*Modified,*/ };
-use mvv_common::mvv_axum_valid::{Validified, /*Modified,*/};
-use mvv_common::test::TestOps;
-use mvv_common::rest::RestFutureToJson;
-
+use mvv_common::mvv_axum_valid::{ Validified, /*Modified,*/ };
 async fn call_rest_input_validate_by_validify <
     AccountS: AccountService + 'static,
 >(State(_rest_service): State<Arc<CurrentUserAccountRest<AccountS>>>, Validified(Json(input)): Validified<Json<ValidatedInput3>>)

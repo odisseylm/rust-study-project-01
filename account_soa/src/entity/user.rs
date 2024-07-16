@@ -1,4 +1,7 @@
-use serde::{Deserialize, Serialize};
+use serde::{ Deserialize, Serialize };
+use sqlx::database::HasValueRef;
+use sqlx::error::BoxDynError;
+use sqlx_postgres::Postgres;
 use mvv_common::entity::id::Id;
 use mvv_common::generate_from_str_new_type_delegate;
 //--------------------------------------------------------------------------------------------------
@@ -19,6 +22,19 @@ impl UserId {
 
 generate_from_str_new_type_delegate! { UserId, Id, UserIdFormatError }
 
+
+impl<'r> sqlx::Decode<'r, Postgres> for UserId {
+    fn decode(value: <Postgres as HasValueRef<'r>>::ValueRef) -> Result<Self, BoxDynError> {
+        let as_str = value.as_str() ?;
+        UserId::from_str(as_str)
+            .map_err(|err| BoxDynError::from(err))
+    }
+}
+impl sqlx::Type<Postgres> for UserId {
+    fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
+        <Postgres as sqlx::Database>::TypeInfo::with_name("VARCHAR")
+    }
+}
 
 
 pub struct User {

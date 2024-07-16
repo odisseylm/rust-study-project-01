@@ -9,7 +9,6 @@ use axum::Json;
 use axum::routing::{ get };
 use super::super::dto::{ Account as AccountDTO };
 use crate::rest::account_rest::CurrentUserAccountRest;
-use crate::rest::error_rest::RestAppError;
 use crate::service::account_service::{ AccountService };
 
 
@@ -105,7 +104,7 @@ async fn handler5 <
 
 
 
-
+/*
 async fn handler6 <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,
@@ -118,7 +117,7 @@ async fn handler6 <
 // ) -> Result<Json< crate::rest::dto::Account >, anyhow::Error> {
     let aa: Result<(), anyhow::Error> = Ok(());
     let _aa2 = aa ?;
-    let ac: AccountDTO = state.get_user_account("678".to_test_string()).await.unwrap();
+    let ac: AccountDTO = state.get_account("678".to_test_string()).await.unwrap();
     Ok(Json(ac))
 
     // Ok(Json(ac))
@@ -135,9 +134,10 @@ async fn handler7 <
 >(
     axum::extract::State(state): axum::extract::State<Arc<CurrentUserAccountRest<AccountS>>>,
 ) -> Json<Vec<AccountDTO>> {
-    let ac = state.get_user_accounts().await.unwrap();
+    let ac = state.get_accounts().await.unwrap();
     Json(ac)
 }
+*/
 
 async fn handler8() -> Result<String, StatusCode> {
     // ...
@@ -223,21 +223,21 @@ fn accounts_rest_router<
         .route("current_user/account/all3", get(handler3))
         .route("current_user/account/all4", get(handler4))
         // .route("current_user/account/all5", get(handler5))
-        .route("current_user/account/all6", get(handler6))
-        .route("current_user/account/all7", get(handler7))
+        // .route("current_user/account/all6", get(handler6))
+        // .route("current_user/account/all7", get(handler7))
         .route("current_user/account/all8", get(handler8))
-        .route("current_user/account/id33", get(|State(state): State<Arc<CurrentUserAccountRest<AccountS>>>| async move {
-            Json(state.get_user_accounts().await.unwrap())
-            // state.get_current_user_accounts()
-        }))
-        .route("current_user/account/:id", get(|State(state): State<Arc<CurrentUserAccountRest<AccountS>>>,
-                                                axum::extract::Path(id): axum::extract::Path<String>,
-                                                pagination: Option<axum::extract::Query<Pagination>>,
-        | async move {
-            let axum::extract::Query(_pagination) = pagination.unwrap_or_default();
-            Json(state.get_user_account(id).await.unwrap())
-            // state.get_current_user_accounts()
-        }))
+        // .route("current_user/account/id33", get(|State(state): State<Arc<CurrentUserAccountRest<AccountS>>>| async move {
+        //     Json(state.get_user_accounts().await.unwrap())
+        //     // state.get_current_user_accounts()
+        // }))
+        // .route("current_user/account/:id", get(|State(state): State<Arc<CurrentUserAccountRest<AccountS>>>,
+        //                                         axum::extract::Path(id): axum::extract::Path<String>,
+        //                                         pagination: Option<axum::extract::Query<Pagination>>,
+        // | async move {
+        //     let axum::extract::Query(_pagination) = pagination.unwrap_or_default();
+        //     Json(state.get_user_account(id).await.unwrap())
+        //     // state.get_current_user_accounts()
+        // }))
         // .route("account/{id}", get(|State(state): State<Arc<AccountRest<AccountS>>>| async {
         //     state.get_current_user_account("666")
         // }))
