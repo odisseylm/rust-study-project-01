@@ -8,7 +8,7 @@ use axum::Json;
 // use axum::routing::{ delete, get, post };
 use axum::routing::{ get };
 use super::super::dto::{ Account as AccountDTO };
-use crate::rest::account_rest::CurrentUserAccountRest;
+use crate::rest::account_rest::AccountRest;
 use crate::service::account_service::{ AccountService };
 
 
@@ -43,7 +43,7 @@ async fn handler2 <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,
 > (
-    axum::extract::State(_state): axum::extract::State<Arc<CurrentUserAccountRest<AccountS>>>,
+    axum::extract::State(_state): axum::extract::State<Arc<AccountRest<AccountS>>>,
 ) -> &'static str {
     // ...
     "Hello, World!"
@@ -53,7 +53,7 @@ async fn handler3 <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,
 >(
-    axum::extract::State(_state): axum::extract::State<Arc<CurrentUserAccountRest<AccountS>>>,
+    axum::extract::State(_state): axum::extract::State<Arc<AccountRest<AccountS>>>,
 ) -> String {
     // ...
     "Hello, World!".to_test_string()
@@ -63,7 +63,7 @@ async fn handler4 <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,
 >(
-    axum::extract::State(_state): axum::extract::State<Arc<CurrentUserAccountRest<AccountS>>>,
+    axum::extract::State(_state): axum::extract::State<Arc<AccountRest<AccountS>>>,
 ) -> Json<String> {
     // ...
     Json("Hello, World!".to_test_string())
@@ -80,7 +80,7 @@ async fn handler5 <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,
 >(
-    axum::extract::State(_state): axum::extract::State<Arc<CurrentUserAccountRest<AccountS>>>,
+    axum::extract::State(_state): axum::extract::State<Arc<AccountRest<AccountS>>>,
     //axum::extract::Query()
     _uri: Uri,
     axum::extract::OriginalUri(_original_uri): axum::extract::OriginalUri,
@@ -154,7 +154,7 @@ pub struct Dependencies <
     // AccountR: AccountRest<AccountS> + Send + Sync,
 > {
     pub account_service: Arc<AccountS>,
-    pub account_rest: Arc<CurrentUserAccountRest<AccountS>>,
+    pub account_rest: Arc<AccountRest<AccountS>>,
 }
 
 
@@ -189,10 +189,10 @@ fn accounts_rest_router<
 
     // type AA = State<Arc<AccountRest<AccountS>>>;
     // type AA2 = Arc<AccountRest<AccountS>>;
-    let shared_state: Arc<CurrentUserAccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
+    let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.account_rest);
 
     let accounts_router = Router::new()
-        .route("current_user/account/all", get(|State(_state): State<Arc<CurrentUserAccountRest<AccountS>>>| async move {
+        .route("current_user/account/all", get(|State(_state): State<Arc<AccountRest<AccountS>>>| async move {
             // "Hello, World!"
             // Json(state.get_current_user_accounts())
             // let accounts_r = state.get_current_user_accounts().await;

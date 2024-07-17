@@ -8,7 +8,7 @@ use tower_http::trace::TraceLayer;
 use crate::service::account_service::AccountServiceImpl;
 use crate::rest::{
     app_dependencies::Dependencies,
-    account_rest::{ CurrentUserAccountRest, accounts_rest_router },
+    account_rest::{ AccountRest, accounts_rest_router },
 };
 use crate::rest::auth::user_perm_provider::SqlUserProvider;
 use mvv_common::env::env_var;
@@ -25,7 +25,7 @@ fn create_prod_dependencies() -> Result<Dependencies<AccountServiceImpl>, anyhow
 
     let db = Arc::new(mvv_common::db::pg::pg_db_connection() ?);
     let account_service = Arc::new(AccountServiceImpl { database_connection: Arc::clone(&db) });
-    let account_rest = Arc::new(CurrentUserAccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
+    let account_rest = Arc::new(AccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
 
     Ok(Dependencies::<AccountServiceImpl> { state: Arc::new(DependenciesState {
         database_connection: Arc::clone(&db),
@@ -90,7 +90,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
             log::info!("Env vars are loaded from [{:?}]", path),
         Err(dotenv::Error::Io(ref io_err))
             if io_err.kind() == std::io::ErrorKind::NotFound => {
-            log::info!("Env vars are not loaded from .env file.");
+            log::info!("Env vars are not loaded from [{env_filename}] file.");
         }
         Err(ref _err) => {
             log::error!("Error of loading .env file.");
@@ -110,11 +110,14 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
         .merge(login_route)
         .merge(protected_page_01_router())
         .nest("/api", Router::new()
+            .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))
+            /*
             .nest("/current_user", Router::new()
-                .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))
+                // .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))
                 // .merge(user details router)
-                // Other current user services
+                // Other 'current user' services
             )
+            */
             .nest("/admin", Router::new()
                 // .merge()
                 // .merge()

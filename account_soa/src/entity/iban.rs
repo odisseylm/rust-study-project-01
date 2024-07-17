@@ -1,6 +1,8 @@
 use sqlx::{ database::HasValueRef, error::BoxDynError };
 use sqlx_postgres::Postgres;
 use iban::Iban;
+use sqlx::database::HasArguments;
+use sqlx::encode::IsNull;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -13,17 +15,25 @@ pub struct IbanWrapper (
     pub Iban);
 
 
-impl<'r> sqlx::Decode<'r, Postgres> for IbanWrapper {
-    fn decode(value: <Postgres as HasValueRef<'r>>::ValueRef) -> Result<Self, BoxDynError> {
-        let as_str = value.as_str() ?;
-        use core::str::FromStr;
-        let bd: iban::Iban = Iban::from_str(as_str)
-            .map_err(|err| BoxDynError::from(err)) ?;
-        Ok(IbanWrapper(bd))
+impl<'r> sqlx::Encode<'r, Postgres> for IbanWrapper {
+    fn encode_by_ref(&self, buf: &mut <Postgres as HasArguments<'r>>::ArgumentBuffer) -> IsNull {
+        <&str as sqlx::Encode<Postgres>>::encode(self.0.as_str(), buf)
     }
 }
+
+impl<'r> sqlx::Decode<'r, Postgres> for IbanWrapper {
+    fn decode(value: <Postgres as HasValueRef<'r>>::ValueRef) -> Result<Self, BoxDynError> {
+        // !!! to_string() returns value with spaces.
+        //     We need value without spaces
+        let as_str = value.as_str() ?;
+
+        use core::str::FromStr;
+        Ok(IbanWrapper(Iban::from_str(as_str) ?))
+    }
+}
+
 impl sqlx::Type<Postgres> for IbanWrapper {
     fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <Postgres as sqlx::Database>::TypeInfo::with_name("IBAN")
+        <Postgres as sqlx::Database>::TypeInfo::with_name("VARCHAR") // "IBAN")
     }
 }

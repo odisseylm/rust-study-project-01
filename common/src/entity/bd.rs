@@ -12,6 +12,16 @@ pub fn bd_dbg_fmt(bd: &BigDecimal, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 }
 
 
+// Actually sqlx::types::BigDecimal is bigdecimal::BigDecimal (version 0.3.1).
+// I do not know is it ok, or I should force sqlx to use latest bigdecimal (version 04.5)?
+// Currently I use such easy approach.
+#[inline]
+fn big_decimal_from_sqlx_bd(sqlx_bd: sqlx::types::BigDecimal) -> BigDecimal {
+    let (digits, scale) = sqlx_bd.into_bigint_and_exponent();
+    BigDecimal::new(digits, scale)
+}
+
+
 #[derive(educe::Educe)] #[educe(Debug)]
 #[derive(derive_more::Display)]
 #[display(fmt = "{}", _0)]
@@ -19,18 +29,15 @@ pub struct BigDecimalWrapper(
     #[educe(Debug(method(bd_dbg_fmt)))]
     pub BigDecimal);
 
-
 impl<'r> sqlx::Decode<'r, Postgres> for BigDecimalWrapper {
     fn decode(value: <Postgres as HasValueRef<'r>>::ValueRef) -> Result<Self, BoxDynError> {
-        let as_str = value.as_str() ?;
-        use core::str::FromStr;
-        let bd: BigDecimal = BigDecimal::from_str(as_str)
-            .map_err(|err| BoxDynError::from(err)) ?;
-        Ok(BigDecimalWrapper(bd))
+        let bd: sqlx::types::BigDecimal =
+            <sqlx::types::BigDecimal as sqlx::Decode<'_, Postgres>>::decode(value) ?;
+        Ok(BigDecimalWrapper(big_decimal_from_sqlx_bd(bd)))
     }
 }
 impl sqlx::Type<Postgres> for BigDecimalWrapper {
     fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <Postgres as sqlx::Database>::TypeInfo::with_name("DECIMAL")
+        <Postgres as sqlx::Database>::TypeInfo::with_name("NUMERIC") // "DECIMAL")
     }
 }

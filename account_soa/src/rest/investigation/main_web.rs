@@ -1,3 +1,4 @@
+/*
 use core::future::Future;
 use axum::{ routing::get, routing::post, Router, Json };
 use tokio::signal;
@@ -89,3 +90,4 @@ async fn shutdown_signal() {
         _ = terminate => { panic!("### select terminate") },
     }
 }
+*/

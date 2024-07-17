@@ -1,4 +1,5 @@
-use sqlx::database::HasValueRef;
+use sqlx::database::{ HasArguments, HasValueRef };
+use sqlx::encode::IsNull;
 use sqlx::error::BoxDynError;
 use sqlx_postgres::Postgres;
 use mvv_common::generate_from_str_new_type_delegate;
@@ -18,17 +19,32 @@ impl ClientId {
 }
 generate_from_str_new_type_delegate! { ClientId, uuid::Uuid, parse_str, uuid::Error }
 
-
+impl<'r> sqlx::Encode<'r, Postgres> for ClientId {
+    fn encode_by_ref(&self, buf: &mut <Postgres as HasArguments<'r>>::ArgumentBuffer) -> IsNull {
+        <&uuid::Uuid as sqlx::Encode<Postgres>>::encode(&self.0, buf)
+    }
+}
 impl<'r> sqlx::Decode<'r, Postgres> for ClientId {
     fn decode(value: <Postgres as HasValueRef<'r>>::ValueRef) -> Result<Self, BoxDynError> {
-        let as_str = value.as_str() ?;
-        let client_id: ClientId = ClientId::from_str(as_str)
-            .map_err(|err| BoxDynError::from(err)) ?;
-        Ok(client_id)
+        let uuid = uuid::Uuid::decode(value) ?;
+        Ok(ClientId(uuid))
     }
 }
 impl sqlx::Type<Postgres> for ClientId {
     fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <Postgres as sqlx::Database>::TypeInfo::with_name("CLIENT_ID")
+        <Postgres as sqlx::Database>::TypeInfo::with_name("UUID") // "CLIENT_ID")
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use mvv_auth::util::test_unwrap::TestResultUnwrap;
+    use super::ClientId;
+
+    #[test]
+    fn client_id_from_str() {
+        ClientId::from_str("00000000-0000-0000-0000-000000000001").test_unwrap();
+        ClientId::from_str("{00000000-0000-0000-0000-000000000001}").test_unwrap();
     }
 }

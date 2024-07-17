@@ -25,9 +25,8 @@ generate_from_str_new_type_delegate! { UserId, Id, UserIdFormatError }
 
 impl<'r> sqlx::Decode<'r, Postgres> for UserId {
     fn decode(value: <Postgres as HasValueRef<'r>>::ValueRef) -> Result<Self, BoxDynError> {
-        let as_str = value.as_str() ?;
-        UserId::from_str(as_str)
-            .map_err(|err| BoxDynError::from(err))
+        let user_id = UserId::from_str(value.as_str() ?) ?;
+        Ok(user_id)
     }
 }
 impl sqlx::Type<Postgres> for UserId {

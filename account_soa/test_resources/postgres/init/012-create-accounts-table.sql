@@ -1,12 +1,12 @@
 
-create table CLIENT (
+create table CLIENTS (
     USER_ID    BIGINT,   -- TODO: temporary
-    CLIENT_ID  CLIENT_ID    not null,
+    CLIENT_ID  CLIENT_ID    not null unique,
     -- Should it be unique? Ot is it allowed to one physical person have several client ids&&
     EMAIL      EMAIL        collate ENGLISH_CI not null unique,
     -- main phone
     -- TODO: use strict format to avoid duplicates due to different format
-    PHONE      PHONE        collate ENGLISH_CI not null unique,
+    PHONE      PHONE        collate ENGLISH_CI not null unique
 );
 
 
@@ -17,15 +17,17 @@ create table ACCOUNTS
     -- if it is needed by new country laws)
     ID         UUID         not null primary key,
     -- natural key
-    IBAN       IBAN         not null primary key,
+    IBAN       IBAN         collate ENGLISH_CI not null unique,
     CLIENT_ID  CLIENT_ID    not null,
-    NAME       CITEXT(256) not null,
+    -- type modifier is not allowed for type "citext"
+    -- NAME       CITEXT(256)  not null,
+    NAME       VARCHAR(256) not null,
     AMOUNT     AMOUNT       not null default 0 check (AMOUNT >= 0),
     CUR        CURRENCY     not null,
-    CREATED_AT TIMESTAMP    not null default CURRENT_TIMESTAMP,
-    UPDATED_AT TIMESTAMP    not null default CURRENT_TIMESTAMP,
+    CREATED_AT TIMESTAMPTZ  not null default CURRENT_TIMESTAMP,
+    UPDATED_AT TIMESTAMPTZ  not null default CURRENT_TIMESTAMP,
 
-    constraint FK_CLIENT_ID foreign key(CLIENT_ID) references USERS(ID),
+    constraint FK_CLIENT_ID foreign key(CLIENT_ID) references CLIENTS(CLIENT_ID),
     constraint C_ACCOUNT_NAME unique (CLIENT_ID, NAME)
     -- check (length(name) >= 1 and length(name) <= 300),
 );

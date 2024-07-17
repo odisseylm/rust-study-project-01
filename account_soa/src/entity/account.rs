@@ -1,4 +1,7 @@
 use chrono::Utc;
+use sqlx::database::{ HasArguments, HasValueRef };
+use sqlx::error::BoxDynError;
+use sqlx_postgres::Postgres;
 use mvv_common::entity::amount::Amount;
 use mvv_common::generate_from_str_new_type_delegate;
 use crate::entity::ClientId;
@@ -16,8 +19,26 @@ impl AccountId {
     pub fn into_inner(self) -> uuid::Uuid { self.0 }
 }
 
-// generate_from_str_new_type_delegate! { AccountId, Id, AccountIdFormatError }
-generate_from_str_new_type_delegate! { AccountId, uuid::Uuid, parse_str, uuid::Error }
+generate_from_str_new_type_delegate! { AccountId, uuid::Uuid, uuid::Error }
+
+
+impl<'r> sqlx::Encode<'r, Postgres> for AccountId {
+    fn encode_by_ref(&self, buf: &mut <Postgres as HasArguments<'r>>::ArgumentBuffer) -> sqlx::encode::IsNull {
+        <&uuid::Uuid as sqlx::Encode<Postgres>>::encode(&self.0, buf)
+    }
+}
+impl<'r> sqlx::Decode<'r, Postgres> for AccountId {
+    fn decode(value: <Postgres as HasValueRef<'r>>::ValueRef) -> Result<Self, BoxDynError> {
+        let uuid = uuid::Uuid::decode(value) ?;
+        Ok(AccountId(uuid))
+    }
+}
+impl sqlx::Type<Postgres> for AccountId {
+    fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
+        <Postgres as sqlx::Database>::TypeInfo::with_name("UUID") // "ACCOUNT_ID")
+    }
+}
+
 
 
 #[derive(Debug)]
@@ -164,3 +185,33 @@ mod tests {
     }
 }
 */
+
+
+#[cfg(test)]
+mod tests {
+    use mvv_auth::util::test_unwrap::TestResultUnwrap;
+    use crate::entity::AccountId;
+
+    #[test]
+    fn account_id_from_str() {
+        use core::str::FromStr;
+        iban::Iban::from_str("UA85 399622 0000 0002 6001 2335 661").test_unwrap();
+        // iban::Iban::from_str("UA35 334851 0000 2600 9001 2345 67").test_unwrap();
+        iban::Iban::from_str("UA21 3223 1300 0002 6007 2335 6600 1").test_unwrap();
+        iban::Iban::from_str("UA90 3515 3300 0002 6006 0359 0071 2").test_unwrap();
+        iban::Iban::from_str("UA90 305299 2990004149123456789").test_unwrap();
+        iban::Iban::from_str("UA20 38080500000000026034 4816 3").test_unwrap();
+        iban::Iban::from_str("UA90 380805 000000 0026006780269").test_unwrap();
+
+        iban::Iban::from_str("UA713736572172926969841832393").test_unwrap();
+        iban::Iban::from_str("UA948614766857337364625464668").test_unwrap();
+        iban::Iban::from_str("UA565117374274826517545533479").test_unwrap();
+        iban::Iban::from_str("UA496826153843944716538382928").test_unwrap();
+
+        AccountId::from_str("UA713736572172926969841832393").test_unwrap();
+        AccountId::from_str("UA948614766857337364625464668").test_unwrap();
+        AccountId::from_str("UA565117374274826517545533479").test_unwrap();
+        AccountId::from_str("UA496826153843944716538382928").test_unwrap();
+    }
+
+}

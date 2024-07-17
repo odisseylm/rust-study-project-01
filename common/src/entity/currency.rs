@@ -1,7 +1,6 @@
 use core::char;
 use core::str::FromStr;
 use sqlx::database::HasValueRef;
-use sqlx::{Database, Decode, Type};
 use sqlx::error::BoxDynError;
 use sqlx_postgres::Postgres;
 use crate::json_str_ser_deser_impl;
@@ -234,16 +233,15 @@ macro_rules! make_currency_b {
 }
 
 
-impl<'r> Decode<'r, Postgres> for Currency {
+impl<'r> sqlx::Decode<'r, Postgres> for Currency {
     fn decode(value: <Postgres as HasValueRef<'r>>::ValueRef) -> Result<Self, BoxDynError> {
-        let as_str = value.as_str() ?;
-        Currency::from_str(as_str)
-            .map_err(|err| BoxDynError::from(err))
+        let cur = Currency::from_str(value.as_str() ?) ?;
+        Ok(cur)
     }
 }
-impl Type<Postgres> for Currency {
-    fn type_info() -> <Postgres as Database>::TypeInfo {
-        <Postgres as Database>::TypeInfo::with_name("CURRENCY")
+impl sqlx::Type<Postgres> for Currency {
+    fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
+        <Postgres as sqlx::Database>::TypeInfo::with_name("VARCHAR") // "CHAR") // "CURRENCY")
     }
 }
 
