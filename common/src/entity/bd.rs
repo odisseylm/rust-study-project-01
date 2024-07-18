@@ -38,6 +38,10 @@ impl<'r> sqlx::Decode<'r, Postgres> for BigDecimalWrapper {
 }
 impl sqlx::Type<Postgres> for BigDecimalWrapper {
     fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <Postgres as sqlx::Database>::TypeInfo::with_name("NUMERIC") // "DECIMAL")
+        // <Postgres as sqlx::Database>::TypeInfo::with_name("NUMERIC") // "DECIMAL")
+        <sqlx::types::BigDecimal as sqlx::Type<Postgres>>::type_info()
+    }
+    fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
+        <sqlx::types::BigDecimal as sqlx::Type<Postgres>>::compatible(ty)
     }
 }

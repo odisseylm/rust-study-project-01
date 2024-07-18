@@ -34,6 +34,10 @@ impl<'r> sqlx::Decode<'r, Postgres> for IbanWrapper {
 
 impl sqlx::Type<Postgres> for IbanWrapper {
     fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <Postgres as sqlx::Database>::TypeInfo::with_name("VARCHAR") // "IBAN")
+        <str as sqlx::Type<Postgres>>::type_info()
+        // <Postgres as sqlx::Database>::TypeInfo::with_name("VARCHAR") // "IBAN")
+    }
+    fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
+        <str as sqlx::Type<Postgres>>::compatible(ty)
     }
 }

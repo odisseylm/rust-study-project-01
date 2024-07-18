@@ -31,7 +31,11 @@ impl<'r> sqlx::Decode<'r, Postgres> for UserId {
 }
 impl sqlx::Type<Postgres> for UserId {
     fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <Postgres as sqlx::Database>::TypeInfo::with_name("VARCHAR")
+        <str as sqlx::Type<Postgres>>::type_info()
+        // <Postgres as sqlx::Database>::TypeInfo::with_name("VARCHAR")
+    }
+    fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
+        <str as sqlx::Type<Postgres>>::compatible(ty)
     }
 }
 

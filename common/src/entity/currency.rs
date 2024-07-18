@@ -241,7 +241,8 @@ impl<'r> sqlx::Decode<'r, Postgres> for Currency {
 }
 impl sqlx::Type<Postgres> for Currency {
     fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <Postgres as sqlx::Database>::TypeInfo::with_name("CHAR") // "CURRENCY")
+        <str as sqlx::Type<Postgres>>::type_info()
+        // <Postgres as sqlx::Database>::TypeInfo::with_name("CHAR") // "CURRENCY")
     }
     fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
         <str as sqlx::Type<Postgres>>::compatible(ty)

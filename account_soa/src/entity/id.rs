@@ -32,7 +32,11 @@ impl<'r> sqlx::Decode<'r, Postgres> for ClientId {
 }
 impl sqlx::Type<Postgres> for ClientId {
     fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <Postgres as sqlx::Database>::TypeInfo::with_name("UUID") // "CLIENT_ID")
+        <uuid::Uuid as sqlx::Type<Postgres>>::type_info()
+        // <Postgres as sqlx::Database>::TypeInfo::with_name("UUID") // "CLIENT_ID")
+    }
+    fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
+        <uuid::Uuid as sqlx::Type<Postgres>>::compatible(ty)
     }
 }
 
