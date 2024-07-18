@@ -33,4 +33,5 @@ create domain ACCOUNT_ID as UUID;
 create domain AMOUNT as NUMERIC(15,6);
 
 -- T O D O: specify all allowed/possible currencies
-create domain CURRENCY as VARCHAR(3); -- TODO: try to use CHAR(3)
+create domain CURRENCY as CHAR(3)
+    constraint check_valid_currency check (value is not null and value ~ '^[A-Z]{3}$');
