@@ -124,9 +124,9 @@ pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
             fn decode(
                 value: <sqlx_postgres::Postgres as sqlx::database::HasValueRef<'r>>::ValueRef
             ) -> Result<Self, sqlx::error::BoxDynError> {
-                let as_str = <String as sqlx::Decode<'r, sqlx_postgres::Postgres>>::decode(value) ?;
+                let as_str: &str = <&str as sqlx::Decode<'r, sqlx_postgres::Postgres>>::decode(value) ?;
                 use core::str::FromStr;
-                Ok( <$Type>::from_str(&as_str) ?)
+                Ok( <$Type>::from_str(as_str) ?)
             }
         }
 
