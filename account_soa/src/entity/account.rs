@@ -1,9 +1,11 @@
 use chrono::Utc;
-use sqlx::database::{ HasArguments, HasValueRef };
-use sqlx::error::BoxDynError;
-use sqlx_postgres::Postgres;
 use mvv_common::entity::amount::Amount;
-use mvv_common::generate_from_str_new_type_delegate;
+use mvv_common::{
+    generate_from_str_new_type_delegate,
+    generate_pg_delegate_decode,
+    generate_pg_delegate_encode,
+    generate_pg_delegate_type_info,
+};
 use crate::entity::ClientId;
 // -------------------------------------------------------------------------------------------------
 
@@ -21,27 +23,9 @@ impl AccountId {
 
 generate_from_str_new_type_delegate! { AccountId, uuid::Uuid, uuid::Error }
 
-
-impl<'r> sqlx::Encode<'r, Postgres> for AccountId {
-    fn encode_by_ref(&self, buf: &mut <Postgres as HasArguments<'r>>::ArgumentBuffer) -> sqlx::encode::IsNull {
-        <&uuid::Uuid as sqlx::Encode<Postgres>>::encode(&self.0, buf)
-    }
-}
-impl<'r> sqlx::Decode<'r, Postgres> for AccountId {
-    fn decode(value: <Postgres as HasValueRef<'r>>::ValueRef) -> Result<Self, BoxDynError> {
-        let uuid = uuid::Uuid::decode(value) ?;
-        Ok(AccountId(uuid))
-    }
-}
-impl sqlx::Type<Postgres> for AccountId {
-    fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <uuid::Uuid as sqlx::Type<Postgres>>::type_info()
-        // <Postgres as sqlx::Database>::TypeInfo::with_name("UUID") // "ACCOUNT_ID")
-    }
-    fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
-        <uuid::Uuid as sqlx::Type<Postgres>>::compatible(ty)
-    }
-}
+generate_pg_delegate_type_info! { AccountId, uuid::Uuid }
+generate_pg_delegate_encode!    { AccountId, uuid::Uuid }
+generate_pg_delegate_decode!    { AccountId, uuid::Uuid }
 
 
 

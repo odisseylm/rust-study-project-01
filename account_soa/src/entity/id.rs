@@ -1,8 +1,9 @@
-use sqlx::database::{ HasArguments, HasValueRef };
-use sqlx::encode::IsNull;
-use sqlx::error::BoxDynError;
-use sqlx_postgres::Postgres;
-use mvv_common::generate_from_str_new_type_delegate;
+use mvv_common::{
+    generate_from_str_new_type_delegate,
+    generate_pg_delegate_decode,
+    generate_pg_delegate_encode,
+    generate_pg_delegate_type_info,
+};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -15,30 +16,12 @@ pub struct ClientId( #[allow(dead_code)] uuid::Uuid);
 
 impl ClientId {
     pub fn into_inner(self) -> uuid::Uuid { self.0 }
-    // pub fn into_inner_inner(self) -> something_like_string // TODO: can we achieve this?
 }
 generate_from_str_new_type_delegate! { ClientId, uuid::Uuid, parse_str, uuid::Error }
+generate_pg_delegate_type_info! { ClientId, uuid::Uuid }
+generate_pg_delegate_encode!    { ClientId, uuid::Uuid }
+generate_pg_delegate_decode!    { ClientId, uuid::Uuid }
 
-impl<'r> sqlx::Encode<'r, Postgres> for ClientId {
-    fn encode_by_ref(&self, buf: &mut <Postgres as HasArguments<'r>>::ArgumentBuffer) -> IsNull {
-        <&uuid::Uuid as sqlx::Encode<Postgres>>::encode(&self.0, buf)
-    }
-}
-impl<'r> sqlx::Decode<'r, Postgres> for ClientId {
-    fn decode(value: <Postgres as HasValueRef<'r>>::ValueRef) -> Result<Self, BoxDynError> {
-        let uuid = uuid::Uuid::decode(value) ?;
-        Ok(ClientId(uuid))
-    }
-}
-impl sqlx::Type<Postgres> for ClientId {
-    fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <uuid::Uuid as sqlx::Type<Postgres>>::type_info()
-        // <Postgres as sqlx::Database>::TypeInfo::with_name("UUID") // "CLIENT_ID")
-    }
-    fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
-        <uuid::Uuid as sqlx::Type<Postgres>>::compatible(ty)
-    }
-}
 
 
 #[cfg(test)]

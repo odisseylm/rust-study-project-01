@@ -2,6 +2,7 @@ use core::fmt;
 use bigdecimal::BigDecimal;
 use sqlx::{ database::HasValueRef, error::BoxDynError };
 use sqlx_postgres::Postgres;
+use crate::generate_pg_delegate_type_info;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -36,12 +37,5 @@ impl<'r> sqlx::Decode<'r, Postgres> for BigDecimalWrapper {
         Ok(BigDecimalWrapper(big_decimal_from_sqlx_bd(bd)))
     }
 }
-impl sqlx::Type<Postgres> for BigDecimalWrapper {
-    fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        // <Postgres as sqlx::Database>::TypeInfo::with_name("NUMERIC") // "DECIMAL")
-        <sqlx::types::BigDecimal as sqlx::Type<Postgres>>::type_info()
-    }
-    fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
-        <sqlx::types::BigDecimal as sqlx::Type<Postgres>>::compatible(ty)
-    }
-}
+generate_pg_delegate_type_info! { BigDecimalWrapper, sqlx::types::BigDecimal }
+

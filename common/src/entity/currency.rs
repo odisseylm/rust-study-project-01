@@ -1,9 +1,10 @@
 use core::char;
 use core::str::FromStr;
-use sqlx::database::HasValueRef;
-use sqlx::error::BoxDynError;
-use sqlx_postgres::Postgres;
-use crate::json_str_ser_deser_impl;
+use crate::{
+    generate_pg_decode_from_str,
+    generate_pg_delegate_type_info,
+    json_str_ser_deser_impl,
+};
 use crate::string::DisplayValueExample;
 //--------------------------------------------------------------------------------------------------
 
@@ -19,11 +20,16 @@ pub type InnerCurStr = fixedstr::str4;
 pub struct Currency(InnerCurStr); // ([u8;3]);
 
 json_str_ser_deser_impl! { Currency }
+generate_pg_delegate_type_info! { Currency, str }
+// generate_pg_encode_to_str!    { Currency, }
+generate_pg_decode_from_str! { Currency }
+
 
 pub type CurrencyFormatError = parse::CurrencyFormatError;
 
 impl Currency {
 
+    #[inline]
     pub fn new(currency_code: String) -> Result<Self, CurrencyFormatError> {
         Currency::from_str(currency_code.as_str())
     }
@@ -34,16 +40,19 @@ impl Currency {
         bytes
     }
 
+    #[inline]
     pub fn as_str(&self) -> &str {
         self.0.as_str()  // unsafe { std::str::from_utf8_unchecked(&self.0) }
     }
 
+    #[inline]
     pub fn into_inner(self) -> InnerCurStr {
         self.0
     }
 }
 
 impl DisplayValueExample for Currency {
+    #[inline]
     fn display_value_example() -> &'static str { "AUD" }
 }
 
@@ -230,23 +239,6 @@ macro_rules! make_currency_b {
         // Currency([bytes[0], bytes[1], bytes[2]])
         make_currency_b($cur)
     }};
-}
-
-
-impl<'r> sqlx::Decode<'r, Postgres> for Currency {
-    fn decode(value: <Postgres as HasValueRef<'r>>::ValueRef) -> Result<Self, BoxDynError> {
-        let cur = Currency::from_str(value.as_str() ?) ?;
-        Ok(cur)
-    }
-}
-impl sqlx::Type<Postgres> for Currency {
-    fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <str as sqlx::Type<Postgres>>::type_info()
-        // <Postgres as sqlx::Database>::TypeInfo::with_name("CHAR") // "CURRENCY")
-    }
-    fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
-        <str as sqlx::Type<Postgres>>::compatible(ty)
-    }
 }
 
 

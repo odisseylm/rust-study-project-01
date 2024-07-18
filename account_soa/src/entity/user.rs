@@ -1,9 +1,10 @@
 use serde::{ Deserialize, Serialize };
-use sqlx::database::HasValueRef;
-use sqlx::error::BoxDynError;
-use sqlx_postgres::Postgres;
 use mvv_common::entity::id::Id;
-use mvv_common::generate_from_str_new_type_delegate;
+use mvv_common::{
+    generate_from_str_new_type_delegate,
+    generate_pg_delegate_decode_from_str,
+    generate_pg_delegate_type_info,
+};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -21,23 +22,10 @@ impl UserId {
 }
 
 generate_from_str_new_type_delegate! { UserId, Id, UserIdFormatError }
+generate_pg_delegate_type_info! { UserId, str }
+// generate_pg_encode!    { UserId, }
+generate_pg_delegate_decode_from_str! { UserId, Id }
 
-
-impl<'r> sqlx::Decode<'r, Postgres> for UserId {
-    fn decode(value: <Postgres as HasValueRef<'r>>::ValueRef) -> Result<Self, BoxDynError> {
-        let user_id = UserId::from_str(value.as_str() ?) ?;
-        Ok(user_id)
-    }
-}
-impl sqlx::Type<Postgres> for UserId {
-    fn type_info() -> <Postgres as sqlx::Database>::TypeInfo {
-        <str as sqlx::Type<Postgres>>::type_info()
-        // <Postgres as sqlx::Database>::TypeInfo::with_name("VARCHAR")
-    }
-    fn compatible(ty: &<Postgres as sqlx::Database>::TypeInfo) -> bool {
-        <str as sqlx::Type<Postgres>>::compatible(ty)
-    }
-}
 
 
 pub struct User {
