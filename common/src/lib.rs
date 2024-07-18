@@ -16,3 +16,4 @@ mod http;
 pub mod rest;
 pub mod entity;
 pub mod db;
+pub mod utoipa;

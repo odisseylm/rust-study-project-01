@@ -106,25 +106,6 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     #[openapi( )]
     struct RootOpenApi;
 
-    #[derive(OpenApi)]
-    #[openapi(
-        paths(
-            crate::rest::account_rest::call_rest_get_client_account,
-            crate::rest::account_rest::call_rest_get_client_accounts,
-        ),
-        components(
-            schemas(
-                crate::rest::dto::Amount,
-                crate::rest::dto::Account,
-            ),
-        ),
-        // nest(
-        //     // you can nest sub apis here
-        //     (path = "/api/v1/ones", api = one::OneApi)
-        // )
-    )]
-    struct AccountRestOpenApi;
-
     /*
     #[derive(OpenApi)]
     #[openapi()]
@@ -144,7 +125,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     //     Into::<OpenApiBuilder>::into(ApiDoc2::openapi());
     // hello_api2.
 
-    root_open_api.merge(AccountRestOpenApi::openapi());
+    root_open_api.merge(nest_open_api("/api", &AccountRestOpenApi::openapi()));
 
     // let mut open_api = ApiDoc::openapi();
     // open_api.merge(hello_api.build());
@@ -274,6 +255,8 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
 // };
 // use tower::{ timeout::error::Elapsed};
 use log::{ error /*, info*/ };
+use mvv_common::utoipa::nest_open_api;
+use crate::rest::account_rest::AccountRestOpenApi;
 use crate::rest::app_dependencies::DependenciesState;
 // use axum_handle_error_extract::HandleErrorLayer;
 

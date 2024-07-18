@@ -4,7 +4,7 @@ use axum::{
 };
 use tracing::{debug, info /*, error*/ };
 use log::{ debug as log_debug, info as log_info /*, error as log_error*/ };
-
+use utoipa::OpenApi;
 use crate::{
     entity::{ self, prelude::UserId, AccountId, ClientId },
     rest::{
@@ -53,7 +53,7 @@ static TEMP_CURRENT_USER_ID: UserId = {
 // TODO: remove "/api" prefix from there
 #[utoipa::path(
     get,
-    path = "/api/client/{client_id}/account/{account_id}",
+    path = "/client/{client_id}/account/{account_id}",
     operation_id = "get_client_account",
     responses(
         (status = 200, description = "Client account", body = api::models::Account)
@@ -74,10 +74,9 @@ async fn call_rest_get_client_account <
 }
 
 
-// TODO: remove "/api" prefix from there
 #[utoipa::path(
     get,
-    path = "/api/client/{client_id}/account/all",
+    path = "/client/{client_id}/account/all",
     operation_id = "get_client_accounts",
     responses(
         (status = 200, description = "Client accounts", body = Vec<api::models::Account>)
@@ -95,6 +94,26 @@ async fn call_rest_get_client_accounts <
     -> Result<Json<Vec<dto::Account>>, RestAppError> {
     rest_service.get_accounts(client_id).to_json().await
 }
+
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        crate::rest::account_rest::call_rest_get_client_account,
+        crate::rest::account_rest::call_rest_get_client_accounts,
+    ),
+    components(
+        schemas(
+            crate::rest::dto::Amount,
+            crate::rest::dto::Account,
+        ),
+    ),
+// nest(
+//     // you can nest sub apis here
+//     (path = "/api/v1/ones", api = one::OneApi)
+// )
+)]
+pub struct AccountRestOpenApi;
 
 
 // It will be 'current user' in wab-app.

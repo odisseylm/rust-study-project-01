@@ -2604,6 +2604,7 @@ dependencies = [
  "hyper 1.4.1",
  "if_chain",
  "implicit-clone",
+ "indexmap 2.2.6",
  "indoc",
  "inherent",
  "itertools 0.13.0",
@@ -2654,6 +2655,7 @@ dependencies = [
  "trait-variant",
  "type-rules",
  "url",
+ "utoipa",
  "validator",
  "validify",
 ]
