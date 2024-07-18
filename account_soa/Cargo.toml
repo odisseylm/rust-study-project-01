@@ -187,6 +187,19 @@ tokio-test = "0.4.4"
 askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.4.0"
 
+#utoipa = "4.2.3"
+utoipa = { version = "4.2.3", features = [
+    "default", "axum_extras",
+    "decimal", "uuid", "url", "chrono",
+    "debug",
+    "openapi_extensions", "yaml",
+    "preserve_order", "preserve_path_order",
+] }
+utoipa-swagger-ui = {  version = "7.1.0", features = [
+    "default", "url", "debug", "debug-embed", "reqwest",
+    "axum", "vendored",
+] }
+
 # HTTP
 http = "1.1.0"
 # http library

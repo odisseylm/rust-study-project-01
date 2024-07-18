@@ -29,7 +29,8 @@ fn cur_regex_validate(s: &str) -> Result<(), validator::ValidationError> {
 */
 
 
-
+#[derive(utoipa::ToSchema)]
+#[schema(as = api::models::Amount)]
 #[derive(PartialEq, Eq, Serialize, Deserialize)]
 #[derive(educe::Educe)] #[educe(Debug)]
 #[derive(derive_more::Display)]
@@ -39,17 +40,23 @@ fn cur_regex_validate(s: &str) -> Result<(), validator::ValidationError> {
 pub struct Amount {
     #[serde(with = "mvv_common::json::serde_json_bd::bd_with")]
     #[educe(Debug(method(mvv_common::entity::bd::bd_dbg_fmt)))]
+    #[schema(value_type = f64, example = 123.45)]
     // #[validate(skip)] // for 'validator'
     pub value: BigDecimal,
+
+    /// Currency code (3 upper chars)
     // 'validator' cannot automatically use third-party string, even if it has 'as_str()'...
     // #[validate(length(min=3, max=3), custom(function = cur_regex_validate))] // for 'validator'
     //
     // 'validify' cannot automatically use third-party strings for length validation, but it is ok with regex.
     #[validate(regex(CURRENCY_PATTERN))] // for 'validify'
+    #[schema(value_type = String, example = "AUD")]
     pub currency: InnerCurStr, // , Currency  // Now it is String there just for projection's test
 }
 
 
+#[derive(utoipa::ToSchema)]
+#[schema(as = api::models::Account)]
 #[derive(Debug, PartialEq)]
 #[derive(Serialize, Deserialize)]
 #[derive(derive_more::Display)]
@@ -58,16 +65,30 @@ pub struct Amount {
 // #[derive(validator::Validate)]
 #[derive(validify::Validify)]
 pub struct Account {
+    /// Account ID (UUID)
     #[validate(length(min=1, max=320), regex(ID_PATTERN))]
+    #[schema(example = "00000000-0000-0000-0000-000000000101")]
     pub id: String, // TODO: use uuid
+
+    /// Account IBAN
     #[validate(length(min=16, max=34), regex(ID_PATTERN))]
+    #[schema(example = "UA903052992990004149123456789")]
     pub iban: String,
+
+    /// Client ID (UUID)
     #[validate(length(min=1, max=320), regex(ID_PATTERN))]
+    #[schema(example = "00000000-0000-0000-0000-000000000001")]
     pub client_id: String, // TODO: use uuid
+
+    /// Account (short) name
     #[validate(length(min=1, max=320))] // TODO: add simple validation // , regex(ID_PATTERN))]
+    #[schema(example = "My AUD account")]
     pub name: String,
+
     #[validify]
+    #[schema(value_type = api::models::Amount)]
     pub amount: Amount,
+
     pub created_at: chrono::DateTime<Utc>,
     pub updated_at: chrono::DateTime<Utc>,
 }

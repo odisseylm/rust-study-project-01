@@ -5,6 +5,10 @@ use axum::Router;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
 
+// use utoipa::openapi::{ OpenApiBuilder, PathItem, PathsBuilder };
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
+
 use crate::service::account_service::AccountServiceImpl;
 use crate::rest::{
     app_dependencies::Dependencies,
@@ -85,7 +89,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     init_logger();
     log::info!("Hello from [web_app_main]");
 
-    match dotenv_res {
+    match dotenv_res { // TODO: move it out
         Ok(ref path) =>
             log::info!("Env vars are loaded from [{:?}]", path),
         Err(dotenv::Error::Io(ref io_err))
@@ -98,6 +102,55 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
         }
     }
 
+    #[derive(OpenApi)]
+    #[openapi( )]
+    struct RootOpenApi;
+
+    #[derive(OpenApi)]
+    #[openapi(
+        paths(
+            crate::rest::account_rest::call_rest_get_client_account,
+            crate::rest::account_rest::call_rest_get_client_accounts,
+        ),
+        components(
+            schemas(
+                crate::rest::dto::Amount,
+                crate::rest::dto::Account,
+            ),
+        ),
+        // nest(
+        //     // you can nest sub apis here
+        //     (path = "/api/v1/ones", api = one::OneApi)
+        // )
+    )]
+    struct AccountRestOpenApi;
+
+    /*
+    #[derive(OpenApi)]
+    #[openapi()]
+    struct HelloApi;
+
+    let hello_api =
+        Into::<OpenApiBuilder>::into(HelloApi::openapi()).paths(PathsBuilder::new().path(
+            // "/api/client/00000000-0000-0000-0000-000000000001/account/all",
+            "/qwerty/api/client/${client_id}/account/all",
+            PathItem::new(utoipa::openapi::PathItemType::Get, Operation::new()),
+        ));
+    */
+
+    let mut root_open_api = RootOpenApi::openapi();
+
+    // let hello_api2 =
+    //     Into::<OpenApiBuilder>::into(ApiDoc2::openapi());
+    // hello_api2.
+
+    root_open_api.merge(AccountRestOpenApi::openapi());
+
+    // let mut open_api = ApiDoc::openapi();
+    // open_api.merge(hello_api.build());
+    // open_api = open_api.nest("/hello", hello_api); // you can even nest programmatically apis
+    // open_api.merge(hello_api.build()); // you can even nest programmatically apis
+
     let dependencies = create_prod_dependencies() ?;
 
     use crate::rest::auth::auth_layer::{ composite_auth_manager_layer };
@@ -106,6 +159,8 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     let login_route = composite_login_router();
 
     let app_router = Router::new()
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", root_open_api))
+        // .merge(SwaggerUi::new("/swagger-ui").url("/api-doc/openapi.json", ApiDoc::openapi()))
         // .route_service("/", HandleError::new(fallible_service, handle_error) )
         .merge(login_route)
         .merge(protected_page_01_router())

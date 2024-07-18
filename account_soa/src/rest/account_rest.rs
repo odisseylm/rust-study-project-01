@@ -50,8 +50,20 @@ static TEMP_CURRENT_USER_ID: UserId = {
     UserId::from_str("11").unchecked_unwrap()
 };
 
-
-async fn call_rest_get_client_account<
+// TODO: remove "/api" prefix from there
+#[utoipa::path(
+    get,
+    path = "/api/client/{client_id}/account/{account_id}",
+    operation_id = "get_client_account",
+    responses(
+        (status = 200, description = "Client account", body = api::models::Account)
+    ),
+    params(
+        ("client_id", description = "Client id", example = "00000000-0000-0000-0000-000000000001"),
+        ("account_id", description = "Account ID or IBAN", example="UA713736572172926969841832393"),
+    ),
+)]
+async fn call_rest_get_client_account <
     AccountS: AccountService + 'static,
 > (
     State(rest_service): State<Arc<AccountRest<AccountS>>>,
@@ -61,6 +73,19 @@ async fn call_rest_get_client_account<
     rest_service.get_account(client_id, account_id).to_json().await
 }
 
+
+// TODO: remove "/api" prefix from there
+#[utoipa::path(
+    get,
+    path = "/api/client/{client_id}/account/all",
+    operation_id = "get_client_accounts",
+    responses(
+        (status = 200, description = "Client accounts", body = Vec<api::models::Account>)
+    ),
+    params(
+        ("client_id", description = "Client id", example = "00000000-0000-0000-0000-000000000001"),
+    ),
+)]
 async fn call_rest_get_client_accounts <
     AccountS: AccountService + 'static,
 > (
