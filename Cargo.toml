@@ -3,6 +3,7 @@
 members = [
     "tuple_heter_iter_macro",
     "tuple_heter_iter",
+    "proc_macro",
     "static_error_macro",
     "auth",
     "common",

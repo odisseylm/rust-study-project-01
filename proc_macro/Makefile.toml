@@ -1,0 +1,22 @@
+[tasks.format]
+condition_script = [" 0 "]
+[tasks.format-flow]
+condition_script = [" 0 "]
+[tasks.format-toml]
+condition_script = [" 0 "]
+[tasks.format-toml-flow]
+condition_script = [" 0 "]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+#[tasks.build]
+#command = "cargo"
+#args = ["build"]
+##dependencies = ["clean"]
+#dependencies = []
+
+[tasks.test]
+command = "cargo"
+args = ["test"]

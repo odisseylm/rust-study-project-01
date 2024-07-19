@@ -17,13 +17,14 @@ use crate::{
 use super::path;
 use mvv_common::rest::RestFutureToJson;
 
-use place_macro::place;
+use place_macro::place; // T O D O: How to avoid it just there??
 use mvv_common::{
     open_api_path_to_axum as axum_path,
     // route_from_open_api_raw,
-    route_from_open_api_with_gen_params
+    // route_from_open_api_with_gen_params
 };
-// T O D O: How to avoid it just there??
+// use mvv_common::utoipa::OpenApiRouterExt;
+use mvv_proc_macro::route_from_open_api;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -41,7 +42,7 @@ pub fn accounts_rest_router <
     let r: Router<Arc<AccountRest<AccountS>>> = Router::new();
 
     // Ideally it should be like, but now I have no proc-macro to get only method name.
-    // let r = route_from_open_api_with_state!(r, call_rest_get_client_account::<AccountS>);
+    // let r = route_from_open_api!(r, call_rest_get_client_account::<AccountS>);
 
     // It is the easiest and reliable approach.
     // let r = route_from_open_api_raw!(r,
@@ -49,7 +50,10 @@ pub fn accounts_rest_router <
     //         call_rest_get_client_account::<AccountS>
     //     );
 
-    let r = route_from_open_api_with_gen_params!(r, call_rest_get_client_account, AccountS);
+    // let r = route_from_open_api_with_gen_params!(r, call_rest_get_client_account, AccountS);
+
+    // There is faked/unused '&' is used to suppress RustRover warning 'Value used after being moved'.
+    let r = route_from_open_api!(&r, call_rest_get_client_account::<AccountS>);
 
     let r = r
         .route(
@@ -275,7 +279,6 @@ struct ValidatedInput2 {
 
 // use axum_valid::{ Validified, /*Modified,*/ };
 use mvv_common::mvv_axum_valid::{ Validified, /*Modified,*/ };
-use mvv_common::utoipa::OpenApiRouterExt;
 
 async fn call_rest_input_validate_by_validify <
     AccountS: AccountService + 'static,

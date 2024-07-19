@@ -36,6 +36,8 @@ RUN    mkdir ./src                                                 \
     && mkdir ./auth/src                                            \
     && mkdir ./common                                              \
     && mkdir ./common/src                                          \
+    && mkdir ./proc_macro                                          \
+    && mkdir ./proc_macro/src                                      \
     && mkdir ./static_error_macro                                  \
     && mkdir ./static_error_macro/src                              \
     && mkdir ./tuple_heter_iter                                    \
@@ -46,6 +48,7 @@ RUN    mkdir ./src                                                 \
     && echo "// dummy file" > ./account_soa/src/lib.rs             \
     && echo "// dummy file" > ./auth/src/lib.rs                    \
     && echo "// dummy file" > ./common/src/lib.rs                  \
+    && echo "// dummy file" > ./proc_macro/src/lib.rs              \
     && echo "// dummy file" > ./static_error_macro/src/lib.rs      \
     && echo "// dummy file" > ./tuple_heter_iter/src/lib.rs        \
     && echo "// dummy file" > ./tuple_heter_iter_macro/src/lib.rs
@@ -54,6 +57,7 @@ RUN    mkdir ./src                                                 \
 COPY account_soa/Cargo.toml             ./account_soa/
 COPY auth/Cargo.toml                    ./auth/
 COPY common/Cargo.toml                  ./common/
+COPY proc_macro/Cargo.toml              ./proc_macro/
 COPY static_error_macro/Cargo.toml      ./static_error_macro/
 COPY tuple_heter_iter/Cargo.toml        ./tuple_heter_iter/
 COPY tuple_heter_iter_macro/Cargo.toml  ./tuple_heter_iter_macro/
@@ -67,6 +71,7 @@ RUN    rm ./account_soa/src/*.rs                  \
     && rm ./account_soa/src/bin/*.rs              \
     && rm ./auth/src/*.rs                         \
     && rm ./common/src/*.rs                       \
+    && rm ./proc_macro/src/*.rs                   \
     && rm ./static_error_macro/src/*.rs           \
     && rm ./tuple_heter_iter/src/*.rs             \
     && rm ./tuple_heter_iter_macro/src/*.rs
@@ -77,6 +82,7 @@ COPY account_soa/templates/       ./account_soa/templates/
 COPY auth/src/                    ./auth/src/
 COPY auth/templates/              ./auth/templates/
 COPY common/src/                  ./common/src/
+COPY proc_macro/src/              ./proc_macro/src/
 COPY static_error_macro/src/      ./static_error_macro/src/
 COPY tuple_heter_iter/src/        ./tuple_heter_iter/src/
 COPY tuple_heter_iter_macro/src/  ./tuple_heter_iter_macro/src/
@@ -84,6 +90,7 @@ COPY tuple_heter_iter_macro/src/  ./tuple_heter_iter_macro/src/
 RUN    touch ./account_soa/src/lib.rs             \
     && touch ./auth/src/lib.rs                    \
     && touch ./common/src/lib.rs                  \
+    && touch ./proc_macro/src/lib.rs              \
     && touch ./static_error_macro/src/lib.rs      \
     && touch ./tuple_heter_iter/src/lib.rs        \
     && touch ./tuple_heter_iter_macro/src/lib.rs
