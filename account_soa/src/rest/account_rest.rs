@@ -2,7 +2,7 @@ use std::sync::Arc;
 use axum::{
     Router, Json, routing::{ get as GET, post as POST }, extract::{ Path, State, },
 };
-use tracing::{debug, info /*, error*/ };
+use tracing::{ debug, info /*, error*/ };
 use log::{ debug as log_debug, info as log_info /*, error as log_error*/ };
 use utoipa::OpenApi;
 use crate::{
@@ -16,6 +16,14 @@ use crate::{
 };
 use super::path;
 use mvv_common::rest::RestFutureToJson;
+
+use place_macro::place;
+use mvv_common::{
+    open_api_path_to_axum as axum_path,
+    route_from_open_api_raw,
+    route_from_open_api_with_gen_params
+};
+// T O D O: How to avoid it just there??
 //--------------------------------------------------------------------------------------------------
 
 
@@ -27,9 +35,31 @@ pub fn accounts_rest_router <
 
     let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.state.account_rest);
 
-    let accounts_router = Router::new()
-        .route("/client/:client_id/account/all", GET(call_rest_get_client_accounts::<AccountS>))
-        .route("/client/:client_id/account/:account_id", GET(call_rest_get_client_account::<AccountS>))
+    // let open_api_path_str = <__path_call_rest_get_client_account as utoipa::Path>::path();
+    // let axum_path_str = mvv_common::utoipa::open_api_path_to_axum(open_api_path_str);
+
+    let r: Router<Arc<AccountRest<AccountS>>> = Router::new();
+
+    // Ideally it should be like
+    // let r = route_from_open_api_with_state!(r, call_rest_get_client_account::<AccountS>);
+
+    // It is the easiest and reliable approach.
+    // let r = route_from_open_api_raw!(r,
+    //         call_rest_get_client_account,
+    //         call_rest_get_client_account::<AccountS, String>
+    //     );
+
+    let r = route_from_open_api_with_gen_params!(r, call_rest_get_client_account, AccountS, String);
+
+    let r = r
+        .route(
+            &axum_path! { call_rest_get_client_accounts },
+            GET(call_rest_get_client_accounts::<AccountS>))
+        /*
+        .route(
+            &axum_path! { call_rest_get_client_account },
+            GET(call_rest_get_client_account::<AccountS>))
+        */
         .with_state(Arc::clone(&shared_state))
         .role_required(Role::Read)
         // investigation block
@@ -37,10 +67,11 @@ pub fn accounts_rest_router <
             .route("/validate_test/input_validate_1", POST(call_rest_input_validate_by_validator::<AccountS>))
             // .route("/validate_test/input_validate_2", POST(call_rest_input_validate_by_garde::<AccountS>))
             .route("/validate_test/input_validate_3", POST(call_rest_input_validate_by_validify::<AccountS>))
-        ).with_state(Arc::clone(&shared_state))
+        )
+        .with_state(Arc::clone(&shared_state))
         ;
 
-    accounts_router
+    r
 }
 
 // #[static_init::constructor]
@@ -50,7 +81,6 @@ static TEMP_CURRENT_USER_ID: UserId = {
     UserId::from_str("11").unchecked_unwrap()
 };
 
-// TODO: remove "/api" prefix from there
 #[utoipa::path(
     get,
     path = "/client/{client_id}/account/{account_id}",
@@ -65,6 +95,7 @@ static TEMP_CURRENT_USER_ID: UserId = {
 )]
 async fn call_rest_get_client_account <
     AccountS: AccountService + 'static,
+    T: 'static,
 > (
     State(rest_service): State<Arc<AccountRest<AccountS>>>,
     Path(path::ClientId { client_id }): Path<path::ClientId>,
@@ -127,6 +158,7 @@ impl<AS: AccountService> AccountRest<AS> {
 
     #[tracing::instrument( skip(self) )]
     pub async fn get_account(&self, client_id: String, account_id: String) -> Result<dto::Account, RestAppError> {
+        use mvv_common::obj_ext::ValExt;
 
         debug!("TD get_user_account as debug");
         info! ("TI get_user_account as info");
@@ -244,7 +276,7 @@ struct ValidatedInput2 {
 
 // use axum_valid::{ Validified, /*Modified,*/ };
 use mvv_common::mvv_axum_valid::{ Validified, /*Modified,*/ };
-use mvv_common::obj_ext::ValExt;
+use mvv_common::utoipa::OpenApiRouterExt;
 
 async fn call_rest_input_validate_by_validify <
     AccountS: AccountService + 'static,
