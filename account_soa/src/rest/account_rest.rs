@@ -40,13 +40,13 @@ pub fn accounts_rest_router <
 
     let r: Router<Arc<AccountRest<AccountS>>> = Router::new();
 
-    // Ideally it should be like
+    // Ideally it should be like, but now I have no proc-macro to get only method name.
     // let r = route_from_open_api_with_state!(r, call_rest_get_client_account::<AccountS>);
 
     // It is the easiest and reliable approach.
     // let r = route_from_open_api_raw!(r,
     //         call_rest_get_client_account,
-    //         call_rest_get_client_account::<AccountS, String>
+    //         call_rest_get_client_account::<AccountS>
     //     );
 
     let r = route_from_open_api_with_gen_params!(r, call_rest_get_client_account, AccountS);

@@ -96,7 +96,25 @@ pub impl <
 
 
 #[macro_export] macro_rules! route_from_open_api_raw {
-    ($route:ident, $rest_method_name:path, $rest_method:path) => {
+    ($route:ident, $rest_method_name:ident) => {
+        place! {
+            {
+                let route = $route.route_from_open_api(
+                    & __identifier__(__path_, $rest_method_name),
+                    $rest_method_name,
+                );
+                route
+            }
+        }
+    };
+    // use it in case if your method has generic params
+    // Usage:
+    // let r: Router<Arc<AccountRest<AccountS>>> = Router::new();
+    // let r = route_from_open_api_raw!(r,
+    //         call_rest_get_client_account,
+    //         call_rest_get_client_account::<AccountS>
+    //     );
+    ($route:ident, $rest_method_name:ident, $rest_method:path) => {
         place! {
             {
                 let route = $route.route_from_open_api(
