@@ -20,7 +20,7 @@ use mvv_common::rest::RestFutureToJson;
 use place_macro::place;
 use mvv_common::{
     open_api_path_to_axum as axum_path,
-    route_from_open_api_raw,
+    // route_from_open_api_raw,
     route_from_open_api_with_gen_params
 };
 // T O D O: How to avoid it just there??
@@ -49,7 +49,7 @@ pub fn accounts_rest_router <
     //         call_rest_get_client_account::<AccountS, String>
     //     );
 
-    let r = route_from_open_api_with_gen_params!(r, call_rest_get_client_account, AccountS, String);
+    let r = route_from_open_api_with_gen_params!(r, call_rest_get_client_account, AccountS);
 
     let r = r
         .route(
@@ -95,7 +95,6 @@ static TEMP_CURRENT_USER_ID: UserId = {
 )]
 async fn call_rest_get_client_account <
     AccountS: AccountService + 'static,
-    T: 'static,
 > (
     State(rest_service): State<Arc<AccountRest<AccountS>>>,
     Path(path::ClientId { client_id }): Path<path::ClientId>,
