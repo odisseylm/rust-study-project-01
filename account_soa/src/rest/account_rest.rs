@@ -17,14 +17,14 @@ use crate::{
 use super::path;
 use mvv_common::rest::RestFutureToJson;
 
-use place_macro::place; // T O D O: How to avoid it just there??
 use mvv_common::{
-    open_api_path_to_axum as axum_path,
+    axum_path_from_open_api as axum_path,
+    route_from_open_api,
     // route_from_open_api_raw,
     // route_from_open_api_with_gen_params
 };
 // use mvv_common::utoipa::OpenApiRouterExt;
-use mvv_proc_macro::route_from_open_api;
+// use mvv_proc_macro::route_from_open_api;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -37,7 +37,7 @@ pub fn accounts_rest_router <
     let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.state.account_rest);
 
     // let open_api_path_str = <__path_call_rest_get_client_account as utoipa::Path>::path();
-    // let axum_path_str = mvv_common::utoipa::open_api_path_to_axum(open_api_path_str);
+    // let axum_path_str = mvv_common::utoipa::axum_path_from_open_api(open_api_path_str);
 
     let r: Router<Arc<AccountRest<AccountS>>> = Router::new();
 
@@ -53,7 +53,11 @@ pub fn accounts_rest_router <
     // let r = route_from_open_api_with_gen_params!(r, call_rest_get_client_account, AccountS);
 
     // There is faked/unused '&' is used to suppress RustRover warning 'Value used after being moved'.
-    let r = route_from_open_api!(&r, call_rest_get_client_account::<AccountS>);
+    // If you have now such IDE warning, do not add '&'.
+    // !!! It is related only for proc_macro macro !!!
+    // let r = mvv_proc_macro::route_from_open_api!(&r, call_rest_get_client_account::<AccountS>);
+
+    let r = route_from_open_api!(r, call_rest_get_client_account::<AccountS>);
 
     let r = r
         .route(

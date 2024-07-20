@@ -14,7 +14,26 @@ mod utils;
 //--------------------------------------------------------------------------------------------------
 
 
+#[proc_macro]
+pub fn utoipa_path_obj(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
+    macro_rules! input_err_msg { () => { "Expects 1 params" }; }
+
+    let mut params = split_params(params);
+    assert_eq!(params.len(), 1, input_err_msg!());
+
+    let route_method = params.pop().expect(input_err_msg!());
+    let route_method_name: String = get_method_name(&route_method.to_string());
+    let utoipa_path_obj = make_ident(format!("__path_{route_method_name}"));
+
+    let q = quote! { #utoipa_path_obj };
+    q.into()
+}
+
+// Actually similar macro_rules version is better since IDE properly process macro_rules macros
+// without unexpected warnings and proper switching to methods and types.
+//
+/*
 /// Usage:
 /// ```no_build
 ///   let r: axum::Route<...> = axum::Route::new();
@@ -56,6 +75,15 @@ pub fn route_from_open_api(params: proc_macro::TokenStream) -> proc_macro::Token
     q.into()
 }
 
+fn remove_leading_ref(param: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+    let as_str = param.to_string();
+    if as_str.starts_with('&') {
+        param.into_iter().skip(1).collect()
+    } else {
+        param
+    }
+}
+*/
 
 fn get_method_name(method_with_gen_params: &str) -> String {
     let route_method_name: String = method_with_gen_params.remove_space_chars();
@@ -66,13 +94,4 @@ fn get_method_name(method_with_gen_params: &str) -> String {
         route_method_name
     };
     route_method_name
-}
-
-fn remove_leading_ref(param: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
-    let as_str = param.to_string();
-    if as_str.starts_with('&') {
-        param.into_iter().skip(1).collect()
-    } else {
-        param
-    }
 }

@@ -22,7 +22,7 @@ pub fn nest_open_api(prefix: &str, open_api: &OpenApi) -> OpenApi {
 }
 
 
-pub fn open_api_path_to_axum(open_api_path: String) -> String {
+pub fn axum_path_from_open_api(open_api_path: String) -> String {
     let axum_path_str = open_api_path
         // maybe not elegant, but the easiest approach
         .replace("/{", "/:")
@@ -58,7 +58,7 @@ pub impl <
         let path_item_type = path_item.operations.first()
             .expect(&format!("Missed path type (HTTP method) in OpenApi macro for {}", open_api_path))
             .0;
-        let axum_path: String = open_api_path_to_axum(open_api_path);
+        let axum_path: String = axum_path_from_open_api(open_api_path);
 
         use axum::routing::{ get, post, put, patch, delete, options, head, trace };
 
@@ -110,11 +110,11 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
     if !diff.is_empty() {
         let path_params_str = diff.iter().join(", ");
         let operation_id = op.operation_id.as_ref().map(|op_id| op_id.as_str()).unwrap_or("");
-        panic!("Mismatched path params [{path_params_str}] for operation [{operation_id} = {path}].");
+        panic!("Mismatched path params [{}] for operation [{} = {}].", path_params_str, operation_id, path);
     }
 }
 
-#[macro_export] macro_rules! open_api_path_to_axum {
+#[macro_export] macro_rules! axum_path_from_open_api {
     // REST method should have '#[utoipa::path(...)]'
     // which is translated into structure with name __path_[your_method_name]
     //
@@ -123,12 +123,12 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
     //     fn path() -> String { "/client/{client_id}/account/{account_id}" }
     //     fn path_item(...) { ... }
     ($rest_method:ident) => {
-        place! {
+        place_macro::place! {
             {
                 // Making ident __path_your_method and calling its static methods.
                 //
                 let open_api_path_str = <  __identifier__(__path_, $rest_method) as utoipa::Path>::path();
-                let axum_path_str = $crate::utoipa::open_api_path_to_axum(open_api_path_str);
+                let axum_path_str = $crate::utoipa::axum_path_from_open_api(open_api_path_str);
                 axum_path_str
             }
         }
@@ -136,10 +136,26 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
 }
 
 
+#[macro_export] macro_rules! route_from_open_api {
+    ($route:ident, $rest_method:path) => {
+        {
+            #[allow(unused_imports)]
+            use $crate::utoipa::OpenApiRouterExt;
+            let route = $route.route_from_open_api(
+                & mvv_proc_macro::utoipa_path_obj! { $rest_method },
+                $rest_method,
+            );
+            route
+        }
+    };
+}
+
 #[macro_export] macro_rules! route_from_open_api_raw {
     ($route:ident, $rest_method_name:ident) => {
-        place! {
+        place_macro::place! {
             {
+                #[allow(unused_imports)]
+                use $crate::utoipa::OpenApiRouterExt;
                 let route = $route.route_from_open_api(
                     & __identifier__(__path_, $rest_method_name),
                     $rest_method_name,
@@ -156,8 +172,10 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
     //         call_rest_get_client_account::<AccountS>
     //     );
     ($route:ident, $rest_method_name:ident, $rest_method:path) => {
-        place! {
+        place_macro::place! {
             {
+                #[allow(unused_imports)]
+                use $crate::utoipa::OpenApiRouterExt;
                 let route = $route.route_from_open_api(
                     & __identifier__(__path_, $rest_method_name),
                     $rest_method,
@@ -171,8 +189,10 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
 
 #[macro_export] macro_rules! route_from_open_api_with_gen_params {
     ($route:ident, $rest_method_name:ident, $($gen_param:ty),+) => {
-        place! {
+        place_macro::place! {
             {
+                #[allow(unused_imports)]
+                use $crate::utoipa::OpenApiRouterExt;
                 let route = $route.route_from_open_api(
                     & __identifier__(__path_, $rest_method_name),
                     $rest_method_name :: < $($gen_param),+ >,
@@ -188,27 +208,27 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
 #[cfg(test)]
 mod tests {
     use crate::test::TestSringOps;
-    use super::open_api_path_to_axum;
+    use super::axum_path_from_open_api;
 
     #[test]
-    fn open_api_path_to_axum_test() {
+    fn axum_path_from_open_api_test() {
 
         assert_eq!(
-            open_api_path_to_axum("/client/{client_id}/account/all".to_test_string()),
+            axum_path_from_open_api("/client/{client_id}/account/all".to_test_string()),
             "/client/:client_id/account/all",
         );
         assert_eq!(
-            open_api_path_to_axum("/client/{client_id}/account/{account_id}/".to_test_string()),
+            axum_path_from_open_api("/client/{client_id}/account/{account_id}/".to_test_string()),
             "/client/:client_id/account/:account_id/",
         );
         assert_eq!(
-            open_api_path_to_axum("/client/{client_id}/account/{account_id}".to_test_string()),
+            axum_path_from_open_api("/client/{client_id}/account/{account_id}".to_test_string()),
             "/client/:client_id/account/:account_id",
         );
 
         // Now ony simple approach is used. Let's improve it when it is really needed.
         assert_eq!(
-            open_api_path_to_axum("/client/{client_id}/account/{account_id}?param1={value1}".to_test_string()),
+            axum_path_from_open_api("/client/{client_id}/account/{account_id}?param1={value1}".to_test_string()),
             "/client/:client_id/account/:account_id?param1={value1}",
         );
     }
