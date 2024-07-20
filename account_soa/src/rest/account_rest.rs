@@ -57,12 +57,12 @@ pub fn accounts_rest_router <
     // !!! It is related only for proc_macro macro !!!
     // let r = mvv_proc_macro::route_from_open_api!(&r, call_rest_get_client_account::<AccountS>);
 
-    let r = route_from_open_api!(r, call_rest_get_client_account::<AccountS>);
+    let r = route_from_open_api!(r, rest_get_client_account::<AccountS>);
 
     let r = r
         .route(
-            &axum_path! { call_rest_get_client_accounts },
-            GET(call_rest_get_client_accounts::<AccountS>))
+            &axum_path! { rest_get_client_accounts },
+            GET(rest_get_client_accounts::<AccountS>))
         /*
         .route(
             &axum_path! { call_rest_get_client_account },
@@ -101,12 +101,12 @@ static TEMP_CURRENT_USER_ID: UserId = {
         ("account_id", description = "Account ID or IBAN", example="UA713736572172926969841832393"),
     ),
 )]
-async fn call_rest_get_client_account <
+async fn rest_get_client_account <
     AccountS: AccountService + 'static,
 > (
     State(rest_service): State<Arc<AccountRest<AccountS>>>,
-    Path(path::ClientId { client_id }): Path<path::ClientId>,
-    Path(path::AccountId { account_id }): Path<path::AccountId>,
+    Path(client_id): Path<path::ClientId>,
+    Path(account_id): Path<path::AccountId>,
 ) -> Result<Json<dto::Account>, RestAppError> {
     rest_service.get_account(client_id, account_id).to_json().await
 }
@@ -123,11 +123,11 @@ async fn call_rest_get_client_account <
         ("client_id", description = "Client id", example = "00000000-0000-0000-0000-000000000001"),
     ),
 )]
-async fn call_rest_get_client_accounts <
+async fn rest_get_client_accounts <
     AccountS: AccountService + 'static,
 > (
     State(rest_service): State<Arc<AccountRest<AccountS>>>,
-    Path(path::ClientId { client_id }): Path<path::ClientId>,
+    Path(client_id): Path<path::ClientId>,
 )
     -> Result<Json<Vec<dto::Account>>, RestAppError> {
     rest_service.get_accounts(client_id).to_json().await
@@ -137,8 +137,8 @@ async fn call_rest_get_client_accounts <
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        crate::rest::account_rest::call_rest_get_client_account,
-        crate::rest::account_rest::call_rest_get_client_accounts,
+        crate::rest::account_rest::rest_get_client_account,
+        crate::rest::account_rest::rest_get_client_accounts,
     ),
     components(
         schemas(
@@ -164,7 +164,7 @@ pub struct AccountRest <AS: AccountService> {
 impl<AS: AccountService> AccountRest<AS> {
 
     #[tracing::instrument( skip(self) )]
-    pub async fn get_account(&self, client_id: String, account_id: String) -> Result<dto::Account, RestAppError> {
+    pub async fn get_account(&self, client_id: path::ClientId, account_id: path::AccountId) -> Result<dto::Account, RestAppError> {
         use mvv_common::obj_ext::ValExt;
 
         debug!("TD get_user_account as debug");
@@ -174,6 +174,9 @@ impl<AS: AccountService> AccountRest<AS> {
         log_debug!("LD get_user_account as debug");
         log_info! ("LI get_user_account as info");
         // log_error!("LE get_user_account as error");
+
+        let client_id = client_id.into_inner();
+        let account_id = account_id.into_inner();
 
         let is_internal_account_id = account_id.len().is_one_of2(36, 38);
         let account = if is_internal_account_id {
@@ -194,9 +197,9 @@ impl<AS: AccountService> AccountRest<AS> {
 
 
     #[tracing::instrument( skip(self) )]
-    pub async fn get_accounts(&self, client_id: String) -> Result<Vec<dto::Account>, RestAppError> {
+    pub async fn get_accounts(&self, client_id: path::ClientId) -> Result<Vec<dto::Account>, RestAppError> {
         let accounts = self.account_service.get_client_accounts(
-            ClientId::from_str(&client_id) ?,
+            ClientId::from_str(&client_id.into_inner()) ?,
         ).await;
 
         let accounts_dto = accounts

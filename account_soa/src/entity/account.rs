@@ -2,6 +2,7 @@ use chrono::Utc;
 use mvv_common::entity::amount::Amount;
 use mvv_common::{
     generate_from_str_new_type_delegate,
+    generate_into_inner_delegate,
     generate_pg_delegate_decode,
     generate_pg_delegate_encode,
     generate_pg_delegate_type_info,
@@ -17,10 +18,8 @@ pub struct AccountId( #[allow(dead_code)] uuid::Uuid);
 // pub type AccountIdFormatError = mvv_common::entity::id::parse::IdFormatError;
 pub type AccountIdFormatError = uuid::Error;
 
-impl AccountId {
-    pub fn into_inner(self) -> uuid::Uuid { self.0 }
-}
 
+generate_into_inner_delegate! { AccountId, uuid::Uuid }
 generate_from_str_new_type_delegate! { AccountId, uuid::Uuid, uuid::Error }
 
 generate_pg_delegate_type_info! { AccountId, uuid::Uuid }
