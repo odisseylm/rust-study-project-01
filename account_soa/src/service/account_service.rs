@@ -99,21 +99,6 @@ impl AccountService for AccountServiceImpl {
             // .map_err(Self::Error::Sqlx)?)
             .map_err(From::<sqlx::Error>::from);
         res
-
-        /*
-        use chrono::*;
-        use core::str::FromStr;
-        use crate::entity::account;
-
-        let account = Account::new( account::new::Args {
-            id: account_id,
-            user_id,
-            amount: Amount::from_str("136.79 EUR").unwrap(),
-            updated_at: chrono::DateTime::<FixedOffset>::from_str("2024-05-31 22:29:57 +02:00").unwrap().to_utc(),
-            created_at: chrono::DateTime::<FixedOffset>::from_str("2024-05-31 15:31:09 +02:00").unwrap().to_utc(),
-        });
-        Ok(account)
-        */
     }
 
     async fn get_client_account_by_iban(&self, client_id: ClientId, iban: iban::Iban) -> Result<Account, AccountError> {

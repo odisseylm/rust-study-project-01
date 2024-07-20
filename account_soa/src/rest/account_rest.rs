@@ -166,6 +166,7 @@ impl<AS: AccountService> AccountRest<AS> {
     #[tracing::instrument( skip(self) )]
     pub async fn get_account(&self, client_id: path::ClientId, account_id: path::AccountId) -> Result<dto::Account, RestAppError> {
         use mvv_common::obj_ext::ValExt;
+        use core::str::FromStr;
 
         debug!("TD get_user_account as debug");
         info! ("TI get_user_account as info");
@@ -175,20 +176,17 @@ impl<AS: AccountService> AccountRest<AS> {
         log_info! ("LI get_user_account as info");
         // log_error!("LE get_user_account as error");
 
-        let client_id = client_id.into_inner();
+        let client_id = ClientId::from_str(&client_id.into_inner()) ?;
         let account_id = account_id.into_inner();
 
         let is_internal_account_id = account_id.len().is_one_of2(36, 38);
         let account = if is_internal_account_id {
             self.account_service.get_client_account_by_id(
-                ClientId::from_str(&client_id) ?,
-                AccountId::from_str(&account_id) ?,
+                client_id, AccountId::from_str(&account_id) ?,
             ).await ?
         } else {
-            use core::str::FromStr;
             self.account_service.get_client_account_by_iban(
-                ClientId::from_str(&client_id) ?,
-                iban::Iban::from_str(&account_id) ?,
+                client_id, iban::Iban::from_str(&account_id) ?,
             ).await ?
         };
 
@@ -198,15 +196,12 @@ impl<AS: AccountService> AccountRest<AS> {
 
     #[tracing::instrument( skip(self) )]
     pub async fn get_accounts(&self, client_id: path::ClientId) -> Result<Vec<dto::Account>, RestAppError> {
-        let accounts = self.account_service.get_client_accounts(
-            ClientId::from_str(&client_id.into_inner()) ?,
-        ).await;
+        let client_id = ClientId::from_str(&client_id.into_inner()) ?;
+        let accounts = self.account_service.get_client_accounts(client_id).await ?;
 
-        let accounts_dto = accounts
-            .map( move |acs| acs.into_iter()
+        let accounts_dto = accounts.into_iter()
                 .map(move |ac| map_account_to_rest(ac))
-                .collect::<Vec<_>>()
-            ) ?;
+                .collect::<Vec<_>>();
         Ok(accounts_dto)
     }
 }

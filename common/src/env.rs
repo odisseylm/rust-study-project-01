@@ -1,5 +1,5 @@
 use core::fmt;
-
+use std::path::PathBuf;
 
 pub fn env_var_or_else <F: Fn()->String> (env_var_name: &'static str, or_string: F) -> Result<String, EnvVarError> {
     use std::env::VarError;
@@ -60,4 +60,24 @@ pub impl EnvVarOps for Option<String> {
             Some(var_value) => Ok(var_value)
         }
     }
+}
+
+
+
+pub fn process_env_load_res(dotenv_res: Result<PathBuf, dotenv::Error>) -> Result<(), anyhow::Error> {
+    // We cannot put `dotenv::from_filename()` just there because logger is not initialized yet.
+
+    match dotenv_res {
+        Ok(ref path) =>
+            log::info!("Env vars are loaded from [{:?}]", path),
+        Err(dotenv::Error::Io(ref io_err))
+        if io_err.kind() == std::io::ErrorKind::NotFound => {
+            log::info!("Env vars are not loaded from [{env_filename}] file.");
+        }
+        Err(ref _err) => {
+            log::error!("Error of loading .env file.");
+            anyhow::bail!("Error of loading .env file.");
+        }
+    }
+    Ok(())
 }

@@ -88,23 +88,6 @@ pub mod new {
 }
 
 
-/*
-#[allow(non_camel_case_types)]
-#[derive(Debug)]
-#[readonly::make]
-pub struct SSS_RO {
-    pub x: i32,
-}
-
-
-#[allow(non_camel_case_types)]
-#[derive(Debug)]
-// #[readonly::make]
-pub struct SSS_RO2 {
-    pub x: i32,
-}
-*/
-
 
 /*
 Generated code by 'readonly'
@@ -139,39 +122,6 @@ const _: () = {
 };
 */
 
-
-/*
-#[cfg(test)]
-mod tests {
-    use chrono::{ FixedOffset, Utc };
-    use crate::entity::account::{ Account, AccountId, new };
-    use mvv_common::entity::amount::Amount;
-    use crate::entity::user::UserId;
-    use mvv_common::test::TestResultUnwrap;
-
-    fn _aa() {
-        let account = Account::new(new::Args {
-            id: AccountId::from_str("1").test_unwrap(),
-            user_id: UserId::from_str("2").test_unwrap(),
-            amount: Amount::from_str("123.44 USD").test_unwrap(),
-            created_at: datetime_from_str("2022-05-31 10:29:30 +02:00"),
-            updated_at: datetime_from_str("2024-05-31 22:29:57 +02:00"),
-        });
-
-        let _id = &account.id;
-        // let mut id: & Id = &account.id;
-
-        let as_id: Result<&AccountId, _> = TryInto::<&AccountId>::try_into(&account.id);
-        println!("### as_id: {:?}", as_id);
-    }
-
-    #[allow(dead_code)] // actually it is really used
-    fn datetime_from_str(str: &str) -> chrono::DateTime<Utc> {
-        use core::str::FromStr;
-        chrono::DateTime::<FixedOffset>::from_str(str).test_unwrap().to_utc()
-    }
-}
-*/
 
 
 #[cfg(test)]
