@@ -1,3 +1,6 @@
+use std::collections::HashSet;
+use std::ops::Sub;
+use itertools::Itertools;
 use utoipa::openapi::{ OpenApi, PathItem };
 use crate::string::remove_optional_suffix;
 // use place_macro::place;
@@ -48,6 +51,10 @@ pub impl <
 
         let open_api_path = UT::path();
         let path_item = UT::path_item(None);
+
+        #[cfg(debug_assertions)] // validation only in debug mode
+        validate_path_params(&open_api_path, &path_item);
+
         let path_item_type = path_item.operations.first()
             .expect(&format!("Missed path type (HTTP method) in OpenApi macro for {}", open_api_path))
             .0;
@@ -72,6 +79,40 @@ pub impl <
     }
 }
 
+fn validate_path_params(path: &str, path_item: &PathItem) {
+    // TODO: add support of '?' and query params
+    let url_path_params: HashSet<_> = path.split('/')
+        .filter(|s|s.starts_with('{') && s.ends_with('}'))
+        .map(|s|{
+            let s = s.strip_prefix('{').unwrap_or(s);
+            let s = s.strip_suffix('}').unwrap_or(s);
+            s})
+        .collect::<HashSet<_>>();
+
+    let op: &utoipa::openapi::path::Operation = path_item.operations.first()
+        .expect("Path should contain 1 operation")
+        .1;
+
+    // let annotated_path_params = path_item.parameters.as_ref()
+    let annotated_path_params = op.parameters.as_ref()
+        .map(|parameters|parameters
+            .iter()
+            .map(|p|p.name.as_str())
+            .collect::<HashSet<_>>())
+        .unwrap_or(HashSet::new());
+
+    let mut diff = url_path_params.sub(&annotated_path_params);
+    let diff2 = annotated_path_params.sub(&url_path_params);
+    diff.extend(diff2);
+    // let diff = diff1.union(&diff2).collect::<HashSet<_>>();
+    // let diff = { let mut diff = diff1; diff.extend(diff2); diff };
+
+    if !diff.is_empty() {
+        let path_params_str = diff.iter().join(", ");
+        let operation_id = op.operation_id.as_ref().map(|op_id| op_id.as_str()).unwrap_or("");
+        panic!("Mismatched path params [{path_params_str}] for operation [{operation_id} = {path}].");
+    }
+}
 
 #[macro_export] macro_rules! open_api_path_to_axum {
     // REST method should have '#[utoipa::path(...)]'
