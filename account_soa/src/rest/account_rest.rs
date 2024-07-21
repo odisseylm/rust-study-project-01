@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use axum::{
-    Router, Json, routing::{ get as GET, post as POST }, extract::{ Path, State, },
+    Router, Json, routing::{ post as POST }, extract::{ Path, State, },
 };
 use tracing::{ debug, info /*, error*/ };
 use log::{ debug as log_debug, info as log_info /*, error as log_error*/ };
@@ -18,7 +18,6 @@ use super::path;
 use mvv_common::rest::RestFutureToJson;
 
 use mvv_common::{
-    axum_path_from_open_api as axum_path,
     axum_open_api_axum_route as open_api_route,
 };
 //--------------------------------------------------------------------------------------------------
@@ -33,45 +32,14 @@ pub fn accounts_rest_router <
 
     let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.state.account_rest);
 
-    // let open_api_path_str = <__path_call_rest_get_client_account as utoipa::Path>::path();
-    // let axum_path_str = mvv_common::utoipa::axum_path_from_open_api(open_api_path_str);
-
-    // let r: Router<Arc<AccountRest<AccountS>>> = Router::new();
-
-    // Ideally it should be like, but now I have no proc-macro to get only method name.
-    // let r = axum_route_from_open_api!(r, call_rest_get_client_account::<AccountS>);
-
-    // It is the easiest and reliable approach.
-    // let r = axum_route_from_open_api_raw!(r,
-    //         call_rest_get_client_account,
-    //         call_rest_get_client_account::<AccountS>
-    //     );
-
-    // let r = axum_route_from_open_api_with_gen_params!(r, call_rest_get_client_account, AccountS);
-
-    // There is faked/unused '&' is used to suppress RustRover warning 'Value used after being moved'.
-    // If you have now such IDE warning, do not add '&'.
-    // !!! It is related only for proc_macro macro !!!
-    // let r = mvv_proc_macro::axum_route_from_open_api!(&r, call_rest_get_client_account::<AccountS>);
-
-    // let r = axum_route_from_open_api!(r, rest_get_client_account::<AccountS>);
-
     let r = Router::new()
         .route_from_open_api(open_api_route!(rest_get_client_account::<AccountS>))
-        .route(
-            &axum_path! { rest_get_client_accounts },
-            GET(rest_get_client_accounts::<AccountS>))
-        /*
-        .route(
-            &axum_path! { call_rest_get_client_account },
-            GET(call_rest_get_client_account::<AccountS>))
-        */
+        .route_from_open_api(open_api_route!(rest_get_client_accounts::<AccountS>))
         .with_state(Arc::clone(&shared_state))
         .role_required(Role::Read)
         // investigation block
         .merge(Router::new()
             .route("/validate_test/input_validate_1", POST(call_rest_input_validate_by_validator::<AccountS>))
-            // .route("/validate_test/input_validate_2", POST(call_rest_input_validate_by_garde::<AccountS>))
             .route("/validate_test/input_validate_3", POST(call_rest_input_validate_by_validify::<AccountS>))
         )
         .with_state(Arc::clone(&shared_state))

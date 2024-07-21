@@ -41,6 +41,16 @@ pub impl <
     S: Clone + Send + Sync + 'static,
 > AxumOpenApiRouterExt<S> for axum::Router<S> {
 
+    /// It is designed for usage with macros `axum_open_api_axum_route`.
+    /// Usage:
+    /// ```no_build
+    ///     use mvv_common::AxumOpenApiRouterExt;
+    ///     use mvv_common::axum_open_api_axum_route as open_api_route;
+    ///
+    ///     let r = Router::new()
+    ///         .route_from_open_api(open_api_route!(rest_get_client_account::<AccountS>))
+    ///         ...
+    /// ```
     fn route_from_open_api <
         UT: utoipa::Path,
         T: 'static,
@@ -128,6 +138,7 @@ fn validate_path_params(open_api_path: &str, open_api_path_item: &PathItem) {
 /// The best approach!
 /// Usage:
 /// ```no_build
+///     use mvv_common::AxumOpenApiRouterExt;
 ///     use mvv_common::axum_open_api_axum_route as open_api_route;
 ///
 ///     let r = Router::new()
