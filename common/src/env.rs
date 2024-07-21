@@ -64,14 +64,14 @@ pub impl EnvVarOps for Option<String> {
 
 
 
-pub fn process_env_load_res(dotenv_res: Result<PathBuf, dotenv::Error>) -> Result<(), anyhow::Error> {
+pub fn process_env_load_res(env_filename: &str, dotenv_res: Result<PathBuf, dotenv::Error>) -> Result<(), anyhow::Error> {
     // We cannot put `dotenv::from_filename()` just there because logger is not initialized yet.
 
     match dotenv_res {
         Ok(ref path) =>
             log::info!("Env vars are loaded from [{:?}]", path),
         Err(dotenv::Error::Io(ref io_err))
-        if io_err.kind() == std::io::ErrorKind::NotFound => {
+            if io_err.kind() == std::io::ErrorKind::NotFound => {
             log::info!("Env vars are not loaded from [{env_filename}] file.");
         }
         Err(ref _err) => {

@@ -1,6 +1,4 @@
-use std::path::PathBuf;
 use std::sync::Arc;
-use anyhow::anyhow;
 use axum::Router;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
@@ -9,8 +7,7 @@ use log::{ error /*, info*/ };
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use mvv_common::env::{ env_var, process_env_load_res };
-use mvv_common::string::remove_optional_suffix;
+use mvv_common::env::process_env_load_res;
 use mvv_common::exe::current_exe_name;
 use mvv_common::server_conf::get_server_port;
 use mvv_common::utoipa::nest_open_api;
@@ -93,12 +90,11 @@ fn create_open_api() -> utoipa::openapi::OpenApi {
 }
 
 
-async fn create_app_route<
-    AccountS: AccountService + Send + Sync + 'static,
-    // AccountR: AccountRest<AccountS> + Send + Sync,
->
-(dependencies: Dependencies<AccountS>)
-    -> Result<Router<()>, anyhow::Error> {
+async fn create_app_route <
+        AccountS: AccountService + Send + Sync + 'static,
+        // AccountR: AccountRest<AccountS> + Send + Sync,
+    >
+    (dependencies: Dependencies<AccountS>) -> Result<Router<()>, anyhow::Error> {
 
     use crate::rest::auth::auth_layer::{ composite_auth_manager_layer };
     let auth_layer =
@@ -110,7 +106,7 @@ async fn create_app_route<
         .merge(login_route)
         .merge(protected_page_01_router())
         .nest("/api", Router::new()
-            .merge(accounts_rest_router::<AccountServiceImpl>(dependencies.clone()))
+            .merge(accounts_rest_router::<AccountS>(dependencies.clone()))
             .nest("/admin", Router::new()
                   // .merge()
             )
@@ -157,19 +153,18 @@ async fn create_app_route<
 
 
 pub async fn web_app_main() -> Result<(), anyhow::Error> {
-    use core::str::FromStr;
 
     let env_filename = format!(".{}.env", current_exe_name() ?);
-    let dotenv_res = dotenv::from_filename(env_filename.as_str());
+    let dotenv_res = dotenv::from_filename(&env_filename);
 
     init_logger();
     log::info!("Hello from [web_app_main]");
 
     // !!! After logger initialization !!!
-    process_env_load_res(dotenv_res) ?;
+    process_env_load_res(&env_filename, dotenv_res) ?;
 
     let port = get_server_port() ?;
-    let app_router = create_app_route(create_prod_dependencies() ?);
+    let app_router = create_app_route(create_prod_dependencies() ?).await ?;
 
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await ?;

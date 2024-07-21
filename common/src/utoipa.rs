@@ -40,7 +40,7 @@ pub fn axum_path_from_open_api(open_api_path: String) -> String {
 pub impl <
     S: Clone + Send + Sync + 'static,
 > OpenApiRouterExt<S> for axum::Router<S> {
-    fn route_from_open_api <
+    fn route_from_open_api_internal <
         UT: utoipa::Path,
         T: 'static,
         H: axum::handler::Handler<T,S>,
@@ -141,7 +141,7 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
         {
             #[allow(unused_imports)]
             use $crate::utoipa::OpenApiRouterExt;
-            let route = $route.route_from_open_api(
+            let route = $route.route_from_open_api_internal(
                 & mvv_proc_macro::utoipa_path_obj! { $rest_method },
                 $rest_method,
             );
@@ -156,7 +156,7 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
             {
                 #[allow(unused_imports)]
                 use $crate::utoipa::OpenApiRouterExt;
-                let route = $route.route_from_open_api(
+                let route = $route.route_from_open_api_internal(
                     & __identifier__(__path_, $rest_method_name),
                     $rest_method_name,
                 );
@@ -176,7 +176,7 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
             {
                 #[allow(unused_imports)]
                 use $crate::utoipa::OpenApiRouterExt;
-                let route = $route.route_from_open_api(
+                let route = $route.route_from_open_api_internal(
                     & __identifier__(__path_, $rest_method_name),
                     $rest_method,
                 );
@@ -193,7 +193,7 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
             {
                 #[allow(unused_imports)]
                 use $crate::utoipa::OpenApiRouterExt;
-                let route = $route.route_from_open_api(
+                let route = $route.route_from_open_api_internal(
                     & __identifier__(__path_, $rest_method_name),
                     $rest_method_name :: < $($gen_param),+ >,
                 );

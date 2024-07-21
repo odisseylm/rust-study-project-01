@@ -66,7 +66,7 @@ pub fn route_from_open_api(params: proc_macro::TokenStream) -> proc_macro::Token
     let q = quote! {
         {
             use #root_path_prefix ::utoipa::OpenApiRouterExt;
-            #route_var.route_from_open_api (
+            #route_var.route_from_open_api_internal (
                 & #utoipa_path_obj,
                 #route_method,
             )
