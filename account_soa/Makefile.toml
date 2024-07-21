@@ -9,6 +9,19 @@ ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
 # PROJECT_DIR = "${CARGO_MAKE_CURRENT_TASK_INITIAL_MAKEFILE_DIRECTORY}"
 
 
+# profile based environment override
+#  CARGO_MAKE_CARGO_PROFILE=dev
+#  CARGO_MAKE_PROFILE=development
+#
+# profile based environment override
+[env.development]
+DEV = true
+TARGET_SUB_DIR = "debug"
+[env.production]
+PROD = true
+TARGET_SUB_DIR = "release"
+
+
 # -----------------------------------------------------------------------------
 [tasks.format]
 condition_script = [" 0 "]
@@ -20,6 +33,44 @@ condition_script = [" 0 "]
 condition_script = [" 0 "]
 # ------------------------------------------------------------------------------
 
+
+[tasks.generate-open-api]
+#env = { DEBUG_SUB_DIR = { value = "debug", condition = { env = ["CARGO_MAKE_CARGO_PROFILE", "dev"] } } }
+cwd = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}"
+command = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/${TARGET_SUB_DIR}/mvv_account_soa"
+args = [ "--generate-open-api" ]
+
+
+# Actually there are predefined pre-build/post-build tasks,
+# BUT they are not executed by default as pre/post ???
+# Strange beahvior...
+#
+# [tasks.pre-build]
+# command = "/bin/sh"
+# args = [ "-c", "echo Task pre-build 56789" ]
+# [tasks.post-build]
+# command = "/bin/sh"
+# args = [ "-c", "echo Task post-build 987654321" ]
+
+
+[tasks.real-build]
+private = true
+description = "Runs the rust compiler."
+category = "Build"
+command = "cargo"
+args = ["build", "--all-features"]
+dependencies = [
+    "pre-build",
+]
+
+
+[tasks.build]
+dependencies = [
+    "pre-build",
+    "real-build",
+    "generate-open-api",
+    "post-build",
+]
 
 
 # -----------------------------------------------------------------------------

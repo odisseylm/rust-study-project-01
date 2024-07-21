@@ -1,9 +1,10 @@
 use std::collections::HashSet;
+use std::ffi::OsString;
 use std::ops::Sub;
 use itertools::Itertools;
+use log::info;
 use utoipa::openapi::{ OpenApi, PathItem };
 use crate::string::remove_optional_suffix;
-// use place_macro::place;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -255,6 +256,49 @@ fn validate_path_params(open_api_path: &str, open_api_path_item: &PathItem) {
             }
         }
     };
+}
+
+pub fn to_generate_open_api() -> bool {
+    std::env::args_os().contains(&OsString::from("--generate-open-api"))
+}
+
+pub enum UpdateApiFile {
+    Always,
+    /// To avoid regeneration of dependant client stubs.
+    IfModelChanged,
+}
+
+pub fn generate_open_api(open_api: &OpenApi, module_name: &str, update_api_file: UpdateApiFile, dir: Option<&str>) -> Result<(), anyhow::Error> {
+
+    use std::path::Path;
+
+    let dir = dir.map(Path::new)
+        .unwrap_or(Path::new("."));
+
+    let file = dir.join(&format!("{module_name}-openapi.json"));
+    info!("Generating Open API file for [{module_name}] => [{file:?}]");
+
+    let open_api_json = open_api.to_pretty_json() ?;
+
+    let to_update_file: bool = match update_api_file {
+        UpdateApiFile::Always => true,
+        UpdateApiFile::IfModelChanged => {
+            if !file.exists() { true }
+            else {
+                let file_content = std::fs::read_to_string(&file) ?;
+                file_content != open_api_json
+            }
+        }
+    };
+
+    if to_update_file {
+        std::fs::write(&file, &open_api_json) ?;
+        info!("Open API file [{file:?}] is generated.");
+    } else {
+        info!("Open API file [{file:?}] is not changed.");
+    }
+
+    Ok(())
 }
 
 

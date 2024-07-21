@@ -10,7 +10,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use mvv_common::env::process_env_load_res;
 use mvv_common::exe::current_exe_name;
 use mvv_common::server_conf::get_server_port;
-use mvv_common::utoipa::nest_open_api;
+use mvv_common::utoipa::{generate_open_api, nest_open_api, to_generate_open_api, UpdateApiFile};
 
 use crate::service::{
     account_service::{ AccountService, AccountServiceImpl },
@@ -162,6 +162,11 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
 
     // !!! After logger initialization !!!
     process_env_load_res(&env_filename, dotenv_res) ?;
+
+    if to_generate_open_api() {
+        generate_open_api(&create_open_api(), env!("CARGO_PKG_NAME"), UpdateApiFile::IfModelChanged, None) ?;
+        return Ok(())
+    }
 
     let port = get_server_port() ?;
     let app_router = create_app_route(create_prod_dependencies() ?).await ?;

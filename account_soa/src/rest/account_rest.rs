@@ -22,6 +22,8 @@ use mvv_common::{
 };
 //--------------------------------------------------------------------------------------------------
 
+#[allow(dead_code)]
+fn aaass_temp() -> i32 { 7 }
 
 pub fn accounts_rest_router <
     AccountS: AccountService + Send + Sync + 'static,

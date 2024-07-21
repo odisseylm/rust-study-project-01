@@ -19,10 +19,10 @@ ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
 # profile based environment override
 [env.development]
 DEV = true
-
+TARGET_SUB_DIR = "debug"
 [env.production]
 PROD = true
-
+TARGET_SUB_DIR = "release"
 
 [tasks.format]
 condition_script = [" 0 "]
