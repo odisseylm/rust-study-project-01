@@ -19,12 +19,8 @@ use mvv_common::rest::RestFutureToJson;
 
 use mvv_common::{
     axum_path_from_open_api as axum_path,
-    route_from_open_api,
-    // route_from_open_api_raw,
-    // route_from_open_api_with_gen_params
+    axum_open_api_axum_route as open_api_route,
 };
-// use mvv_common::utoipa::OpenApiRouterExt;
-// use mvv_proc_macro::route_from_open_api;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -33,33 +29,35 @@ pub fn accounts_rest_router <
 > (
     dependencies: Dependencies<AccountS>,
 ) -> Router {
+    use mvv_common::utoipa::AxumOpenApiRouterExt;
 
     let shared_state: Arc<AccountRest<AccountS>> = Arc::clone(&dependencies.state.account_rest);
 
     // let open_api_path_str = <__path_call_rest_get_client_account as utoipa::Path>::path();
     // let axum_path_str = mvv_common::utoipa::axum_path_from_open_api(open_api_path_str);
 
-    let r: Router<Arc<AccountRest<AccountS>>> = Router::new();
+    // let r: Router<Arc<AccountRest<AccountS>>> = Router::new();
 
     // Ideally it should be like, but now I have no proc-macro to get only method name.
-    // let r = route_from_open_api!(r, call_rest_get_client_account::<AccountS>);
+    // let r = axum_route_from_open_api!(r, call_rest_get_client_account::<AccountS>);
 
     // It is the easiest and reliable approach.
-    // let r = route_from_open_api_raw!(r,
+    // let r = axum_route_from_open_api_raw!(r,
     //         call_rest_get_client_account,
     //         call_rest_get_client_account::<AccountS>
     //     );
 
-    // let r = route_from_open_api_with_gen_params!(r, call_rest_get_client_account, AccountS);
+    // let r = axum_route_from_open_api_with_gen_params!(r, call_rest_get_client_account, AccountS);
 
     // There is faked/unused '&' is used to suppress RustRover warning 'Value used after being moved'.
     // If you have now such IDE warning, do not add '&'.
     // !!! It is related only for proc_macro macro !!!
-    // let r = mvv_proc_macro::route_from_open_api!(&r, call_rest_get_client_account::<AccountS>);
+    // let r = mvv_proc_macro::axum_route_from_open_api!(&r, call_rest_get_client_account::<AccountS>);
 
-    let r = route_from_open_api!(r, rest_get_client_account::<AccountS>);
+    // let r = axum_route_from_open_api!(r, rest_get_client_account::<AccountS>);
 
-    let r = r
+    let r = Router::new()
+        .route_from_open_api(open_api_route!(rest_get_client_account::<AccountS>))
         .route(
             &axum_path! { rest_get_client_accounts },
             GET(rest_get_client_accounts::<AccountS>))

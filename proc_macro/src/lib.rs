@@ -37,13 +37,13 @@ pub fn utoipa_path_obj(params: proc_macro::TokenStream) -> proc_macro::TokenStre
 /// Usage:
 /// ```no_build
 ///   let r: axum::Route<...> = axum::Route::new();
-///   let r = route_from_open_api!(r, call_rest_get_client_account::<AccountS, String>);
+///   let r = axum_route_from_open_api!(r, call_rest_get_client_account::<AccountS, String>);
 /// ```
 /// You can add faked/unused '&' to suppress RustRover warning 'Value used after being moved'.
 /// It will be ignored.
-/// ``` let r = route_from_open_api!(&r, call_rest_get_client_account::<AccountS, String>); ```
+/// ``` let r = axum_route_from_open_api!(&r, call_rest_get_client_account::<AccountS, String>); ```
 #[proc_macro]
-pub fn route_from_open_api(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn axum_route_from_open_api(params: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
     macro_rules! input_err_msg { () => { "Expects 2 params" }; }
 

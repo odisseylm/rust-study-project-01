@@ -39,7 +39,17 @@ pub fn axum_path_from_open_api(open_api_path: String) -> String {
 #[extension_trait::extension_trait]
 pub impl <
     S: Clone + Send + Sync + 'static,
-> OpenApiRouterExt<S> for axum::Router<S> {
+> AxumOpenApiRouterExt<S> for axum::Router<S> {
+
+    fn route_from_open_api <
+        UT: utoipa::Path,
+        T: 'static,
+        H: axum::handler::Handler<T,S>,
+    > (self, route_entry: (&UT, H)) -> Self {
+        let (open_api_path, handler) = route_entry;
+        self.route_from_open_api_internal(open_api_path, handler)
+    }
+
     fn route_from_open_api_internal <
         UT: utoipa::Path,
         T: 'static,
@@ -79,9 +89,9 @@ pub impl <
     }
 }
 
-fn validate_path_params(path: &str, path_item: &PathItem) {
+fn validate_path_params(open_api_path: &str, open_api_path_item: &PathItem) {
     // TODO: add support of '?' and query params
-    let url_path_params: HashSet<_> = path.split('/')
+    let url_path_params: HashSet<_> = open_api_path.split('/')
         .filter(|s|s.starts_with('{') && s.ends_with('}'))
         .map(|s|{
             let s = s.strip_prefix('{').unwrap_or(s);
@@ -89,7 +99,7 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
             s})
         .collect::<HashSet<_>>();
 
-    let op: &utoipa::openapi::path::Operation = path_item.operations.first()
+    let op: &utoipa::openapi::path::Operation = open_api_path_item.operations.first()
         .expect("Path should contain 1 operation")
         .1;
 
@@ -110,10 +120,42 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
     if !diff.is_empty() {
         let path_params_str = diff.iter().join(", ");
         let operation_id = op.operation_id.as_ref().map(|op_id| op_id.as_str()).unwrap_or("");
-        panic!("Mismatched path params [{}] for operation [{} = {}].", path_params_str, operation_id, path);
+        panic!("Mismatched path params [{}] for operation [{} = {}].", path_params_str, operation_id, open_api_path);
     }
 }
 
+
+/// The best approach!
+/// Usage:
+/// ```no_build
+///     use mvv_common::axum_open_api_axum_route as open_api_route;
+///
+///     let r = Router::new()
+///         .route_from_open_api(open_api_route!(rest_get_client_account::<AccountS>))
+///         ...
+/// ```
+#[macro_export] macro_rules! axum_open_api_axum_route {
+    ($rest_method:path) => {
+        (
+            & mvv_proc_macro::utoipa_path_obj! { $rest_method },
+            $rest_method,
+        )
+    };
+}
+
+
+/// My first so-so approach.
+/// Usage:
+/// ```no_build
+///     use mvv_common::axum_path_from_open_api as axum_path;
+///
+///     let r = Router::new()
+///         .route(
+///             &axum_path! { rest_get_client_accounts },
+///             GET(rest_get_client_accounts::<AccountS>)
+///         )
+///         ...
+/// ```
 #[macro_export] macro_rules! axum_path_from_open_api {
     // REST method should have '#[utoipa::path(...)]'
     // which is translated into structure with name __path_[your_method_name]
@@ -136,11 +178,11 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
 }
 
 
-#[macro_export] macro_rules! route_from_open_api {
+#[macro_export] macro_rules! axum_route_from_open_api {
     ($route:ident, $rest_method:path) => {
         {
             #[allow(unused_imports)]
-            use $crate::utoipa::OpenApiRouterExt;
+            use $crate::utoipa::AxumOpenApiRouterExt;
             let route = $route.route_from_open_api_internal(
                 & mvv_proc_macro::utoipa_path_obj! { $rest_method },
                 $rest_method,
@@ -150,7 +192,8 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
     };
 }
 
-#[macro_export] macro_rules! route_from_open_api_raw {
+
+#[macro_export] macro_rules! axum_route_from_open_api_raw {
     ($route:ident, $rest_method_name:ident) => {
         place_macro::place! {
             {
@@ -167,7 +210,7 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
     // use it in case if your method has generic params
     // Usage:
     // let r: Router<Arc<AccountRest<AccountS>>> = Router::new();
-    // let r = route_from_open_api_raw!(r,
+    // let r = axum_route_from_open_api_raw!(r,
     //         call_rest_get_client_account,
     //         call_rest_get_client_account::<AccountS>
     //     );
@@ -187,7 +230,7 @@ fn validate_path_params(path: &str, path_item: &PathItem) {
 }
 
 
-#[macro_export] macro_rules! route_from_open_api_with_gen_params {
+#[macro_export] macro_rules! axum_route_from_open_api_with_gen_params {
     ($route:ident, $rest_method_name:ident, $($gen_param:ty),+) => {
         place_macro::place! {
             {
