@@ -127,7 +127,7 @@ const _: () = {
 #[cfg(test)]
 mod tests {
     use mvv_auth::util::test_unwrap::TestResultUnwrap;
-    use crate::entity::AccountId;
+    use crate::entity::IbanWrapper;
 
     #[test]
     fn account_id_from_str() {
@@ -145,10 +145,10 @@ mod tests {
         iban::Iban::from_str("UA565117374274826517545533479").test_unwrap();
         iban::Iban::from_str("UA496826153843944716538382928").test_unwrap();
 
-        AccountId::from_str("UA713736572172926969841832393").test_unwrap();
-        AccountId::from_str("UA948614766857337364625464668").test_unwrap();
-        AccountId::from_str("UA565117374274826517545533479").test_unwrap();
-        AccountId::from_str("UA496826153843944716538382928").test_unwrap();
+        IbanWrapper::from_str("UA713736572172926969841832393").test_unwrap();
+        IbanWrapper::from_str("UA948614766857337364625464668").test_unwrap();
+        IbanWrapper::from_str("UA565117374274826517545533479").test_unwrap();
+        IbanWrapper::from_str("UA496826153843944716538382928").test_unwrap();
     }
 
 }

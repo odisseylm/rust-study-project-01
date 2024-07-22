@@ -19,3 +19,4 @@ pub mod db;
 pub mod utoipa;
 pub mod exe;
 pub mod server_conf;
+pub mod map;

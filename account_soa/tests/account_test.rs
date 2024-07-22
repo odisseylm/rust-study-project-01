@@ -1,8 +1,11 @@
 use chrono::{ FixedOffset, Utc };
+use iban::Iban;
 use mvv_account_soa::entity::{
-    prelude::{ AccountId, UserId },
+    prelude::AccountId,
     account::{ self, Account },
+    ClientId,
 };
+use mvv_auth::util::test_unwrap::TestSringOps;
 use mvv_common::entity::amount::Amount;
 use mvv_common::test::{ TestResultUnwrap };
 //--------------------------------------------------------------------------------------------------
@@ -45,10 +48,14 @@ fn readonly_field_test() {
 }
 
 fn account_01() -> Account {
+    use core::str::FromStr;
+
     let account = Account::new(account::new::Args {
         // id:
-        id: AccountId::from_str("1").test_unwrap(),
-        user_id: UserId::from_str("2").test_unwrap(),
+        id: AccountId::from_str("00000000-0000-0000-0000-000000000101").test_unwrap(),
+        client_id: ClientId::from_str("00000000-0000-0000-0000-000000000201").test_unwrap(),
+        iban: Iban::from_str("UA90 3515 3300 0002 6006 0359 0071 2").test_unwrap(),
+        name: "account 1".to_test_string(),
         amount: Amount::from_str("123.44 USD").test_unwrap(),
         created_at: datetime_from_str("2022-05-31 10:29:30 +02:00"),
         updated_at: datetime_from_str("2024-05-31 22:29:57 +02:00"),

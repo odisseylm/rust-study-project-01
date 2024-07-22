@@ -8,6 +8,7 @@ members = [
     "auth",
     "common",
     "account_soa",
+    "account_web",
 ]
 #resolver = "1"
 resolver = "2"

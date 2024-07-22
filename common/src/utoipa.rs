@@ -69,6 +69,7 @@ pub impl <
 
         use axum::routing::MethodRouter;
         use utoipa::openapi::PathItemType;
+        use crate::map::MapOpsExt;
 
         let open_api_path = UT::path();
         let path_item = UT::path_item(None);
@@ -76,7 +77,7 @@ pub impl <
         #[cfg(debug_assertions)] // validation only in debug mode
         validate_path_params(&open_api_path, &path_item);
 
-        let path_item_type = path_item.operations.first()
+        let path_item_type = path_item.operations.first_entry()
             .expect(&format!("Missed path type (HTTP method) in OpenApi macro for {}", open_api_path))
             .0;
         let axum_path: String = axum_path_from_open_api(open_api_path);
@@ -101,6 +102,8 @@ pub impl <
 }
 
 fn validate_path_params(open_api_path: &str, open_api_path_item: &PathItem) {
+    use crate::map::MapOpsExt;
+
     // TODO: add support of '?' and query params
     let url_path_params: HashSet<_> = open_api_path.split('/')
         .filter(|s|s.starts_with('{') && s.ends_with('}'))
@@ -110,7 +113,7 @@ fn validate_path_params(open_api_path: &str, open_api_path_item: &PathItem) {
             s})
         .collect::<HashSet<_>>();
 
-    let op: &utoipa::openapi::path::Operation = open_api_path_item.operations.first()
+    let op: &utoipa::openapi::path::Operation = open_api_path_item.operations.first_entry()
         .expect("Path should contain 1 operation")
         .1;
 

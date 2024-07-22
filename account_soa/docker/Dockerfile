@@ -32,6 +32,9 @@ RUN    mkdir ./src                                                 \
     && mkdir ./account_soa                                         \
     && mkdir ./account_soa/src                                     \
     && mkdir ./account_soa/src/bin                                 \
+    && mkdir ./account_web                                         \
+    && mkdir ./account_web/src                                     \
+    && mkdir ./account_web/src/bin                                 \
     && mkdir ./auth                                                \
     && mkdir ./auth/src                                            \
     && mkdir ./common                                              \
@@ -46,6 +49,8 @@ RUN    mkdir ./src                                                 \
     && mkdir ./tuple_heter_iter_macro/src                          \
     && echo "fn main() { }" > ./account_soa/src/bin/main.rs        \
     && echo "// dummy file" > ./account_soa/src/lib.rs             \
+    && echo "fn main() { }" > ./account_web/src/bin/main.rs        \
+    && echo "// dummy file" > ./account_web/src/lib.rs             \
     && echo "// dummy file" > ./auth/src/lib.rs                    \
     && echo "// dummy file" > ./common/src/lib.rs                  \
     && echo "// dummy file" > ./proc_macro/src/lib.rs              \
@@ -55,6 +60,7 @@ RUN    mkdir ./src                                                 \
 
 # COPY static_error_macro/Cargo.lock static_error_macro/Cargo.toml ./static_error_macro/
 COPY account_soa/Cargo.toml             ./account_soa/
+COPY account_web/Cargo.toml             ./account_web/
 COPY auth/Cargo.toml                    ./auth/
 COPY common/Cargo.toml                  ./common/
 COPY proc_macro/Cargo.toml              ./proc_macro/
@@ -69,6 +75,8 @@ RUN    cargo check $RELEASE_OR_DEBUG_BUILD_PARAM --workspace --all-targets --all
 
 RUN    rm ./account_soa/src/*.rs                  \
     && rm ./account_soa/src/bin/*.rs              \
+    && rm ./account_web/src/*.rs                  \
+    && rm ./account_web/src/bin/*.rs              \
     && rm ./auth/src/*.rs                         \
     && rm ./common/src/*.rs                       \
     && rm ./proc_macro/src/*.rs                   \
@@ -79,6 +87,8 @@ RUN    rm ./account_soa/src/*.rs                  \
 #RUN ls --recursive ./src/
 COPY account_soa/src/             ./account_soa/src/
 COPY account_soa/templates/       ./account_soa/templates/
+COPY account_web/src/             ./account_web/src/
+COPY account_web/templates/       ./account_web/templates/
 COPY auth/src/                    ./auth/src/
 COPY auth/templates/              ./auth/templates/
 COPY common/src/                  ./common/src/
@@ -88,6 +98,7 @@ COPY tuple_heter_iter/src/        ./tuple_heter_iter/src/
 COPY tuple_heter_iter_macro/src/  ./tuple_heter_iter_macro/src/
 
 RUN    touch ./account_soa/src/lib.rs             \
+    && touch ./account_web/src/lib.rs             \
     && touch ./auth/src/lib.rs                    \
     && touch ./common/src/lib.rs                  \
     && touch ./proc_macro/src/lib.rs              \
