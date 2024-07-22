@@ -12,3 +12,9 @@ members = [
 ]
 #resolver = "1"
 resolver = "2"
+
+
+# With changed reqwest from version 11 to 12. Otherwise project is not compiled :-(
+[patch.crates-io]
+progenitor = { version = "0.7.0", path = "./../tirdparty/progenitor/progenitor" }
+progenitor-client = { version = "0.7.0",  path = "./../tirdparty/progenitor/progenitor-client" }

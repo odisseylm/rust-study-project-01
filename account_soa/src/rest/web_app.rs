@@ -80,7 +80,11 @@ fn init_logger() {
 
 
 #[derive(OpenApi)]
-#[openapi( )]
+#[openapi(
+    tags(
+        (name = "mvv_account_soa", description = "Rust account SOA")
+    )
+)]
 struct RootOpenApi;
 
 fn create_open_api() -> utoipa::openapi::OpenApi {

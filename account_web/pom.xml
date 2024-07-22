@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <artifactId>temp54545</artifactId>
+  <groupId>com.mvv.bank</groupId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <openapi-generator-maven-plugin.version>7.7.0</openapi-generator-maven-plugin.version>
+  </properties>
+
+  <dependencies>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+      </plugins>
+    </pluginManagement>
+
+    <plugins>
+
+      <!-- As example all interesting (for me) client were generated:
+           * as regular java client stubs
+           * jaxrs interface - can be used by RestEasy
+             * see target/generated-sources/openapi/src/main/java/com/mvv/bank/plugin/dependencies/soa/account/jaxrs
+           * spring REST controller interface for using with Feign
+             * see target/generated-sources/openapi/src/main/java/com/mvv/bank/plugin/dependencies/soa/account/spring
+        -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <version>${openapi-generator-maven-plugin.version}</version>
+
+        <!--<configuration>-->
+        <!--  <inputSpec>/home/volodymyr/projects/rust/rust-study-project-01/target/mvv_account_soa-openapi.json</inputSpec>-->
+        <!--</configuration>-->
+
+        <executions>
+
+          <execution>
+            <id>generate-open-api-account-soa-rust-async</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <!-- See
+                * https://openapi-generator.tech/docs/generators/rust
+                * https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/rust.md
+               -->
+
+              <verbose>true</verbose>
+              <!--<skipIfSpecIsUnchanged>true</skipIfSpecIsUnchanged>-->
+
+              <!--<inputSpec>${project.build.outputDirectory}/${base-package-path}/dependencies/soa/account/account-soa-swagger-openapi.yaml</inputSpec>-->
+              <inputSpec>${basedir}/../target/mvv_account_soa-openapi.json</inputSpec>
+              <generatorName>rust</generatorName>
+
+              <!--<avoidBoxedModels>true</avoidBoxedModels>-->
+
+              <!--<bestFitInt>true</bestFitInt>-->
+              <!--<preferUnsignedInt>true</preferUnsignedInt>-->
+
+              <!--<hideGenerationTimestamp>true</hideGenerationTimestamp>-->
+
+              <!--<library>reqwest</library>-->
+              <!--<supportAsync>true</supportAsync>-->
+              <!--<supportMiddleware>true</supportMiddleware>-->
+              <!--<supportMultipleResponses>false</supportMultipleResponses>-->
+              <!--<useSingleRequestParameter>false</useSingleRequestParameter>-->
+
+              <!--<packageName>deps::mvv_account_soa</packageName>-->
+
+              <!--<apiPackage>deps::mvv_account_soa</apiPackage>-->
+              <!--<modelPackage>deps::mvv_account_soa::dto</modelPackage>-->
+              <!--<invokerPackage>${base-package}.dependencies.soa.account.api.TEMP.SPRING.invoker</invokerPackage>-->
+              <!--<apiPackage>${base-package}.dependencies.soa.account.spring</apiPackage>-->
+              <!--<modelPackage>${base-package}.dependencies.soa.account.dto</modelPackage>-->
+              <!--<invokerPackage>${base-package}.dependencies.soa.account.api.TEMP.SPRING.invoker</invokerPackage>-->
+
+              <generateApis>true</generateApis>
+              <generateModels>true</generateModels>
+              <generateSupportingFiles>true</generateSupportingFiles>
+
+              <generateModelTests>false</generateModelTests>
+              <generateApiTests>false</generateApiTests>
+
+              <configOptions>
+                <library>reqwest</library>
+                <avoidBoxedModels>true</avoidBoxedModels>
+
+                <bestFitInt>true</bestFitInt>
+                <preferUnsignedInt>true</preferUnsignedInt>
+
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+
+                <supportAsync>true</supportAsync>
+                <supportMiddleware>true</supportMiddleware>
+                <supportMultipleResponses>false</supportMultipleResponses>
+                <useSingleRequestParameter>false</useSingleRequestParameter>
+
+                <!--<packageName>deps::mvv_account_soa23</packageName>-->
+                <!--<packageName>mvv_account_soa23</packageName>-->
+
+                <!--<library>spring-boot</library>-->
+                <!--<library>spring-cloud</library>-->
+                <!--<interfaceOnly>true</interfaceOnly>-->
+                <!--<skipDefaultInterface>true</skipDefaultInterface>-->
+                <!--<useOptional>true</useOptional>-->
+                <!--<useSpringController>true</useSpringController>-->
+                <!--<returnResponse>false</returnResponse>-->
+                <!--<sourceFolder>src/main/java</sourceFolder>-->
+                <!--<java8>true</java8>--> <!-- seems it is default -->
+                <!--<openApiNullable>true</openApiNullable>-->
+
+                <!--<useRuntimeException>true</useRuntimeException>-->
+                <!--<asyncNative>false</asyncNative>-->
+                <!--<bigDecimalAsString>false</bigDecimalAsString>-->
+                <!--<dateLibrary>chrono</dateLibrary>-->
+                <!--<useBeanValidation>true</useBeanValidation>-->
+                <!--<performBeanValidation>true</performBeanValidation>-->
+                <!--<withXml>false</withXml>-->
+                <!--<useGzipFeature>false</useGzipFeature>-->
+              </configOptions>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+</project>

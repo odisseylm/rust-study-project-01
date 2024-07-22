@@ -60,14 +60,16 @@ static TEMP_CURRENT_USER_ID: UserId = {
 #[utoipa::path(
     get,
     path = "/client/{client_id}/account/{account_id}",
-    operation_id = "get_client_account",
+    operation_id = "getClientAccount", // in json format
     responses(
-        (status = 200, description = "Client account", body = api::models::Account)
+        // (status = 200, description = "Client account", body = api::models::Account)
+        (status = 200, description = "Client account", body = Account)
     ),
     params(
-        ("client_id", description = "Client id", example = "00000000-0000-0000-0000-000000000001"),
-        ("account_id", description = "Account ID or IBAN", example="UA713736572172926969841832393"),
+        ("client_id" = String, Path, description = "Client id", example = "00000000-0000-0000-0000-000000000001"),
+        ("account_id" = String, Path, description = "Account ID or IBAN", example="UA713736572172926969841832393"),
     ),
+    tag = "mvv_account_soa", // as package/namespace
 )]
 async fn rest_get_client_account <
     AccountS: AccountService + 'static,
@@ -83,13 +85,15 @@ async fn rest_get_client_account <
 #[utoipa::path(
     get,
     path = "/client/{client_id}/account/all",
-    operation_id = "get_client_accounts",
+    operation_id = "getClientAccounts", // in json format
     responses(
-        (status = 200, description = "Client accounts", body = Vec<api::models::Account>)
+        // (status = 200, description = "Client accounts", body = Vec<api::models::Account>)
+        (status = 200, description = "Client accounts", body = Vec<Account>)
     ),
     params(
-        ("client_id", description = "Client id", example = "00000000-0000-0000-0000-000000000001"),
+        ("client_id" = String, Path, description = "Client id", example = "00000000-0000-0000-0000-000000000001"),
     ),
+    tag = "mvv_account_soa", // as package/namespace
 )]
 async fn rest_get_client_accounts <
     AccountS: AccountService + 'static,

@@ -30,7 +30,8 @@ fn cur_regex_validate(s: &str) -> Result<(), validator::ValidationError> {
 
 
 #[derive(utoipa::ToSchema)]
-#[schema(as = api::models::Amount)]
+// #[schema(as = api::models::Amount)]
+#[schema(as = Amount)]
 #[derive(PartialEq, Eq, Serialize, Deserialize)]
 #[derive(educe::Educe)] #[educe(Debug)]
 #[derive(derive_more::Display)]
@@ -56,7 +57,8 @@ pub struct Amount {
 
 
 #[derive(utoipa::ToSchema)]
-#[schema(as = api::models::Account)]
+// #[schema(as = api::models::Account)]
+#[schema(as = Account)]
 #[derive(Debug, PartialEq)]
 #[derive(Serialize, Deserialize)]
 #[derive(derive_more::Display)]
@@ -86,7 +88,8 @@ pub struct Account {
     pub name: String,
 
     #[validify]
-    #[schema(value_type = api::models::Amount)]
+    // #[schema(value_type = api::models::Amount)]
+    #[schema(value_type = Amount)]
     pub amount: Amount,
 
     pub created_at: chrono::DateTime<Utc>,
