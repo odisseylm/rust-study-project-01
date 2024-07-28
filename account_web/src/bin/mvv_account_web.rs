@@ -1,5 +1,7 @@
-use mvv_account_web::rest_dependencies::account_soa::test_account_soa_client;
-use mvv_common::unchecked::UncheckedResultUnwrap;
+// use mvv_account_web::rest_dependencies::account_soa_client::test_account_soa_client;
+// use mvv_common::unchecked::UncheckedResultUnwrap;
+
+
 
 #[tokio::main]
 async fn main() {
@@ -12,5 +14,5 @@ async fn main() {
     //    .expect("Oops! Failed")
 
     // crate::rest_dependencies::test_account_soa_client() ?;
-    test_account_soa_client().await.unchecked_unwrap()
+    // test_account_soa_client().await.unchecked_unwrap()
 }

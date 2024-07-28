@@ -42,7 +42,8 @@ args = [ "--generate-open-api" ]
 
 
 # Actually there are predefined pre-build/post-build tasks,
-# BUT they are not executed by default as pre/post ???
+# BUT they are not executed by default as pre/post when you call `cargo make build`
+# only when you use `cargo make build-flow`.
 # Strange beahvior...
 #
 # [tasks.pre-build]

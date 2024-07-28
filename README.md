@@ -67,7 +67,14 @@ Investigate
 
 # Build notes
 
- - Libraries should ignore Cargo.lock but binaries/applications should check-in Cargo.lock.
+ - To patch 'progenitor'
+   - `cargo install cargo-patch-subdep-ver`
+     - or `cargo install --git https://github.com/odisseylm/cargo_patch_subdep`
+     - or `cargo install --path cargo-patch-subdep-ver`
+   - Apply cargo command (in project dir)
+     - `cargo patch-subdep-ver`
+
+ ??? - Libraries should ignore Cargo.lock but binaries/applications should check-in Cargo.lock.
    - https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html
 
 

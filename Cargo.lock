@@ -687,9 +687,9 @@ dependencies = [
 
 [[package]]
 name = "built"
-version = "0.7.4"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "236e6289eda5a812bc6b53c3b024039382a2895fbbeef2d748b2931546d392c4"
+checksum = "c6a6c0b39c38fd754ac338b00a88066436389c0f029da5d37d1e01091d9b7c17"
 dependencies = [
  "cargo-lock",
  "git2",
@@ -772,7 +772,7 @@ dependencies = [
  "openapiv3",
  "progenitor",
  "progenitor-client",
- "progenitor-impl 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "progenitor-impl",
  "project-root",
  "rustfmt-wrapper",
  "serde_json",
@@ -1690,9 +1690,9 @@ checksum = "40ecd4077b5ae9fd2e9e169b102c6c330d0605168eb0e8bf79952b256dbefffd"
 
 [[package]]
 name = "git2"
-version = "0.19.0"
+version = "0.18.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b903b73e45dc0c6c596f2d37eccece7c1c8bb6e4407b001096387c63d0d93724"
+checksum = "232e6a7bfe35766bf715e55a88b39a700596c0ccfd88cd3680b4cdb40d66ef70"
 dependencies = [
  "bitflags 2.6.0",
  "libc",
@@ -2321,9 +2321,9 @@ checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
 
 [[package]]
 name = "libgit2-sys"
-version = "0.17.0+1.8.1"
+version = "0.16.2+1.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10472326a8a6477c3c20a64547b0059e4b0d086869eee31e6d7da728a8eb7224"
+checksum = "ee4126d8b4ee5c9d9ea891dd875cfdc1e9d0950437179104b183d7d8a74d24e8"
 dependencies = [
  "cc",
  "libc",
@@ -3696,8 +3696,9 @@ name = "progenitor"
 version = "0.7.0"
 dependencies = [
  "progenitor-client",
- "progenitor-impl 0.7.0",
+ "progenitor-impl",
  "progenitor-macro",
+ "serde_json",
 ]
 
 [[package]]
@@ -3717,28 +3718,6 @@ dependencies = [
 name = "progenitor-impl"
 version = "0.7.0"
 dependencies = [
- "heck 0.5.0",
- "http 0.2.12",
- "indexmap 2.2.6",
- "openapiv3",
- "proc-macro2",
- "quote",
- "regex",
- "schemars",
- "serde",
- "serde_json",
- "syn 2.0.72",
- "thiserror",
- "typify 0.1.0 (git+https://github.com/oxidecomputer/typify)",
- "unicode-ident",
-]
-
-[[package]]
-name = "progenitor-impl"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf831000cfb22a24d213f4762c618a15617e88237f8323e4c53b072374e4005a"
-dependencies = [
  "getopts",
  "heck 0.5.0",
  "http 0.2.12",
@@ -3752,17 +3731,19 @@ dependencies = [
  "serde_json",
  "syn 2.0.72",
  "thiserror",
- "typify 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "typify",
  "unicode-ident",
 ]
 
 [[package]]
 name = "progenitor-macro"
 version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6243da5bffaaef639c32a8a1d630625131c7b0afd8f82b9151c733366676f0ed"
 dependencies = [
  "openapiv3",
  "proc-macro2",
- "progenitor-impl 0.7.0",
+ "progenitor-impl",
  "quote",
  "schemars",
  "serde",
@@ -5669,17 +5650,8 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb6beec125971dda80a086f90b4a70f60f222990ce4d63ad0fc140492f53444"
 dependencies = [
- "typify-impl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "typify-macro 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "typify"
-version = "0.1.0"
-source = "git+https://github.com/oxidecomputer/typify#e1ef79f972152355ba80a255d6086d1ad3404815"
-dependencies = [
- "typify-impl 0.1.0 (git+https://github.com/oxidecomputer/typify)",
- "typify-macro 0.1.0 (git+https://github.com/oxidecomputer/typify)",
+ "typify-impl",
+ "typify-macro",
 ]
 
 [[package]]
@@ -5703,25 +5675,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "typify-impl"
-version = "0.1.0"
-source = "git+https://github.com/oxidecomputer/typify#e1ef79f972152355ba80a255d6086d1ad3404815"
-dependencies = [
- "heck 0.5.0",
- "log",
- "proc-macro2",
- "quote",
- "regress 0.10.0",
- "schemars",
- "semver",
- "serde",
- "serde_json",
- "syn 2.0.72",
- "thiserror",
- "unicode-ident",
-]
-
-[[package]]
 name = "typify-macro"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5735,23 +5688,7 @@ dependencies = [
  "serde_json",
  "serde_tokenstream",
  "syn 2.0.72",
- "typify-impl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "typify-macro"
-version = "0.1.0"
-source = "git+https://github.com/oxidecomputer/typify#e1ef79f972152355ba80a255d6086d1ad3404815"
-dependencies = [
- "proc-macro2",
- "quote",
- "schemars",
- "semver",
- "serde",
- "serde_json",
- "serde_tokenstream",
- "syn 2.0.72",
- "typify-impl 0.1.0 (git+https://github.com/oxidecomputer/typify)",
+ "typify-impl",
 ]
 
 [[package]]

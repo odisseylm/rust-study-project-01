@@ -1,13 +1,17 @@
 
 // include!(format!("{}/{}", env!("OUT_DIR"), "/codegen.rs"));
 // include!("${OUT_DIR}/codegen.rs");
-include!(concat!(env!("OUT_DIR"), "/account_soa_client_gen.rs"));
+// include!(concat!(env!("OUT_DIR"), "/account_soa_client_gen.rs"));
 
 
 // /home/volodymyr/projects/rust/rust-study-project-01/target/debug/build/mvv_account_web-91efa79a5a6a8866/out/generated.rs
 // /home/volodymyr/projects/rust/rust-study-project-01/target/debug/build/mvv_account_web-91efa79a5a6a8866/out/codegen.rs
 
+use http::HeaderMap;
+use mvv_account_web::rest_dependencies::account_soa_client::*;
 
+
+#[tokio::test]
 pub async fn test_account_soa_client() -> Result<(), anyhow::Error> {
 
     // let basic_auth_creds = http_auth_basic::Credentials::new("vovan-read", "qwerty");
@@ -24,6 +28,11 @@ pub async fn test_account_soa_client() -> Result<(), anyhow::Error> {
             headers
         })
         .build() ?;
+
+    // let response = client
+    //     .get("https://httpbin.org/")
+    //     .basic_auth("vovan-read", Some("qwerty"))
+    //     .send();
 
     // client.basic_auth(user_name, password)
 

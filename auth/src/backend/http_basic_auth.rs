@@ -24,18 +24,6 @@ use axum_login::AuthnBackend;
 use crate::backend::{
     axum_login_delegatable::ambassador_impl_AuthnBackend,
 };
-#[cfg(feature = "ambassador22")]
-use super::{
-    super::{
-        backend::authz_backend::{
-            AuthorizationResult,
-            ambassador_impl_PermissionProviderSource,
-            ambassador_impl_AuthorizeBackend,
-        },
-        permission::PermissionProcessError,
-    },
-};
-
 // -------------------------------------------------------------------------------------------------
 
 
@@ -184,7 +172,7 @@ impl <
     where Usr: axum_login::AuthUser<Id = String>,
 {
     async fn do_authenticate_request <
-        RootBackend: axum_login::AuthnBackend,
+        RootBackend: AuthnBackend,
         S: Send + Sync,
     > (&self, _auth_session: axum_login::AuthSession<RootBackend>, req: Request)
        -> (Request, Result<Option<Self::User>, Self::Error>)

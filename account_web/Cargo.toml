@@ -283,3 +283,9 @@ assert-json-diff = "2.0.2"
 # ctor = "0.2.8"
 
 macro_rules_attribute = "0.2.0"
+
+[package.metadata.patch.serde]
+version = "1.0"
+patches = [
+    "test.patch1"
+]

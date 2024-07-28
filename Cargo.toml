@@ -14,7 +14,27 @@ members = [
 resolver = "2"
 
 
-# With changed reqwest from version 11 to 12. Otherwise project is not compiled :-(
+# With changed reqwest from version 11 to 12. Otherwise, project is not compiled :-(
 [patch.crates-io]
-progenitor = { version = "0.7.0", path = "./../tirdparty/progenitor/progenitor" }
-progenitor-client = { version = "0.7.0",  path = "./../tirdparty/progenitor/progenitor-client" }
+
+
+[workspace.metadata.patch-replace-sub-dependencies.progenitor]
+replace = [ { sub_dep = "reqwest", from_ver = "0.11.27", to_ver = "0.12.5" } ]
+[workspace.metadata.patch-replace-sub-dependencies.progenitor-impl]
+replace = [ { sub_dep = "reqwest", from_ver = "0.11.27", to_ver = "0.12.5" } ]
+[workspace.metadata.patch-replace-sub-dependencies.progenitor-client]
+replace = [ { sub_dep = "reqwest", from_ver = "0.11.27", to_ver = "0.12.5" } ]
+
+
+
+[patch.crates-io.progenitor]
+version = "0.7.0"
+path = "target/patch-override-sub-dep/progenitor/progenitor-0.7.0"
+
+[patch.crates-io.progenitor-impl]
+version = "0.7.0"
+path = "target/patch-override-sub-dep/progenitor-impl/progenitor-impl-0.7.0"
+
+[patch.crates-io.progenitor-client]
+version = "0.7.0"
+path = "target/patch-override-sub-dep/progenitor-client/progenitor-client-0.7.0"

@@ -19,6 +19,7 @@ pub trait AuthnBackendDynWrapper: Send + Sync {
 }
 
 
+#[allow(dead_code)]
 pub struct AuthnBackendDynWrapperImpl <
     User: axum_login::AuthUser,
     Credentials: Send + Sync,

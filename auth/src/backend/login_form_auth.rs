@@ -27,18 +27,6 @@ use crate::backend::{
     axum_login_delegatable::ambassador_impl_AuthnBackend,
 };
 use crate::http::req_original_uri;
-#[cfg(feature = "ambassador22")]
-use super::{
-    super::{
-        backend::authz_backend::{
-            AuthorizationResult,
-            ambassador_impl_PermissionProviderSource,
-            ambassador_impl_AuthorizeBackend,
-        },
-        permission::PermissionProcessError,
-    },
-};
-
 // -------------------------------------------------------------------------------------------------
 
 

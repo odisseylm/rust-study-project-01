@@ -10,3 +10,6 @@
 /.log/**
 /temp/**
 *.log
+
+# Generated sources
+/account_web/src/rest_dependencies/account_soa_client.rs
