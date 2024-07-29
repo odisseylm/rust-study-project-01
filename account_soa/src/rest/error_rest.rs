@@ -1,7 +1,8 @@
 use core::fmt;
 use axum::body::Body;
 use axum::http::StatusCode;
-use axum::response::{ IntoResponse, Response };
+use axum::Json;
+use axum::response::{IntoResponse, Response };
 use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Basic;
 use axum_extra::TypedHeader;
@@ -40,6 +41,10 @@ pub enum RestAppError {
 
     // #[error("IllegalArgument({0})")]
     IllegalArgument(anyhow::Error),
+
+    // #[error("IllegalArgument({0})")]
+    ValidifyError(validify::ValidationError),
+    ValidifyErrors(validify::ValidationErrors),
     // ...
     // Add other errors if it is needed.
 }
@@ -57,6 +62,10 @@ impl fmt::Display for RestAppError {
                 write!(f, "IllegalArgument: {}", anyhow_err),
             RestAppError::HttpResponseResultError(ref _r) =>
                 write!(f, "HttpResponseResultError"),
+            RestAppError::ValidifyError(ref err) =>
+                write!(f, "ValidationError({err:?})"),
+            RestAppError::ValidifyErrors(ref err) =>
+                write!(f, "ValidationErrors({err:?})"),
         }
     }
 }
@@ -74,6 +83,10 @@ impl IntoResponse for RestAppError {
                 ( StatusCode::FORBIDDEN, "Unauthorized" ).into_response(),
             RestAppError::IllegalArgument(ref err) =>
                 ( StatusCode::BAD_REQUEST, format!("Illegal arguments: {}", err) ).into_response(),
+            RestAppError::ValidifyError(err) =>
+                ( StatusCode::BAD_REQUEST, Json(err.to_string()) ).into_response(),
+            RestAppError::ValidifyErrors(err) =>
+                ( StatusCode::BAD_REQUEST, Json(err.to_string()) ).into_response(),
             RestAppError::HttpResponseResultError(response) => response,
         }
     }
@@ -87,6 +100,17 @@ impl<E> From<E> for RestAppError where E: Into<anyhow::Error> {
         RestAppError::AnyhowError(err.into())
     }
 }
+
+// impl From<validify::ValidationErrors> for RestAppError {
+//     fn from(err: validify::ValidationErrors) -> Self {
+//         RestAppError::ValidifyErrors(err.into())
+//     }
+// }
+// impl From<validify::ValidationError> for RestAppError {
+//     fn from(err: validify::ValidationError) -> Self {
+//         RestAppError::ValidifyError(err.into())
+//     }
+// }
 
 
 pub fn test_authenticate_basic(creds: &Option<TypedHeader<Authorization<Basic>>>) -> Result<(), RestAppError> {

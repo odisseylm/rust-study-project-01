@@ -1,5 +1,4 @@
 use core::char;
-use core::str::FromStr;
 use crate::{
     generate_pg_decode_from_str,
     generate_pg_delegate_type_info,
@@ -49,6 +48,11 @@ impl Currency {
     pub fn into_inner(self) -> InnerCurStr {
         self.0
     }
+
+    pub fn from_inner(inner: InnerCurStr) -> Result<Currency, CurrencyFormatError> {
+        validate_currency(inner.as_str()) ?;
+        Ok(Currency(inner))
+    }
 }
 
 impl DisplayValueExample for Currency {
@@ -56,7 +60,8 @@ impl DisplayValueExample for Currency {
     fn display_value_example() -> &'static str { "AUD" }
 }
 
-fn parse_currency(currency_code: & str) -> Result<Currency, CurrencyFormatError> {
+
+fn validate_currency(currency_code: &str) -> Result<(), CurrencyFormatError> {
     use parse::*;
 
     if currency_code.is_empty() {
@@ -68,15 +73,23 @@ fn parse_currency(currency_code: & str) -> Result<Currency, CurrencyFormatError>
     if !is_valid {
         Err(CurrencyFormatError::new(ErrorKind::IncorrectCurrencyFormat))
     } else {
-        let s = InnerCurStr::try_make(currency_code)
-            .map_err(|_|CurrencyFormatError::new(ErrorKind::IncorrectCurrencyFormat)) ?;
-        Ok(Currency(s))
+        Ok(())
     }
+}
+
+fn parse_currency(currency_code: & str) -> Result<Currency, CurrencyFormatError> {
+    use parse::*;
+
+    validate_currency(currency_code) ?;
+
+    let s = InnerCurStr::try_make(currency_code)
+        .map_err(|_|CurrencyFormatError::new(ErrorKind::IncorrectCurrencyFormat)) ?;
+    Ok(Currency(s))
 }
 
 
 #[inherent::inherent]
-impl FromStr for Currency {
+impl core::str::FromStr for Currency {
     type Err = CurrencyFormatError;
     #[inline]
     pub fn from_str(s: &str) -> Result<Currency, CurrencyFormatError> {

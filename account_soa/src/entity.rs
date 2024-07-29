@@ -30,3 +30,4 @@ pub mod prelude {
 pub use account::{ AccountId, Account, };
 pub use id::ClientId;
 pub use iban::IbanWrapper;
+pub use iban::IbanRefWrapper;

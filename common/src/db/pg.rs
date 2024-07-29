@@ -62,12 +62,48 @@ pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
 }
 
 
+#[macro_export] macro_rules! generate_pg_ref_delegate_type_info {
+    ($Type:ident, $DelegateType:ty) => { // ($Type:ty, $DelegateType:ty) => {
+
+        #[allow(unused_imports)]
+        #[allow(unused_qualifications)]
+        impl<'a> sqlx::Type<sqlx_postgres::Postgres> for $Type<'a> {
+            fn type_info() -> <sqlx_postgres::Postgres as sqlx::Database>::TypeInfo {
+                // <Postgres as sqlx::Database>::TypeInfo::with_name("???")
+                <$DelegateType as sqlx::Type<sqlx_postgres::Postgres>>::type_info()
+            }
+            fn compatible(ty: &<sqlx_postgres::Postgres as sqlx::Database>::TypeInfo) -> bool {
+                <$DelegateType as sqlx::Type<sqlx_postgres::Postgres>>::compatible(ty)
+            }
+        }
+
+    };
+}
+
+
 #[macro_export] macro_rules! generate_pg_delegate_encode {
     ($Type:ty, $DelegateType:ty) => {
 
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
         impl<'r> sqlx::Encode<'r, sqlx_postgres::Postgres> for $Type {
+            fn encode_by_ref(
+                &self,
+                buf: &mut <sqlx_postgres::Postgres as sqlx::database::HasArguments<'r>>::ArgumentBuffer,
+            ) -> sqlx::encode::IsNull {
+                <& $DelegateType as sqlx::Encode<sqlx_postgres::Postgres>>::encode(&self.0, buf)
+            }
+        }
+    }
+}
+
+
+#[macro_export] macro_rules! generate_pg_ref_delegate_encode {
+    ($Type:ident, $DelegateType:ty) => { // ($Type:ty, $DelegateType:ty) => {
+
+        #[allow(unused_imports)]
+        #[allow(unused_qualifications)]
+        impl<'r,'a> sqlx::Encode<'r, sqlx_postgres::Postgres> for $Type<'a> {
             fn encode_by_ref(
                 &self,
                 buf: &mut <sqlx_postgres::Postgres as sqlx::database::HasArguments<'r>>::ArgumentBuffer,

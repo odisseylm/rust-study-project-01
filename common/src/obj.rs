@@ -11,6 +11,10 @@
             pub fn into_inner(self) -> $InnerType {
                 self.0
             }
+            #[inline]
+            pub fn inner_ref(&self) -> & $InnerType {
+                &self.0
+            }
         }
 
     };
@@ -22,6 +26,45 @@
             #[inline]
             pub fn into_inner(self) -> $InnerType {
                 self. $field
+            }
+            #[inline]
+            pub fn inner_ref(&self) -> & $InnerType {
+                &self.$field
+            }
+        }
+
+    };
+}
+
+
+#[macro_export] macro_rules! generate_into_inner_ref_delegate {
+    ($Type:ty, $InnerType:ty) => {
+
+        #[allow(unused_imports)]
+        #[allow(unused_qualifications)]
+        impl $Type {
+            // #[inline]
+            // pub fn into_inner(self) -> $InnerType {
+            //     self.0
+            // }
+            #[inline]
+            pub fn inner_ref(&self) -> & $InnerType {
+                self.0
+            }
+        }
+
+    };
+    ($Type:ty, $field:ident, $InnerType:ty) => {
+
+        #[allow(unused_imports)]
+        #[allow(unused_qualifications)]
+        impl $Type {
+            // #[inline]
+            // pub fn into_inner(self) -> $InnerType {
+            //     self. $field
+            // }
+            pub fn inner_ref(&self) -> & $InnerType {
+                self.$field
             }
         }
 

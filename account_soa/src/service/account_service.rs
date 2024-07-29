@@ -1,28 +1,42 @@
 use std::sync::Arc;
-use log::info;
-use mvv_common::entity::{ amount::Amount, bd::BigDecimalWrapper };
+use bigdecimal::BigDecimal;
+use chrono::Utc;
+use log::{ debug, info };
+use sqlx::Transaction;
+use sqlx_postgres::Postgres;
+use mvv_common::entity::{amount::Amount, bd::{BigDecimalWrapper }, amount::ops::AmountOpsError, AmountParts};
 use crate::entity::{
     account::{ self },
-    IbanWrapper, prelude::{ Account, AccountId }
+    IbanWrapper, IbanRefWrapper, prelude::{ Account, AccountId },
+    ClientId,
 };
-use crate::entity::ClientId;
 //--------------------------------------------------------------------------------------------------
 
 
+#[derive(Debug, Clone)]
+pub enum AccountIdWrapper {
+    Id(AccountId),
+    Iban(iban::Iban),
+}
+
 
 #[derive(thiserror::Error, Debug)]
-pub enum AccountError {
+pub enum AccountProcessError {
     #[error("AccountNotFound")]
-    AccountNotFound,
+    AccountNotFound(AccountIdWrapper),
+    #[error("NotEnoughBalance")]
+    NotEnoughBalance(AccountIdWrapper),
+    #[error("AmountOpsError")]
+    AmountOpsError(#[from] AmountOpsError),
     #[error("Internal")]
-    Internal,
+    Internal(anyhow::Error),
     #[error(transparent)]
     Sqlx(sqlx::Error),
 }
 
-impl From<sqlx::Error> for AccountError {
+impl From<sqlx::Error> for AccountProcessError {
     fn from(value: sqlx::Error) -> Self {
-        AccountError::Sqlx(value)
+        AccountProcessError::Sqlx(value)
     }
 }
 
@@ -30,10 +44,11 @@ impl From<sqlx::Error> for AccountError {
 #[trait_variant::make(Send)]
 // or #[async_trait] // https://github.com/dtolnay/async-trait#dyn-traits
 pub trait AccountService: Send + Sync {
-    async fn get_client_accounts(&self, client_id: ClientId) -> Result<Vec<Account>, AccountError>;
-    async fn get_client_account_by_id(&self, client_id: ClientId, account_id: AccountId) -> Result<Account, AccountError>;
-    async fn get_client_account_by_iban(&self, client_id: ClientId, iban: iban::Iban) -> Result<Account, AccountError>;
-    async fn transfer(&self, client_id: ClientId, from_account: iban::Iban, to_account: iban::Iban, amount: Amount) -> Result<(), AccountError>;
+    async fn get_client_accounts(&self, client_id: ClientId) -> Result<Vec<Account>, AccountProcessError>;
+    async fn get_client_account_by_id(&self, client_id: ClientId, account_id: AccountId) -> Result<Account, AccountProcessError>;
+    async fn get_client_account_by_iban(&self, client_id: ClientId, iban: iban::Iban) -> Result<Account, AccountProcessError>;
+    async fn transfer_by_iban(&self, client_id: ClientId, from_account: iban::Iban, to_account: iban::Iban, amount: Amount) -> Result<(), AccountProcessError>;
+    async fn transfer_by_id(&self, client_id: ClientId, from_account: AccountId, to_account: AccountId, amount: Amount) -> Result<(), AccountProcessError>;
 }
 
 pub struct AccountServiceImpl {
@@ -43,7 +58,7 @@ pub struct AccountServiceImpl {
 // ??? Hm... cannot use there AccountServiceSafe !?
 impl AccountService for AccountServiceImpl {
 
-    async fn get_client_accounts(&self, client_id: ClientId) -> Result<Vec<Account>, AccountError> {
+    async fn get_client_accounts(&self, client_id: ClientId) -> Result<Vec<Account>, AccountProcessError> {
 
         info!("### Loading user ACCOUNTS of user [{}] from database", client_id);
 
@@ -77,9 +92,84 @@ impl AccountService for AccountServiceImpl {
         */
     }
 
-    async fn get_client_account_by_id(&self, client_id: ClientId, account_id: AccountId) -> Result<Account, AccountError> {
-
+    async fn get_client_account_by_id(&self, client_id: ClientId, account_id: AccountId)
+        -> Result<Account, AccountProcessError> {
         info!("### Loading user ACCOUNT [{account_id}] of client [{client_id}] from database");
+        let mut tx: Transaction<Postgres> = self.database_connection.begin().await ?;
+        let res = self.get_client_account_by_id_impl(&mut tx, &client_id, &account_id).await;
+        // tx.rollback().await ?;
+        res
+    }
+
+    async fn get_client_account_by_iban(&self, client_id: ClientId, iban: iban::Iban)
+        -> Result<Account, AccountProcessError> {
+        info!("### Loading user ACCOUNT [{iban}] of client [{client_id}] from database");
+        let mut tx: Transaction<Postgres> = self.database_connection.begin().await ?;
+        let res = self.get_client_account_by_iban_impl(&mut tx, &client_id, &iban).await;
+        // tx.rollback().await ?;
+        res
+    }
+
+    async fn transfer_by_iban(&self, client_id: ClientId, from_account_id: iban::Iban, to_account_id: iban::Iban, amount: Amount)
+        -> Result<(), AccountProcessError> {
+
+        info!("### transfer from ACCOUNT [{from_account_id}] to [{to_account_id}] of client [{client_id}] from database");
+
+        let mut tx: Transaction<Postgres> = self.database_connection.begin().await ?;
+
+        let from_account = self.get_client_account_by_iban_impl(&mut tx, &client_id, &from_account_id).await ?;
+        let to_account = self.get_client_account_by_iban_impl(&mut tx, &client_id, &to_account_id).await ?;
+
+        let new_from_account_amount = (&from_account.amount - &amount) ?;
+        let new_to_account_amount = (&to_account.amount + &amount) ?;
+
+        if new_from_account_amount.value.le(&BigDecimal::from(0i32)) {
+            return Err(AccountProcessError::NotEnoughBalance(
+                AccountIdWrapper::Iban(from_account_id)));
+        }
+
+        self.update_account_by_iban_impl(&mut tx, &client_id, &from_account_id, new_from_account_amount).await ?;
+        self.update_account_by_iban_impl(&mut tx, &client_id, &to_account_id, new_to_account_amount).await ?;
+
+        tx.commit().await ?;
+        Ok(())
+    }
+
+    async fn transfer_by_id(&self, client_id: ClientId, from_account_id: AccountId, to_account_id: AccountId, amount: Amount)
+        -> Result<(), AccountProcessError> {
+
+        info!("### transfer from ACCOUNT [{from_account_id}] to [{to_account_id}] of client [{client_id}] from database");
+
+        let mut tx: Transaction<Postgres> = self.database_connection.begin().await ?;
+
+        let from_account = self.get_client_account_by_id_impl(&mut tx, &client_id, &from_account_id).await ?;
+        let to_account = self.get_client_account_by_id_impl(&mut tx, &client_id, &to_account_id).await ?;
+
+        let new_from_account_amount = (&from_account.amount - &amount) ?;
+        let new_to_account_amount = (&to_account.amount + &amount) ?;
+
+        if new_from_account_amount.value.le(&BigDecimal::from(0i32)) {
+            return Err(AccountProcessError::NotEnoughBalance(
+                AccountIdWrapper::Id(from_account_id)));
+        }
+
+        self.update_account_by_id_impl(&mut tx, &client_id, &from_account_id, new_from_account_amount).await ?;
+        self.update_account_by_id_impl(&mut tx, &client_id, &to_account_id, new_to_account_amount).await ?;
+
+        tx.commit().await ?;
+        Ok(())
+    }
+}
+
+
+impl AccountServiceImpl {
+
+    async fn get_client_account_by_id_impl(
+        &self, tx: &mut Transaction<'_, Postgres>,
+        client_id: &ClientId, account_id: &AccountId,
+    ) -> Result<Account, AccountProcessError> {
+
+        debug!("### Loading user ACCOUNT [{account_id}] of client [{client_id}] from database");
 
         let res = sqlx::query_as(
             "select \
@@ -87,10 +177,10 @@ impl AccountService for AccountServiceImpl {
                  AMOUNT, CUR, \
                  CREATED_AT, UPDATED_AT \
                  from ACCOUNTS \
-                 where CLIENT_ID = $1 and ACCOUNT_ID = $2 ")
-            .bind(&client_id.into_inner())
-            .bind(&account_id.into_inner())
-            .fetch_one(&*self.database_connection)
+                 where CLIENT_ID = $1 and ID = $2 ")
+            .bind(client_id.inner_ref())
+            .bind(account_id.inner_ref())
+            .fetch_one(&mut **tx)
             .await
             .map_err(|err_to_log|{
                 log::error!("### SQLX error: {:?}", err_to_log);
@@ -101,9 +191,12 @@ impl AccountService for AccountServiceImpl {
         res
     }
 
-    async fn get_client_account_by_iban(&self, client_id: ClientId, iban: iban::Iban) -> Result<Account, AccountError> {
+    async fn get_client_account_by_iban_impl(
+        &self, tx: &mut Transaction<'_, Postgres>,
+        client_id: &ClientId, iban: &iban::Iban,
+    ) -> Result<Account, AccountProcessError> {
 
-        info!("### Loading user ACCOUNT [{iban}] of client [{client_id}] from database");
+        debug!("### Loading user ACCOUNT [{iban}] of client [{client_id}] from database");
 
         let res = sqlx::query_as(
             "select \
@@ -112,10 +205,9 @@ impl AccountService for AccountServiceImpl {
                  CREATED_AT, UPDATED_AT \
                  from ACCOUNTS \
                  where CLIENT_ID = $1 and IBAN = $2 ")
-            .bind(&client_id)
-            // .bind(&client_id.into_inner().to_string())
-            .bind(&IbanWrapper(iban))
-            .fetch_one(&*self.database_connection)
+            .bind(client_id)
+            .bind(&IbanRefWrapper(iban))
+            .fetch_one(&mut **tx) // &*self.database_connection)
             .await
             .map_err(|err_to_log|{
                 // TODO: if not found, return 404
@@ -127,9 +219,92 @@ impl AccountService for AccountServiceImpl {
         res
     }
 
-    async fn transfer(&self, _client_id: ClientId, _from_account: iban::Iban, _to_account: iban::Iban, _amount: Amount) -> Result<(), AccountError> {
-        todo!()
+    async fn update_account_by_iban_impl(
+        &self, tx: &mut Transaction<'_, Postgres>,
+        client_id: &ClientId, iban: &iban::Iban, amount: Amount,
+    ) -> Result<(), AccountProcessError> {
+
+        debug!("### Loading user ACCOUNT [{iban}] of client [{client_id}] from database");
+
+        // let now: chrono::DateTime::<Utc> = chrono::DateTime::<Utc>::default();
+        let now: chrono::DateTime<Utc> = chrono::Local::now().to_utc();
+        let AmountParts { value: amount, currency } = amount.into_parts();
+
+        let update_res = sqlx::query(
+            " update ACCOUNTS \
+                 set AMOUNT = $4, UPDATED_AT = $5 \
+                 where CLIENT_ID = $1 and IBAN = $2 and CUR = $3 ")
+            .bind(client_id)
+            .bind(&IbanRefWrapper(iban))
+            // .bind(&amount.currency) // TODO: add DB support for Currency
+            .bind(currency.as_str())
+            .bind(BigDecimalWrapper(amount)) // or &BigDecimalRefWrapper(&amount.value)
+            .bind(&now)
+            .execute(&mut **tx) // &*self.database_connection)
+            // .fetch_one(&mut **tx) // &*self.database_connection)
+            .await
+            .map_err(|err_to_log|{
+                // TODO: if not found, return 404
+                log::error!("### SQLX error: {:?}", err_to_log);
+                err_to_log
+            })
+            // .map_err(Self::Error::Sqlx)?)
+            // .map_err(From::<sqlx::Error>::from) ?;
+            // .map_err(|err|From::<sqlx::Error>::from(err)) ?;
+            // .map_err(|err|AccountProcessError::Sqlx(err)) ?;
+            .map_err(AccountProcessError::Sqlx) ?;
+
+        let updated_count = update_res.rows_affected();
+        if updated_count == 1 {
+            Ok(())
+        } else {
+            Err(AccountProcessError::Internal(
+                anyhow::anyhow!("Error of updating account [{iban}] (updated_count: {updated_count}).")))
+        }
     }
+
+    async fn update_account_by_id_impl(
+        &self, tx: &mut Transaction<'_, Postgres>,
+        client_id: &ClientId, id: &AccountId, amount: Amount,
+    ) -> Result<(), AccountProcessError> {
+
+        debug!("### Loading user ACCOUNT [{id}] of client [{client_id}] from database");
+
+        // let now: chrono::DateTime::<Utc> = chrono::DateTime::<Utc>::default();
+        let now: chrono::DateTime::<Utc> = chrono::Local::now().to_utc();
+        let AmountParts { value: amount, currency } = amount.into_parts();
+
+        let update_res = sqlx::query(
+            " update ACCOUNTS \
+                 set AMOUNT = $4, UPDATED_AT = $5 \
+                 where CLIENT_ID = $1 and ID = $2 and CUR = $3 ")
+            .bind(client_id)
+            .bind(&id)
+            // .bind(&amount.currency) // TODO: add DB support for Currency
+            .bind(currency.as_str())
+            // .bind(&BigDecimalRefWrapper(&amount.value))
+            .bind(BigDecimalWrapper(amount))
+            .bind(&now)
+            .execute(&mut **tx) // &*self.database_connection)
+            .await
+            .map_err(|err_to_log|{
+                // TODO: if not found, return 404
+                log::error!("### SQLX error: {:?}", err_to_log);
+                err_to_log
+            })
+            // .map_err(Self::Error::Sqlx)?)
+            //.map_err(From::<sqlx::Error>::from) ?;
+            .map_err(AccountProcessError::Sqlx) ?;
+
+        let updated_count = update_res.rows_affected();
+        if updated_count == 1 {
+            Ok(())
+        } else {
+            Err(AccountProcessError::Internal(
+                anyhow::anyhow!("Error of updating account [{id}] (updated_count: {updated_count}).")))
+        }
+    }
+
 }
 
 

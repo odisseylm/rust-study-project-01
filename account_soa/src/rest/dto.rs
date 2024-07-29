@@ -10,10 +10,10 @@ use mvv_common::unchecked::UncheckedResultUnwrap;
 
 
 
-static CURRENCY_PATTERN: Lazy<Regex> = Lazy::new(|| {
+pub(crate) static CURRENCY_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"^[A-Z]{3}$"#).unchecked_unwrap()  // r"[a-z]{2}$"
 });
-static ID_PATTERN: Lazy<Regex> = Lazy::new(|| {
+pub(crate) static ID_PATTERN: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"^[0-9A-Za-z_\-]+$"#).unchecked_unwrap()  // r"[a-z]{2}$"
 });
 
