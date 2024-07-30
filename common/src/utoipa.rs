@@ -4,6 +4,7 @@ use std::ops::Sub;
 use itertools::Itertools;
 use log::info;
 use utoipa::openapi::{ OpenApi, PathItem };
+use utoipa::openapi::path::ParameterIn;
 use crate::string::remove_optional_suffix;
 //--------------------------------------------------------------------------------------------------
 
@@ -134,7 +135,37 @@ fn validate_path_params(open_api_path: &str, open_api_path_item: &PathItem) {
     if !diff.is_empty() {
         let path_params_str = diff.iter().join(", ");
         let operation_id = op.operation_id.as_ref().map(|op_id| op_id.as_str()).unwrap_or("");
-        panic!("Mismatched path params [{}] for operation [{} = {}].", path_params_str, operation_id, open_api_path);
+        panic!("Mismatched path params [{}] for operation [{} = {}].",
+            // It is not put directly to format string to avoid RustRover warnings.
+            path_params_str, operation_id, open_api_path);
+    }
+
+    let bad_param_errors: Vec<String> = op.parameters.as_ref()
+        .map(|params|{
+            params.into_iter()
+                .flat_map(|p|{
+
+                    let param_name = p.name.as_str();
+                    let param_in = &p.parameter_in;
+                    let schema = &p.schema;
+
+                    if schema.is_none() {
+                        return Some(format!("Param [{param_name}] in [{open_api_path}] has no schema."))
+                    }
+
+                    let is_this_path_param = *param_in == ParameterIn::Path;
+                    if url_path_params.contains(param_name) && !is_this_path_param {
+                        return Some(format!("Path param [{param_name}] has missed/wrong 'parameter_in' annotation [{param_in:?}]."))
+                    }
+
+                    None
+                })
+                .collect::<Vec<String>>()
+        })
+        .unwrap_or(Vec::new());
+
+    if !bad_param_errors.is_empty() {
+        panic!("OpenApi {open_api_path} errors [{bad_param_errors:?}].");
     }
 }
 
