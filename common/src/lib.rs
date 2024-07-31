@@ -20,3 +20,4 @@ pub mod utoipa;
 pub mod exe;
 pub mod server_conf;
 pub mod map;
+pub mod cfg;

@@ -6,8 +6,27 @@ use std::sync::Arc;
 use crate::permission::{
     PermissionProcessError, PermissionProvider, PermissionSet, VerifyRequiredPermissionsResult,
 };
+//--------------------------------------------------------------------------------------------------
 
 
+
+pub fn always_allowed_perm_provider <
+    User: axum_login::AuthUser + 'static,
+    Perm: Clone + Debug + Hash + Eq + Send + Sync + 'static,
+    PermSet: PermissionSet<Permission=Perm> + Clone + 'static,
+> () -> EmptyPermProvider::<User,Perm,PermSet,true> {
+    EmptyPermProvider::<User,Perm,PermSet,true> { _pd: PhantomData}
+}
+pub fn always_denied_perm_provider <
+    User: axum_login::AuthUser + 'static,
+    Perm: Clone + Debug + Hash + Eq + Send + Sync + 'static,
+    PermSet: PermissionSet<Permission=Perm> + Clone + 'static,
+> () -> EmptyPermProvider::<User,Perm,PermSet,false> {
+    EmptyPermProvider::<User,Perm,PermSet,false> { _pd: PhantomData}
+}
+
+
+//--------------------------------------------------------------------------------------------------
 pub fn always_allowed_perm_provider_arc <
     User: axum_login::AuthUser + 'static,
     Perm: Clone + Debug + Hash + Eq + Send + Sync + 'static,
@@ -41,7 +60,7 @@ pub fn empty_always_denied_perm_provider_arc <
 pub struct EmptyPerm;
 
 #[derive(Debug)]
-struct EmptyPermProvider <
+pub struct EmptyPermProvider <
     User: axum_login::AuthUser,
     Perm: Clone + Debug + Hash + Eq + Send + Sync,// = EmptyPerm,
     PermSet: PermissionSet<Permission=Perm> + Clone,

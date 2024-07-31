@@ -1,5 +1,27 @@
 // use const_format::ascii_str;
 
+use core::fmt::{ self, Debug };
+
+#[derive(Debug, Clone)]
+pub enum StaticRefOrString {
+    Ref(&'static str),
+    String(String),
+    // We can put there other type of strings
+}
+
+impl StaticRefOrString {
+    fn as_str(&self) -> &str {
+        match self {
+            StaticRefOrString::Ref(ref str) => str,
+            StaticRefOrString::String(ref str) => str.as_str(),
+        }
+    }
+}
+impl fmt::Display for StaticRefOrString {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self.as_str(), f)
+    }
+}
 pub trait DisplayValueExample : core::fmt::Display {
     fn display_value_example() -> &'static str;
 }

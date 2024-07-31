@@ -1,0 +1,24 @@
+<html lang="en">
+<head>
+    <title>Client accounts</title>
+</head>
+<body>
+    <p>Client {{client_id}}</p>
+
+    <div>
+        Accounts
+        {% for account in accounts %}
+            <div>
+                Account info
+                <table>
+                    <tr><td colspan="2"> {{account.iban}} </td></tr>
+                    <tr><td> Name </td><td> {{account.name}} </td></tr>
+                    <tr><td> Amount </td><td> {{account.amount.value}} {{account.amount.currency}} </td></tr>
+                    <tr><td> Updated at </td><td> {{account.updated_at}} </td></tr>
+                    <tr><td> Created at </td><td> {{account.created_at}} </td></tr>
+                </table>
+            </div>
+        {% endfor %}
+    </div>
+
+</body>

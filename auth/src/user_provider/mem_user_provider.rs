@@ -83,7 +83,7 @@ impl <
         }
     }
 
-    pub fn with_users(users: Vec<Usr>)
+    pub fn with_users(users: Vec<Usr>) // TODO: replace by array
         -> Result<InMemAuthUserProvider<Usr,Perm,PermSet,PermExtract>, AuthUserProviderError> {
 
         let mut in_memory_state = InMemoryState::with_capacity(users.len());

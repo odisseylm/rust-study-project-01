@@ -2,44 +2,51 @@ use std::sync::Arc;
 use axum::Router;
 use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
-use log::{ error /*, info*/ };
+use log::{error, info};
 
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use mvv_common::env::process_env_load_res;
-use mvv_common::exe::current_exe_name;
-use mvv_common::server_conf::get_server_port;
-use mvv_common::utoipa::{generate_open_api, nest_open_api, to_generate_open_api, UpdateApiFile};
-
-use crate::service::{
-    account_service::{ AccountService, AccountServiceImpl },
+use mvv_common::{
+    env::process_env_load_res,
+    exe::current_exe_name,
+    server_conf::get_server_port,
+    // utoipa::{ generate_open_api, nest_open_api, to_generate_open_api, UpdateApiFile },
 };
-use crate::rest::{
+use crate::{
     app_dependencies::{ Dependencies, DependenciesState },
-    account_rest::{ AccountRest, accounts_rest_router, AccountRestOpenApi },
-    auth::user_perm_provider::SqlUserProvider,
+    service::account_service::{AccountService, AccountServiceImpl },
+    auth::client_auth_user_provider,
 };
-use crate::web::{
-    auth::composite_login_router,
-    templates::protected_page_01::protected_page_01_router,
-};
+// use crate::rest::{
+//     // app_dependencies::{ Dependencies, DependenciesState },
+//     // account_rest::{ AccountRest, accounts_rest_router, AccountRestOpenApi },
+// };
+use crate::service::account_service::{AccountSoaConnectCfg, create_account_service};
+// use crate::web::{
+//     auth::composite_login_router,
+//     templates::protected_page_01::protected_page_01_router,
+// };
 //--------------------------------------------------------------------------------------------------
 
 
 
-fn create_prod_dependencies() -> Result<Dependencies<AccountServiceImpl>, anyhow::Error> {
+fn create_prod_dependencies() -> Result<Arc<Dependencies<AccountServiceImpl>>, anyhow::Error> {
 
-    let db = Arc::new(mvv_common::db::pg::pg_db_connection() ?);
-    let account_service = Arc::new(AccountServiceImpl { database_connection: Arc::clone(&db) });
-    let account_rest = Arc::new(AccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
+    // let db = Arc::new(mvv_common::db::pg::pg_db_connection() ?);
 
-    Ok(Dependencies::<AccountServiceImpl> { state: Arc::new(DependenciesState {
-        database_connection: Arc::clone(&db),
+    let account_soa_cfg = AccountSoaConnectCfg::load_from_env() ?;
+
+    let account_service: Arc<AccountServiceImpl> = Arc::new(create_account_service(&account_soa_cfg) ?);
+    //let account_rest = Arc::new(AccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
+
+    Ok(Arc::new(Dependencies::<AccountServiceImpl> { state: Arc::new(DependenciesState {
+        // database_connection: Arc::clone(&db),
         account_service: Arc::clone(&account_service),
-        account_rest: Arc::clone(&account_rest),
-        user_perm_provider: Arc::new(SqlUserProvider::with_cache(Arc::clone(&db)) ?)
-    })})
+        // account_rest: Arc::clone(&account_rest),
+        // user_perm_provider: Arc::new(SqlUserProvider::with_cache(Arc::clone(&db)) ?)
+        user_perm_provider: Arc::new(client_auth_user_provider() ?)
+    })}))
 }
 
 fn init_logger() {
@@ -88,8 +95,9 @@ fn init_logger() {
 struct RootOpenApi;
 
 fn create_open_api() -> utoipa::openapi::OpenApi {
-    let mut root_open_api = RootOpenApi::openapi();
-    root_open_api.merge(nest_open_api("/api", &AccountRestOpenApi::openapi()));
+    let root_open_api = RootOpenApi::openapi();
+    // let mut root_open_api = RootOpenApi::openapi();
+    // root_open_api.merge(nest_open_api("/api", &AccountRestOpenApi::openapi()));
     root_open_api
 }
 
@@ -98,22 +106,30 @@ async fn create_app_route <
         AccountS: AccountService + Send + Sync + 'static,
         // AccountR: AccountRest<AccountS> + Send + Sync,
     >
-    (dependencies: Dependencies<AccountS>) -> Result<Router<()>, anyhow::Error> {
+    (dependencies: Arc<Dependencies<AccountS>>) -> Result<Router<()>, anyhow::Error> {
 
-    use crate::rest::auth::auth_layer::{ composite_auth_manager_layer };
-    let auth_layer =
-        composite_auth_manager_layer(Arc::clone(&dependencies.state.user_perm_provider)).await ?;
+    // let dependencies = Arc::new(dependencies);
+
+    use crate::auth::{ composite_auth_manager_layer, composite_login_router };
+
+    let auth_layer = composite_auth_manager_layer(
+        Arc::clone(&dependencies.state.user_perm_provider)).await ?;
     let login_route = composite_login_router();
 
     let app_router = Router::new()
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", create_open_api()))
         .merge(login_route)
-        .merge(protected_page_01_router())
+        // .merge(protected_page_01_router())
         .nest("/api", Router::new()
-            .merge(accounts_rest_router::<AccountS>(dependencies.clone()))
+            // .merge(accounts_rest_router::<AccountS>(dependencies.clone()))
             .nest("/admin", Router::new()
                   // .merge()
             )
+        )
+        .nest("/ui", Router::new()
+            .merge(crate::mvc::action_client_accounts::accounts_web_router(dependencies.clone()))
+            .merge(crate::mvc::action_client_accounts::current_client_accounts_router(dependencies.clone()))
+            // .merge(accounts_rest_router::<AccountS>(dependencies.clone()))
         )
         .layer(
             ServiceBuilder::new()
@@ -162,21 +178,22 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     let dotenv_res = dotenv::from_filename(&env_filename);
 
     init_logger();
-    log::info!("Hello from [web_app_main]");
+    info!("Hello from [web_app_main]");
 
     // !!! After logger initialization !!!
     process_env_load_res(&env_filename, dotenv_res) ?;
 
-    if to_generate_open_api() {
-        generate_open_api(&create_open_api(), env!("CARGO_PKG_NAME"), UpdateApiFile::IfModelChanged, None) ?;
-        return Ok(())
-    }
+    // if to_generate_open_api() {
+    //     generate_open_api(&create_open_api(), env!("CARGO_PKG_NAME"), UpdateApiFile::IfModelChanged, None) ?;
+    //     return Ok(())
+    // }
 
-    let port = get_server_port("ACCOUNT_SOA") ?;
+    let port = get_server_port("ACCOUNT_WEB") ?;
     let app_router = create_app_route(create_prod_dependencies() ?).await ?;
 
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await ?;
+    info!("Web server started on port [{port}]");
     axum::serve(listener, app_router).await ?;
     Ok(())
 }

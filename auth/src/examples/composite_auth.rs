@@ -291,9 +291,9 @@ pub mod test {
         -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
         InMemAuthUserProvider::with_users(vec!(
             AuthUserExample::new(1, "vovan", "qwerty"),
-            AuthUserExample::with_role(1, "vovan-read", "qwerty", Role::Read),
-            AuthUserExample::with_role(1, "vovan-write", "qwerty", Role::Write),
-            AuthUserExample::with_roles(1, "vovan-read-and-write", "qwerty",
+            AuthUserExample::with_role(2, "vovan-read", "qwerty", Role::Read),
+            AuthUserExample::with_role(3, "vovan-write", "qwerty", Role::Write),
+            AuthUserExample::with_roles(4, "vovan-read-and-write", "qwerty",
                 RolePermissionsSet::from_permissions([Role::Read, Role::Write])),
         ))
     }

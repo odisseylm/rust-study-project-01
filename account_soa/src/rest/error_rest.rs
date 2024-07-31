@@ -6,6 +6,7 @@ use axum::response::{IntoResponse, Response };
 use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Basic;
 use axum_extra::TypedHeader;
+use log::error;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -75,19 +76,34 @@ impl fmt::Display for RestAppError {
 impl IntoResponse for RestAppError {
     fn into_response(self) -> Response {
         match self {
-            RestAppError::AnyhowError(ref err) =>
-                ( StatusCode::INTERNAL_SERVER_ERROR, format!("Internal error: {}", err) ).into_response(),
-            RestAppError::Unauthenticated =>
-                StatusCode::UNAUTHORIZED.into_response(),
-            RestAppError::Unauthorized =>
-                ( StatusCode::FORBIDDEN, "Unauthorized" ).into_response(),
-            RestAppError::IllegalArgument(ref err) =>
-                ( StatusCode::BAD_REQUEST, format!("Illegal arguments: {}", err) ).into_response(),
-            RestAppError::ValidifyError(err) =>
-                ( StatusCode::BAD_REQUEST, Json(err.to_string()) ).into_response(),
-            RestAppError::ValidifyErrors(err) =>
-                ( StatusCode::BAD_REQUEST, Json(err.to_string()) ).into_response(),
-            RestAppError::HttpResponseResultError(response) => response,
+            RestAppError::AnyhowError(ref err) => {
+                error!("Internal error: {err:?}");
+                (StatusCode::INTERNAL_SERVER_ERROR, format!("Internal error: {}", err)).into_response()
+            }
+            RestAppError::Unauthenticated => {
+                error!("Unauthenticated error");
+                StatusCode::UNAUTHORIZED.into_response()
+            }
+            RestAppError::Unauthorized => {
+                error!("Unauthorized error");
+                (StatusCode::FORBIDDEN, "Unauthorized").into_response()
+            }
+            RestAppError::IllegalArgument(ref err) => {
+                error!("IllegalArgument error: {err:?}");
+                (StatusCode::BAD_REQUEST, format!("Illegal arguments: {}", err)).into_response()
+            }
+            RestAppError::ValidifyError(err) => {
+                error!("ValidifyError error: {err:?}");
+                (StatusCode::BAD_REQUEST, Json(err.to_string())).into_response()
+            }
+            RestAppError::ValidifyErrors(err) => {
+                error!("ValidifyErrors error: {err:?}");
+                (StatusCode::BAD_REQUEST, Json(err.to_string())).into_response()
+            }
+            RestAppError::HttpResponseResultError(response) => {
+                error!("HttpResponseResultError error: {response:?}");
+                response
+            },
         }
     }
 }

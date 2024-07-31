@@ -1,4 +1,3 @@
-// use core::fmt;
 use std::sync::Arc;
 
 use axum::extract::Request;
@@ -17,16 +16,15 @@ use mvv_auth::{
         oauth2_auth::{ OAuth2AuthBackend, OAuth2AuthCredentials, OAuth2Config, OAuth2UserStore },
     },
     user_provider::{ AuthUserProvider },
-    permission::PermissionProvider,
+    permission::{ PermissionProvider },
     // util::composite_util::{
     //     backend_usr_prov_ref, backend_perm_prov_ref,
     //     get_unique_user_provider_ref, get_unique_permission_provider_ref,
     // },
 };
-use super::user::{ AuthUser, Role, RolePermissionsSet };
+use super::user::{ ClientAuthUser as AuthUser, Role, RolePermissionsSet };
 use super::user_perm_provider::{ PswComparator };
 // -------------------------------------------------------------------------------------------------
-
 
 
 #[derive(Clone)]
@@ -37,6 +35,7 @@ pub struct CompositeAuthBackend <
     //
     http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,PlainPasswordComparator,RolePermissionsSet>>,
     login_form_auth_backend: Option<LoginFormAuthBackend<AuthUser,PlainPasswordComparator,RolePermissionsSet>>,
+    // Mainly for test, of course OAuth is not allowed in bank application!
     oauth2_backend: Option<OAuth2AuthBackend<AuthUser,RolePermissionsSet>>,
 }
 
@@ -301,21 +300,24 @@ impl AuthorizeBackend for CompositeAuthBackend { }
 pub mod test {
     use mvv_auth::{
         AuthUserProviderError,
-        permission::PermissionSet,
+        // permission::PermissionSet,
         user_provider::InMemAuthUserProvider,
     };
-    use super::super::user::{
-        AuthUser, UserRolesExtractor, Role, RolePermissionsSet,
+    use crate::auth::user::{
+        ClientAuthUser as AuthUser, Role, RolePermissionsSet, ClientFeaturesExtractor, ClientType,
     };
 
     pub fn in_memory_test_users()
-        -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,UserRolesExtractor>, AuthUserProviderError> {
+        -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet, ClientFeaturesExtractor>, AuthUserProviderError> {
+        use mvv_auth::permission::PermissionSet;
+
         InMemAuthUserProvider::with_users(vec!(
-            AuthUser::new(1, "vovan", "qwerty"),
-            AuthUser::with_role(2, "vovan-write", "qwerty", Role::Write),
-            AuthUser::with_role(3, "vovan-read", "qwerty", Role::Read),
-            AuthUser::with_roles(4, "vovan-read-and-write", "qwerty",
-                RolePermissionsSet::from_permissions([Role::Read, Role::Write])),
+            AuthUser::test_std_client("1", "vovan", "qwerty"),
+            AuthUser::test_client_with_type("2", "vovan-business", "qwerty", ClientType::Business),
+            AuthUser::test_client_with_features("3", "vovan-super-business", "qwerty",
+                                                RolePermissionsSet::from_permissions([ClientType::Business, ClientType::SuperBusiness])),
+            // AuthUser::with_roles("4", "vovan-read-and-write", "qwerty",
+            //     RolePermissionsSet::from_permissions([Role::Read, Role::Write])),
         ))
     }
 }

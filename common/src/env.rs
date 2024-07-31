@@ -1,5 +1,9 @@
 use core::fmt;
 use std::path::PathBuf;
+use crate::string::StaticRefOrString;
+//--------------------------------------------------------------------------------------------------
+
+
 
 pub fn env_var_or_else <F: Fn()->String> (env_var_name: &'static str, or_string: F) -> Result<String, EnvVarError> {
     use std::env::VarError;
@@ -10,7 +14,10 @@ pub fn env_var_or_else <F: Fn()->String> (env_var_name: &'static str, or_string:
         Err(err) => {
             match err {
                 VarError::NotPresent => Ok(or_string()),
-                VarError::NotUnicode(ref _err) => Err(EnvVarError { var_name: env_var_name, source: err }),
+                VarError::NotUnicode(ref _err) => Err(EnvVarError {
+                    var_name: StaticRefOrString::Ref(env_var_name),
+                    source: err,
+                }),
             }
         }
     }
@@ -26,16 +33,46 @@ pub fn env_var (env_var_name: &'static str) -> Result<Option<String>, EnvVarErro
         Err(err) => {
             match err {
                 VarError::NotPresent => Ok(None),
-                VarError::NotUnicode(ref _err) => Err(EnvVarError { var_name: env_var_name, source: err }),
+                VarError::NotUnicode(ref _err) => Err(EnvVarError {
+                    var_name: StaticRefOrString::Ref(env_var_name),
+                    source: err,
+                }),
             }
         }
     }
 }
 
 
+pub fn env_var_2 (env_var_name: &str) -> Result<Option<String>, EnvVarError> {
+    use std::env::VarError;
+
+    let port_env = std::env::var(env_var_name);
+    match port_env {
+        Ok(port_env) => Ok(Some(port_env)),
+        Err(err) => {
+            match err {
+                VarError::NotPresent => Ok(None),
+                VarError::NotUnicode(ref _err) => Err(EnvVarError {
+                    var_name: StaticRefOrString::String(env_var_name.to_owned()),
+                    source: err,
+                }),
+            }
+        }
+    }
+}
+
+
+pub fn required_env_var (env_var_name: &'static str) -> Result<String, EnvVarError> {
+    env_var(env_var_name) ?
+        .ok_or_else(|| EnvVarError {
+            var_name: StaticRefOrString::Ref(env_var_name),
+            source: std::env::VarError::NotPresent,
+        })
+}
+
 #[derive(Debug, Clone, thiserror::Error)]
 pub struct EnvVarError {
-    pub var_name: &'static str,
+    pub var_name: StaticRefOrString, // &'static str,
     pub source: std::env::VarError,
 }
 
@@ -56,7 +93,10 @@ pub impl EnvVarOps for Option<String> {
     #[track_caller]
     fn val_or_not_found_err(self, var_name: &'static str) -> Result<String, EnvVarError> {
         match self {
-            None => Err(EnvVarError { var_name, source: std::env::VarError::NotPresent }),
+            None => Err(EnvVarError {
+                var_name: StaticRefOrString::Ref(var_name),
+                source: std::env::VarError::NotPresent,
+            }),
             Some(var_value) => Ok(var_value)
         }
     }
