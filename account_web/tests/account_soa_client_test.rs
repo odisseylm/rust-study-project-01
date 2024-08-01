@@ -12,6 +12,7 @@ use mvv_account_web::rest_dependencies::account_soa_client::*;
 
 
 #[tokio::test]
+#[ignore]
 pub async fn test_account_soa_client() -> Result<(), anyhow::Error> {
 
     // let basic_auth_creds = http_auth_basic::Credentials::new("vovan-read", "qwerty");

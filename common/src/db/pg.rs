@@ -43,6 +43,13 @@ pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
 
 
 //--------------------------------------------------------------------------------------------------
+
+#[macro_export] macro_rules! pg_column_name {
+    // postgres needs lowercase (Oracle - uppercase, so on)
+    ($column_name:literal) => { const_str::convert_ascii_case!(lower, $column_name) };
+}
+
+
 #[macro_export] macro_rules! generate_pg_delegate_type_info {
     ($Type:ty, $DelegateType:ty) => {
 

@@ -5,7 +5,7 @@ use axum::response::IntoResponse;
 use http::StatusCode;
 use crate::{
     app_dependencies::Dependencies,
-    auth::{ClientType, RequiredAuthorizationExtension},
+    auth::{ ClientFeature, RequiredAuthorizationExtension },
     error::WebAppError,
     rest_dependencies::account_soa_client::{
         types::Account,
@@ -59,7 +59,7 @@ pub fn current_client_accounts_router <
 ) -> Router<()> {
     Router::new()
         .route("/current_client_accounts", GET(current_client_accounts::<AccountS>))
-        .client_type_required(ClientType::Usual)
+        .client_feature_required(ClientFeature::Standard)
         .with_state(dependencies)
 }
 

@@ -11,34 +11,36 @@ use mvv_auth::{
 //--------------------------------------------------------------------------------------------------
 
 
-
+/// It is used there as role/permission to allow/deny views/action.
+///
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, implicit_clone::ImplicitClone)]
 #[derive(strum_macros::FromRepr, strum_macros::Display)]
 #[repr(u32)]
 #[non_exhaustive]
-pub enum ClientType {
+pub enum ClientFeature {
     // Unknown     = 0,
-    Usual          = 1 << 0,
+    Standard       = 1 << 0,
     Business       = 1 << 1,
     SuperBusiness  = 1 << 2,
 }
 
-impl Into<u32> for ClientType {
+impl Into<u32> for ClientFeature {
     #[inline(always)]
     fn into(self) -> u32 { self as u32 }
 }
-impl TryFrom<u32> for ClientType {
+impl TryFrom<u32> for ClientFeature {
     type Error = PermissionProcessError;
     #[inline]
     fn try_from(value: u32) -> Result<Self, Self::Error> {
-        let as_role: Option<ClientType> = ClientType::from_repr(value);
+        let as_role: Option<ClientFeature> = ClientFeature::from_repr(value);
         as_role.ok_or_else(||PermissionProcessError::ConvertError(
             anyhow!("Conversion role error: No ClientType for [{}]", value)))
     }
 }
 
-pub type Role = ClientType;
-pub type RolePermissionsSet = BitsPermissionSet<u32, ClientType, PermissionProcessError>;
+pub type Role = ClientFeature;
+pub type RolePermissionsSet = BitsPermissionSet<u32, ClientFeature, PermissionProcessError>;
+pub type ClientFeatureSet = BitsPermissionSet<u32, ClientFeature, PermissionProcessError>;
 
 
 #[derive(Clone)]
@@ -59,16 +61,18 @@ impl ClientAuthUser {
             active: true,
             password: Some(password.to_string()),
             access_token: None,
-            client_features: RolePermissionsSet::from_permission(ClientType::Usual),
+            client_features: RolePermissionsSet::from_permission(ClientFeature::Standard),
         }
     }
-    pub fn test_client_with_type(client_id: &'static str, email: &'static str, password: &'static str, client_type: ClientType) -> ClientAuthUser {
+    pub fn test_client_with_type(
+        client_id: &'static str, email: &'static str, password: &'static str,
+        client_feature: ClientFeature) -> ClientAuthUser {
         ClientAuthUser {
             client_id: client_id.to_string(), email: email.to_string(),
             active: true,
             password: Some(password.to_string()),
             access_token: None,
-            client_features: RolePermissionsSet::from_permissions([ClientType::Usual, client_type]),
+            client_features: RolePermissionsSet::from_permissions([ClientFeature::Standard, client_feature]),
         }
     }
     pub fn test_client_with_features(client_id: &'static str, email: &'static str, password: &'static str, client_features: RolePermissionsSet) -> ClientAuthUser {

@@ -13,8 +13,7 @@ use anyhow::anyhow;
 use axum::response::Response;
 use http::StatusCode;
 use log::error;
-use crate::AuthUserProviderError;
-
+use crate::{ AuthUserProviderError, UserId };
 // -------------------------------------------------------------------------------------------------
 
 
@@ -25,7 +24,7 @@ pub enum PermissionProcessError {
     #[error("ConvertError({0})")]
     ConvertError(anyhow::Error),
     #[error("NoUser({0})")]
-    NoUser(String),
+    NoUser(UserId),
     #[error("GetUserError({0})")]
     GetUserError(anyhow::Error),
     #[error("CacheError")]

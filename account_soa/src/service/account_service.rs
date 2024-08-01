@@ -4,7 +4,11 @@ use chrono::Utc;
 use log::{ debug, info };
 use sqlx::Transaction;
 use sqlx_postgres::Postgres;
-use mvv_common::entity::{amount::Amount, bd::{BigDecimalWrapper }, amount::ops::AmountOpsError, AmountParts};
+use mvv_common::{
+    entity::{
+        amount::Amount, bd::{BigDecimalWrapper }, amount::ops::AmountOpsError, AmountParts,
+    },
+};
 use crate::entity::{
     account::{ self },
     IbanWrapper, IbanRefWrapper, prelude::{ Account, AccountId },
@@ -310,12 +314,8 @@ impl AccountServiceImpl {
 
 impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for Account {
     fn from_row(row: &sqlx_postgres::PgRow) -> sqlx::Result<Self> {
-
         use sqlx::Row;
-        macro_rules! col_name {
-            // postgres needs lowercase (Oracle - uppercase, so on)
-            ($column_name:literal) => { const_str::convert_ascii_case!(lower, $column_name) };
-        }
+        use mvv_common::pg_column_name as col_name;
 
         let account = Account::new(account::new::Args {
             id: row.try_get(col_name!("ID")) ?,

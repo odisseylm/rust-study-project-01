@@ -101,3 +101,17 @@
 
     };
 }
+
+
+#[macro_export] macro_rules! generate_display_delegate {
+    ($Type:ty, $InnerType:ty, $Err:ty) => {
+
+        #[inherent::inherent]
+        impl core::fmt::Display for $Type {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                core::fmt::Display::fmt(&self.0)
+            }
+        }
+
+    };
+}

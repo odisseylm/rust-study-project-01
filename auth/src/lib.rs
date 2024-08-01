@@ -13,14 +13,16 @@ pub mod examples;
 pub mod permission;
 mod test;
 pub mod route;
+pub mod user_id;
 
+pub use user_id::UserId;
 
 pub use backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction };
 pub use error::AuthBackendError;
 
-pub use user_provider::{AuthUserProvider, AuthUserProviderError};
+pub use user_provider::{ AuthUserProvider, AuthUserProviderError };
 
-pub use psw::{PasswordComparator, PlainPasswordComparator};
+pub use psw::{ PasswordComparator, PlainPasswordComparator };
 
 pub mod http {
     use axum::extract::OriginalUri;

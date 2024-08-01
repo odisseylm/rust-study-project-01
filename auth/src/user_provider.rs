@@ -14,7 +14,7 @@ pub enum AuthUserProviderError {
     // 1) It is used only for updates.
     // 2) If user is not found on get operation, just Ok(None) is returned.
     #[error("UserNotFound")]
-    UserNotFound(String),
+    UserNotFound(UserId),
 
     #[error(transparent)]
     Sqlx(sqlx::Error),
@@ -46,3 +46,4 @@ impl From<sqlx::Error> for AuthUserProviderError {
 pub mod mem_user_provider;
 
 pub use mem_user_provider::InMemAuthUserProvider;
+use crate::UserId;

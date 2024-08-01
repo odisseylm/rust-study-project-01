@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use crate::{
-    auth::ClientAuthUserProvider,
+    auth::AuthUserProvider,
     service::account_service::AccountService,
 };
 //--------------------------------------------------------------------------------------------------
@@ -14,7 +14,7 @@ pub struct DependenciesState <
     pub database_connection: Arc<sqlx_postgres::PgPool>,
     pub account_service: Arc<AccountS>,
     //pub account_rest: Arc<AccountRest<AccountS>>,
-    pub user_perm_provider: Arc<ClientAuthUserProvider>,
+    pub user_perm_provider: Arc<AuthUserProvider>,
 }
 
 pub struct Dependencies <

@@ -175,7 +175,10 @@ impl <
     PermSet: PermissionSet<Permission=Perm> + Clone,
     PermExtract: UserPermissionsExtractor<User=Usr,Permission=Perm,PermissionSet=PermSet> + Debug + Clone,
 > PermissionProvider for InMemAuthUserProvider<Usr,Perm,PermSet,PermExtract>
-    where Usr::Id : Hash + Eq {
+    where
+        Usr::Id : Hash + Eq,
+        crate::UserId: From<<Usr as axum_login::AuthUser>::Id>
+{
     type User = Usr;
     type Permission = Perm;
     type PermissionSet = PermSet;
@@ -186,13 +189,14 @@ impl <
         Ok(PermExtract::extract_permissions_from_user(user))
     }
 
-    async fn get_user_permissions_by_principal_identity(&self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
+    async fn get_user_permissions_by_principal_identity(
+        &self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
         -> Result<Self::PermissionSet, PermissionProcessError> {
         let user_opt = self.get_user_by_principal_identity(&user_principal_id).await
             .map_err(|err|PermissionProcessError::GetUserError(anyhow::Error::new(err)))?;
         let user = user_opt.ok_or_else(||
             // in theory, it should not happen
-            PermissionProcessError::NoUser(user_principal_id.to_string())) ?;
+            PermissionProcessError::NoUser(user_principal_id.into())) ?;
         self.get_user_permissions(&user).await
     }
 

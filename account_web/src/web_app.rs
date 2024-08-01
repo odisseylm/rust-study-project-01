@@ -13,10 +13,11 @@ use mvv_common::{
     server_conf::get_server_port,
     // utoipa::{ generate_open_api, nest_open_api, to_generate_open_api, UpdateApiFile },
 };
+use mvv_common::utoipa::to_generate_open_api;
 use crate::{
     app_dependencies::{ Dependencies, DependenciesState },
     service::account_service::{AccountService, AccountServiceImpl },
-    auth::in_mem_client_auth_user_provider,
+    // auth::in_mem_client_auth_user_provider,
 };
 use crate::auth::SqlClientAuthUserProvider;
 use crate::service::account_service::{AccountSoaConnectCfg, create_account_service};
@@ -181,10 +182,10 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     // !!! After logger initialization !!!
     process_env_load_res(&env_filename, dotenv_res) ?;
 
-    // if to_generate_open_api() {
-    //     generate_open_api(&create_open_api(), env!("CARGO_PKG_NAME"), UpdateApiFile::IfModelChanged, None) ?;
-    //     return Ok(())
-    // }
+    if to_generate_open_api() {
+        // generate_open_api(&create_open_api(), env!("CARGO_PKG_NAME"), UpdateApiFile::IfModelChanged, None) ?;
+        return Ok(())
+    }
 
     let port = get_server_port("ACCOUNT_WEB") ?;
     let app_router = create_app_route(create_prod_dependencies() ?).await ?;

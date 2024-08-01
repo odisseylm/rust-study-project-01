@@ -11,16 +11,16 @@ use mvv_auth::{
 };
 use mvv_auth::permission::{ PermissionProcessError, PermissionProvider };
 use mvv_auth::util::sql::set_role_from_bool_column as set_role_from_col;
-use mvv_common::cache::{AsyncCache, TtlMode, };
-use crate::auth::{ClientAuthUser, ClientFeatureSetSet, ClientType};
+use mvv_common::cache::{ AsyncCache, TtlMode, };
+use crate::auth::{ ClientAuthUser as AuthUser, ClientFeatureSet, ClientFeature };
 //--------------------------------------------------------------------------------------------------
 
 
-// We cache Option<AuthUser> to cache fact that user is not found.
+// We cache Option<AuthUser> to cache the fact that user is not found.
 // type Cache = crate::util::cache::lru::LruAsyncCache<String,Option<AuthUser>>;
 // type Cache = crate::util::cache::quick_cache::QuickAsyncCache<String,Option<AuthUser>>;
 type Cache = mvv_common::cache::associative_cache::AssociativeAsyncCache
-                <associative_cache::Capacity128, String,Option<ClientAuthUser>>;
+                <associative_cache::Capacity128, String,Option<AuthUser>>;
 
 #[derive(Debug)]
 struct SqlClientAuthUserProviderState {
@@ -36,17 +36,15 @@ impl SqlClientAuthUserProvider {
         Ok(SqlClientAuthUserProvider(Arc::new(SqlClientAuthUserProviderState { db, cache: None })))
     }
     pub fn with_cache(db: Arc<sqlx_postgres::PgPool>) -> Result<SqlClientAuthUserProvider, anyhow::Error> {
-        // use crate::util::cache::CacheFactory;
         Ok(SqlClientAuthUserProvider(Arc::new(SqlClientAuthUserProviderState { db, cache: Some(RwLock::new(
             Cache::with_capacity_and_ttl(
-                // nonzero_lit::usize!(100),
-                Duration::from_secs(15),
+                Duration::from_secs(15), // nonzero_lit::u64!(15)
             ) ?))
         })))
     }
 
     #[allow(dead_code)]
-    async fn get_cached(&self, user_id: &String) -> Result<Option<Option<ClientAuthUser>>,AuthUserProviderError> {
+    async fn get_cached(&self, user_id: &String) -> Result<Option<Option<AuthUser>>,AuthUserProviderError> {
         if let Some(ref cache) = self.0.cache {
             // Can we use 'read' there
             let mut cache_guarded = cache.write().await;
@@ -59,7 +57,7 @@ impl SqlClientAuthUserProvider {
         }
     }
 
-    async fn get_user_from_db(&self, username: &str) -> Result<Option<ClientAuthUser>, AuthUserProviderError> {
+    async fn get_user_from_db(&self, username: &str) -> Result<Option<AuthUser>, AuthUserProviderError> {
 
         info!("### Loading user [{}] from database", username);
 
@@ -87,28 +85,24 @@ impl SqlClientAuthUserProvider {
 }
 
 
-impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for ClientAuthUser {
+impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for crate::auth::ClientAuthUser {
     fn from_row(row: &sqlx_postgres::PgRow) -> sqlx::Result<Self> {
-
         use sqlx::Row;
-        macro_rules! column_name {
-            // postgres needs lowercase (Oracle - uppercase, so on)
-            ($column_name:literal) => { const_str::convert_ascii_case!(lower, $column_name) };
-        }
+        use mvv_common::pg_column_name as col_name;
 
-        let client_id: uuid::Uuid = row.try_get(column_name!("CLIENT_ID")) ?;
-        let email: String = row.try_get(column_name!("EMAIL") ) ?;
-        let user_psw: String = row.try_get(column_name!("PSW")) ?;
-        let active: bool = row.try_get(column_name!("ACTIVE")) ?;
+        let client_id: uuid::Uuid = row.try_get(col_name!("CLIENT_ID")) ?;
+        let email: String = row.try_get(col_name!("EMAIL") ) ?;
+        let user_psw: String = row.try_get(col_name!("PSW")) ?;
+        let active: bool = row.try_get(col_name!("ACTIVE")) ?;
 
-        let mut client_features = ClientFeatureSetSet::new();
+        let mut client_features = ClientFeatureSet::new();
         if active {
-            client_features.merge_with_mut(ClientFeatureSetSet::from_permission(ClientType::Usual));
-            set_role_from_col(&mut client_features, ClientType::Business, row, column_name!("BUSINESS_USER"))?;
-            set_role_from_col(&mut client_features, ClientType::SuperBusiness, row, column_name!("SUPER_BUSINESS_USER"))?;
+            client_features.merge_with_mut(ClientFeatureSet::from_permission(ClientFeature::Standard));
+            set_role_from_col(&mut client_features, ClientFeature::Business, row, col_name!("BUSINESS_USER"))?;
+            set_role_from_col(&mut client_features, ClientFeature::SuperBusiness, row, col_name!("SUPER_BUSINESS_USER"))?;
         }
 
-        Ok(ClientAuthUser {
+        Ok(crate::auth::ClientAuthUser {
             client_id: client_id.to_string(),
             email,
             active,
@@ -122,9 +116,9 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for ClientAuthUser {
 
 #[axum::async_trait]
 impl AuthUserProvider for SqlClientAuthUserProvider {
-    type User = ClientAuthUser;
+    type User = AuthUser;
 
-    async fn get_user_by_principal_identity(&self, user_id: &<ClientAuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
+    async fn get_user_by_principal_identity(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
 
         if let Some(ref cache) = self.0.cache {
             let mut cache = cache.write().await;
@@ -175,9 +169,9 @@ impl OAuth2UserStore for SqlClientAuthUserProvider {
 // #[axum::async_trait]
 #[async_trait::async_trait]
 impl PermissionProvider for SqlClientAuthUserProvider {
-    type User = ClientAuthUser;
-    type Permission = ClientType;
-    type PermissionSet = ClientFeatureSetSet;
+    type User = AuthUser;
+    type Permission = ClientFeature;
+    type PermissionSet = ClientFeatureSet;
 
     async fn get_user_permissions(&self, user: &Self::User)
         -> Result<Self::PermissionSet, PermissionProcessError> {
@@ -187,21 +181,23 @@ impl PermissionProvider for SqlClientAuthUserProvider {
     async fn get_user_permissions_by_principal_identity(
         &self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
         -> Result<Self::PermissionSet, PermissionProcessError> {
-        let user: Option<ClientAuthUser> = self.get_user_by_principal_identity(&user_principal_id).await ?;
+        let user: Option<AuthUser> = self.get_user_by_principal_identity(&user_principal_id).await ?;
         match user {
-            None => Err(PermissionProcessError::NoUser(user_principal_id.to_string())),
-            Some(ref user) => Ok(user.client_features.implicit_clone()),
+            None =>
+                Err(PermissionProcessError::NoUser(user_principal_id.into())),
+            Some(ref user) =>
+                Ok(user.client_features.implicit_clone()),
         }
     }
 
     async fn get_group_permissions(&self, _user: &Self::User)
         -> Result<Self::PermissionSet, PermissionProcessError> {
-        Ok(ClientFeatureSetSet::new())
+        Ok(ClientFeatureSet::new())
     }
 
     async fn get_group_permissions_by_principal_identity(
         &self, _user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
         -> Result<Self::PermissionSet, PermissionProcessError> {
-        Ok(ClientFeatureSetSet::new())
+        Ok(ClientFeatureSet::new())
     }
 }

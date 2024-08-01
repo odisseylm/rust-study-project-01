@@ -3,12 +3,12 @@ fn main() {
     // println!("cargo:rerun-if-changed=Cargo.toml");
     // println!("cargo:rerun-if-changed=patches/");
 
-    generate_account_open_api_doc();
+    generate_account_soa_open_api_doc();
     generate_rest_client();
 }
 
 
-fn generate_account_open_api_doc() {
+fn generate_account_soa_open_api_doc() {
     use std::process::Command;
 
     let build_env = BuildEnv::new();

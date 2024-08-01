@@ -304,7 +304,7 @@ pub mod test {
         user_provider::InMemAuthUserProvider,
     };
     use crate::auth::user::{
-        ClientAuthUser as AuthUser, Role, RolePermissionsSet, ClientFeaturesExtractor, ClientType,
+        ClientAuthUser as AuthUser, Role, RolePermissionsSet, ClientFeaturesExtractor, ClientFeature,
     };
 
     pub fn in_memory_test_users()
@@ -313,9 +313,9 @@ pub mod test {
 
         InMemAuthUserProvider::with_users(vec!(
             AuthUser::test_std_client("1", "vovan", "qwerty"),
-            AuthUser::test_client_with_type("2", "vovan-business", "qwerty", ClientType::Business),
+            AuthUser::test_client_with_type("2", "vovan-business", "qwerty", ClientFeature::Business),
             AuthUser::test_client_with_features("3", "vovan-super-business", "qwerty",
-                                                RolePermissionsSet::from_permissions([ClientType::Business, ClientType::SuperBusiness])),
+                                                RolePermissionsSet::from_permissions([ClientFeature::Business, ClientFeature::SuperBusiness])),
             // AuthUser::with_roles("4", "vovan-read-and-write", "qwerty",
             //     RolePermissionsSet::from_permissions([Role::Read, Role::Write])),
         ))

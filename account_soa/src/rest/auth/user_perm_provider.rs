@@ -6,12 +6,14 @@ use tokio::sync::RwLock;
 use mvv_auth::{
     AuthUserProvider, AuthUserProviderError,
     backend::OAuth2UserStore,
-    permission::PermissionSet,
+    permission::{ PermissionSet, PermissionProcessError, PermissionProvider },
     user_provider::InMemAuthUserProvider,
+    util::sql::set_role_from_bool_column as set_role,
 };
-use mvv_auth::permission::{ PermissionProcessError, PermissionProvider };
+use mvv_common::{
+    cache::{ AsyncCache, TtlMode, },
+};
 use super::user::{ AuthUser, Role, RolePermissionsSet, UserRolesExtractor };
-use mvv_common::cache::{AsyncCache, TtlMode, };
 // -------------------------------------------------------------------------------------------------
 
 
@@ -119,23 +121,19 @@ impl SqlUserProvider {
 //     fn from_row(row: &sqlx::any::AnyRow) -> sqlx::Result<Self> {
 impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for AuthUser {
     fn from_row(row: &sqlx_postgres::PgRow) -> sqlx::Result<Self> {
-
         use sqlx::Row;
-        macro_rules! column_name {
-            // postgres needs lowercase (Oracle - uppercase, so on)
-            ($column_name:literal) => { const_str::convert_ascii_case!(lower, $column_name) };
-        }
+        use mvv_common::pg_column_name as col_name;
 
-        let user_id: i64 = row.try_get(column_name!("ID")) ?;
-        let username: String = row.try_get(column_name!("NAME") ) ?;
-        let user_psw: String = row.try_get(column_name!("password")) ?;
+        let user_id: i64 = row.try_get(col_name!("ID")) ?;
+        let username: String = row.try_get(col_name!("NAME") ) ?;
+        let user_psw: String = row.try_get(col_name!("password")) ?;
 
         let mut roles = RolePermissionsSet::new();
-        set_role(&mut roles, Role::Read, &row, column_name!("read_role")) ?;
-        set_role(&mut roles, Role::Write, &row, column_name!("write_role")) ?;
-        set_role(&mut roles, Role::Write, &row, column_name!("user_role")) ?;
-        set_role(&mut roles, Role::SuperUser, &row, column_name!("super_user_role")) ?;
-        set_role(&mut roles, Role::Admin, &row, column_name!("admin_role")) ?;
+        set_role(&mut roles, Role::Read, row, col_name!("read_role")) ?;
+        set_role(&mut roles, Role::Write, row, col_name!("write_role")) ?;
+        set_role(&mut roles, Role::Write, row, col_name!("user_role")) ?;
+        set_role(&mut roles, Role::SuperUser, row, col_name!("super_user_role")) ?;
+        set_role(&mut roles, Role::Admin, row, col_name!("admin_role")) ?;
 
         Ok(AuthUser {
             id: user_id,
@@ -147,16 +145,6 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for AuthUser {
     }
 }
 
-#[inline]
-fn set_role(roles: &mut RolePermissionsSet, role: Role, row: &sqlx_postgres::PgRow, column: &'static str)
-    -> Result<(), sqlx::Error> {
-    use sqlx::Row;
-    let db_role: Option<bool> = row.try_get(column) ?;
-    if db_role.unwrap_or(false) {
-        roles.merge_with_mut(RolePermissionsSet::from_permission(role));
-    }
-    Ok(())
-}
 
 
 #[axum::async_trait]
@@ -239,7 +227,7 @@ impl PermissionProvider for SqlUserProvider {
         -> Result<Self::PermissionSet, PermissionProcessError> {
         let user: Option<AuthUser> = self.get_user_by_principal_identity(&user_principal_id).await ?;
         match user {
-            None => Err(PermissionProcessError::NoUser(user_principal_id.to_string())),
+            None => Err(PermissionProcessError::NoUser(user_principal_id.into())),
             Some(ref user) => Ok(user.permissions.implicit_clone()),
         }
     }
