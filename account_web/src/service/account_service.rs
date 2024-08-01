@@ -1,3 +1,4 @@
+use http::HeaderMap;
 use mvv_common::cfg::load_url_from_env_var;
 use crate::rest_dependencies::account_soa_client::Client as AccountSoaRestClient;
 use crate::rest_dependencies::account_soa_client::types::{
@@ -65,6 +66,8 @@ impl AccountService for AccountServiceImpl {
 #[derive(Debug)]
 pub struct AccountSoaConnectCfg {
     pub base_url: String,
+    pub user: String,
+    pub psw: String,
 }
 impl AccountSoaConnectCfg {
     pub fn load_from_env() -> anyhow::Result<Self> {
@@ -73,12 +76,31 @@ impl AccountSoaConnectCfg {
             // but now we use only 1st url
             base_url:
                 load_url_from_env_var("DEPENDENCIES_ACCOUNTSOA_REST_BASEURLS") ?,
+            user:
+                mvv_common::env::required_env_var("DEPENDENCIES_ACCOUNTSOA_USER") ?,
+            psw:
+                mvv_common::env::required_env_var("DEPENDENCIES_ACCOUNTSOA_PSW") ?,
         })
     }
 }
 
 pub fn create_account_service(cfg: &AccountSoaConnectCfg) -> anyhow::Result<AccountServiceImpl> {
-    let client = AccountSoaRestClient::new(&cfg.base_url);
+
+    use axum_extra::headers::{ Authorization, authorization::Credentials };
+
+    let auth = Authorization::basic(&cfg.user, &cfg.psw);
+
+    let client = reqwest::Client::builder()
+        .default_headers({
+            let mut headers = HeaderMap::new();
+            // headers.insert("Authorization", HeaderValue::from_str(&basic_auth_creds.as_http_header()) ?);
+            headers.insert("Authorization", auth.0.encode());
+            headers
+        })
+        .build() ?;
+
+    // let client = AccountSoaRestClient::new(&cfg.base_url);
+    let client = AccountSoaRestClient::new_with_client(&cfg.base_url, client);
     let account_service = AccountServiceImpl { client };
     Ok(account_service)
 }

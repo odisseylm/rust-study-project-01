@@ -1,14 +1,4 @@
 
-create table CLIENTS (
-    USER_ID    BIGINT,   -- TODO: temporary
-    CLIENT_ID  CLIENT_ID    not null unique,
-    -- Should it be unique? Ot is it allowed to one physical person have several client ids&&
-    EMAIL      EMAIL        collate ENGLISH_CI not null unique,
-    -- main phone
-    -- TODO: use strict format to avoid duplicates due to different format
-    PHONE      PHONE        collate ENGLISH_CI not null unique
-);
-
 
 create table ACCOUNTS
 (

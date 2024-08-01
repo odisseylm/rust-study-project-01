@@ -11,10 +11,9 @@ pub struct DependenciesState <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,
 > {
-    // pub database_connection: Arc<sqlx_postgres::PgPool>,
+    pub database_connection: Arc<sqlx_postgres::PgPool>,
     pub account_service: Arc<AccountS>,
     //pub account_rest: Arc<AccountRest<AccountS>>,
-    //pub user_perm_provider: Arc<SqlUserProvider>,
     pub user_perm_provider: Arc<ClientAuthUserProvider>,
 }
 

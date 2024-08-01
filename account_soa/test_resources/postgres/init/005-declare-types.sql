@@ -23,7 +23,7 @@ create domain IBAN as VARCHAR(34)
     check (length(value) >= 16 and length(value) <= 34);
 
 create domain EMAIL as VARCHAR(320) -- TODO: analyze predefined.  CITEXT is not accessible there???
-    check (length(value) >= 16 and length(value) <= 320);
+    check (length(value) >= 3 and length(value) <= 320);
 
 create domain PHONE as VARCHAR(15)  -- TODO: analyze predefined.  CITEXT is not accessible there???
     check (length(value) >= 4 and length(value) <= 15);

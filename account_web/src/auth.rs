@@ -6,6 +6,7 @@ mod oauth;
 mod user;
 mod user_perm_provider;
 mod login_form;
+mod sql_client_auth_provider;
 // -------------------------------------------------------------------------------------------------
 
 
@@ -26,10 +27,11 @@ pub type PswAuthCredentials = mvv_auth::backend::PswAuthCredentials;
 pub type LoginFormAuthnBackend = mvv_auth::backend::LoginFormAuthBackend<AuthUser,PswComparator,RolePermissionsSet>;
 
 
-pub use user_perm_provider::{ ClientAuthUserProvider, client_auth_user_provider };
+pub use user_perm_provider::{ ClientAuthUserProvider, in_mem_client_auth_user_provider };
 pub use auth_layer::{ composite_auth_manager_layer, /*login_form_auth_manager_layer*/ };
 pub use login_form::{ composite_login_router };
 pub use user::{ ClientType, ClientAuthUser };
+pub use sql_client_auth_provider::SqlClientAuthUserProvider;
 
 // -------------------------------------------------------------------------
 //                           Currently used impls

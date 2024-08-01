@@ -44,7 +44,8 @@ pub type RolePermissionsSet = BitsPermissionSet<u32, ClientType, PermissionProce
 #[derive(Clone)]
 pub struct ClientAuthUser {
     pub client_id: String,
-    pub username: String,
+    pub email: String,
+    pub active: bool,
     pub password: Option<String>,
     pub access_token: Option<String>,
     pub client_features: RolePermissionsSet,
@@ -52,25 +53,28 @@ pub struct ClientAuthUser {
 
 
 impl ClientAuthUser {
-    pub fn test_std_client(client_id: &'static str, username: &'static str, password: &'static str) -> ClientAuthUser {
+    pub fn test_std_client(client_id: &'static str, email: &'static str, password: &'static str) -> ClientAuthUser {
         ClientAuthUser {
-            client_id: client_id.to_string(), username: username.to_string(),
+            client_id: client_id.to_string(), email: email.to_string(),
+            active: true,
             password: Some(password.to_string()),
             access_token: None,
             client_features: RolePermissionsSet::from_permission(ClientType::Usual),
         }
     }
-    pub fn test_client_with_type(client_id: &'static str, username: &'static str, password: &'static str, client_type: ClientType) -> ClientAuthUser {
+    pub fn test_client_with_type(client_id: &'static str, email: &'static str, password: &'static str, client_type: ClientType) -> ClientAuthUser {
         ClientAuthUser {
-            client_id: client_id.to_string(), username: username.to_string(),
+            client_id: client_id.to_string(), email: email.to_string(),
+            active: true,
             password: Some(password.to_string()),
             access_token: None,
             client_features: RolePermissionsSet::from_permissions([ClientType::Usual, client_type]),
         }
     }
-    pub fn test_client_with_features(client_id: &'static str, username: &'static str, password: &'static str, client_features: RolePermissionsSet) -> ClientAuthUser {
+    pub fn test_client_with_features(client_id: &'static str, email: &'static str, password: &'static str, client_features: RolePermissionsSet) -> ClientAuthUser {
         ClientAuthUser {
-            client_id: client_id.to_string(), username: username.to_string(),
+            client_id: client_id.to_string(), email: email.to_string(),
+            active: true,
             password: Some(password.to_string()),
             access_token: None,
             client_features,
@@ -106,7 +110,7 @@ impl UserPermissionsExtractor for ClientFeaturesExtractor {
 impl fmt::Debug for ClientAuthUser {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Client")
-            .field("username", &self.username)
+            .field("email", &self.email)
             .field("features", &self.client_features)
             .field("psw", &"[...]")
             .field("access_token", &"[...]")
@@ -119,7 +123,7 @@ impl axum_login::AuthUser for ClientAuthUser {
     type Id = String;
 
     fn id(&self) -> Self::Id {
-        self.username.to_lowercase().to_owned()
+        self.email.to_lowercase().to_owned()
     }
     fn session_auth_hash(&self) -> &[u8] {
         if let Some(access_token) = &self.access_token {

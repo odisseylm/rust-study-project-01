@@ -16,12 +16,9 @@ use mvv_common::{
 use crate::{
     app_dependencies::{ Dependencies, DependenciesState },
     service::account_service::{AccountService, AccountServiceImpl },
-    auth::client_auth_user_provider,
+    auth::in_mem_client_auth_user_provider,
 };
-// use crate::rest::{
-//     // app_dependencies::{ Dependencies, DependenciesState },
-//     // account_rest::{ AccountRest, accounts_rest_router, AccountRestOpenApi },
-// };
+use crate::auth::SqlClientAuthUserProvider;
 use crate::service::account_service::{AccountSoaConnectCfg, create_account_service};
 // use crate::web::{
 //     auth::composite_login_router,
@@ -33,7 +30,7 @@ use crate::service::account_service::{AccountSoaConnectCfg, create_account_servi
 
 fn create_prod_dependencies() -> Result<Arc<Dependencies<AccountServiceImpl>>, anyhow::Error> {
 
-    // let db = Arc::new(mvv_common::db::pg::pg_db_connection() ?);
+    let db = Arc::new(mvv_common::db::pg::pg_db_connection() ?);
 
     let account_soa_cfg = AccountSoaConnectCfg::load_from_env() ?;
 
@@ -41,11 +38,12 @@ fn create_prod_dependencies() -> Result<Arc<Dependencies<AccountServiceImpl>>, a
     //let account_rest = Arc::new(AccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
 
     Ok(Arc::new(Dependencies::<AccountServiceImpl> { state: Arc::new(DependenciesState {
-        // database_connection: Arc::clone(&db),
+        database_connection: Arc::clone(&db),
         account_service: Arc::clone(&account_service),
         // account_rest: Arc::clone(&account_rest),
         // user_perm_provider: Arc::new(SqlUserProvider::with_cache(Arc::clone(&db)) ?)
-        user_perm_provider: Arc::new(client_auth_user_provider() ?)
+        // user_perm_provider: Arc::new(in_mem_client_auth_user_provider() ?)
+        user_perm_provider: Arc::new(SqlClientAuthUserProvider::with_cache(Arc::clone(&db)) ?)
     })}))
 }
 

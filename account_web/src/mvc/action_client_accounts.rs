@@ -77,7 +77,9 @@ pub async fn current_client_accounts <
 ) -> Result<impl IntoResponse, WebAppError> {
 
     let account_service = &dependencies.state.account_service;
-    let client_id = Some("bla-bla".to_string()); // request_context.current_client;
+    // TODO: remove hard-coded
+    // TODO: proper process wrong formatted ID as 'bla-bla'
+    let client_id = Some("00000000-0000-0000-0000-000000000001".to_string()); // request_context.current_client;
     match client_id {
         None =>
             // TODO: use better
