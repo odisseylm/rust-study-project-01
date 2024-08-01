@@ -18,7 +18,7 @@ use crate::{
     },
 };
 
-#[cfg(feature = "ambassador")]
+// #[cfg(feature = "ambassador")]
 use axum_login::AuthnBackend;
 #[cfg(feature = "ambassador")]
 use crate::backend::{
@@ -31,8 +31,6 @@ use crate::backend::{
 #[cfg_attr(feature = "ambassador", derive(ambassador::Delegate))]
 #[readonly::make] // should be after 'derive'
 #[cfg_attr(feature = "ambassador", delegate(axum_login::AuthnBackend, target = "psw_backend"))]
-// #[cfg_attr(feature = "ambassador", delegate(PermissionProviderSource, target = "psw_backend"))]
-// #[cfg_attr(feature = "ambassador", delegate(AuthorizeBackend, target = "psw_backend"))]
 pub struct HttpBasicAuthBackend <
     User: axum_login::AuthUser + PswUser,
     PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
@@ -56,13 +54,32 @@ impl <
         permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=<PermSet as PermissionSet>::Permission,PermissionSet=PermSet> + Send + Sync>,
     ) -> HttpBasicAuthBackend<Usr,PswComp,PermSet> {
         HttpBasicAuthBackend::<Usr,PswComp,PermSet> {
-            psw_backend: PswAuthBackendImpl::new(
-                users_provider,
-                permission_provider,
-            ),
+            psw_backend: PswAuthBackendImpl::new(users_provider, permission_provider),
             auth_mode,
         }
     }
+
+    async fn do_authenticate_impl <
+        RootBackend: AuthnBackend + 'static,
+        S: Send + Sync,
+    > (&self, headers: &http::HeaderMap)
+      -> Result<Option<Usr>, crate::error::AuthBackendError>
+    where Self: 'static {
+        let basic_opt = headers.typed_get::<Authorization<Basic>>(); //"Authorization");
+
+        let auth_res: Result<Option<Usr>, crate::error::AuthBackendError> =
+            if let Some(Authorization(basic)) = basic_opt {
+                use axum_login::AuthnBackend;
+                self.authenticate(PswAuthCredentials {
+                    username: basic.username().to_string(),
+                    password: basic.password().to_string(),
+                    next: None,
+                }).await
+            } else { Ok(None) };
+
+        auth_res
+    }
+
 }
 
 
@@ -91,6 +108,7 @@ impl <
     }
 }
 
+
 // #[cfg(not(feature = "ambassador"))]
 #[axum::async_trait]
 impl <
@@ -115,6 +133,7 @@ impl <
         &self.psw_backend.permission_provider
     }
 }
+
 
 // #[cfg(not(feature = "ambassador"))] // not supported by 'ambassador' now since it is not delegation
 #[axum::async_trait]
@@ -141,6 +160,7 @@ impl <
     fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=Usr> + Send + Sync> {
         self.psw_backend.users_provider()
     }
+
     fn user_provider_ref<'a>(&'a self) -> &'a Arc<dyn AuthUserProvider<User=Self::User> + Sync + Send> {
         &self.psw_backend.users_provider
     }
@@ -150,6 +170,7 @@ impl <
         { Some(ProposeHttpBasicAuthAction) } else { None }
     }
 }
+
 
 #[derive(Debug, Clone)]
 pub struct ProposeHttpBasicAuthAction;
@@ -172,109 +193,27 @@ impl <
     where Usr: axum_login::AuthUser<Id = String>,
 {
     async fn do_authenticate_request <
-        RootBackend: AuthnBackend,
+        RootBackend: AuthnBackend + 'static,
         S: Send + Sync,
     > (&self, _auth_session: axum_login::AuthSession<RootBackend>, req: Request)
-       -> (Request, Result<Option<Self::User>, Self::Error>)
-        where Self: 'static {
-
-        let basic_opt = req.headers().typed_get::<Authorization<Basic>>(); //"Authorization");
-
-        let auth_res: Result<Option<Self::User>, Self::Error> =
-            if let Some(Authorization(basic)) = basic_opt {
-                use axum_login::AuthnBackend;
-                self.authenticate(PswAuthCredentials {
-                    username: basic.username().to_string(),
-                    password: basic.password().to_string(),
-                    next: None,
-                }).await
-            } else { Ok(None) };
-
+    -> (Request, Result<Option<Self::User>, Self::Error>)
+    where Self: 'static
+    {
+        let auth_res = self.do_authenticate_impl::<RootBackend, S>(req.headers()).await;
         (req, auth_res)
     }
+
+    async fn do_authenticate_request_parts <
+        RootBackend: AuthnBackend + 'static,
+        S: Send + Sync,
+    > (&self, _auth_session: axum_login::AuthSession<RootBackend>, req: &http::request::Parts)
+    -> Result<Option<Self::User>, Self::Error>
+    where Self: 'static {
+        self.do_authenticate_impl::<RootBackend, S>(&req.headers).await
+    }
+
 }
 
-
-/*
-// TEMP, investigation
-mod investigation {
-    use core::fmt::Debug;
-    use core::hash::Hash;
-    use std::sync::Arc;
-    use axum::extract::Request;
-    use crate::{
-        backend::{
-            RequestAuthenticated,
-            psw_auth::PswUser,
-            http_basic_auth::HttpBasicAuthBackend,
-        },
-        psw::PasswordComparator,
-        permission::PermissionSet,
-        error::AuthBackendError,
-    };
-
-    #[axum::async_trait]
-    pub trait RequestUserAuthnBackendDyn: Send + Sync {
-        type User: axum_login::AuthUser;
-        async fn is_req_authenticated(&self, req: Request) -> (Request, Result<Option<Self::User>, AuthBackendError>);
-    }
-
-    // TEMP - investigation
-    #[axum::async_trait]
-    impl<
-        Usr: axum_login::AuthUser + PswUser + 'static,
-        PswComp: PasswordComparator + Debug + Clone + Send + Sync + 'static,
-        Perm: Hash + Eq + Debug + Clone + Send + Sync + 'static,
-        PermSet: PermissionSet<Permission=Perm> + Clone + 'static,
-    > RequestUserAuthnBackendDyn for HttpBasicAuthBackend<Usr, PswComp, Perm, PermSet>
-        where Usr: axum_login::AuthUser<Id=String>,
-    {
-        type User = Usr;
-
-        async fn is_req_authenticated(&self, req: Request) -> (Request, Result<Option<Self::User>, AuthBackendError>) {
-            // let res = self.do_authenticate_request::<PswComp>(req).await;
-            let res = self.do_authenticate_request::<()>(req).await;
-            res
-        }
-    }
-
-    // TEMP - investigation
-    impl<
-        Usr: axum_login::AuthUser + PswUser + 'static,
-        PswComp: PasswordComparator + Debug + Clone + Send + Sync + 'static,
-        Perm: Hash + Eq + Debug + Clone + Send + Sync + 'static,
-        PermSet: PermissionSet<Permission=Perm> + Clone + 'static,
-    > TryFrom<HttpBasicAuthBackend<Usr, PswComp, Perm, PermSet>>
-    for Arc<dyn RequestUserAuthnBackendDyn<User=Usr>>
-        where Usr: axum_login::AuthUser<Id=String>,
-    {
-        type Error = AuthBackendError;
-
-        fn try_from(value: HttpBasicAuthBackend<Usr, PswComp, Perm, PermSet>) -> Result<Arc<dyn RequestUserAuthnBackendDyn<User=Usr>>, Self::Error> {
-            let as_dyn: Arc<dyn RequestUserAuthnBackendDyn<User=Usr>> = Arc::new(value);
-            Ok(as_dyn)
-        }
-    }
-
-// // Compilation error: error[E0210]: type parameter `A` must be used as the type parameter for some local type (e.g., `MyStruct<A>`)
-// impl <
-//     A: axum_login::AuthnBackend<User=AuthUser, Credentials=PswAuthCredentials, Error=AuthBackendError>,
-// > TryFrom<A>
-// for Arc<dyn RequestUserAuthnBackendDyn> {
-//     type Error = AuthBackendError;
-//     fn try_from(value: &A) -> Result<Arc<dyn RequestUserAuthnBackendDyn>, Self::Error> {
-//         Err(AuthBackendError::NoRequestedBackend)
-//     }
-// }
-// impl<T> TryFrom <T>
-// for Arc<dyn RequestUserAuthnBackendDyn> {
-//     type Error = AuthBackendError;
-//     fn try_from(value: T) -> Result<Arc<dyn RequestUserAuthnBackendDyn>, Self::Error> {
-//         Err(AuthBackendError::NoRequestedBackend)
-//     }
-// }
-}
-*/
 
 #[cfg(test)]
 mod tests {

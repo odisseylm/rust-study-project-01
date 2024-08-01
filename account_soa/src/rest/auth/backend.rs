@@ -175,6 +175,37 @@ impl RequestAuthenticated for CompositeAuthBackend {
 
         req_and_res
     }
+
+
+    async fn do_authenticate_request_parts <
+        RootBackend: axum_login::AuthnBackend + 'static,
+        S: Send + Sync,
+    > (&self, auth_session: axum_login::AuthSession<RootBackend>, req: &http::request::Parts)
+       -> Result<Option<Self::User>, Self::Error>
+        where Self: 'static,
+        RootBackend: axum_login::AuthnBackend<User = Self::User>,
+    {
+        use mvv_tuple_heter_iter_macro::tuple_for_each_by_ref;
+        let mut res = Ok(None);
+
+        // Faked (really unused) variable to shut up Idea error notification.
+        #[allow(dead_code, unused_variables)]
+        let backend = &self.http_basic_auth_backend;
+
+        tuple_for_each_by_ref! { $backend, self.backends(), 3, {
+            if let Some(ref backend) = backend {
+                res = backend.do_authenticate_request_parts::<RootBackend,()>(
+                    auth_session.clone(), req).await;
+                match res {
+                    Ok(None) => {} // Ok, lets continue finding user or error
+                    _ => return res,
+                }
+            };
+        } }
+
+        res
+    }
+
 }
 
 

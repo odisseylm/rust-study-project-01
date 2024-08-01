@@ -39,9 +39,8 @@ pub trait RequestAuthenticated : axum_login::AuthnBackend + Clone + Send + Sync 
     /// Since we cannot pass Request (because we cannot clone it) and cannot pass &Request due to
     /// future compilation error, we will extract required request data and pass it to authenticate_request.
     //
-    // Workaround with returning moved request.
-    // Probably not good approach... Hz...
-    // async fn call_authenticate_request<S>(&self, req: axum::extract::Request)
+    // Workaround with returning moved request. Probably not good approach... Hz...
+    //
     async fn do_authenticate_request <
         RootBackend: axum_login::AuthnBackend + 'static,
         S: Send + Sync,
@@ -70,6 +69,41 @@ pub trait RequestAuthenticated : axum_login::AuthnBackend + Clone + Send + Sync 
                 (req, Ok(None)),
             Some(auth_session_user) =>
                 (req, Ok(Some(auth_session_user))),
+        }
+    }
+
+    /// Authenticates the request credentials with the backend if it is present in request.
+    /// Since we cannot pass Request (because we cannot clone it) and cannot pass &Request due to
+    /// future compilation error, we will extract required request data and pass it to authenticate_request.
+    ///
+    async fn do_authenticate_request_parts <
+        RootBackend: axum_login::AuthnBackend + 'static,
+        S: Send + Sync,
+    > (&self, auth_session: axum_login::AuthSession<RootBackend>, _req: &http::request::Parts)
+        -> Result<Option<Self::User>, Self::Error>
+        where Self: 'static,
+              RootBackend: axum_login::AuthnBackend<User = Self::User>,
+    {
+        self.internal_do_authenticate_request_parts_by_user_session::<RootBackend,S>(auth_session).await
+    }
+
+    async fn internal_do_authenticate_request_parts_by_user_session <
+        RootBackend: axum_login::AuthnBackend<User=Self::User> + 'static,
+        S: Send + Sync,
+    >
+    (&self, auth_session: axum_login::AuthSession<RootBackend>)
+        -> Result<Option<Self::User>, Self::Error>
+        where Self: 'static {
+
+        // It works Ok.
+        // let auth_session22: Option<axum_login::AuthSession<RootBackend>> = req.extensions()
+        //     .get::<axum_login::AuthSession<RootBackend>>().cloned();
+
+        match auth_session.user {
+            None =>
+                Ok(None),
+            Some(auth_session_user) =>
+                Ok(Some(auth_session_user)),
         }
     }
 }

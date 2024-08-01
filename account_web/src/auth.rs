@@ -42,6 +42,9 @@ pub type AuthBackend = CompositeAuthBackend;
 // pub type AuthnBackend = LoginFormAuthnBackend;
 pub type AuthSession = axum_login::AuthSession<AuthBackend>;
 
+pub type ExtractCurrentUser = mvv_auth::extract::ExtractCurrentUser<ClientAuthUser, AuthBackend>;
+
+
 
 #[extension_trait::extension_trait]
 pub impl <S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for axum::Router<S> {

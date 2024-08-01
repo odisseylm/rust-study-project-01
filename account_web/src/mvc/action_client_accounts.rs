@@ -2,10 +2,9 @@ use std::sync::Arc;
 use axum::{ Router, routing::get as GET };
 use axum::extract::State;
 use axum::response::IntoResponse;
-use http::StatusCode;
 use crate::{
     app_dependencies::Dependencies,
-    auth::{ ClientFeature, RequiredAuthorizationExtension },
+    auth::{ ClientFeature, RequiredAuthorizationExtension, ExtractCurrentUser },
     error::WebAppError,
     rest_dependencies::account_soa_client::{
         types::Account,
@@ -63,34 +62,27 @@ pub fn current_client_accounts_router <
         .with_state(dependencies)
 }
 
-struct RequestContext {
-    current_client: Option<String>,
-}
-
+// pub type UsrExtr<S> = ExtractCurrentUser<crate::auth::AuthBackend, ClientAuthUser, S>;
 
 pub async fn current_client_accounts <
     AccountS: AccountService + Send + Sync + 'static,
 > (
-    /*auth_session: axum_login::AuthSession<AuthBackend>*/
+    // auth_session: axum_login::AuthSession<AuthBackend>,
     State(dependencies): State<Arc<Dependencies<AccountS>>>,
-    // request_context: RequestContext,
+    // If we use auth session `axum_login::AuthSession<AuthBackend>`,
+    // we will not be able to use Basic HTTP Auth.
+    // ExtractCurrentUser { user: client_user, _pd }: ExtractCurrentUser<ClientAuthUser, crate::auth::AuthBackend>,
+    current_user: ExtractCurrentUser,
 ) -> Result<impl IntoResponse, WebAppError> {
 
     let account_service = &dependencies.state.account_service;
-    // TODO: remove hard-coded
     // TODO: proper process wrong formatted ID as 'bla-bla'
-    let client_id = Some("00000000-0000-0000-0000-000000000001".to_string()); // request_context.current_client;
-    match client_id {
-        None =>
-            // TODO: use better
-            Ok(StatusCode::NOT_FOUND.into_response()),
-        Some(ref client) => {
-            let accounts = account_service.get_client_accounts(client).await ?; // TODO: remove unwrap
 
-            Ok(ClientAccountsTemplate {
-                client_id: client.as_str(),
-                accounts: &accounts,
-            }.into_response())
-        }
-    }
+    let client_id = current_user.user.client_id; // auth_session.user.map(|user| user.client_id);
+    let accounts = account_service.get_client_accounts(&client_id).await ?;
+
+    Ok(ClientAccountsTemplate {
+        client_id: client_id.as_str(),
+        accounts: &accounts,
+    }.into_response())
 }

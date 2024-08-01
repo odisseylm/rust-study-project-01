@@ -14,6 +14,7 @@ pub mod permission;
 mod test;
 pub mod route;
 pub mod user_id;
+pub mod extract;
 
 pub use user_id::UserId;
 

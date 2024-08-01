@@ -118,6 +118,7 @@ impl <
     }
 }
 
+
 // #[cfg(not(feature = "ambassador"))]
 #[axum::async_trait]
 impl <
@@ -144,6 +145,7 @@ impl <
         &self.psw_backend.permission_provider
     }
 }
+
 
 // #[cfg(not(feature = "ambassador"))]
 #[axum::async_trait]
@@ -184,6 +186,7 @@ impl <
     fn user_provider(&self) -> Arc<dyn AuthUserProvider<User=Usr> + Sync + Send> {
         self.psw_backend.users_provider()
     }
+
     fn user_provider_ref<'a>(&'a self) -> &'a Arc<dyn AuthUserProvider<User=Self::User> + Sync + Send> {
         &self.psw_backend.users_provider
     }
