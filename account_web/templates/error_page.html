@@ -1,0 +1,23 @@
+<html lang="en">
+<head>
+    <title>Bank - Error {{error.title}}</title>
+</head>
+<body>
+
+    <div><h1>Error {{error.title}}</h1></div>
+    <div>
+        <pre>{{ error.short_description.as_str() }}</pre>
+    </div>
+
+    {% if cfg!(debug_assertions) %}
+    {% if let Some(error_full_description) = error.full_description %}
+    <!-- only in debug mode -->
+    <div><h2>Full details</h2></div>
+    <div>
+        <pre>{{ error_full_description.as_str() }}</pre>
+    </div>
+    {% endif %}
+    {% endif %}
+
+</body>
+</html>

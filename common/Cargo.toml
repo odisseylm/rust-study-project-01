@@ -232,6 +232,9 @@ by_address = "1.2.1"
 #tuple_len = "3.0.0"
 #tuple_length = "0.2.0"
 
+progenitor = { version = "0.7.0", features = [] }
+progenitor-client = { version = "0.7.0", features = [] }
+
 # unused manifest key: tests
 #[test]
 [tests]

@@ -1,6 +1,13 @@
 // use const_format::ascii_str;
-
 use core::fmt::{ self, Debug };
+use log::error;
+//--------------------------------------------------------------------------------------------------
+
+
+pub trait DisplayValueExample : core::fmt::Display {
+    fn display_value_example() -> &'static str;
+}
+
 
 #[derive(Debug, Clone)]
 pub enum StaticRefOrString {
@@ -10,7 +17,7 @@ pub enum StaticRefOrString {
 }
 
 impl StaticRefOrString {
-    fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         match self {
             StaticRefOrString::Ref(ref str) => str,
             StaticRefOrString::String(ref str) => str.as_str(),
@@ -22,8 +29,35 @@ impl fmt::Display for StaticRefOrString {
         fmt::Debug::fmt(self.as_str(), f)
     }
 }
-pub trait DisplayValueExample : core::fmt::Display {
-    fn display_value_example() -> &'static str;
+impl From<String> for StaticRefOrString {
+    fn from(value: String) -> Self {
+        StaticRefOrString::String(value)
+    }
+}
+impl From<&'static str> for StaticRefOrString {
+    fn from(value: &'static str) -> Self {
+        StaticRefOrString::Ref(value)
+    }
+}
+
+
+#[extension_trait::extension_trait]
+pub impl<T> SringOps for T /* where T: Debug */ {
+    #[track_caller]
+    fn to_debug_string(&self) -> String where Self: Debug {
+        let mut str_buf = String::new();
+        use core::fmt::Write;
+        let res = write!(str_buf, "{:?}", self);
+        match res {
+            Ok(_) =>
+                str_buf,
+            Err(_) => {
+                // ??? probably need to log error
+                error!("Error of getting 'debug' string of [{}]", std::any::type_name_of_val(self));
+                "Error of getting 'debug' string".to_owned()
+            }
+        }
+    }
 }
 
 

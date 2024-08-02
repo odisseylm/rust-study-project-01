@@ -1,8 +1,10 @@
-use core::fmt;
-use axum::Json;
-use axum::response::{IntoResponse, Response};
-use http::StatusCode;
+use core::fmt::{ self, Debug };
+// use axum::Json;
+use axum::response::{ IntoResponse, Response };
+// use http::StatusCode;
 use log::error;
+use mvv_auth::UserId;
+use mvv_common::string::{ SringOps, StaticRefOrString };
 //--------------------------------------------------------------------------------------------------
 
 
@@ -25,7 +27,7 @@ pub enum WebAppError {
     // but of course in some cases it is possible to do only later
     // (for example if user sends account ID of another client)
     // #[error("Unauthorized")]
-    Unauthorized,
+    Unauthorized(UserId),
 
     // #[error("HttpResponseResultError")]
     HttpResponseResultError(Response),
@@ -45,18 +47,18 @@ impl fmt::Display for WebAppError {
         match self {
             WebAppError::AnyhowError(ref anyhow_err) =>
                 write!(f, "AnyhowError: {}", anyhow_err),
-            WebAppError::Unauthorized =>
-                write!(f, "NotAuthorized"),
+            WebAppError::Unauthorized(ref user_id) =>
+                write!(f, "NotAuthorized user [{user_id}]"),
             WebAppError::Unauthenticated =>
                 write!(f, "NotAuthenticated"),
             WebAppError::IllegalArgument(ref anyhow_err) =>
                 write!(f, "IllegalArgument: {}", anyhow_err),
-            WebAppError::HttpResponseResultError(ref _r) =>
-                write!(f, "HttpResponseResultError"),
             WebAppError::ValidifyError(ref err) =>
                 write!(f, "ValidationError({err:?})"),
             WebAppError::ValidifyErrors(ref err) =>
                 write!(f, "ValidationErrors({err:?})"),
+            WebAppError::HttpResponseResultError(ref _r) =>
+                write!(f, "HttpResponseResultError"),
         }
     }
 }
@@ -68,50 +70,36 @@ impl IntoResponse for WebAppError {
         match self {
             WebAppError::AnyhowError(ref err) => {
                 error!("Internal error: {err:?}");
-                (StatusCode::INTERNAL_SERVER_ERROR, format!("Internal error: {}", err)).into_response()
+                // (StatusCode::INTERNAL_SERVER_ERROR, format!("Internal error: {}", err)).into_response()
             }
             WebAppError::Unauthenticated => {
                 error!("Unauthenticated error");
-                StatusCode::UNAUTHORIZED.into_response()
+                // StatusCode::UNAUTHORIZED.into_response()
             }
-            WebAppError::Unauthorized => {
-                error!("Unauthorized error");
-                (StatusCode::FORBIDDEN, "Unauthorized").into_response()
+            WebAppError::Unauthorized(ref user_id) => {
+                error!("Unauthorized access error (user: {user_id})");
+                // (StatusCode::FORBIDDEN, "Unauthorized").into_response()
             }
             WebAppError::IllegalArgument(ref err) => {
                 error!("IllegalArgument error: {err:?}");
-                (StatusCode::BAD_REQUEST, format!("Illegal arguments: {}", err)).into_response()
+                // (StatusCode::BAD_REQUEST, format!("Illegal arguments: {}", err)).into_response()
             }
-            WebAppError::ValidifyError(err) => {
+            WebAppError::ValidifyError(ref err) => {
                 error!("ValidifyError error: {err:?}");
-                (StatusCode::BAD_REQUEST, Json(err.to_string())).into_response()
+                // (StatusCode::BAD_REQUEST, Json(err.to_string())).into_response()
             }
-            WebAppError::ValidifyErrors(err) => {
+            WebAppError::ValidifyErrors(ref err) => {
                 error!("ValidifyErrors error: {err:?}");
-                (StatusCode::BAD_REQUEST, Json(err.to_string())).into_response()
+                // (StatusCode::BAD_REQUEST, Json(err.to_string())).into_response()
             }
             WebAppError::HttpResponseResultError(response) => {
                 error!("HttpResponseResultError error: {response:?}");
-                response
+                return response
+                // error_page(self.into_error_details()).into_response()
             },
-        }
-        //
-        //
-        // match self {
-        //     WebAppError::AnyhowError(ref err) =>
-        //         ( StatusCode::INTERNAL_SERVER_ERROR, format!("Internal error: {}", err) ).into_response(),
-        //     WebAppError::Unauthenticated =>
-        //         StatusCode::UNAUTHORIZED.into_response(),
-        //     WebAppError::Unauthorized =>
-        //         ( StatusCode::FORBIDDEN, "Unauthorized" ).into_response(),
-        //     WebAppError::IllegalArgument(ref err) =>
-        //         ( StatusCode::BAD_REQUEST, format!("Illegal arguments: {}", err) ).into_response(),
-        //     WebAppError::ValidifyError(err) =>
-        //         ( StatusCode::BAD_REQUEST, Json(err.to_string()) ).into_response(),
-        //     WebAppError::ValidifyErrors(err) =>
-        //         ( StatusCode::BAD_REQUEST, Json(err.to_string()) ).into_response(),
-        //     WebAppError::HttpResponseResultError(response) => response,
-        // }
+        };
+
+        error_page(self.into_error_details()).into_response()
     }
 }
 
@@ -136,3 +124,110 @@ impl From<validify::ValidationError> for WebAppError {
     }
 }
 */
+
+impl From<WebAppError> for ErrorDetails {
+    fn from(err: WebAppError) -> Self {
+        match err {
+            WebAppError::AnyhowError(ref err) => {
+                ErrorDetails {
+                    title: "Internal error".into(),
+                    short_description: err.to_string().into(),
+                    full_description: Some(StaticRefOrString::String(
+                        err.to_debug_err_string())),
+                }
+            }
+            WebAppError::Unauthenticated => {
+                ErrorDetails {
+                    title: "Unauthenticated access".into(),
+                    short_description: "Unauthenticated access".into(),
+                    full_description: None,
+                }
+            }
+            WebAppError::Unauthorized(ref user_id) => {
+                ErrorDetails {
+                    title: "Unauthorized access".into(),
+                    short_description: "Unauthorized access".into(),
+                    full_description: Some(format!("Unauthorized access for user [{user_id}]").into()),
+                }
+            }
+            WebAppError::IllegalArgument(ref err) => {
+                ErrorDetails {
+                    title: "IllegalArgument".into(),
+                    short_description: err.to_string().into(),
+                    full_description: Some(StaticRefOrString::String(
+                        err.to_debug_err_string())),
+                }
+            }
+            WebAppError::ValidifyError(ref err) => {
+                ErrorDetails {
+                    title: "Validation Error".into(),
+                    short_description: err.to_string().into(),
+                    full_description: Some(StaticRefOrString::String(
+                        err.to_debug_err_string())),
+                }
+            }
+            WebAppError::ValidifyErrors(ref err) => {
+                ErrorDetails {
+                    title: "Validation Error".into(),
+                    short_description: err.to_string().into(),
+                    full_description: Some(StaticRefOrString::String(
+                        err.to_debug_err_string())),
+                }
+            }
+            WebAppError::HttpResponseResultError(_) => {
+                ErrorDetails {
+                    title: "ResponseResultError".into(),
+                    short_description: err.to_string().into(),
+                    full_description: Some(StaticRefOrString::String(
+                        err.to_debug_err_string())),
+                }
+            }
+        }
+    }
+}
+
+
+#[extension_trait::extension_trait]
+pub impl<T> ErrDebugStrExt for T /* where T: Debug */ {
+    #[track_caller]
+    fn to_debug_err_string(&self) -> String where Self: Debug {
+        self.to_debug_string()
+        // add other possible chars filtering if it is needed
+    }
+}
+
+
+pub struct ErrorDetails {
+    pub title: &'static str,
+    pub short_description: StaticRefOrString,
+    pub full_description: Option<StaticRefOrString>,
+}
+
+#[extension_trait::extension_trait]
+pub impl<Err> IntoErrorDetailsExt for Err where Err: Into<WebAppError> {
+    fn into_error_details(self) -> ErrorDetails {
+        let err: WebAppError = self.into();
+        err.into()
+    }
+}
+
+
+#[derive(askama::Template)]
+#[template(path = "error_page.html")]
+struct ErrorPageTemplate<'a> {
+    error: &'a ErrorDetails,
+}
+
+
+// pub fn error_page_router() -> axum::Router<()> {
+//     use axum::{ Router, routing::get as GET };
+//     Router::new().route("/error", GET(error_page))
+// }
+
+
+pub fn error_page(error_details: ErrorDetails) -> impl IntoResponse {
+    ErrorPageTemplate {
+        error: &error_details,
+    }.into_response()
+}
+

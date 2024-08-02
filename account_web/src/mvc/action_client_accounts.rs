@@ -79,6 +79,7 @@ pub async fn current_client_accounts <
     // TODO: proper process wrong formatted ID as 'bla-bla'
 
     let client_id = current_user.user.client_id; // auth_session.user.map(|user| user.client_id);
+    // let client_id = "bla-bla".to_owned(); // T O D O: temp
     let accounts = account_service.get_client_accounts(&client_id).await ?;
 
     Ok(ClientAccountsTemplate {

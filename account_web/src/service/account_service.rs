@@ -1,9 +1,16 @@
 use http::HeaderMap;
-use mvv_common::cfg::load_url_from_env_var;
-use crate::rest_dependencies::account_soa_client::Client as AccountSoaRestClient;
-use crate::rest_dependencies::account_soa_client::types::{
-    Account, // Amount, TransferAmountRequest,
+use mvv_common::{
+    cfg::load_url_from_env_var,
+    progenitor::improve_prog_err,
 };
+use crate::rest_dependencies::account_soa_client::{
+    Client as AccountSoaRestClient,
+    types::{
+        Account, // Amount, TransferAmountRequest,
+    }
+};
+//--------------------------------------------------------------------------------------------------
+
 
 
 #[async_trait::async_trait]
@@ -28,8 +35,10 @@ impl AccountService for AccountServiceImpl {
     //     Ok(r.into_inner())
     // }
 
+    // TODO: use ProgenitorErrWrapper instead of anyhow::Error with stacktrace!!!
     async fn get_client_accounts(&self, client_id: &str) -> anyhow::Result<Vec<Account>> {
-        let r = self.client.get_client_accounts(client_id).await ?;
+        let r = self.client.get_client_accounts(client_id).await
+            .map_err(improve_prog_err) ?;
         Ok(r.into_inner())
     }
 

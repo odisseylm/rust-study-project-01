@@ -2908,6 +2908,8 @@ dependencies = [
  "once_cell",
  "password-auth",
  "place_macro",
+ "progenitor",
+ "progenitor-client",
  "quick_cache",
  "readonly",
  "regex",
