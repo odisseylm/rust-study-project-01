@@ -35,8 +35,10 @@ pub enum CacheOrFetchError <FetchErr>
 }
 
 impl From<CacheError> for AuthUserProviderError {
-    fn from(value: CacheError) -> Self {
-        AuthUserProviderError::CacheError(anyhow::Error::new(value))
+    fn from(err: CacheError) -> Self {
+        match err {
+            CacheError::CacheError(err) => AuthUserProviderError::CacheError(err),
+        }
     }
 }
 

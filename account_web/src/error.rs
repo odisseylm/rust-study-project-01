@@ -38,6 +38,8 @@ pub enum WebAppError {
     // #[error("IllegalArgument({0})")]
     ValidifyError(validify::ValidationError),
     ValidifyErrors(validify::ValidationErrors),
+
+    RestCallError(mvv_common::soa::RestCallError)
     // ...
     // Add other errors if it is needed.
 }
@@ -51,6 +53,8 @@ impl fmt::Display for WebAppError {
                 write!(f, "NotAuthorized user [{user_id}]"),
             WebAppError::Unauthenticated =>
                 write!(f, "NotAuthenticated"),
+            WebAppError::RestCallError(ref err) =>
+                write!(f, "RestCallError: {}", err),
             WebAppError::IllegalArgument(ref anyhow_err) =>
                 write!(f, "IllegalArgument: {}", anyhow_err),
             WebAppError::ValidifyError(ref err) =>
@@ -80,6 +84,10 @@ impl IntoResponse for WebAppError {
                 error!("Unauthorized access error (user: {user_id})");
                 // (StatusCode::FORBIDDEN, "Unauthorized").into_response()
             }
+            WebAppError::RestCallError(ref err) => {
+                error!("RestCallError: {err:?}");
+                // (StatusCode::FORBIDDEN, "Unauthorized").into_response()
+            }
             WebAppError::IllegalArgument(ref err) => {
                 error!("IllegalArgument error: {err:?}");
                 // (StatusCode::BAD_REQUEST, format!("Illegal arguments: {}", err)).into_response()
@@ -104,6 +112,7 @@ impl IntoResponse for WebAppError {
 }
 
 
+/*
 // This enables using `?` on functions that return `Result<_, anyhow::Error>` to turn them into
 // `Result<_, AppError>`. That way you don't need to do that manually.
 impl<E> From<E> for WebAppError where E: Into<anyhow::Error> {
@@ -111,22 +120,27 @@ impl<E> From<E> for WebAppError where E: Into<anyhow::Error> {
         WebAppError::AnyhowError(err.into())
     }
 }
+*/
 
-/*
 impl From<validify::ValidationErrors> for WebAppError {
     fn from(err: validify::ValidationErrors) -> Self {
-        WebAppError::ValidifyErrors(err.into())
+        WebAppError::ValidifyErrors(err)
     }
 }
 impl From<validify::ValidationError> for WebAppError {
     fn from(err: validify::ValidationError) -> Self {
-        WebAppError::ValidifyError(err.into())
+        WebAppError::ValidifyError(err)
     }
 }
-*/
+impl From<mvv_common::soa::RestCallError> for WebAppError {
+    fn from(err: mvv_common::soa::RestCallError) -> Self {
+        WebAppError::RestCallError(err.into())
+    }
+}
 
 impl From<WebAppError> for ErrorDetails {
     fn from(err: WebAppError) -> Self {
+        // TODO: simplify
         match err {
             WebAppError::AnyhowError(ref err) => {
                 ErrorDetails {
@@ -148,6 +162,14 @@ impl From<WebAppError> for ErrorDetails {
                     title: "Unauthorized access".into(),
                     short_description: "Unauthorized access".into(),
                     full_description: Some(format!("Unauthorized access for user [{user_id}]").into()),
+                }
+            }
+            WebAppError::RestCallError(ref err) => {
+                ErrorDetails {
+                    title: "RestCallError".into(),
+                    short_description: err.to_string().into(),
+                    full_description: Some(StaticRefOrString::String(
+                        err.to_debug_err_string())),
                 }
             }
             WebAppError::IllegalArgument(ref err) => {
@@ -230,4 +252,3 @@ pub fn error_page(error_details: ErrorDetails) -> impl IntoResponse {
         error: &error_details,
     }.into_response()
 }
-

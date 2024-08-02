@@ -1,7 +1,7 @@
 use http::HeaderMap;
 use mvv_common::{
     cfg::load_url_from_env_var,
-    progenitor::improve_prog_err,
+    soa::RestCallError,
 };
 use crate::rest_dependencies::account_soa_client::{
     Client as AccountSoaRestClient,
@@ -16,7 +16,7 @@ use crate::rest_dependencies::account_soa_client::{
 #[async_trait::async_trait]
 pub trait AccountService {
     // async fn get_client_accounts<'a>(&'a self, client_id: String) -> anyhow::Result<Vec<Account>>;
-    async fn get_client_accounts(&self, client_id: &str) -> anyhow::Result<Vec<Account>>;
+    async fn get_client_accounts(&self, client_id: &str) -> Result<Vec<Account>, RestCallError>;
     // async fn get_client_account(&self, client_id: &str, account_id: &str) -> anyhow::Result<Account>;
     // async fn transfer_amount(&self, client_id: &str, from_account_id: String, to_account_id: String, amount: Amount)
     //     -> anyhow::Result<()>;
@@ -36,9 +36,9 @@ impl AccountService for AccountServiceImpl {
     // }
 
     // TODO: use ProgenitorErrWrapper instead of anyhow::Error with stacktrace!!!
-    async fn get_client_accounts(&self, client_id: &str) -> anyhow::Result<Vec<Account>> {
-        let r = self.client.get_client_accounts(client_id).await
-            .map_err(improve_prog_err) ?;
+    async fn get_client_accounts(&self, client_id: &str) -> Result<Vec<Account>, RestCallError> {
+        let r = self.client.get_client_accounts(client_id).await ?;
+            // .map_err(improve_prog_err) ?;
         Ok(r.into_inner())
     }
 

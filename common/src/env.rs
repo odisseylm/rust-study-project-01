@@ -1,5 +1,6 @@
 use core::fmt;
 use std::path::PathBuf;
+use crate::backtrace2::BacktraceCell;
 use crate::string::StaticRefOrString;
 //--------------------------------------------------------------------------------------------------
 
@@ -14,10 +15,8 @@ pub fn env_var_or_else <F: Fn()->String> (env_var_name: &'static str, or_string:
         Err(err) => {
             match err {
                 VarError::NotPresent => Ok(or_string()),
-                VarError::NotUnicode(ref _err) => Err(EnvVarError {
-                    var_name: StaticRefOrString::Ref(env_var_name),
-                    source: err,
-                }),
+                VarError::NotUnicode(ref _err) =>
+                    Err(EnvVarError::new(env_var_name.into(), err)),
             }
         }
     }
@@ -33,10 +32,8 @@ pub fn env_var (env_var_name: &'static str) -> Result<Option<String>, EnvVarErro
         Err(err) => {
             match err {
                 VarError::NotPresent => Ok(None),
-                VarError::NotUnicode(ref _err) => Err(EnvVarError {
-                    var_name: StaticRefOrString::Ref(env_var_name),
-                    source: err,
-                }),
+                VarError::NotUnicode(ref _err) =>
+                    Err(EnvVarError::new(env_var_name.into(), err)),
             }
         }
     }
@@ -52,10 +49,8 @@ pub fn env_var_2 (env_var_name: &str) -> Result<Option<String>, EnvVarError> {
         Err(err) => {
             match err {
                 VarError::NotPresent => Ok(None),
-                VarError::NotUnicode(ref _err) => Err(EnvVarError {
-                    var_name: StaticRefOrString::String(env_var_name.to_owned()),
-                    source: err,
-                }),
+                VarError::NotUnicode(ref _err) =>
+                    Err(EnvVarError::new(env_var_name.to_owned().into(), err)),
             }
         }
     }
@@ -64,16 +59,22 @@ pub fn env_var_2 (env_var_name: &str) -> Result<Option<String>, EnvVarError> {
 
 pub fn required_env_var (env_var_name: &'static str) -> Result<String, EnvVarError> {
     env_var(env_var_name) ?
-        .ok_or_else(|| EnvVarError {
-            var_name: StaticRefOrString::Ref(env_var_name),
-            source: std::env::VarError::NotPresent,
-        })
+        .ok_or_else(|| EnvVarError::new(env_var_name.into(), std::env::VarError::NotPresent))
 }
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub struct EnvVarError {
     pub var_name: StaticRefOrString, // &'static str,
     pub source: std::env::VarError,
+    pub backtrace: BacktraceCell,
+}
+impl EnvVarError {
+    pub fn new(var_name: StaticRefOrString, source: std::env::VarError) -> Self {
+        Self {
+            var_name, source,
+            backtrace: BacktraceCell::capture_backtrace(),
+        }
+    }
 }
 
 impl fmt::Display for EnvVarError {
@@ -93,10 +94,7 @@ pub impl EnvVarOps for Option<String> {
     #[track_caller]
     fn val_or_not_found_err(self, var_name: &'static str) -> Result<String, EnvVarError> {
         match self {
-            None => Err(EnvVarError {
-                var_name: StaticRefOrString::Ref(var_name),
-                source: std::env::VarError::NotPresent,
-            }),
+            None => Err(EnvVarError::new(var_name.into(), std::env::VarError::NotPresent)),
             Some(var_value) => Ok(var_value)
         }
     }
@@ -120,4 +118,24 @@ pub fn process_env_load_res(env_filename: &str, dotenv_res: Result<PathBuf, dote
         }
     }
     Ok(())
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::env::EnvVarError;
+
+    #[test]
+    fn test_print() {
+        let err = EnvVarError::new(
+            "var_name_1".into(), std::env::VarError::NotPresent);
+
+        println!("\n------------------------------------------\n");
+        println!("err as display: {err}");
+
+        println!("\n------------------------------------------\n");
+        println!("err as debug: {err:?}");
+
+        assert!(false, "To see output");
+    }
 }

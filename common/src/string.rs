@@ -4,6 +4,11 @@ use log::error;
 //--------------------------------------------------------------------------------------------------
 
 
+pub enum FormatMode {
+    Display,
+    Debug,
+}
+
 pub trait DisplayValueExample : core::fmt::Display {
     fn display_value_example() -> &'static str;
 }
