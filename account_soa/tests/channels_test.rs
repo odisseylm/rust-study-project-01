@@ -1,5 +1,5 @@
 use std::sync::mpsc::RecvError;
-use mvv_common::test::{ TestSringOps, TestResultUnwrap };
+use mvv_common::test::{ TestDisplayStringOps, TestResultUnwrap };
 
 #[derive(Debug)]
 #[allow(dead_code)]

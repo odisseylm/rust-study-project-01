@@ -42,8 +42,34 @@ impl From<sqlx::Error> for AuthUserProviderError {
     }
 }
 
+impl From<CacheError> for AuthUserProviderError {
+    fn from(err: CacheError) -> Self {
+        match err {
+            CacheError::CacheError(err) =>
+                AuthUserProviderError::CacheError(err),
+            err =>
+                AuthUserProviderError::CacheError(anyhow::anyhow!(err))
+        }
+    }
+}
+
+impl From<CacheOrFetchError<AuthUserProviderError>> for AuthUserProviderError {
+    fn from(value: CacheOrFetchError<AuthUserProviderError>) -> Self {
+        match value {
+            CacheOrFetchError::CacheError(err) =>
+                AuthUserProviderError::CacheError(anyhow::Error::new(err)),
+            CacheOrFetchError::FetchError(err) =>
+                err,
+            err =>
+                AuthUserProviderError::CacheError(anyhow::Error::new(err)),
+        }
+    }
+}
+
+
 
 pub mod mem_user_provider;
 
 pub use mem_user_provider::InMemAuthUserProvider;
+use mvv_common::cache::{CacheError, CacheOrFetchError};
 use crate::UserId;

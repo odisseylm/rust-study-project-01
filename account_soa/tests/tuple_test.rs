@@ -1,4 +1,4 @@
-use mvv_common::test::TestSringOps;
+use mvv_common::test::{ TestDisplayStringOps };
 
 #[test]
 fn test_123() {

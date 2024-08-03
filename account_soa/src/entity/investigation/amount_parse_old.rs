@@ -2,7 +2,7 @@ use core::str::FromStr;
 use bigdecimal::BigDecimal;
 use mvv_common::entity::amount::Amount;
 use mvv_common::entity::currency::Currency;
-use mvv_common::backtrace::BacktraceInfo;
+use mvv_common::backtrace2::BacktraceCell;
 
 
 #[allow(dead_code)] // it is used by private test
@@ -65,7 +65,7 @@ fn parse_amount_02(s: &str) -> Result<Amount, parse_amount_old::ParseAmountError
 
     let amount = BigDecimal::from_str(str_amount.trim_end())
         .map_err(|er| ParseAmountError { kind: ErrorKind::IncorrectAmount,
-            source: ParseBigDecimalError(er), backtrace: BacktraceInfo::new() }) ?;
+            source: ParseBigDecimalError(er), backtrace: BacktraceCell::capture_backtrace() }) ?;
 
     Ok(Amount::new(amount, currency))
 }
@@ -130,7 +130,7 @@ fn aa_01() {
 //
 pub mod parse_amount_old {
     use bigdecimal::ParseBigDecimalError;
-    use mvv_common::backtrace::BacktraceInfo;
+    use mvv_common::backtrace2::BacktraceCell;
     use mvv_common::entity::currency::parse::CurrencyFormatError;
 
     //noinspection DuplicatedCode
@@ -155,7 +155,7 @@ pub mod parse_amount_old {
         #[source]
         // #[from]
         pub source: ErrorSource,
-        pub backtrace: BacktraceInfo,
+        pub backtrace: BacktraceCell,
     }
 
     //noinspection DuplicatedCode
@@ -201,9 +201,11 @@ pub mod parse_amount_old {
         #[no_source_backtrace]
         Some2FromInt(i32),
 
+        #[no_source_backtrace] // TODO: impl and remove this 'no_source_backtrace'
         // #[error("SomeAnyHowError")]
         SomeAnyHowError(anyhow::Error),
 
+        #[no_source_backtrace] // TODO: impl and remove this 'no_source_backtrace'
         // #[error("SomeStdError")]
         StdError(Box<dyn std::error::Error>),
     }

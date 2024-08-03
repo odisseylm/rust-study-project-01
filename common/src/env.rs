@@ -123,19 +123,32 @@ pub fn process_env_load_res(env_filename: &str, dotenv_res: Result<PathBuf, dote
 
 #[cfg(test)]
 mod tests {
+    use assertables::{
+        assert_contains, assert_contains_as_result,
+        assert_not_contains, assert_not_contains_as_result,
+    };
     use crate::env::EnvVarError;
+    use crate::test::{ TestDisplayStringOps, TestDebugStringOps };
 
     #[test]
     fn test_print() {
         let err = EnvVarError::new(
             "var_name_1".into(), std::env::VarError::NotPresent);
 
-        println!("\n------------------------------------------\n");
-        println!("err as display: {err}");
+        // println!("\n------------------------------------------\n");
+        // println!("err as display: {err}");
+        let display_str = err.to_test_display_string();
+        assert_contains!(display_str, r#"Env var ["var_name_1"] is not found."#);
+        assert_not_contains!(display_str, "mvv_common::env::EnvVarError::new");
+        assert_not_contains!(display_str, "env.rs:");
 
-        println!("\n------------------------------------------\n");
-        println!("err as debug: {err:?}");
+        // println!("\n------------------------------------------\n");
+        // println!("err as debug: {err:?}");
+        let debug_str = err.to_test_debug_string();
+        assert_contains!(debug_str, r#"EnvVarError { var_name: Ref("var_name_1"), source: NotPresent, backtrace:"#);
+        assert_contains!(debug_str, "mvv_common::env::EnvVarError::new");
+        assert_contains!(debug_str, "env.rs:");
 
-        assert!(false, "To see output");
+        // assert!(false, "To see output");
     }
 }

@@ -78,7 +78,7 @@ impl<'a> Into<Cow<'a, str>> for String {
 
 
 use std::borrow::Cow;
-use mvv_common::test::TestSringOps;
+use mvv_common::test::{ TestDisplayStringOps };
 
 #[test]
 fn cow_test() {

@@ -1,7 +1,7 @@
 // #![feature(error_generic_member_access)]
 
 use derivative::Derivative;
-use mvv_common::backtrace::BacktraceInfo;
+use mvv_common::backtrace2::BacktraceCell;
 
 #[derive(Debug)]
 struct ParamsStruct {
@@ -163,7 +163,7 @@ pub enum MyError {
         #[source]
         source: std::io::Error,
         // backtrace: std::backtrace::Backtrace,
-        backtrace: BacktraceInfo,
+        backtrace: BacktraceCell,
     },
 }
 

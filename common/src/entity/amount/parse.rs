@@ -35,7 +35,7 @@ pub fn parse_amount(s: &str) -> Result<Amount, AmountFormatError> {
 //pub mod parse_amount {
 
 use bigdecimal::ParseBigDecimalError;
-use crate::backtrace::BacktraceInfo;
+use crate::backtrace2::BacktraceCell;
 use crate::entity::currency::parse::CurrencyFormatError;
 
 
@@ -67,7 +67,7 @@ pub struct AmountFormatError {
     #[source]
     // #[from]
     pub source: ErrorSource,
-    pub backtrace: BacktraceInfo,
+    pub backtrace: BacktraceCell,
 }
 
 

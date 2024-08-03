@@ -3,7 +3,7 @@
 
 use chrono::prelude::*;
 use type_rules::prelude::*;
-use mvv_common::test::{ TestSringOps, TestResultUnwrap };
+use mvv_common::test::{ TestDisplayStringOps, TestResultUnwrap };
 
 #[derive(Validator)]
 struct NewUser {

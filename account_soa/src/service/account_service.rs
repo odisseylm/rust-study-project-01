@@ -9,6 +9,7 @@ use mvv_common::{
         amount::Amount, bd::{BigDecimalWrapper }, amount::ops::AmountOpsError, AmountParts,
     },
 };
+use mvv_common::backtrace2::BacktraceCell;
 use crate::entity::{
     account::{ self },
     IbanWrapper, IbanRefWrapper, prelude::{ Account, AccountId },
@@ -30,17 +31,37 @@ pub enum AccountProcessError {
     AccountNotFound(AccountIdWrapper),
     #[error("NotEnoughBalance")]
     NotEnoughBalance(AccountIdWrapper),
-    #[error("AmountOpsError")]
-    AmountOpsError(#[from] AmountOpsError),
+    #[error("AmountOpsError {{ {error} }}")]
+    AmountOpsError { /*#[from]*/ error: AmountOpsError, backtrace: BacktraceCell },
     #[error("Internal")]
     Internal(anyhow::Error),
     #[error(transparent)]
     Sqlx(sqlx::Error),
+
+    /*
+    #[error("AccountNotFound ( {account_id:?} )")]
+    AccountNotFound { account_id: AccountIdWrapper, backtrace: BacktraceCell },
+    #[error("NotEnoughBalance ( {account_id:?} )")]
+    NotEnoughBalance { account_id: AccountIdWrapper, backtrace: BacktraceCell },
+    #[error("AmountOpsError")]
+    AmountOpsError { /*#[from]*/ error: AmountOpsError, backtrace: BacktraceCell },
+    #[error("Internal { source: {0} }")]
+    Internal(anyhow::Error),
+    #[error(transparent)]
+    Sqlx { error: sqlx::Error, backtrace: BacktraceCell },
+    */
 }
 
 impl From<sqlx::Error> for AccountProcessError {
     fn from(value: sqlx::Error) -> Self {
         AccountProcessError::Sqlx(value)
+    }
+}
+impl From<AmountOpsError> for AccountProcessError {
+    fn from(error: AmountOpsError) -> Self {
+        // AccountProcessError::AmountOpsError { error, backtrace: error.backtrace. }
+        // TODO: inherit backtrace
+        AccountProcessError::AmountOpsError { error, backtrace: BacktraceCell::capture_backtrace() }
     }
 }
 

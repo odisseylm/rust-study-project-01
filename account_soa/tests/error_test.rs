@@ -9,7 +9,8 @@ use assertables::{ assert_ge, assert_ge_as_result };
 use assertables::{ assert_starts_with, assert_starts_with_as_result };
 use assertables::{ assert_contains, assert_contains_as_result };
 
-use mvv_common::backtrace::{ BacktraceInfo, enable_backtrace };
+use mvv_common::backtrace::{ enable_backtrace };
+// use mvv_common::backtrace2::{ BacktraceCell };
 use mvv_common::test::{ TestOptionUnwrap, TestResultUnwrap };
 
 use crate::errors::{fn_as_box_error_with_question_op_05, MyError333, MyError334};
@@ -23,7 +24,7 @@ use errors::{ fn_wrap_by_anyhow_error_using_map_err_and_anyhow_macro_05 };
 use errors::{ fn_wrap_by_my_error_using_my_fn_to_anyhow_error_fn_05 };
 use errors::Entity1;
 use mvv_common::backtrace::is_anyhow_backtrace_enabled;
-use mvv_common::test::TestSringOps;
+use mvv_common::test::{ TestDisplayStringOps };
 
 
 // #[derive(Deserialize)]
@@ -33,12 +34,13 @@ use mvv_common::test::TestSringOps;
 // }
 
 
-#[test]
-fn test_print_current_stack_trace() {
-    mvv_common::backtrace::enable_backtrace();
-    mvv_common::backtrace::print_current_stack_trace();
-}
+// #[test]
+// fn test_print_current_stack_trace() {
+//     mvv_common::backtrace::enable_backtrace();
+//     mvv_common::backtrace::print_current_stack_trace();
+// }
 
+/* TODO: impl
 #[test]
 fn test_str_backtrace() {
 
@@ -57,6 +59,7 @@ fn test_str_backtrace() {
     println!("\n--------------------------------------------------\n");
     println!("str backtrace: {:?}", bt);
 }
+*/
 
 
 #[test]

@@ -1,6 +1,6 @@
 use bigdecimal::{BigDecimal, Zero};
 use crate::entity::amount::{ Amount, amount };
-use crate::backtrace::BacktraceInfo;
+use crate::backtrace2::BacktraceCell;
 use crate::entity::currency::Currency;
 //--------------------------------------------------------------------------------------------------
 
@@ -126,7 +126,7 @@ pub enum ErrorKind {
 #[derive(mvv_static_error_macro::MyStaticStructError)]
 pub struct AmountOpsError {
     pub kind: ErrorKind,
-    pub backtrace: BacktraceInfo,
+    pub backtrace: BacktraceCell,
     // #[source]
     pub source: ErrorSource,
 }

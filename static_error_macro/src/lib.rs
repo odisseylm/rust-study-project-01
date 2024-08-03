@@ -28,7 +28,7 @@ fn bt_root_path_segment(path_mode: InternalTypePathMode) -> proc_macro2::TokenSt
 fn bt_type(path_mode: InternalTypePathMode, type_name: &str) -> proc_macro2::TokenStream {
     let root = bt_root_path_segment(path_mode);
     let type_name_ident: syn::Ident = syn::parse_str(type_name).expect(&format!("Error of converting [{}] to Ident.", type_name));
-    quote! { #root ::backtrace:: #type_name_ident }
+    quote! { #root ::backtrace2:: #type_name_ident }
 }
 
 /*
@@ -54,7 +54,7 @@ fn use_bt_types_expr(path_mode: InternalTypePathMode) -> Vec<proc_macro2::TokenS
 */
 fn use_bt_types_expr(path_mode: InternalTypePathMode) -> proc_macro2::TokenStream {
     let root = bt_root_path_segment(path_mode);
-    quote! { use #root ::backtrace::{ BacktraceInfo, NewBacktracePolicy, InheritBacktracePolicy, BacktraceCopyProvider, BacktraceBorrowedProvider } ; }
+    quote! { use #root ::backtrace2::{ BacktraceCell, BacktraceSource } ; }
 }
 
 
@@ -77,26 +77,9 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
     let use_bt_types = use_bt_types_expr(int_type_path_mode);
     #[allow(non_snake_case)]
-    let BacktraceInfo = bt_type(int_type_path_mode, "BacktraceInfo");
+    let BacktraceCell = bt_type(int_type_path_mode, "BacktraceCell");
     #[allow(non_snake_case)]
-    let NewBacktracePolicy = bt_type(int_type_path_mode, "NewBacktracePolicy");
-    #[allow(non_snake_case)]
-    let BacktraceCopyProvider = bt_type(int_type_path_mode, "BacktraceCopyProvider");
-
-
-    /*
-    let source_field_exists: bool = if let syn::Data::Struct(ref data) = ast.data {
-        if let syn::Fields::Named(ref fields) = data.fields {
-            fields.named.iter().any(|f|
-                f.ident
-                .as_ref()
-                .map(|ident_name| ident_name == "source")
-                .unwrap_or(false)
-            )
-        }
-        else { false }
-    } else { false };
-    */
+    let BacktraceSource = bt_type(int_type_path_mode, "BacktraceSource");
 
     let source_field_exists: bool = if_chain! {
         if let syn::Data::Struct(ref data) = ast.data;
@@ -121,10 +104,11 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
                 // Really is not needed there, but let's keep it just to test usage of generated 'use'.
                 #use_bt_types
 
-                Self { kind, backtrace: #BacktraceInfo ::new() }
+                Self { kind, backtrace: #BacktraceCell ::capture_backtrace() }
             }
-            pub fn with_backtrace(kind: ErrorKind, backtrace_policy: #NewBacktracePolicy) -> Self {
-                Self { kind, backtrace: #BacktraceInfo ::new_by_policy(backtrace_policy) }
+            // TODO: remove, since we do not have BacktracePolicy
+            pub fn with_backtrace(kind: ErrorKind) -> Self {
+                Self { kind, backtrace: #BacktraceCell ::capture_backtrace() }
             }
         }
 
@@ -139,17 +123,18 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
                 // Really is not needed there, but let's keep it just to test usage of generated 'use'.
                 #use_bt_types
 
-                Self { kind, backtrace: #BacktraceInfo ::new(), source: ErrorSource::NoSource }
+                Self { kind, backtrace: #BacktraceCell ::capture_backtrace(), source: ErrorSource::NoSource }
             }
-            pub fn with_backtrace(kind: ErrorKind, backtrace_policy: #NewBacktracePolicy) -> Self {
-                Self { kind, backtrace: #BacktraceInfo ::new_by_policy(backtrace_policy), source: ErrorSource::NoSource }
+            // TODO: remove it. It is not needed anymore.
+            pub fn with_backtrace(kind: ErrorKind) -> Self {
+                Self { kind, backtrace: #BacktraceCell ::capture_backtrace(), source: ErrorSource::NoSource }
             }
             pub fn with_source(kind: ErrorKind, source: ErrorSource) -> Self {
-                Self { kind, backtrace: #BacktraceInfo ::inherit_from(&source), source }
+                Self { kind, backtrace: #BacktraceCell ::inherit_or_capture(&source), source }
             }
             pub fn with_from<ES: Into<ErrorSource>>(kind: ErrorKind, source: ES) -> Self {
                 let src = source.into();
-                Self { kind, backtrace: #BacktraceInfo ::inherit_from(&src), source: src }
+                Self { kind, backtrace: #BacktraceCell ::inherit_or_capture(&src), source: src }
             }
         }
 
@@ -159,9 +144,10 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
-        impl #BacktraceCopyProvider for #error_type_name {
-            #[warn(unused_must_use)]
-            fn provide_backtrace(&self) -> #BacktraceInfo { self.backtrace.clone() }
+        impl #BacktraceSource for #error_type_name {
+            fn contains_backtrace(&self) -> bool { !self.backtrace.is_empty() }
+            fn backtrace_ref(&self) -> Option<& #BacktraceCell> { Some(&self.backtrace) }
+            fn take_backtrace(&self) -> #BacktraceCell { self.backtrace.move_out() }
         }
     };
 
@@ -265,9 +251,9 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
 
     // let use_bt_types = use_bt_types_expr(internal_type_path_mode);
     #[allow(non_snake_case)]
-    let BacktraceInfo = bt_type(int_type_path_mode, "BacktraceInfo");
+    let BacktraceCell = bt_type(int_type_path_mode, "BacktraceCell");
     #[allow(non_snake_case)]
-    let BacktraceCopyProvider = bt_type(int_type_path_mode, "BacktraceCopyProvider");
+    let BacktraceSource = bt_type(int_type_path_mode, "BacktraceSource");
 
     let struct_error_type_attr: Option<&syn::Attribute> = find_attr(&ast.attrs, "struct_error_type");
     let struct_error_type: Option<String> = struct_error_type_attr
@@ -289,20 +275,51 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         .map(|src_type_and_vars| src_type_and_vars.0.to_string())
         .collect();
 
-    let err_src_bt_provider_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
+    let types_without_any_bt: Vec<&str> = vec!("char",
+                                               "i8", "i16", "i32", "i64", "i128",
+                                               "u8", "u16", "u32", "u64", "u128",
+                                               "usize", "isize",
+                                               "f32", "f64",
+                                               "String", "&str", "& 'static str",
+    );
+
+    let err_src_bt_ref_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let var_name = vr.name;
         let no_source_backtrace = find_enum_variant_attr(vr.variant, "no_source_backtrace").is_some();
         let is_arg_present = vr.first_arg_type.is_some();
 
+        let is_arg_without_bt: bool = vr.first_arg_type
+            .map(|arg_type| types_without_any_bt.contains(&type_to_string_without_spaces(arg_type).as_str()))
+            .unwrap_or(false);
+
         if !is_arg_present {
-            quote!(  ErrorSource:: #var_name  => { #BacktraceInfo ::empty() }     )
-        } else if no_source_backtrace {
-            quote!(  ErrorSource:: #var_name (_)  => { #BacktraceInfo ::empty() }     )
+            quote!(  ErrorSource:: #var_name  => { None }     )
+        } else if no_source_backtrace || is_arg_without_bt {
+            quote!(  ErrorSource:: #var_name (_)  => { None }     )
         } else {
-            quote!(  ErrorSource:: #var_name (ref src)  => { src.provide_backtrace() }  )
+            quote!(  ErrorSource:: #var_name (ref src)  => { src.backtrace_ref() }  )
         }
     }).collect::<Vec<_>>();
 
+    let err_src_contains_bt_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
+        let var_name = vr.name;
+        let no_source_backtrace = find_enum_variant_attr(vr.variant, "no_source_backtrace").is_some();
+        let is_arg_present = vr.first_arg_type.is_some();
+
+        let is_arg_without_bt: bool = vr.first_arg_type
+            .map(|arg_type| types_without_any_bt.contains(&type_to_string_without_spaces(arg_type).as_str()))
+            .unwrap_or(false);
+
+        if !is_arg_present {
+            quote!(  ErrorSource:: #var_name  => { false }  )
+        } else if no_source_backtrace || is_arg_without_bt {
+            quote!(  ErrorSource:: #var_name (_)  => { false }  )
+        } else {
+            quote!(  ErrorSource:: #var_name (ref src)  => { src.contains_backtrace() }  )
+        }
+    }).collect::<Vec<_>>();
+
+    /*
     let err_src_bt_provider_impl_match_branches2: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let var_name = vr.name;
         let no_source_backtrace = find_enum_variant_attr(vr.variant, "no_source_backtrace").is_some();
@@ -316,6 +333,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             quote!(  ErrorSource:: #var_name (ref src)  => { src.contains_self_or_child_captured_backtrace() }  )
         }
     }).collect::<Vec<_>>();
+    */
 
 
     let types_to_wrap_with_enum_vr_name: Vec<&str> = vec!("char",
@@ -347,18 +365,28 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
 
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
-        impl #BacktraceCopyProvider for ErrorSource {
-            fn provide_backtrace(&self) -> #BacktraceInfo {
-                use #BacktraceInfo;
+        impl #BacktraceSource for ErrorSource {
+            fn backtrace_ref(&self) -> Option<& #BacktraceCell> {
+                use #BacktraceCell;
                 match self {
-                    #(#err_src_bt_provider_impl_match_branches)*
+                    #(#err_src_bt_ref_impl_match_branches)*
                     // ErrorSource::NoSource => { BacktraceInfo::empty() }
                     // ErrorSource::ParseBigDecimalError(_)  => { BacktraceInfo::empty()  }
                     // ErrorSource::CurrencyFormatError(ref src) => { src.provide_backtrace() }
                 }
             }
+            fn contains_backtrace(&self) -> bool {
+                use #BacktraceCell;
+                match self {
+                    #(#err_src_contains_bt_impl_match_branches)*
+                    // ErrorSource::NoSource => false,
+                    // ErrorSource::ParseBigDecimalError(_) => false,
+                    // ErrorSource::CurrencyFormatError(ref src) => { src.contains_backtrace() }
+                }
+            }
+            /*
             fn contains_self_or_child_captured_backtrace(&self) -> bool {
-                use #BacktraceInfo ;
+                use #BacktraceCell ;
                 match self {
                     #(#err_src_bt_provider_impl_match_branches2)*
                     // ErrorSource::NoSource => { false }
@@ -366,6 +394,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
                     // ErrorSource::CurrencyFormatError(ref src) => { src.contains_self_or_child_captured_backtrace() }
                 }
             }
+            */
         }
     };
 

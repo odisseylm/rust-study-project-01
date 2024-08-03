@@ -1,6 +1,6 @@
 // #![feature(offset_of_enum, offset_of_nested)]
 
-use mvv_common::test::TestSringOps;
+use mvv_common::test::{ TestDisplayStringOps };
 
 // C like enum
 // #[repr(u8)]

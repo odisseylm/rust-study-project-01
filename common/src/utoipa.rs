@@ -339,7 +339,7 @@ pub fn generate_open_api(open_api: &OpenApi, module_name: &str, update_api_file:
 //--------------------------------------------------------------------------------------------------
 #[cfg(test)]
 mod tests {
-    use crate::test::TestSringOps;
+    use crate::test::TestDisplayStringOps;
     use super::axum_path_from_open_api;
 
     #[test]

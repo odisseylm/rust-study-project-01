@@ -5,7 +5,7 @@ use bigdecimal::BigDecimal;
 use mvv_common::entity::amount::{ Amount, amount, parse::AmountFormatError, parse };
 use mvv_common::entity::currency::{ predefined::{ EUR, USD }, make_currency };
 use mvv_common::make_currency;
-use mvv_common::test::{ TestOptionUnwrap, TestResultUnwrap, TestSringOps };
+use mvv_common::test::{ TestOptionUnwrap, TestResultUnwrap, TestDisplayStringOps };
 
 use assertables::{ assert_contains, assert_contains_as_result };
 use assertables::{ assert_starts_with, assert_starts_with_as_result };
@@ -398,14 +398,14 @@ fn test_my_stacktrace() {
     println!("\n----------------------------------------------\n");
     println!("my stacktrace as Debug");
     println!("my stacktrace backtrace_status: {:?}", backtrace.backtrace_status());
-    println!("my stacktrace backtrace: {}", backtrace.backtrace());
-    println!("my stacktrace backtrace: {}", backtrace.std_backtrace().test_unwrap());
+    println!("my stacktrace backtrace: {}", backtrace);
+    // println!("my stacktrace backtrace: {}", backtrace.std_backtrace().test_unwrap());
 
     println!("\n----------------------------------------------\n");
     println!("my stacktrace as Display");
     println!("my stacktrace backtrace_status: {:?}", backtrace.backtrace_status());
-    println!("my stacktrace backtrace: {:?}", backtrace.backtrace());
-    println!("my stacktrace backtrace: {:?}", backtrace.std_backtrace().test_unwrap());
+    println!("my stacktrace backtrace: {:?}", backtrace);
+    // println!("my stacktrace backtrace: {:?}", backtrace.std_backtrace().test_unwrap());
 }
 
 

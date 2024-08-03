@@ -27,6 +27,7 @@ Investigate
      - https://hub.docker.com/_/rust
 
  - `cargo expand entities::amount_parse_old --lib`
+ - `cargo expand entities::amount::parse --lib`
  - `cargo expand entities::account --lib`
  - `cargo expand another_static_error_macro_test::parse_amount_another_01 --lib`
  - `cargo expand auth::login_form_auth --lib`

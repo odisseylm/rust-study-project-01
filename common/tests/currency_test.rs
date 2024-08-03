@@ -13,7 +13,7 @@ use mvv_common::entity::currency::predefined::{EUR, USD, };
 use mvv_common::result::{ as_printable, as_printable_ptr };
 // use mvv_common::unchecked::UncheckedResultUnwrap;
 use mvv_common::result::PrintableResult;
-use mvv_common::test::{ TestSringOps, TestResultUnwrap };
+use mvv_common::test::{ TestDisplayStringOps, TestResultUnwrap };
 
 
 #[test]

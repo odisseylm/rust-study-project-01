@@ -11,7 +11,6 @@ use core::time::Duration;
 use std::future::Future;
 use std::time::Instant;
 use log::info;
-use mvv_auth::AuthUserProviderError;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -32,14 +31,6 @@ pub enum CacheOrFetchError <FetchErr>
     CacheError(CacheError),
     #[error("FetchError")]
     FetchError(FetchErr),
-}
-
-impl From<CacheError> for AuthUserProviderError {
-    fn from(err: CacheError) -> Self {
-        match err {
-            CacheError::CacheError(err) => AuthUserProviderError::CacheError(err),
-        }
-    }
 }
 
 
@@ -146,17 +137,6 @@ fn ttl_entry_to_res<V: Clone>(value_entry_opt: Option<TtlEntry<V>>) -> Result<Op
             } else {
                 Ok(Some(value_entry.value.clone()))
             }
-        }
-    }
-}
-
-
-impl From<CacheOrFetchError<AuthUserProviderError>> for AuthUserProviderError {
-    fn from(value: CacheOrFetchError<AuthUserProviderError>) -> Self {
-        match value {
-            CacheOrFetchError::CacheError(err) =>
-                AuthUserProviderError::CacheError(anyhow::Error::new(err)),
-            CacheOrFetchError::FetchError(err) => err,
         }
     }
 }

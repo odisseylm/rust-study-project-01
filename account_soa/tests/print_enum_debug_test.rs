@@ -1,5 +1,5 @@
-use mvv_common::backtrace::NewBacktracePolicy;
-use mvv_common::backtrace::BacktraceInfo;
+// use mvv_common::backtrace::NewBacktracePolicy;
+use mvv_common::backtrace2::BacktraceCell;
 
 
 #[allow(dead_code)]
@@ -37,7 +37,7 @@ enum Suit2 {
     Diamond,
     Spade,
     #[strum(to_string = "saturation is {sat}")]
-    Club { sat: BacktraceInfo },
+    Club { sat: BacktraceCell },
     // Club(BacktraceInfo),
 }
 
@@ -48,5 +48,6 @@ fn test_print_enum_with_scrum_dependency() {
     println!("{}", Suit2::Heart(1));
     println!("{}", Suit2::Diamond);
     // println!("{}", Suit2::Club(BacktraceInfo::new()));
-    println!("{}", Suit2::Club { sat:BacktraceInfo::new_by_policy(NewBacktracePolicy::Capture) });
+    // println!("{}", Suit2::Club { sat:BacktraceInfo::new_by_policy(NewBacktracePolicy::Capture) });
+    println!("{}", Suit2::Club { sat:BacktraceCell::capture_backtrace() });
 }

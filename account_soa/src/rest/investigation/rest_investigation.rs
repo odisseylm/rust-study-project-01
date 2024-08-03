@@ -263,7 +263,7 @@ impl Default for Pagination {
 // -------------------------------------------------------------------------------
 
 use core::future::Future;
-use mvv_common::test::TestSringOps;
+use mvv_common::test::{ TestDisplayStringOps };
 
 trait AsyncFnOnce0 {
     type Output;

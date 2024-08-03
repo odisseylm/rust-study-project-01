@@ -1,4 +1,4 @@
-use mvv_common::test::TestSringOps;
+use mvv_common::test::{ TestDisplayStringOps };
 
 struct AAA {
     val1: &'static str,

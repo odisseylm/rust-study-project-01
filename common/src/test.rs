@@ -1,6 +1,5 @@
 use core::fmt::Debug;
-
-
+use std::fmt::Display;
 // Actually this code is designed for unit test only,
 // but in that case due to strange rust project tests build approach
 // it causes showing 'unused code'.
@@ -39,27 +38,93 @@ impl<Ok> TestOptionUnwrap<Ok> for Option<Ok> {
     }
 }
 
-#[extension_trait::extension_trait]
-pub impl<T> TestSringOps for T /* where T: Debug */ {
+
+pub trait TestDisplayStringOps {
     #[track_caller]
-    fn to_test_debug_string(&self) -> String where Self: Debug {
-        let mut str_buf = String::new();
-        use core::fmt::Write;
-        write!(str_buf, "{:?}", self).test_unwrap();
-        str_buf
-    }
+    fn to_test_display_string(&self) -> String;
     #[track_caller]
-    fn to_test_display_string(&self) -> String where Self: core::fmt::Display {
+    fn to_test_string(&self) -> String;
+}
+
+pub trait TestOptionDisplayStringOps {
+    #[track_caller]
+    fn to_test_display_string(&self) -> String;
+    #[track_caller]
+    fn to_test_string(&self) -> String;
+}
+
+pub trait TestDebugStringOps {
+    #[track_caller]
+    fn to_test_debug_string(&self) -> String;
+}
+
+impl<T> TestDisplayStringOps for T where T: Display {
+    #[track_caller]
+    fn to_test_display_string(&self) -> String {
         let mut str_buf = String::new();
         use core::fmt::Write;
         write!(str_buf, "{}", self).test_unwrap();
         str_buf
     }
     #[track_caller]
-    fn to_test_string(&self) -> String where Self: core::fmt::Display {
+    fn to_test_string(&self) -> String {
         self.to_string()
     }
 }
+
+impl<T> TestOptionDisplayStringOps for Option<T> where T: Display {
+    #[track_caller]
+    fn to_test_display_string(&self) -> String {
+        match self {
+            None => "None".to_owned(),
+            Some(ref v) => {
+                let mut str_buf = String::new();
+                use core::fmt::Write;
+                write!(str_buf, "{}", v).test_unwrap();
+                str_buf
+            }
+        }
+    }
+    #[track_caller]
+    fn to_test_string(&self) -> String {
+        match self {
+            None => "None".to_owned(),
+            Some(ref v) => v.to_string()
+        }
+    }
+}
+
+/*
+impl<T> TestOptionDisplayStringOps for Option<&T> where T: Display {
+    #[track_caller]
+    fn to_test_display_string(&self) -> String {
+        match self {
+            None => "None".to_owned(),
+            Some(ref v) => {
+                let mut str_buf = String::new();
+                use core::fmt::Write;
+                write!(str_buf, "{}", v).test_unwrap();
+                str_buf
+            }
+        }
+    }
+    #[track_caller]
+    fn to_test_string(&self) -> String {
+        self.to_string()
+    }
+}
+*/
+
+impl<T> TestDebugStringOps for T where T: Debug {
+    #[track_caller]
+    fn to_test_debug_string(&self) -> String {
+        let mut str_buf = String::new();
+        use core::fmt::Write;
+        write!(str_buf, "{:?}", self).test_unwrap();
+        str_buf
+    }
+}
+
 
 #[extension_trait::extension_trait]
 pub impl<T> TestOps for T where T: Clone {
@@ -82,6 +147,12 @@ pub impl<V,E> TestResultDisplayErrOps for Result<V,E> where E: core::fmt::Displa
     // #[inline] // warning: `#[inline]` is ignored on function prototypes
     #[track_caller]
     fn err_to_test_display_string(self) -> String {
-        self.err().test_unwrap().to_test_display_string()
+        // self.err().test_unwrap().to_test_display_string()
+
+        let err = self.err().test_unwrap();
+        let mut str_buf = String::new();
+        use core::fmt::Write;
+        write!(str_buf, "{}", err).test_unwrap();
+        str_buf
     }
 }

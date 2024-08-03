@@ -274,7 +274,7 @@ pub mod predefined {
 // As workaround, I decided to use sub-namespace.
 //
 pub mod parse {
-    use crate::backtrace::BacktraceInfo;
+    use crate::backtrace2::BacktraceCell;
 
     // #[derive(Debug, PartialEq, Copy, Clone)]
     #[derive(Debug, thiserror::Error, PartialEq)]
@@ -293,7 +293,7 @@ pub mod parse {
         pub kind: ErrorKind,
         // #[source]
         // pub source: ErrorSource,
-        pub backtrace: BacktraceInfo,
+        pub backtrace: BacktraceCell,
     }
 }
 
@@ -309,7 +309,7 @@ pub mod parse {
 //
 #[cfg(test)]
 mod tests {
-    use crate::test::TestSringOps;
+    use crate::test::{ TestDisplayStringOps, TestDebugStringOps };
     use super::*;
     use super::predefined::*;
 

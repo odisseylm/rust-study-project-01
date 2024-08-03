@@ -72,6 +72,7 @@ fn keep_only_last_file_path_part3<'a>(path: &str) -> &str {
 */
 
 
+/*
 use core::cmp::PartialEq;
 use core::fmt::Display;
 use log::warn;
@@ -525,7 +526,7 @@ impl BacktraceCopyProvider for &usize {
     fn provide_backtrace(&self) -> BacktraceInfo { BacktraceInfo::empty() }
     fn contains_self_or_child_captured_backtrace(&self) -> bool { false }
 }
-
+*/
 
 
 // -------------------------------------------------------------------------------------------------

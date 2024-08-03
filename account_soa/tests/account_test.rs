@@ -93,7 +93,7 @@ trait Borrow222<T> {
 mod mutability_check {
     use std::borrow::Cow;
     use std::cell::RefCell;
-    use mvv_common::test::TestSringOps;
+    use mvv_common::test::{ TestDisplayStringOps };
     // use std::ops::{Deref, DerefMut };
     // use project01::util::TestResultUnwrap;
 
