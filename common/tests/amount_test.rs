@@ -5,7 +5,7 @@ use bigdecimal::BigDecimal;
 use mvv_common::entity::amount::{ Amount, amount, parse::AmountFormatError, parse };
 use mvv_common::entity::currency::{ predefined::{ EUR, USD }, make_currency };
 use mvv_common::make_currency;
-use mvv_common::test::{ TestOptionUnwrap, TestResultUnwrap, TestDisplayStringOps };
+use mvv_common::test::{TestOptionUnwrap, TestResultUnwrap, TestDisplayStringOps, TestDebugStringOps};
 
 use assertables::{ assert_contains, assert_contains_as_result };
 use assertables::{ assert_starts_with, assert_starts_with_as_result };
@@ -141,6 +141,21 @@ fn from_string_with_wrong_formed_currency_02() {
     }
 }
 
+
+#[test]
+fn temp_43434() {
+    enable_backtrace();
+    let res = Amount::from_str(" \t \n 122.350 USSD ");
+    if let Err(ref err) = res {
+        let dbg_str = err.source.to_test_debug_string();
+        println!("{dbg_str}");
+
+        let dbg_str = err.to_test_debug_string();
+        println!("{dbg_str}");
+    }
+}
+
+
 #[test]
 fn from_string_with_wrong_formed_currency_do_not_print_stack_trace_twice() {
     enable_backtrace();
@@ -158,7 +173,8 @@ fn from_string_with_wrong_formed_currency_do_not_print_stack_trace_twice() {
         println!("err.source (debug)  : {:?}", err.source);
 
         assert_debug_stack_trace_is_only_one(&err);
-        assert_debug_stack_trace_is_only_one(&err.source);
+        // assert_debug_stack_trace_is_only_one(&err.source);
+        assert_debug_stack_trace_is_no_one(&err.source);
 
         if let parse::ErrorSource::CurrencyFormatError(ref err) = err.source {
 
@@ -168,7 +184,8 @@ fn from_string_with_wrong_formed_currency_do_not_print_stack_trace_twice() {
             println!("err (debug)  : {:?}", err);
 
             assert_display_no_stack_trace(&err);
-            assert_debug_stack_trace_is_only_one(&err);
+            // assert_debug_stack_trace_is_only_one(&err);
+            assert_debug_stack_trace_is_no_one(&err);
         } else {
             assert!(false, "Unexpected flow.")
         }
@@ -233,6 +250,14 @@ fn assert_debug_stack_trace_is_only_one<Err: core::fmt::Debug>(err: &Err) {
     assert_stack_trace_is_only_one(str_buf.as_str());
 }
 #[track_caller]
+#[allow(dead_code)]
+fn assert_debug_stack_trace_is_no_one<Err: core::fmt::Debug>(err: &Err) {
+    use core::fmt::Write;
+    let mut str_buf = String::new();
+    write!(str_buf, "{:?}", err).test_unwrap();
+    assert_stack_trace_is_no_one(str_buf.as_str());
+}
+#[track_caller]
 fn assert_stack_trace_is_only_one(str: &str) {
     let first_index: Option<usize> = str.find("backtrace:")
         .or_else(|| str.find("stacktrace:"))
@@ -244,12 +269,26 @@ fn assert_stack_trace_is_only_one(str: &str) {
     let second_index: Option<usize> = first_index.and_then(|first_index| {
         let str: &str = &str[first_index + 1..];
 
-        str.find("backtrace:")
-            .or_else(|| str.find("stacktrace:"))
-            .or_else(|| str.find("stack trace:"))
+        str.find("backtrace: ")
+            .or_else(|| str.find("backtrace:\n"))
+            .or_else(|| str.find("stacktrace: "))
+            .or_else(|| str.find("stacktrace:\n"))
+            .or_else(|| str.find("stack trace: "))
+            .or_else(|| str.find("stack trace:\n"))
+            .map(|i| i + first_index + 1)
     });
 
-    assert!(second_index.is_some(), "No any backtrace is found in [{}]", str);
+    // assert!(second_index.is_some(), "No any backtrace is found in [{}]", str);
+    assert!(second_index.is_none(), "2nd backtrace is found in [{}]", str);
+}
+#[track_caller]
+fn assert_stack_trace_is_no_one(str: &str) {
+    let first_index: Option<usize> = str.find("backtrace:")
+        .or_else(|| str.find("stacktrace:"))
+        .or_else(|| str.find("stack trace:"))
+        ;
+
+    assert!(first_index.is_none(), "No any backtrace is found in [{}]", str);
 }
 
 

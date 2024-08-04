@@ -3,11 +3,18 @@ use std::sync::Arc;
 //--------------------------------------------------------------------------------------------------
 
 
-// pub type BacktraceCell = BacktraceCell_PtrCellImpl;
-pub type BacktraceCell = BacktraceCell_ArcImpl;
+pub type BacktraceCell = BacktraceCell_PtrCellImpl;
+// pub type BacktraceCell = BacktraceCell_ArcImpl;
 // pub type BacktraceSource = BacktraceSourceInternal<BacktraceCell_ArcImpl>;
 // trait BacktraceSource = BacktraceSourceInternal<BacktraceCell>;
 
+
+/*
+enum BacktraceInner {
+    Std(std::backtrace::Backtrace),
+    // AnyhowError(anyhow::Error),
+}
+*/
 
 impl BacktraceCell {
     pub fn inherit_or_capture<Src: BacktraceSource>(src: &Src) -> Self {
@@ -17,7 +24,6 @@ impl BacktraceCell {
         }
         bt
     }
-
 }
 
 
@@ -80,11 +86,10 @@ pub trait BacktraceSource {
 }
 
 // TODO: impl
-/*
 impl BacktraceSource for anyhow::Error {
     fn backtrace_ref(&self) -> Option<&BacktraceCell> {
         // <anyhow::Error as std::error::Error>::source()
-        self.backtrace()
+        //self.backtrace()
         todo!()
     }
 
@@ -96,7 +101,6 @@ impl BacktraceSource for anyhow::Error {
         todo!()
     }
 }
-*/
 
 
 #[allow(non_camel_case_types)]
@@ -135,7 +139,7 @@ impl BacktraceCell_PtrCellImpl {
         }
     }
 
-    pub fn capture_backtrace_impl() -> Self {
+    pub fn capture_backtrace() -> Self {
         Self::with_backtrace(std::backtrace::Backtrace::capture())
     }
     //
@@ -188,18 +192,9 @@ impl BacktraceCell_PtrCellImpl {
 }
 
 impl Debug for BacktraceCell_PtrCellImpl {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let bt = self.cell.take(ptr_cell::Semantics::Relaxed);
-        let res = match bt {
-            None =>
-                <str as Debug>::fmt("", f),
-            Some(ref bt) =>
-                <std::backtrace::Backtrace as Debug>::fmt(bt, f),
-        };
-
-        // ptr_cell does not have safe 'get ref' method
-        self.cell.set(bt, ptr_cell::Semantics::Relaxed);
-        res
+        <Self as Display>::fmt(self, f)
     }
 }
 impl Display for BacktraceCell_PtrCellImpl {
@@ -221,7 +216,6 @@ impl Display for BacktraceCell_PtrCellImpl {
 
 //--------------------------------------------------------------------------------------------------
 #[allow(non_camel_case_types)]
-#[derive(Clone)]
 pub struct BacktraceCell_ArcImpl {
     cell: Arc<Option<std::backtrace::Backtrace>>,
 }
@@ -299,6 +293,7 @@ impl BacktraceCell_ArcImpl {
 
 
 impl Debug for BacktraceCell_ArcImpl {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         <Self as Display>::fmt(self, f)
     }

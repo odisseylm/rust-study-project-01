@@ -194,7 +194,11 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         #[allow(unused_qualifications)]
         impl core::fmt::Debug for #error_type_name {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?}, backtrace: {} }}"), self.kind, self.backtrace)
+                if self.backtrace.is_empty() {
+                    write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?} }}"), self.kind)
+                } else {
+                    write!(f, concat!(stringify!(#error_type_name), " {{ kind: {:?}, backtrace: {} }}"), self.kind, self.backtrace)
+                }
             }
         }
     };

@@ -62,7 +62,7 @@ pub fn required_env_var (env_var_name: &'static str) -> Result<String, EnvVarErr
         .ok_or_else(|| EnvVarError::new(env_var_name.into(), std::env::VarError::NotPresent))
 }
 
-#[derive(Debug, Clone, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub struct EnvVarError {
     pub var_name: StaticRefOrString, // &'static str,
     pub source: std::env::VarError,
@@ -145,6 +145,7 @@ mod tests {
         // println!("\n------------------------------------------\n");
         // println!("err as debug: {err:?}");
         let debug_str = err.to_test_debug_string();
+        println!("### EnvVarError (debug): {debug_str}");
         assert_contains!(debug_str, r#"EnvVarError { var_name: Ref("var_name_1"), source: NotPresent, backtrace:"#);
         assert_contains!(debug_str, "mvv_common::env::EnvVarError::new");
         assert_contains!(debug_str, "env.rs:");
