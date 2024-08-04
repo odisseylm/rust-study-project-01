@@ -9,7 +9,7 @@ use mvv_common::test::{TestOptionUnwrap, TestResultUnwrap, TestDisplayStringOps,
 
 use assertables::{ assert_contains, assert_contains_as_result };
 use assertables::{ assert_starts_with, assert_starts_with_as_result };
-use mvv_common::backtrace::{ is_anyhow_backtrace_enabled, enable_backtrace };
+use mvv_common::backtrace_old::{ is_anyhow_backtrace_enabled, enable_backtrace };
 //--------------------------------------------------------------------------------------------------
 
 

@@ -1,10 +1,10 @@
 use std::ffi::OsString;
-use mvv_common::backtrace::is_anyhow_backtrace_enabled;
+use mvv_common::backtrace_old::is_anyhow_backtrace_enabled;
 
 #[test]
 #[ignore]
 fn test_is_anyhow_backtrace_enabled() {
-    mvv_common::backtrace::enable_backtrace();
+    mvv_common::backtrace_old::enable_backtrace();
     // project01::util::disable_backtrace(); // it ?works? in test under Idea, BUT does not work under `cargo` ???
 
     is_anyhow_backtrace_enabled();
