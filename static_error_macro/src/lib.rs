@@ -145,8 +145,13 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
         impl #BacktraceSource for #error_type_name {
+            #[inline]
             fn contains_backtrace(&self) -> bool { !self.backtrace.is_empty() }
+            #[inline]
             fn backtrace_ref(&self) -> Option<& #BacktraceCell> { Some(&self.backtrace) }
+            #[inline]
+            fn is_taking_backtrace_supported(&self) -> bool { !self.backtrace.is_empty() }
+            #[inline]
             fn take_backtrace(&self) -> #BacktraceCell { self.backtrace.move_out() }
         }
     };
@@ -233,6 +238,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         struct_error_type,
         from_error_kind,
         no_source_backtrace,
+        no_std_error,
         do_not_generate_display,
         do_not_generate_std_error,
         static_struct_error_internal_type_path_mode,
@@ -323,6 +329,24 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         }
     }).collect::<Vec<_>>();
 
+    let err_src_is_taking_backtrace_supported_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
+        let var_name = vr.name;
+        let no_source_backtrace = find_enum_variant_attr(vr.variant, "no_source_backtrace").is_some();
+        let is_arg_present = vr.first_arg_type.is_some();
+
+        let is_arg_without_bt: bool = vr.first_arg_type
+            .map(|arg_type| types_without_any_bt.contains(&type_to_string_without_spaces(arg_type).as_str()))
+            .unwrap_or(false);
+
+        if !is_arg_present {
+            quote!(  ErrorSource:: #var_name  => { false }  )
+        } else if no_source_backtrace || is_arg_without_bt {
+            quote!(  ErrorSource:: #var_name (_)  => { false }  )
+        } else {
+            quote!(  ErrorSource:: #var_name (ref src)  => { src.is_taking_backtrace_supported() }  )
+        }
+    }).collect::<Vec<_>>();
+
     /*
     let err_src_bt_provider_impl_match_branches2: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let var_name = vr.name;
@@ -380,12 +404,23 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
                 }
             }
             fn contains_backtrace(&self) -> bool {
+                // if !self.backtrace.is_empty() {
+                //     return true;
+                // }
+
                 use #BacktraceCell;
                 match self {
                     #(#err_src_contains_bt_impl_match_branches)*
                     // ErrorSource::NoSource => false,
                     // ErrorSource::ParseBigDecimalError(_) => false,
                     // ErrorSource::CurrencyFormatError(ref src) => { src.contains_backtrace() }
+                }
+            }
+            fn is_taking_backtrace_supported(&self) -> bool {
+
+                use #BacktraceSource;
+                match self {
+                    #(#err_src_is_taking_backtrace_supported_impl_match_branches)*
                 }
             }
             /*
@@ -562,6 +597,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             let is_src_arg_present: bool = el.first_arg_type.is_some();
             let arg_str_type: Option<String> = el.first_arg_type
                 .map(|arg_type| type_to_string_without_spaces(arg_type));
+            let no_std_error = find_enum_variant_attr(el.variant, "no_std_error").is_some();
             let no_std_err_for_arg = el.first_arg_type
                 .map(|arg_type| type_to_string(arg_type))
                 .map(|arg_type_as_str| types_without_std_err.contains(&arg_type_as_str.as_str()))
@@ -569,7 +605,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
 
             if !is_src_arg_present {
                 quote! { ErrorSource:: #var_name => { None }  }
-            } else if no_std_err_for_arg {
+            } else if no_std_err_for_arg || no_std_error {
                 quote! { ErrorSource:: #var_name (_) => { None } }
             } else if arg_str_type.is_eq_to_str("anyhow::Error") {
                 quote! { ErrorSource:: #var_name (ref src) => { Some(src.as_ref()) } }
@@ -586,6 +622,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
 
         let fn_description_items_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|ref el| {
             let var_name: &syn::Ident = el.name;
+            let no_std_error = find_enum_variant_attr(el.variant, "no_std_error").is_some();
             let is_src_arg_present: bool = el.first_arg_type.is_some();
             let no_std_err_for_arg = el.first_arg_type
                 .map(|arg_type| type_to_string(arg_type))
@@ -593,7 +630,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
                 .unwrap_or(false);
 
             if is_src_arg_present {
-                if no_std_err_for_arg {
+                if no_std_err_for_arg || no_std_error {
                     quote! { ErrorSource:: #var_name (_)  => { "" } }
                 } else {
                     quote! { ErrorSource:: #var_name (ref src)  => { src.description() } }

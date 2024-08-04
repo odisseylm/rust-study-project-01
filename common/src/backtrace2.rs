@@ -1,4 +1,5 @@
 use core::fmt::{ self, Debug, Display };
+use std::backtrace::BacktraceStatus;
 use std::sync::Arc;
 //--------------------------------------------------------------------------------------------------
 
@@ -18,11 +19,31 @@ enum BacktraceInner {
 
 impl BacktraceCell {
     pub fn inherit_or_capture<Src: BacktraceSource>(src: &Src) -> Self {
-        let mut bt = src.take_backtrace();
-        if bt.is_empty() {
-            bt = Self::capture_backtrace()
+        if src.contains_backtrace() {
+            if src.is_taking_backtrace_supported() {
+                let bt = src.take_backtrace();
+                if bt.is_empty() {
+                    Self::capture_backtrace()
+                } else {
+                    bt
+                }
+            } else {
+                Self::capture_backtrace()
+            }
+        } else {
+            Self::capture_backtrace()
         }
-        bt
+    }
+
+    pub fn new(backtrace: Option<std::backtrace::Backtrace>) -> Self {
+        match backtrace {
+            None => Self::empty(),
+            Some(backtrace) => Self::with_backtrace(backtrace)
+        }
+    }
+
+    pub fn capture_backtrace() -> Self {
+        Self::with_backtrace(std::backtrace::Backtrace::capture())
     }
 }
 
@@ -63,12 +84,16 @@ trait BacktraceCellDefaultImpl: BacktraceCellContract + Sized {
 pub trait BacktraceSource {
     fn backtrace_ref(&self) -> Option<&BacktraceCell>;
 
+    /// It can verify ANY backtrace including child error.
+    ///
     fn contains_backtrace(&self) -> bool {
         match self.backtrace_ref() {
             None => false,
             Some(bt) => !bt.is_empty(),
         }
     }
+
+    fn is_taking_backtrace_supported(&self) -> bool;
 
     /// It is unusual behavior for general types to 'take' (move out)
     /// field by immutable ref
@@ -85,20 +110,46 @@ pub trait BacktraceSource {
     }
 }
 
-// TODO: impl
 impl BacktraceSource for anyhow::Error {
     fn backtrace_ref(&self) -> Option<&BacktraceCell> {
-        // <anyhow::Error as std::error::Error>::source()
-        //self.backtrace()
-        todo!()
+        None
     }
 
     fn contains_backtrace(&self) -> bool {
-        todo!()
+        if let BacktraceStatus::Captured = self.backtrace().status() { true }
+        else { false }
+    }
+
+    fn is_taking_backtrace_supported(&self) -> bool {
+        false
     }
 
     fn take_backtrace(&self) -> BacktraceCell {
-        todo!()
+        BacktraceCell::empty()
+    }
+}
+
+impl BacktraceSource for Box<dyn std::error::Error> {
+    fn backtrace_ref(&self) -> Option<&BacktraceCell> {
+        None
+    }
+
+    fn contains_backtrace(&self) -> bool {
+        // To implement it we need to use nightly build
+        false
+
+        /*
+        if let BacktraceStatus::Captured = self.backtrace().status() { true }
+        else { false }
+        */
+    }
+
+    fn is_taking_backtrace_supported(&self) -> bool {
+        false
+    }
+
+    fn take_backtrace(&self) -> BacktraceCell {
+        BacktraceCell::empty()
     }
 }
 
@@ -132,16 +183,6 @@ impl BacktraceCell_PtrCellImpl {
         }
     }
 
-    pub fn new(backtrace: Option<std::backtrace::Backtrace>) -> Self {
-        match backtrace {
-            None => Self::empty(),
-            Some(backtrace) => Self::with_backtrace(backtrace)
-        }
-    }
-
-    pub fn capture_backtrace() -> Self {
-        Self::with_backtrace(std::backtrace::Backtrace::capture())
-    }
     //
     // fn inherit_or_capture_impl<Src: BacktraceSource>(src: &Src) -> Self {
     //     let mut bt = src.take_backtrace();
@@ -239,18 +280,6 @@ impl BacktraceCell_ArcImpl {
         // self.cell. ; ?? how to move/clear immutable Arc ??
         Self { cell: copy }
     }
-
-    pub fn new(backtrace: Option<std::backtrace::Backtrace>) -> Self {
-        match backtrace {
-            None => Self::empty(),
-            Some(backtrace) => Self::with_backtrace(backtrace)
-        }
-    }
-
-    pub fn capture_backtrace() -> Self {
-        Self::with_backtrace(std::backtrace::Backtrace::capture())
-    }
-
 
     // TODO: for backward compatibility, REMOVE it later, I do not think that we need it.
     //

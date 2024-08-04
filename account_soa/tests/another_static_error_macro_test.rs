@@ -64,6 +64,10 @@ pub mod parse_amount_another_01 {
     use crate::parse_currency_another_01::CurrencyFormatError;
     use mvv_common::backtrace2::BacktraceCell;
 
+    #[derive(Debug, derive_more::Display)]
+    #[display(fmt = "Struct123")]
+    struct Struct123;
+
     #[derive(Debug, thiserror::Error)]
     #[derive(Copy, Clone)]
     #[derive(PartialOrd, PartialEq)]
@@ -113,25 +117,29 @@ pub mod parse_amount_another_01 {
 
         // With duplicated types
         // #[error("Some1FromString")]
-        #[no_source_backtrace]
+        //#[no_source_backtrace]
         // #[from_error_kind(IncorrectAmount)] // temp. to test proper 'duplicates' error
         Some1FromString(String),
         // #[error("Some2FromString")]
-        #[no_source_backtrace]
+        //#[no_source_backtrace]
         // #[from_error_kind(IncorrectAmount)] // temp. to test proper 'duplicates' error
         Some2FromString(String),
         // #[error("Some1FromInt")]
-        #[no_source_backtrace]
+        //#[no_source_backtrace]
         Some1FromInt(i32),
         // #[error("Some2FromInt")]
-        #[no_source_backtrace]
+        // #[no_source_backtrace]
         Some2FromInt(i32),
+        // #[error("Some2FromInt")]
+        #[no_source_backtrace]
+        #[no_std_error]
+        Some3FromSomeStruct(Struct123),
 
-        #[no_source_backtrace] // TODO: impl and remove this 'no_source_backtrace'
         // #[error("SomeAnyHowError")]
         SomeAnyHowError(anyhow::Error),
 
-        #[no_source_backtrace] // TODO: impl and remove this 'no_source_backtrace'
+        // #[no_source_backtrace]
+        // #[no_std_error]
         // #[error("SomeStdError")]
         StdErrorError(Box<dyn std::error::Error>),
     }

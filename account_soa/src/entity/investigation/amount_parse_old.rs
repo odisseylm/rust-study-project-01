@@ -3,6 +3,7 @@ use bigdecimal::BigDecimal;
 use mvv_common::entity::amount::Amount;
 use mvv_common::entity::currency::Currency;
 use mvv_common::backtrace2::BacktraceCell;
+use mvv_common::test::TestResultUnwrap;
 
 
 #[allow(dead_code)] // it is used by private test
@@ -133,6 +134,10 @@ pub mod parse_amount_old {
     use mvv_common::backtrace2::BacktraceCell;
     use mvv_common::entity::currency::parse::CurrencyFormatError;
 
+    #[derive(Debug, derive_more::Display)]
+    #[display(fmt = "Struct123")]
+    struct Struct123;
+
     //noinspection DuplicatedCode
     #[derive(Debug, thiserror::Error)]
     #[derive(Copy, Clone)]
@@ -187,21 +192,24 @@ pub mod parse_amount_old {
 
         // With duplicated types
         // #[error("Some1FromString")]
-        #[no_source_backtrace]
+        // #[no_source_backtrace]
         // #[from_error_kind(IncorrectAmount)] // temp. to test proper 'duplicates' error
         Some1FromString(String),
         // #[error("Some2FromString")]
-        #[no_source_backtrace]
+        // #[no_source_backtrace]
         // #[from_error_kind(IncorrectAmount)] // temp. to test proper 'duplicates' error
         Some2FromString(String),
         // #[error("Some1FromInt")]
-        #[no_source_backtrace]
+        // #[no_source_backtrace]
         Some1FromInt(i32),
         // #[error("Some2FromInt")]
         #[no_source_backtrace]
         Some2FromInt(i32),
+        #[no_source_backtrace]
+        #[no_std_error]
+        Some3FromSomeStruct(Struct123),
 
-        #[no_source_backtrace] // TODO: impl and remove this 'no_source_backtrace'
+        //#[no_source_backtrace]
         // #[error("SomeAnyHowError")]
         SomeAnyHowError(anyhow::Error),
 
@@ -397,7 +405,6 @@ mod tests {
     use assertables::{ assert_contains, assert_contains_as_result };
     use assertables::{ assert_starts_with, assert_starts_with_as_result };
     use mvv_common::test::{ TestOptionUnwrap, TestResultUnwrap };
-    use mvv_common::string::substring_count;
     use super::*;
 
     #[test]
@@ -442,9 +449,7 @@ mod tests {
         use core::fmt::Write;
         write!(str_buf, "{:?}", my_err).test_unwrap();
 
-        // ascii_substring_count(str_buf.as_str(), b"backtrace:");
-        let count = substring_count(str_buf.as_str(), " backtrace:");
-        assert_eq!(count, 1);
+        assert_stack_trace_is_only_one(&str_buf);
     }
 
 
@@ -465,10 +470,7 @@ mod tests {
         use core::fmt::Write;
         write!(str_buf, "{:?}", io_err).test_unwrap();
 
-        let count = substring_count(str_buf.as_str(), " backtrace:");
-        // Now rust std errors do not print backtrace.
-        // When it happens we need to make sure that we use it instead of capturing backtrace manually.
-        assert_eq!(count, 0);
+        assert_stack_trace_is_no_one(&str_buf);
 
 
         let str_err_box: Box<dyn std::error::Error> = Box::new(io_err);
@@ -482,9 +484,7 @@ mod tests {
         let mut str_buf = String::new();
         write!(str_buf, "{:?}", my_err).test_unwrap();
 
-        // ascii_substring_count(str_buf.as_str(), b"backtrace:");
-        let count = substring_count(str_buf.as_str(), " backtrace:");
-        assert_eq!(count, 1);
+        assert_stack_trace_is_only_one(&str_buf);
     }
 
 
@@ -516,4 +516,75 @@ mod tests {
         assert_contains!(str_buf, "Some1FromInt(852)");
         assert_eq!(str_buf, "Some1FromInt(852)");
     }
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+#[track_caller]
+#[allow(dead_code)]
+fn assert_display_stack_trace_is_only_one<Err: core::fmt::Display>(err: &Err) {
+    use core::fmt::Write;
+    let mut str_buf = String::new();
+    write!(str_buf, "{}", err).test_unwrap();
+    assert_stack_trace_is_only_one(str_buf.as_str());
+}
+#[track_caller]
+#[allow(dead_code)]
+fn assert_debug_stack_trace_is_only_one<Err: core::fmt::Debug>(err: &Err) {
+    use core::fmt::Write;
+    let mut str_buf = String::new();
+    write!(str_buf, "{:?}", err).test_unwrap();
+    assert_stack_trace_is_only_one(str_buf.as_str());
+}
+#[track_caller]
+#[allow(dead_code)]
+fn assert_debug_stack_trace_is_no_one<Err: core::fmt::Debug>(err: &Err) {
+    use core::fmt::Write;
+    let mut str_buf = String::new();
+    write!(str_buf, "{:?}", err).test_unwrap();
+    assert_stack_trace_is_no_one(str_buf.as_str());
+}
+#[track_caller]
+fn assert_stack_trace_is_only_one(str: &str) {
+    let stack_trace_count = stack_trace_count(str);
+    assert_eq!(stack_trace_count, 1,
+               "Expected only 1 backtrace (but found {stack_trace_count}) [{str}]");
+}
+#[track_caller]
+fn assert_stack_trace_is_no_one(str: &str) {
+    let stack_trace_count = stack_trace_count(str);
+    assert_eq!(stack_trace_count, 0, "There should not be any backtrace in [{str}]");
+}
+
+fn find_backtrace_index(str: &str) -> Option<usize> {
+    str
+        .find(" backtrace:")
+        .or_else(|| str.find("backtrace: "))
+        .or_else(|| str.find("backtrace:\t"))
+        .or_else(|| str.find("backtrace:\n"))
+        .or_else(|| str.find(" stacktrace:"))
+        .or_else(|| str.find("stacktrace: "))
+        .or_else(|| str.find("stacktrace:\t"))
+        .or_else(|| str.find("stacktrace:\n"))
+        .or_else(|| str.find(" stack trace:"))
+        .or_else(|| str.find("stack trace: "))
+        .or_else(|| str.find("stack trace:\t"))
+        .or_else(|| str.find("stack trace:\n"))
+}
+
+fn stack_trace_count(str: &str) -> usize {
+    let first_index: Option<usize> = find_backtrace_index(str);
+    if first_index.is_none() {
+        return 0;
+    }
+
+    let second_index: Option<usize> = first_index.and_then(|first_index| {
+        let str: &str = &str[first_index + 3..];
+        find_backtrace_index(str)
+            .map(|i| i + first_index + 3)
+    });
+
+    if second_index.is_some() { 2 }
+    else { 1 }
 }

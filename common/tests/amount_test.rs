@@ -172,19 +172,33 @@ fn from_string_with_wrong_formed_currency_do_not_print_stack_trace_twice() {
         println!("--------------------------------------------------------------------------------");
         println!("err.source (debug)  : {:?}", err.source);
 
+        let _test_debug_str = err.to_test_debug_string();
+
         assert_debug_stack_trace_is_only_one(&err);
+
+        // in case of non-movable (copiable) backtrace cell
         // assert_debug_stack_trace_is_only_one(&err.source);
+
+        // in case of movable backtrace cell
         assert_debug_stack_trace_is_no_one(&err.source);
 
         if let parse::ErrorSource::CurrencyFormatError(ref err) = err.source {
 
             println!("--------------------------------------------------------------------------------");
-            println!("err (display): {}", err);
+            println!("err source (display): {}", err);
             println!("--------------------------------------------------------------------------------");
-            println!("err (debug)  : {:?}", err);
+            println!("err source (debug)  : {:?}", err);
+
+            let _test_debug_str = err.to_test_debug_string();
 
             assert_display_no_stack_trace(&err);
+
             // assert_debug_stack_trace_is_only_one(&err);
+
+            // in case of non-movable (copiable) backtrace cell
+            // assert_debug_stack_trace_is_only_one(&err);
+
+            // in case of movable backtrace cell
             assert_debug_stack_trace_is_no_one(&err);
         } else {
             assert!(false, "Unexpected flow.")
@@ -230,65 +244,6 @@ fn from_string_with_wrong_amount_value_do_not_print_stack_trace_twice() {
             assert!(false, "Unexpected flow.")
         }
     }
-}
-
-
-#[track_caller]
-#[allow(dead_code)]
-fn assert_display_stack_trace_is_only_one<Err: core::fmt::Display>(err: &Err) {
-    use core::fmt::Write;
-    let mut str_buf = String::new();
-    write!(str_buf, "{}", err).test_unwrap();
-    assert_stack_trace_is_only_one(str_buf.as_str());
-}
-#[track_caller]
-#[allow(dead_code)]
-fn assert_debug_stack_trace_is_only_one<Err: core::fmt::Debug>(err: &Err) {
-    use core::fmt::Write;
-    let mut str_buf = String::new();
-    write!(str_buf, "{:?}", err).test_unwrap();
-    assert_stack_trace_is_only_one(str_buf.as_str());
-}
-#[track_caller]
-#[allow(dead_code)]
-fn assert_debug_stack_trace_is_no_one<Err: core::fmt::Debug>(err: &Err) {
-    use core::fmt::Write;
-    let mut str_buf = String::new();
-    write!(str_buf, "{:?}", err).test_unwrap();
-    assert_stack_trace_is_no_one(str_buf.as_str());
-}
-#[track_caller]
-fn assert_stack_trace_is_only_one(str: &str) {
-    let first_index: Option<usize> = str.find("backtrace:")
-        .or_else(|| str.find("stacktrace:"))
-        .or_else(|| str.find("stack trace:"))
-        ;
-
-    assert!(first_index.is_some(), "No any backtrace is found in [{}]", str);
-
-    let second_index: Option<usize> = first_index.and_then(|first_index| {
-        let str: &str = &str[first_index + 1..];
-
-        str.find("backtrace: ")
-            .or_else(|| str.find("backtrace:\n"))
-            .or_else(|| str.find("stacktrace: "))
-            .or_else(|| str.find("stacktrace:\n"))
-            .or_else(|| str.find("stack trace: "))
-            .or_else(|| str.find("stack trace:\n"))
-            .map(|i| i + first_index + 1)
-    });
-
-    // assert!(second_index.is_some(), "No any backtrace is found in [{}]", str);
-    assert!(second_index.is_none(), "2nd backtrace is found in [{}]", str);
-}
-#[track_caller]
-fn assert_stack_trace_is_no_one(str: &str) {
-    let first_index: Option<usize> = str.find("backtrace:")
-        .or_else(|| str.find("stacktrace:"))
-        .or_else(|| str.find("stack trace:"))
-        ;
-
-    assert!(first_index.is_none(), "No any backtrace is found in [{}]", str);
 }
 
 
@@ -494,4 +449,74 @@ fn test_parse_amount_error() {
 
     let err = AmountFormatError::new(ErrorKind::IncorrectAmount);
     println!("err: {:?}", err)
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+#[track_caller]
+#[allow(dead_code)]
+fn assert_display_stack_trace_is_only_one<Err: core::fmt::Display>(err: &Err) {
+    use core::fmt::Write;
+    let mut str_buf = String::new();
+    write!(str_buf, "{}", err).test_unwrap();
+    assert_stack_trace_is_only_one(str_buf.as_str());
+}
+#[track_caller]
+#[allow(dead_code)]
+fn assert_debug_stack_trace_is_only_one<Err: core::fmt::Debug>(err: &Err) {
+    use core::fmt::Write;
+    let mut str_buf = String::new();
+    write!(str_buf, "{:?}", err).test_unwrap();
+    assert_stack_trace_is_only_one(str_buf.as_str());
+}
+#[track_caller]
+#[allow(dead_code)]
+fn assert_debug_stack_trace_is_no_one<Err: core::fmt::Debug>(err: &Err) {
+    use core::fmt::Write;
+    let mut str_buf = String::new();
+    write!(str_buf, "{:?}", err).test_unwrap();
+    assert_stack_trace_is_no_one(str_buf.as_str());
+}
+#[track_caller]
+fn assert_stack_trace_is_only_one(str: &str) {
+    let stack_trace_count = stack_trace_count(str);
+    assert_eq!(stack_trace_count, 1,
+               "Expected only 1 backtrace (but found {stack_trace_count}) [{str}]");
+}
+#[track_caller]
+fn assert_stack_trace_is_no_one(str: &str) {
+    let stack_trace_count = stack_trace_count(str);
+    assert_eq!(stack_trace_count, 0, "There should not be any backtrace in [{str}]");
+}
+
+fn find_backtrace_index(str: &str) -> Option<usize> {
+    str
+        .find(" backtrace:")
+        .or_else(|| str.find("backtrace: "))
+        .or_else(|| str.find("backtrace:\t"))
+        .or_else(|| str.find("backtrace:\n"))
+        .or_else(|| str.find(" stacktrace:"))
+        .or_else(|| str.find("stacktrace: "))
+        .or_else(|| str.find("stacktrace:\t"))
+        .or_else(|| str.find("stacktrace:\n"))
+        .or_else(|| str.find(" stack trace:"))
+        .or_else(|| str.find("stack trace: "))
+        .or_else(|| str.find("stack trace:\t"))
+        .or_else(|| str.find("stack trace:\n"))
+}
+
+fn stack_trace_count(str: &str) -> usize {
+    let first_index: Option<usize> = find_backtrace_index(str);
+    if first_index.is_none() {
+        return 0;
+    }
+
+    let second_index: Option<usize> = first_index.and_then(|first_index| {
+        let str: &str = &str[first_index + 3..];
+        find_backtrace_index(str)
+            .map(|i| i + first_index + 3)
+    });
+
+    if second_index.is_some() { 2 }
+    else { 1 }
 }
