@@ -1,5 +1,5 @@
 use core::fmt::{ self, Debug, Display };
-use crate::backtrace2::BacktraceCell;
+use crate::backtrace::BacktraceCell;
 use crate::string::FormatMode;
 //--------------------------------------------------------------------------------------------------
 

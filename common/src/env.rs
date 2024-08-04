@@ -1,6 +1,6 @@
 use core::fmt;
 use std::path::PathBuf;
-use crate::backtrace2::BacktraceCell;
+use crate::backtrace::BacktraceCell;
 use crate::string::StaticRefOrString;
 //--------------------------------------------------------------------------------------------------
 

@@ -413,7 +413,7 @@ impl core::fmt::Display for BacktraceInfo {
 
 
 fn backtrace_to_string_bt<B: Display>(bt: &B) -> BacktraceInfo {
-    // TODO: do not use string by performance reason
+    // T O D O: do not use string by performance reason
     warn!("Backtrace is copied by string!");
     BacktraceInfo::from_string(bt.to_string())
 }
@@ -435,7 +435,7 @@ impl BacktraceCopyProvider for anyhow::Error {
 
 
 fn std_backtrace_of_std_err<'a>(_err: & 'a dyn std::error::Error) -> Option<& 'a std::backtrace::Backtrace> {
-    // TODO: add support of it after appearing std::error::Error.provide() in stable build.
+    // T O D O: add support of it after appearing std::error::Error.provide() in stable build.
     None
 }
 

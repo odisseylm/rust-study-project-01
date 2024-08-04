@@ -1,6 +1,6 @@
 use bigdecimal::{BigDecimal, Zero};
 use crate::entity::amount::{ Amount, amount };
-use crate::backtrace2::BacktraceCell;
+use crate::backtrace::BacktraceCell;
 use crate::entity::currency::Currency;
 //--------------------------------------------------------------------------------------------------
 

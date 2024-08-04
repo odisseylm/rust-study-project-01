@@ -1,7 +1,7 @@
 // #![feature(error_generic_member_access)]
 
 use derivative::Derivative;
-use mvv_common::backtrace2::BacktraceCell;
+use mvv_common::backtrace::BacktraceCell;
 
 #[derive(Debug)]
 struct ParamsStruct {

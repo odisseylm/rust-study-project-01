@@ -2,7 +2,7 @@ use core::str::FromStr;
 use bigdecimal::BigDecimal;
 use mvv_common::entity::amount::Amount;
 use mvv_common::entity::currency::Currency;
-use mvv_common::backtrace2::BacktraceCell;
+use mvv_common::backtrace::BacktraceCell;
 use mvv_common::test::TestResultUnwrap;
 
 
@@ -131,12 +131,12 @@ fn aa_01() {
 //
 pub mod parse_amount_old {
     use bigdecimal::ParseBigDecimalError;
-    use mvv_common::backtrace2::BacktraceCell;
+    use mvv_common::backtrace::BacktraceCell;
     use mvv_common::entity::currency::parse::CurrencyFormatError;
 
     #[derive(Debug, derive_more::Display)]
     #[display(fmt = "Struct123")]
-    struct Struct123;
+    pub struct Struct123;
 
     //noinspection DuplicatedCode
     #[derive(Debug, thiserror::Error)]

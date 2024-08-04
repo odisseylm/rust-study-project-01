@@ -28,7 +28,7 @@ fn bt_root_path_segment(path_mode: InternalTypePathMode) -> proc_macro2::TokenSt
 fn bt_type(path_mode: InternalTypePathMode, type_name: &str) -> proc_macro2::TokenStream {
     let root = bt_root_path_segment(path_mode);
     let type_name_ident: syn::Ident = syn::parse_str(type_name).expect(&format!("Error of converting [{}] to Ident.", type_name));
-    quote! { #root ::backtrace2:: #type_name_ident }
+    quote! { #root ::backtrace:: #type_name_ident }
 }
 
 /*
@@ -54,7 +54,7 @@ fn use_bt_types_expr(path_mode: InternalTypePathMode) -> Vec<proc_macro2::TokenS
 */
 fn use_bt_types_expr(path_mode: InternalTypePathMode) -> proc_macro2::TokenStream {
     let root = bt_root_path_segment(path_mode);
-    quote! { use #root ::backtrace2::{ BacktraceCell, BacktraceSource } ; }
+    quote! { use #root ::backtrace::{ BacktraceCell, BacktraceSource } ; }
 }
 
 

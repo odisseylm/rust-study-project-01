@@ -17,7 +17,7 @@ use assertables::{ assert_contains, assert_contains_as_result, };
 use mvv_common::entity::amount::parse::AmountFormatError;
 use mvv_common::entity::currency::{CurrencyFormatError, parse::ErrorKind as CurErrorKind };
 // use mvv_common::backtrace::{BacktraceCopyProvider}; // , NewBacktracePolicy};
-use mvv_common::backtrace2::BacktraceSource;
+use mvv_common::backtrace::{ BacktraceSource };
 use mvv_common::test::{ TestDisplayStringOps, TestOptionDisplayStringOps };
 
 /*
@@ -130,9 +130,6 @@ fn test_amount_format_error_with_backtrace() {
 
 #[test]
 fn test_amount_format_error_with_source() {
-    // use parse::*;
-    // use mvv_common::backtrace::NewBacktracePolicy;
-    // use mvv_common::backtrace::BacktraceCopyProvider;
     use mvv_common::entity::currency::{self, parse::CurrencyFormatError };
     use mvv_common::entity::amount::parse::{ErrorKind, ErrorSource };
 
@@ -179,24 +176,6 @@ fn test_amount_format_error_with_source() {
 }
 
 
-/*
-#[test]
-fn test_amount_format_error_with_source_666() {
-    // use parse::*;
-    // // use mvv_common::backtrace::NewBacktracePolicy;
-    // use mvv_common::backtrace::BacktraceCopyProvider;
-    use project01::entity::currency;
-    use project01::entity::amount::parse::{ CurrencyFormatError, ErrorKind, ErrorSource };
-
-    // let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::SomeWithoutSource);
-    let err = ParseAmountError::with_source(ErrorKind::NoCurrency, ErrorSource::Some1FromInt(666));
-    assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_eq!(err.backtrace.to_test_string(), "\ncapture");
-    assert_eq!(err.backtrace_ref().to_test_string(), "\ncapture");
-}
-*/
-
-
 #[test]
 fn test_amount_format_error_src() {
     use mvv_common::entity::currency::parse::{CurrencyFormatError, ErrorKind };
@@ -206,7 +185,6 @@ fn test_amount_format_error_src() {
     assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); // "\ncapture");
 
     let err_src: ErrorSource = err.into();
-    // assert_eq!(err_src.type_id(), ErrorSource::CurrencyFormatError())
     match err_src {
         ErrorSource::CurrencyFormatError(_) => { }
         _ => { assert!(false, "Unexpected amount error source type.") }
@@ -220,34 +198,3 @@ fn fn_anyhow_01() -> Result<i32, anyhow::Error> {
 }
 #[allow(dead_code)]
 fn fn_anyhow_02() -> Result<i32, anyhow::Error> { fn_anyhow_01() }
-
-/*
-#[test]
-fn test_amount_format_error_src_from_anyhow() {
-    // use parse::*;
-    //
-    //
-    use project01::entity::currency::parse::{ CurrencyFormatError, ErrorKind };
-    use project01::entity::amount::parse::{ ErrorSource };
-
-    use core::fmt::Write;
-
-    let err_res = fn_anyhow_02();
-    let res = err_res.map_err(|anyhow_err|
-        ParseAmountError::with_source(ErrorKind::IncorrectAmount, ErrorSource::SomeAnyHowError(anyhow_err)));
-
-    let amount_err = res.err().unwrap();
-
-    println!("amount_err from anyhow: {:?}", amount_err);
-    println!("\n-------------------------------------------\n");
-
-    let mut amount_err_as_str_with_backtrace = String::new();
-    write!(amount_err_as_str_with_backtrace, "{:?}", amount_err).unwrap();
-
-    println!("{}", amount_err_as_str_with_backtrace);
-
-    assert!(amount_err_as_str_with_backtrace.contains("fn_anyhow_01"));
-    assert!(amount_err_as_str_with_backtrace.contains("fn_anyhow_02"));
-
-}
-*/

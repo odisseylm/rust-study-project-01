@@ -1,16 +1,15 @@
 use anyhow::{anyhow, Context};
-use mvv_common::backtrace2::{BacktraceCell};
-// use mvv_common::backtrace::NewBacktracePolicy;
+use mvv_common::backtrace::{BacktraceCell};
 use mvv_common::error::ToAnyHowErrorFn;
+//--------------------------------------------------------------------------------------------------
+
+
 
 #[derive(Debug)]
 #[derive(serde::Deserialize)]
 pub struct Entity1 {
-    // #[serde_as(as = "intField")]
-    // #[serde(rename(serialize = "intField", deserialize = "intField"), alias="int_field")]
     #[serde(alias="intField")]
     pub int_field: i32,
-    // #[serde_as(as = "stringField")]
     #[serde(alias="stringField")]
     #[allow(dead_code)]
     pub string_field: String,
@@ -18,7 +17,6 @@ pub struct Entity1 {
 
 
 pub fn extract_json() -> Result<Entity1, serde_json::error::Error> {
-    // let correct_json = "{ \"int_field\": 123, \"string_field\": \"str123\" }";
     let incorrect_json = "{ \"intField_666\": 123, \"stringField\": \"str123\" }";
     let r: Result<Entity1, serde_json::Error> = serde_json::from_str(incorrect_json);
     return r;
@@ -37,7 +35,6 @@ pub fn extract_json_5() -> Result<Entity1, serde_json::error::Error> { extract_j
 
 
 #[allow(dead_code)]
-// #[derive(thiserror::Error, Debug)]
 pub enum MyError {
     Io {
         // #[from]
@@ -57,7 +54,6 @@ pub enum MyError {
 pub enum DataStoreError1054554 {
     MyError3331 {
         backtrace: std::backtrace::Backtrace,
-        // backtrace: i32,
     },
 }
 
@@ -86,35 +82,6 @@ pub enum DataStoreError102 {
 
 
 
-/*
-// #[derive(thiserror::Error, Debug)]
-#[derive(Debug)]
-pub enum MyError333 {
-    // #[error("my error 3331")]
-    MyError3331 {
-        backtrace: std::backtrace::Backtrace,
-        // backtrace: i32,
-    },
-    // MyError3331 {
-    //     backtrace: std::backtrace::Backtrace,
-    // },
-    // #[error("data store disconnected")]
-    // Disconnect(#[from] std::io::Error),
-    Disconnect(std::io::Error),
-    // #[error("the data for key `{0}` is not available")]
-    Redaction(String),
-    // #[error("invalid header (expected {expected:?}, found {found:?})")]
-    InvalidHeader {
-        expected: String,
-        found: String,
-    },
-    // #[error("unknown data store error")]
-    Unknown,
-}
-*/
-
-
-
 #[allow(dead_code)]
 #[derive(Debug)]
 pub enum MyError333 {
@@ -131,8 +98,6 @@ pub enum MyError333 {
 
 #[derive(thiserror::Error, Debug)]
 pub enum MyError334 {
-    // #[error("Json error 2")]
-    // JsonError2(serde_json::Error),
     #[error("Json error 2")]
     JsonError2{
         #[source]

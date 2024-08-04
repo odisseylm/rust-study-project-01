@@ -274,7 +274,7 @@ pub mod predefined {
 // As workaround, I decided to use sub-namespace.
 //
 pub mod parse {
-    use crate::backtrace2::BacktraceCell;
+    use crate::backtrace::BacktraceCell;
 
     // #[derive(Debug, PartialEq, Copy, Clone)]
     #[derive(Debug, thiserror::Error, PartialEq)]

@@ -35,7 +35,7 @@ pub fn parse_amount(s: &str) -> Result<Amount, AmountFormatError> {
 //pub mod parse_amount {
 
 use bigdecimal::ParseBigDecimalError;
-use crate::backtrace2::BacktraceCell;
+use crate::backtrace::BacktraceCell;
 use crate::entity::currency::parse::CurrencyFormatError;
 
 

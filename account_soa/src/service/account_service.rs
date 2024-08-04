@@ -9,7 +9,7 @@ use mvv_common::{
         amount::Amount, bd::{BigDecimalWrapper }, amount::ops::AmountOpsError, AmountParts,
     },
 };
-use mvv_common::backtrace2::BacktraceCell;
+use mvv_common::backtrace::BacktraceCell;
 use crate::entity::{
     account::{ self },
     IbanWrapper, IbanRefWrapper, prelude::{ Account, AccountId },
