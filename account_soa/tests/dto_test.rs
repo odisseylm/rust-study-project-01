@@ -3,7 +3,7 @@ use indoc::indoc;
 use bigdecimal::BigDecimal;
 use chrono::{ Utc, FixedOffset };
 use mvv_common::entity::currency::InnerCurStr;
-use mvv_account_soa::rest::dto::{Account, Amount};
+use mvv_account_soa::rest::dto::{ Account, Amount };
 use mvv_common::test::{ TestDisplayStringOps, TestDebugStringOps, TestOptionUnwrap, TestResultUnwrap };
 //--------------------------------------------------------------------------------------------------
 

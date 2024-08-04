@@ -1,5 +1,3 @@
-
-
 // Seems tests are not launched automatically from' macro' subproject (at least under Idea).
 // As quick fix it is included there to be picked up.
 //
@@ -12,10 +10,9 @@
 //                     Error without source - simple variant.
 // -------------------------------------------------------------------------------------------------
 
-
 use assertables::{ assert_contains, assert_contains_as_result, };
 use mvv_common::entity::amount::parse::AmountFormatError;
-use mvv_common::entity::currency::{CurrencyFormatError, parse::ErrorKind as CurErrorKind };
+use mvv_common::entity::currency::{ CurrencyFormatError, parse::ErrorKind as CurErrorKind };
 // use mvv_common::backtrace::{BacktraceCopyProvider}; // , NewBacktracePolicy};
 use mvv_common::backtrace::{ BacktraceSource };
 use mvv_common::test::{ TestDisplayStringOps, TestOptionDisplayStringOps };
@@ -89,12 +86,9 @@ fn test_currency_format_error_other() {
 }
 
 
-
 // -------------------------------------------------------------------------------------------------
 //                     Error without source - simple variant.
 // -------------------------------------------------------------------------------------------------
-
-
 #[test]
 fn test_amount_format_error_new() {
     use mvv_common::entity::amount::parse::{ ErrorKind };

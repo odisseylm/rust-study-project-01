@@ -1,5 +1,6 @@
 use indoc::indoc;
 
+
 #[test]
 fn test_multiline_string_01_without_ident() {
     let a: &'static str = indoc! { "

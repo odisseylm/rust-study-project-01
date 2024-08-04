@@ -1,8 +1,7 @@
 mod common;
-
 use common::TestResultUnwrap;
-
 use core::fmt;
+//--------------------------------------------------------------------------------------------------
 
 
 struct Position {
@@ -37,7 +36,6 @@ fn test_format_usage_01() {
 
 #[test]
 fn test_format_usage_02() {
-
     let position = Position { longitude: 1.987, latitude: 2.983 };
     assert_eq!(format!("{position:?}"), "(1.987, 2.983)");
 
@@ -51,7 +49,6 @@ fn test_format_usage_02() {
 
 #[test]
 fn test_format_usage_03() {
-
     let position = Position { longitude: 1.987, latitude: 2.983 };
     assert_eq!(format!("{position:?}"), "(1.987, 2.983)");
 
