@@ -20,7 +20,7 @@ prettyplease = "0.2.20"
 
 
 [dependencies]
-mvv_static_error_macro = { version = "0.1.0", path = "../static_error_macro" }
+mvv_error_macro = { version = "0.1.0", path = "../error_macro" }
 mvv_proc_macro = { version = "0.1.0", path = "../proc_macro" }
 mvv_common = { version = "0.1.0", path = "../common" }
 mvv_auth = { version = "0.1.0", path = "../auth" }
@@ -237,6 +237,7 @@ uuid = { version = "1.10.0", features = ["default", "v4", "serde", ] }
 
 progenitor = { version = "0.7.0", features = [] }
 progenitor-client = { version = "0.7.0", features = [] }
+progenitor-impl = { version = "0.7.0", features = [] } # TODO: remove and pass it 'patch-subdep-ver' in some other way
 #http-auth-basic = "0.3.3"
 
 # unused manifest key: tests

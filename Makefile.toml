@@ -1,4 +1,17 @@
 
+[config]
+init_task = "init"
+end_task = "end"
+
+[tasks.init]
+dependencies = ["create_dep_patchs"]
+
+[tasks.create_dep_patchs]
+command = "cargo"
+args = ["patch-subdep-ver"]
+condition = { files_not_exist = ["target/patch-override-sub-dep"] }
+
+
 #[config]
 #skip_core_tasks = true
 

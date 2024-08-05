@@ -2625,8 +2625,8 @@ dependencies = [
  "macro_rules_attribute",
  "mvv_auth",
  "mvv_common",
+ "mvv_error_macro",
  "mvv_proc_macro",
- "mvv_static_error_macro",
  "mvv_tuple_heter_iter",
  "mvv_tuple_heter_iter_macro",
  "nonzero_lit",
@@ -2728,8 +2728,8 @@ dependencies = [
  "macro_rules_attribute",
  "mvv_auth",
  "mvv_common",
+ "mvv_error_macro",
  "mvv_proc_macro",
- "mvv_static_error_macro",
  "mvv_tuple_heter_iter",
  "mvv_tuple_heter_iter_macro",
  "nonzero_lit",
@@ -2743,6 +2743,7 @@ dependencies = [
  "prettyplease",
  "progenitor",
  "progenitor-client",
+ "progenitor-impl",
  "quick_cache",
  "rand",
  "readonly",
@@ -2817,7 +2818,7 @@ dependencies = [
  "log",
  "macro_rules_attribute",
  "mvv_common",
- "mvv_static_error_macro",
+ "mvv_error_macro",
  "mvv_tuple_heter_iter",
  "mvv_tuple_heter_iter_macro",
  "num",
@@ -2898,7 +2899,7 @@ dependencies = [
  "log4rs",
  "lru",
  "macro_rules_attribute",
- "mvv_static_error_macro",
+ "mvv_error_macro",
  "mvv_tuple_heter_iter",
  "mvv_tuple_heter_iter_macro",
  "nonzero_lit",
@@ -2947,20 +2948,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "mvv_proc_macro"
-version = "0.1.0"
-dependencies = [
- "if_chain",
- "itertools 0.13.0",
- "proc-macro2",
- "quote",
- "strum",
- "strum_macros",
- "syn 2.0.72",
-]
-
-[[package]]
-name = "mvv_static_error_macro"
+name = "mvv_error_macro"
 version = "0.1.0"
 dependencies = [
  "if_chain",
@@ -2972,6 +2960,19 @@ dependencies = [
  "syn 2.0.72",
  "tuple_len",
  "tuple_length",
+]
+
+[[package]]
+name = "mvv_proc_macro"
+version = "0.1.0"
+dependencies = [
+ "if_chain",
+ "itertools 0.13.0",
+ "proc-macro2",
+ "quote",
+ "strum",
+ "strum_macros",
+ "syn 2.0.72",
 ]
 
 [[package]]
@@ -6370,6 +6371,10 @@ dependencies = [
  "cfg-if",
  "windows-sys 0.48.0",
 ]
+
+[[package]]
+name = "xtask"
+version = "0.1.0"
 
 [[package]]
 name = "zerocopy"

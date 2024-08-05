@@ -60,7 +60,7 @@ pub enum ErrorKind {
 // noinspection DuplicatedCode
 //
 #[derive(thiserror::Error)]
-#[derive(mvv_static_error_macro::MyStaticStructError)]
+#[derive(mvv_error_macro::MyStaticStructError)]
 // #[do_not_generate_debug]
 pub struct AmountFormatError {
     pub kind: ErrorKind,
@@ -75,7 +75,7 @@ pub struct AmountFormatError {
 // noinspection DuplicatedCode
 //
 // #[derive(thiserror::Error)]
-#[derive(mvv_static_error_macro::MyStaticStructErrorSource)]
+#[derive(mvv_error_macro::MyStaticStructErrorSource)]
 #[struct_error_type(AmountFormatError)]
 // #[derive(Debug)]
 pub enum ErrorSource {

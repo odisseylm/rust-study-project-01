@@ -34,7 +34,7 @@ cargo_metadata = "0.18.1"
 
 
 [dependencies]
-mvv_static_error_macro = { version = "0.1.0", path = "../static_error_macro" }
+mvv_error_macro = { version = "0.1.0", path = "../error_macro" }
 #mvv_auth = { version = "0.1.0", path = "../auth" }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
@@ -309,5 +309,5 @@ macro_rules_attribute = "0.2.0"
 #[workspace]
 #members = [
 #    "mvv_auth",
-#    "static_error_macro",
+#    "error_macro",
 #]

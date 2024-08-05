@@ -288,7 +288,7 @@ pub mod parse {
 
     // #[derive(Debug, PartialEq, Copy, Clone)]
     #[derive(thiserror::Error)]
-    #[derive(mvv_static_error_macro::MyStaticStructError)]
+    #[derive(mvv_error_macro::MyStaticStructError)]
     pub struct CurrencyFormatError {
         pub kind: ErrorKind,
         // #[source]

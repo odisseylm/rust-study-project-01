@@ -123,7 +123,7 @@ pub enum ErrorKind {
 }
 
 #[derive(thiserror::Error)]
-#[derive(mvv_static_error_macro::MyStaticStructError)]
+#[derive(mvv_error_macro::MyStaticStructError)]
 pub struct AmountOpsError {
     pub kind: ErrorKind,
     pub backtrace: BacktraceCell,
@@ -131,7 +131,7 @@ pub struct AmountOpsError {
     pub source: ErrorSource,
 }
 
-#[derive(mvv_static_error_macro::MyStaticStructErrorSource)]
+#[derive(mvv_error_macro::MyStaticStructErrorSource)]
 #[struct_error_type(AmountOpsError)]
 pub enum ErrorSource {
     // #[error("No source")]

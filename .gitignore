@@ -3,7 +3,7 @@
 /vendor
 /vendor/**
 /mvv_auth/target/**
-/static_error_macro/target/**
+/error_macro/target/**
 /tuple_heter_iter/target/**
 /tuple_heter_iter_macro/target/**
 /.idea/**
