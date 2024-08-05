@@ -237,7 +237,8 @@ uuid = { version = "1.10.0", features = ["default", "v4", "serde", ] }
 
 progenitor = { version = "0.7.0", features = [] }
 progenitor-client = { version = "0.7.0", features = [] }
-progenitor-impl = { version = "0.7.0", features = [] } # TODO: remove and pass it 'patch-subdep-ver' in some other way
+# Only for patching
+progenitor-impl = { version = "0.7.0", features = [], optional = true }
 #http-auth-basic = "0.3.3"
 
 # unused manifest key: tests

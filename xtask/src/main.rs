@@ -1,8 +1,22 @@
 
 fn main() {
+    let task = std::env::args().nth(1);
+    match task.as_deref() {
+        Some("patch-subdep-ver") => generate_patch(),
+        Some("x-patch-subdep-ver") => generate_patch(),
+        _ => print_help(),
+    }
+
     generate_patch()
 }
 
+fn print_help() {
+    eprintln!(
+        "Tasks: \n \
+           x-patch-subdep-ver   calls `cargo patch-subdep-ver` \n \
+        "
+    )
+}
 
 fn generate_patch() {
     use std::process::Command;
@@ -22,10 +36,11 @@ fn generate_patch() {
 
 
 
+#[allow(dead_code)]
 struct BuildEnv {
     project_dir: std::path::PathBuf,
     target_dir: std::path::PathBuf,
-    target_profile_dir: std::path::PathBuf,
+    // target_profile_dir: std::path::PathBuf,
 }
 
 impl BuildEnv {
@@ -51,6 +66,7 @@ impl BuildEnv {
             .unwrap_or_else(|_err|project_dir.as_path().join("../target").to_string_lossy().to_string());
         let target_dir = std::path::PathBuf::from_str(&target_dir).unwrap();
 
+        /*
         // PROFILE
         let profile = std::env::var("PROFILE").unwrap();
         let profile = profile.as_str();
@@ -63,12 +79,13 @@ impl BuildEnv {
             panic!("Unexpected value of PROFILE [{profile}]")
         };
         let target_profile_dir = target_dir.join(target_sub_dir);
+        */
 
 
         BuildEnv {
             project_dir,
             target_dir,
-            target_profile_dir,
+            // target_profile_dir,
         }
     }
 }
