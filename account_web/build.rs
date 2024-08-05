@@ -57,7 +57,9 @@ fn generate_rest_client() {
         "\n#[allow(unused_imports, unused_qualifications)]\nimpl Client {");
 
     // let mut out_file = std::path::Path::new(&std::env::var("OUT_DIR").unwrap()).to_path_buf();
-    let generated_file_path = build_env.project_dir.join("src/rest_dependencies/account_soa_client.rs");
+    let generated_file_dir = build_env.project_dir.join("src/rest_dependencies");
+    std::fs::create_dir_all(&generated_file_dir);
+    let generated_file_path = generated_file_dir.join("account_soa_client.rs");
     let generated_file_path = generated_file_path.as_path();
 
     let to_write: bool = if generated_file_path.exists() {
