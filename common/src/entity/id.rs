@@ -45,7 +45,7 @@ pub mod parse {
     }
 
     #[derive(thiserror::Error)]
-    #[derive(mvv_error_macro::MyStaticStructError)]
+    #[derive(mvv_error_macro::StructError)]
     pub struct IdFormatError {
         pub kind: ErrorKind,
         pub backtrace: BacktraceCell,

@@ -2,29 +2,34 @@ mod macro_util;
 mod error_source;
 
 mod compile_log;
+mod struct_error;
+mod bt;
 
 // RustRover does not pick it up (however cargo does)
 // #[macro_use]
 // mod compile_log_macros;
 include!("compile_log_macros.rs");
-
-
-use std::collections::{ HashMap, HashSet };
 use if_chain::if_chain;
-use itertools::*;
 
 use quote::quote;
-use crate::macro_util::*;
-use crate::error_source::*;
+use crate::struct_error::{
+    generate_error_source_backtrace_source_impl_block,
+    generate_error_source_debug_impl_block,
+    generate_error_source_display_impl_block,
+    generate_error_source_std_error_impl_block,
+    generate_error_source_variants_from_impl_block,
+    generate_error_source_variants_into_impl_block,
+    generate_struct_error_backtrace_source_impl_block,
+    generate_struct_error_display_impl_block,
+    generate_struct_error_with_source_debug_impl_block,
+    generate_struct_error_with_source_field_impl_block,
+    generate_struct_error_without_source_debug_impl_block,
+    generate_struct_error_without_source_field_impl_block,
+    GenerateStructErrorAttrs,
+    StaticStructErrorSourceAttrs,
+};
 
-
-fn bt_root_path_segment(path_mode: InternalTypePathMode) -> proc_macro2::TokenStream {
-    match path_mode {
-        InternalTypePathMode::InternalCratePath => quote! { crate },
-        InternalTypePathMode::ExternalCratePath => quote! { :: mvv_common },
-    }
-}
-
+/*
 fn bt_type(path_mode: InternalTypePathMode, type_name: &str) -> proc_macro2::TokenStream {
     let root = bt_root_path_segment(path_mode);
     let type_name_ident: syn::Ident = syn::parse_str(type_name).expect(&format!("Error of converting [{}] to Ident.", type_name));
@@ -52,21 +57,32 @@ fn use_bt_types_expr(path_mode: InternalTypePathMode) -> Vec<proc_macro2::TokenS
         .collect_vec()
 }
 */
-fn use_bt_types_expr(path_mode: InternalTypePathMode) -> proc_macro2::TokenStream {
-    let root = bt_root_path_segment(path_mode);
-    quote! { use #root ::backtrace::{ BacktraceCell, BacktraceSource } ; }
-}
+*/
 
 
-#[proc_macro_derive(MyStaticStructError, attributes(StaticStructErrorType, do_not_generate_display, do_not_generate_debug, static_struct_error_internal_type_path_mode))]
-pub fn my_static_struct_error_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+#[proc_macro_derive(StructError, attributes(
+    StaticStructErrorType,
+    do_not_generate_display,
+    do_not_generate_debug,
+    struct_error_internal_type_path_mode,
+))]
+pub fn struct_error_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let ast: syn::DeriveInput = syn::parse(input)
-        .expect("No input for derive macro MyStaticStructError");
+        .expect("No input for derive macro StructError");
 
-    impl_my_static_struct_error(&ast)
+    impl_struct_error(&ast)
 }
 
-fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
+fn impl_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
+
+    let GenerateStructErrorAttrs { do_not_generate_display, do_not_generate_debug } =
+        GenerateStructErrorAttrs::new(ast);
+
+    // #[allow(non_snake_case)]
+    // let GenerateStructErrorCfg { error_type_name, use_bt_types, BacktraceCell, BacktraceSource, .. } =
+    //     GenerateStructErrorCfg::new(ast);
+
+    /*
     let error_type_name = &ast.ident;
 
     let do_not_generate_display = find_attr(&ast.attrs, "do_not_generate_display").is_some();
@@ -80,6 +96,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
     let BacktraceCell = bt_type(int_type_path_mode, "BacktraceCell");
     #[allow(non_snake_case)]
     let BacktraceSource = bt_type(int_type_path_mode, "BacktraceSource");
+    */
 
     let source_field_exists: bool = if_chain! {
         if let syn::Data::Struct(ref data) = ast.data;
@@ -94,6 +111,8 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         } else { false }
     };
 
+    let err_impl_without_source = generate_struct_error_without_source_field_impl_block(ast);
+    /*
     let err_impl_without_source = quote! {
 
         #[allow(unused_imports)]
@@ -113,7 +132,10 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         }
 
     };
+    */
 
+    let err_impl_with_source = generate_struct_error_with_source_field_impl_block(ast);
+    /*
     let err_impl_with_source = quote! {
 
         #[allow(unused_imports)]
@@ -139,7 +161,10 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
         }
 
     };
+    */
 
+    let err_backtrace_provider_impl = generate_struct_error_backtrace_source_impl_block(ast);
+    /*
     let err_backtrace_provider_impl = quote! {
 
         #[allow(unused_imports)]
@@ -155,18 +180,13 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
             fn take_backtrace(&self) -> #BacktraceCell { self.backtrace.move_out() }
         }
     };
+    */
 
-    let err_display_impl = if do_not_generate_display { quote!() } else { quote! {
+    let err_display_impl = if do_not_generate_display { quote!() }
+    else { generate_struct_error_display_impl_block(ast) };
 
-        #[allow(unused_imports)]
-        #[allow(unused_qualifications)]
-        impl core::fmt::Display for #error_type_name {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                write!(f, concat!(stringify!(#error_type_name), " {{ {} }}"), self.kind)
-            }
-        }
-    } };
-
+    let err_debug_impl_with_source = generate_struct_error_with_source_debug_impl_block(ast);
+    /*
     let err_debug_impl_with_source = quote! {
 
         #[allow(unused_imports)]
@@ -192,7 +212,10 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
             // }
         }
     };
+    */
 
+    let err_debug_impl_without_source = generate_struct_error_without_source_debug_impl_block(ast);
+    /*
     let err_debug_impl_without_source = quote! {
 
         #[allow(unused_imports)]
@@ -207,6 +230,7 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
             }
         }
     };
+    */
 
     let err_impl: proc_macro2::TokenStream = if source_field_exists { err_impl_with_source } else { err_impl_without_source };
     let err_debug_impl: proc_macro2::TokenStream = if do_not_generate_debug { quote!() } else {
@@ -233,26 +257,38 @@ fn impl_my_static_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStrea
 
 
 
-#[proc_macro_derive(MyStaticStructErrorSource,
+#[proc_macro_derive(StructErrorSource,
     attributes(
+        // top
         struct_error_type,
         from_error_kind,
-        no_source_backtrace,
-        no_std_error,
+        struct_error_internal_type_path_mode,
         do_not_generate_display,
         do_not_generate_std_error,
-        static_struct_error_internal_type_path_mode,
+        // enum variant
+        no_source_backtrace,
+        no_std_error,
     )
 )]
-pub fn my_static_struct_error_source_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+pub fn struct_error_source_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let ast = syn::parse(input)
-        .expect("No input source for derive macro MyStaticStructErrorSource.");
-    impl_my_static_struct_error_source(&ast)
+        .expect("No input source for derive macro StructErrorSource.");
+    impl_struct_error_source(&ast)
 }
 
-fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
+fn impl_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
     let _name = ast.ident.to_string();
 
+    let StaticStructErrorSourceAttrs {
+        do_not_generate_debug, do_not_generate_display, do_not_generate_std_error, ..}
+        = StaticStructErrorSourceAttrs::new(ast);
+
+    // #[allow(non_snake_case)]
+    // let GenerateStructErrorCfg { .. } = GenerateStructErrorCfg::new(ast);
+
+    // let GenerateStructErrorAttrs { do_not_generate_display, do_not_generate_debug } = GenerateStructErrorAttrs::new();
+
+    /*
     let do_not_generate_debug = find_attr(&ast.attrs, "do_not_generate_debug").is_some();
     let do_not_generate_display = find_attr(&ast.attrs, "do_not_generate_display").is_some();
     let do_not_generate_std_error = find_attr(&ast.attrs, "do_not_generate_std_error").is_some();
@@ -270,7 +306,9 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         .and_then(|attr| attr_list_as_string(attr));
     let struct_error_type: String = struct_error_type
         .expect("struct_error_type should have format: struct_error_type(MyErrorStructName)");
+    */
 
+    /*
     let error_source_enum = get_error_source_enum_variants(ast);
     let enum_variants: Vec<&ErrorSourceEnumVariant> = error_source_enum
         .variants.iter()
@@ -284,7 +322,9 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
         .filter(|(_, enums_vec)| enums_vec.len() > 1)
         .map(|src_type_and_vars| src_type_and_vars.0.to_string())
         .collect();
+    */
 
+    /*
     let types_without_any_bt: Vec<&str> = vec!("char",
                                                "i8", "i16", "i32", "i64", "i128",
                                                "u8", "u16", "u32", "u64", "u128",
@@ -346,6 +386,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             quote!(  ErrorSource:: #var_name (ref src)  => { src.is_taking_backtrace_supported() }  )
         }
     }).collect::<Vec<_>>();
+    */
 
     /*
     let err_src_bt_provider_impl_match_branches2: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
@@ -363,7 +404,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     }).collect::<Vec<_>>();
     */
 
-
+    /*
     let types_to_wrap_with_enum_vr_name: Vec<&str> = vec!("char",
                                                           "i8", "i16", "i32", "i64", "i128",
                                                           "u8", "u16", "u32", "u64", "u128",
@@ -388,7 +429,10 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             quote!(  #var_name  => { write!(f, stringify!(#var_name)) }  )
         }
     }).collect::<Vec<_>>();
+    */
 
+    let err_src_impl = generate_error_source_backtrace_source_impl_block(ast);
+    /*
     let err_src_impl = quote! {
 
         #[allow(unused_imports)]
@@ -436,8 +480,11 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             */
         }
     };
+    */
 
     let debug_err_src_impl = if do_not_generate_debug { quote!() } else {
+        generate_error_source_debug_impl_block(ast)
+        /*
         quote! {
 
             #[allow(unused_imports)]
@@ -454,8 +501,12 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             }
 
         }
+        */
     };
 
+    let from_impl: proc_macro2::TokenStream = generate_error_source_variants_from_impl_block(ast);
+
+    /*
     let from_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let variant_enum_name: &proc_macro2::Ident = vr.name;
 
@@ -513,7 +564,10 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             }
         }
     }).collect::<Vec<_>>();
+    */
 
+    let into_impl = generate_error_source_variants_into_impl_block(ast);
+    /*
     let into_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().filter_map(|ref el| {
         let var_name: &syn::Ident = el.name;
 
@@ -544,9 +598,12 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             }
         })
     }).collect::<Vec<_>>();
+    */
 
     let display_err_src_impl = if do_not_generate_display { quote!() }
     else {
+        generate_error_source_display_impl_block(ast)
+        /*
         let display_err_src_items_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|ref el| {
             let var_name: &syn::Ident = el.name;
             let is_src_arg_present: bool = el.first_arg_type.is_some();
@@ -580,8 +637,10 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             }
 
         }
+        */
     };
 
+    /*
     let types_without_std_err: Vec<&str> = vec!("char",
                                      "i8", "i16", "i32", "i64", "i128",
                                      "u8", "u16", "u32", "u64", "u128",
@@ -589,9 +648,12 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
                                      "f32", "f64",
                                      "String", "&str", "& 'static str",
     );
+    */
 
     let std_error_err_src_impl = if do_not_generate_std_error { quote!() }
     else {
+        generate_error_source_std_error_impl_block(ast)
+        /*
         let fn_source_items_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|ref el| {
             let var_name: &syn::Ident = el.name;
             let is_src_arg_present: bool = el.first_arg_type.is_some();
@@ -668,6 +730,7 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
             }
 
         }
+        */
     };
 
     let err_impl_ts: proc_macro2::TokenStream = err_src_impl;
@@ -684,8 +747,8 @@ fn impl_my_static_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::Tok
     // as separate var to avoid warn/error in RustRover
     let out = quote! {
         #err_impl_ts
-        #(#into_impl)*
-        #(#from_impl)*
+        #into_impl
+        #from_impl
         #debug_err_src_impl
         #display_err_src_impl
         #std_error_err_src_impl

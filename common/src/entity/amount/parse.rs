@@ -31,7 +31,7 @@ pub fn parse_amount(s: &str) -> Result<Amount, AmountFormatError> {
 // rust does not support nested structs/types/so on.
 // As workaround, I decided to use sub-namespace.
 //
-//noinspection DuplicatedCode  // duplicated since copy of this code (in amount_parse_old.rs) is also used for testing MyStaticStructError
+//noinspection DuplicatedCode  // duplicated since copy of this code (in amount_parse_old.rs) is also used for testing StructError
 //pub mod parse_amount {
 
 use bigdecimal::ParseBigDecimalError;
@@ -39,7 +39,7 @@ use crate::backtrace::BacktraceCell;
 use crate::entity::currency::parse::CurrencyFormatError;
 
 
-// Duplicated since copy of this code (in amount_parse_old.rs) is also used for testing MyStaticStructError
+// Duplicated since copy of this code (in amount_parse_old.rs) is also used for testing StructError
 // noinspection DuplicatedCode
 //
 #[derive(Debug, thiserror::Error, PartialEq)]
@@ -56,11 +56,11 @@ pub enum ErrorKind {
 }
 
 
-// Duplicated since copy of this code (in amount_parse_old.rs) is also used for testing MyStaticStructError
+// Duplicated since copy of this code (in amount_parse_old.rs) is also used for testing StructError
 // noinspection DuplicatedCode
 //
 #[derive(thiserror::Error)]
-#[derive(mvv_error_macro::MyStaticStructError)]
+#[derive(mvv_error_macro::StructError)]
 // #[do_not_generate_debug]
 pub struct AmountFormatError {
     pub kind: ErrorKind,
@@ -71,11 +71,11 @@ pub struct AmountFormatError {
 }
 
 
-// Duplicated code since copy of this code (in amount_parse_old.rs) is also used for testing MyStaticStructError
+// Duplicated code since copy of this code (in amount_parse_old.rs) is also used for testing StructError
 // noinspection DuplicatedCode
 //
 // #[derive(thiserror::Error)]
-#[derive(mvv_error_macro::MyStaticStructErrorSource)]
+#[derive(mvv_error_macro::StructErrorSource)]
 #[struct_error_type(AmountFormatError)]
 // #[derive(Debug)]
 pub enum ErrorSource {

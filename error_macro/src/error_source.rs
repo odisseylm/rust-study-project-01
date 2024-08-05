@@ -2,7 +2,7 @@ use crate::macro_util::{ attr_list_as_string, determine_internal_type_path_mode_
                          find_attr, InternalTypePathMode };
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ErrorSourceEnumVariant<'a> {
     pub variant: & 'a syn::Variant,
     pub name: & 'a syn::Ident,
@@ -104,15 +104,15 @@ pub fn get_error_source_enum_variants<'a>(ast: & 'a syn::DeriveInput) -> ErrorSo
 pub fn get_internal_type_path_mode(ast: &syn::DeriveInput) -> InternalTypePathMode {
     use core::str::FromStr;
 
-    let internal_type_path_mode_attr = find_attr(&ast.attrs, "static_struct_error_internal_type_path_mode")
-        .or_else(|| find_attr(&ast.attrs, "static_struct_error_source_internal_type_path_mode"))
+    let internal_type_path_mode_attr = find_attr(&ast.attrs, "struct_error_internal_type_path_mode")
+        .or_else(|| find_attr(&ast.attrs, "struct_error_source_internal_type_path_mode"))
         .or_else(|| find_attr(&ast.attrs, "error_source_internal_type_path_mode"))
         .or_else(|| find_attr(&ast.attrs, "internal_type_path_mode"));
 
     internal_type_path_mode_attr.and_then(|type_mode_attr| {
             attr_list_as_string(type_mode_attr)
                 .map(|s| InternalTypePathMode::from_str(s.as_str())
-                    .expect( &format!("static_struct_error_internal_type_path_mode has incorrect value.\
+                    .expect( &format!("struct_error_internal_type_path_mode has incorrect value.\
                      Possible value: {}/{}.", InternalTypePathMode::InternalCratePath, InternalTypePathMode::ExternalCratePath))
                 )
         })
