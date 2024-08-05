@@ -353,7 +353,7 @@ pub(crate) fn impl_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::To
 
     let from_impl: proc_macro2::TokenStream = generate_error_source_variants_from_impl_block(ast);
 
-    let into_impl = generate_error_source_variants_into_impl_block(ast);
+    let into_impl = generate_error_source_variants_from_args_impl_block(ast);
 
     let display_err_src_impl =
         if do_not_generate_display { quote!() }
@@ -783,9 +783,7 @@ fn generate_error_source_std_error_impl_block(ast: &syn::DeriveInput)
 }
 
 
-
-// TODO: try to replace on 'From'
-fn generate_error_source_variants_into_impl_block(ast: &syn::DeriveInput)
+fn generate_error_source_variants_from_args_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
 
     let err_src_vars = ErrorSourceVariants::new(ast);
@@ -805,21 +803,21 @@ fn generate_error_source_variants_into_impl_block(ast: &syn::DeriveInput)
 
         let arg_type_as_string = type_to_string_without_spaces(var_arg_type);
         if duplicated_err_enum_src_types.contains(&arg_type_as_string) {
-            compile_log_info!("'Into' is not implemented for {}.{} because there are others enum variants \
+            compile_log_info!("'Into/From' is not implemented for {}.{} because there are others enum variants \
             in [{}] with the same src/arg type [{}].",
                 error_source_enum.name, var_name, error_source_enum.name, arg_type_as_string);
             return None;
         }
 
         Some( quote! {
-            // impl Into<ErrorSource> for CurrencyFormatError {
-            //     fn into(self) -> ErrorSource { ErrorSource::CurrencyFormatError22(self) }
+            // impl From<CurrencyFormatError> for ErrorSource {
+            //     fn from(CurrencyFormatError) -> ErrorSource { ErrorSource::CurrencyFormatError22(self) }
             // }
 
             #[allow(unused_imports)]
             #[allow(unused_qualifications)]
-            impl Into<ErrorSource> for #var_arg_type {
-                fn into(self) -> ErrorSource { ErrorSource:: #var_name (self) }
+            impl From<#var_arg_type> for ErrorSource {
+                fn from(v: #var_arg_type) -> ErrorSource { ErrorSource:: #var_name (v) }
             }
         })
     }).collect::<Vec<_>>();
