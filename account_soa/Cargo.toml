@@ -8,11 +8,18 @@ edition = "2021"
 #[lib]
 #proc-macro = true
 
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(feature, values("performance_tests", "special-integration-tests"))',
+] }
+
 [features]
 # Defines a feature named `webp` that does not enable any other features.
-#webp = []
-#error_generic_member_access = []
-#special-integration-test = []
+# webp = []
+# error_generic_member_access = []
+# special-integration-test = []
+# feature = "performance_tests"
 
 serde_json_raw_value = ["serde_json/raw_value"]
 #default = ["serde_json_raw_value", ]

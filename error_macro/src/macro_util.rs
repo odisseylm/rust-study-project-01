@@ -150,6 +150,7 @@ impl StringOp for String {
 
 pub trait OptionStringOp {
     fn is_eq_to_str(&self, str: &str) -> bool;
+    fn is_eq_to_one_of_str<const N: usize>(&self, str: [&str;N]) -> bool;
 }
 impl OptionStringOp for Option<String> {
     fn is_eq_to_str(&self, str: &str) -> bool {
@@ -158,6 +159,15 @@ impl OptionStringOp for Option<String> {
         match self {
             None => { false }
             Some(ref self_string) => { str == self_string.as_str() }
+        }
+    }
+    fn is_eq_to_one_of_str<const N: usize>(&self, strings: [&str;N]) -> bool {
+        match self {
+            None => { false }
+            Some(ref self_string) => {
+                <Option::<&str> as OptionStringOp>::is_eq_to_one_of_str(
+                    &Some(self_string.as_str()), strings)
+            }
         }
     }
 }
@@ -169,6 +179,14 @@ impl OptionStringOp for Option<&str> {
             None => { false }
             Some(ref self_string) => { str == *self_string }
         }
+    }
+    fn is_eq_to_one_of_str<const N: usize>(&self, strings: [&str;N]) -> bool {
+        for str in strings {
+            if self.is_eq_to_str(str) {
+                return true;
+            }
+        }
+        false
     }
 }
 

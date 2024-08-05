@@ -1,5 +1,4 @@
 use core::fmt::{ self, Debug, Display };
-use std::backtrace::BacktraceStatus;
 use std::sync::Arc;
 //--------------------------------------------------------------------------------------------------
 
@@ -116,7 +115,7 @@ impl BacktraceSource for anyhow::Error {
     }
 
     fn contains_backtrace(&self) -> bool {
-        if let BacktraceStatus::Captured = self.backtrace().status() { true }
+        if let std::backtrace::BacktraceStatus::Captured = self.backtrace().status() { true }
         else { false }
     }
 
@@ -357,6 +356,7 @@ mod tests {
             v
         }
 
+        //noinspection DuplicatedCode
         #[allow(dead_code)]
         async fn compile_test_for_multi_threads() {
             let bt = std::backtrace::Backtrace::capture();
@@ -399,6 +399,7 @@ mod tests {
             v
         }
 
+        //noinspection DuplicatedCode
         #[allow(dead_code)]
         async fn compile_test_for_multi_threads() {
             let bt = std::backtrace::Backtrace::capture();

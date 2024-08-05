@@ -1,9 +1,19 @@
 use std::collections::{HashMap, HashSet};
+use if_chain::if_chain;
 use itertools::Itertools;
 use quote::quote;
-use crate::bt::{bt_root_path_segment, bt_type, use_bt_types_expr};
-use crate::error_source::{ErrorSourceEnum, ErrorSourceEnumVariant, get_error_source_enum_variants, get_internal_type_path_mode};
-use crate::macro_util::{attr_list_as_string, find_attr, find_enum_variant_attr, InternalTypePathMode, OptionStringOp, type_to_string, type_to_string_without_spaces};
+use crate::{
+    bt::{ bt_root_path_segment, bt_type, use_bt_types_expr },
+    error_source::{
+        ErrorSourceEnum, ErrorSourceEnumVariant,
+        get_error_source_enum_variants, get_internal_type_path_mode,
+    },
+    macro_util::{
+        attr_list_as_string, find_attr, find_enum_variant_attr,
+        InternalTypePathMode, OptionStringOp,
+        type_to_string, type_to_string_without_spaces,
+    },
+};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -13,14 +23,53 @@ use crate::macro_util::{attr_list_as_string, find_attr, find_enum_variant_attr, 
 include!("compile_log_macros.rs");
 
 
+
+pub(crate) fn impl_struct_error(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
+
+    let GenerateStructErrorAttrs { do_not_generate_display, do_not_generate_debug } =
+        GenerateStructErrorAttrs::new(ast);
+
+    let source_field_exists = is_source_field_present(ast);
+
+    let err_impl_without_source = generate_struct_error_without_source_field_impl_block(ast);
+    let err_impl_with_source = generate_struct_error_with_source_field_impl_block(ast);
+    let err_backtrace_provider_impl = generate_struct_error_backtrace_source_impl_block(ast);
+
+    let err_display_impl = if do_not_generate_display { quote!() }
+    else { generate_struct_error_display_impl_block(ast) };
+
+    let err_debug_impl_with_source = generate_struct_error_with_source_debug_impl_block(ast);
+    let err_debug_impl_without_source = generate_struct_error_without_source_debug_impl_block(ast);
+
+    let err_impl: proc_macro2::TokenStream =
+        if source_field_exists { err_impl_with_source }
+        else { err_impl_without_source };
+
+    let err_debug_impl: proc_macro2::TokenStream =
+        if do_not_generate_debug { quote!() }
+        else if source_field_exists { err_debug_impl_with_source }
+        else { err_debug_impl_without_source };
+
+    // as separate var to avoid warn/error in RustRover
+    let out = quote! {
+        #err_impl
+        #err_backtrace_provider_impl
+        #err_display_impl
+        #err_debug_impl
+    };
+
+    out.into()
+}
+
+
 #[allow(non_snake_case)]
-pub(crate) struct GenerateStructErrorAttrs {
-    pub(crate) do_not_generate_display: bool,
-    pub(crate) do_not_generate_debug: bool,
+struct GenerateStructErrorAttrs {
+    do_not_generate_display: bool,
+    do_not_generate_debug: bool,
     // struct_error_internal_type_path_mode: InternalTypePathMode,
 }
 impl GenerateStructErrorAttrs {
-    pub(crate) fn new(ast: &syn::DeriveInput) -> Self {
+    fn new(ast: &syn::DeriveInput) -> Self {
         Self {
             do_not_generate_display: find_attr( &ast.attrs, "do_not_generate_display").is_some(),
             do_not_generate_debug: find_attr( &ast.attrs, "do_not_generate_debug").is_some(),
@@ -31,18 +80,18 @@ impl GenerateStructErrorAttrs {
 
 
 #[allow(non_snake_case)]
-pub(crate) struct GenerateStructErrorCfg {
-    pub(crate) error_type_name: proc_macro2::Ident,
+struct GenerateStructErrorCfg {
+    error_type_name: proc_macro2::Ident,
     #[allow(dead_code)]
-    pub(crate) internal_type_path_mode: InternalTypePathMode,
+    internal_type_path_mode: InternalTypePathMode,
     // expressions
-    pub(crate) root_type_path: proc_macro2::TokenStream,
-    pub(crate) use_bt_types: proc_macro2::TokenStream,
-    pub(crate) BacktraceCell: proc_macro2::TokenStream,
-    pub(crate) BacktraceSource: proc_macro2::TokenStream,
+    root_type_path: proc_macro2::TokenStream,
+    use_bt_types: proc_macro2::TokenStream,
+    BacktraceCell: proc_macro2::TokenStream,
+    BacktraceSource: proc_macro2::TokenStream,
 }
 impl GenerateStructErrorCfg {
-    pub(crate) fn new(ast: &syn::DeriveInput) -> Self {
+    fn new(ast: &syn::DeriveInput) -> Self {
         let internal_type_path_mode = get_internal_type_path_mode(ast);
         Self {
             error_type_name: ast.ident.clone(),
@@ -57,14 +106,14 @@ impl GenerateStructErrorCfg {
 }
 
 
-pub(crate) struct StaticStructErrorSourceAttrs {
-    pub(crate) do_not_generate_debug: bool,
-    pub(crate) do_not_generate_display: bool,
-    pub(crate) do_not_generate_std_error: bool,
-    pub(crate) struct_error_type: String,
+struct StaticStructErrorSourceAttrs {
+    do_not_generate_debug: bool,
+    do_not_generate_display: bool,
+    do_not_generate_std_error: bool,
+    struct_error_type: String,
 }
 impl StaticStructErrorSourceAttrs {
-    pub(crate) fn new(ast: &syn::DeriveInput) -> Self {
+    fn new(ast: &syn::DeriveInput) -> Self {
 
         let struct_error_type_attr: Option<&syn::Attribute> = find_attr(&ast.attrs, "struct_error_type");
         let struct_error_type: Option<String> = struct_error_type_attr
@@ -82,23 +131,12 @@ impl StaticStructErrorSourceAttrs {
 }
 
 
-pub(crate) fn generate_struct_error_without_source_field_impl_block(ast: &syn::DeriveInput)
+fn generate_struct_error_without_source_field_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
 
     #[allow(non_snake_case)]
     let GenerateStructErrorCfg { error_type_name, use_bt_types, BacktraceCell, .. } =
         GenerateStructErrorCfg::new(ast);
-
-    /*
-    let error_type_name = &ast.ident;
-    let int_type_path_mode = get_internal_type_path_mode(ast);
-
-    let use_bt_types = use_bt_types_expr(int_type_path_mode);
-    #[allow(non_snake_case)]
-    let BacktraceCell = bt_type(int_type_path_mode, "BacktraceCell");
-    #[allow(non_snake_case)]
-    let BacktraceSource = bt_type(int_type_path_mode, "BacktraceSource");
-    */
 
     let err_impl_without_source = quote! {
 
@@ -106,15 +144,18 @@ pub(crate) fn generate_struct_error_without_source_field_impl_block(ast: &syn::D
         #[allow(unused_qualifications)]
         impl #error_type_name {
 
+            #[inline]
             pub fn new(kind: ErrorKind) -> Self {
+                Self::with_backtrace(kind)
+            }
+            pub fn with_backtrace(kind: ErrorKind) -> Self {
+                Self { kind, backtrace: #BacktraceCell ::capture_backtrace() }
+            }
+            pub fn without_backtrace(kind: ErrorKind) -> Self {
                 // Really is not needed there, but let's keep it just to test usage of generated 'use'.
                 #use_bt_types
 
-                Self { kind, backtrace: #BacktraceCell ::capture_backtrace() }
-            }
-            // TODO: remove, since we do not have already BacktracePolicy
-            pub fn with_backtrace(kind: ErrorKind) -> Self {
-                Self { kind, backtrace: #BacktraceCell ::capture_backtrace() }
+                Self { kind, backtrace: #BacktraceCell ::empty() }
             }
         }
 
@@ -124,38 +165,47 @@ pub(crate) fn generate_struct_error_without_source_field_impl_block(ast: &syn::D
 }
 
 
-pub(crate) fn generate_struct_error_with_source_field_impl_block(ast: &syn::DeriveInput)
+fn is_source_field_present(ast: &syn::DeriveInput) -> bool {
+    let source_field_exists: bool = if_chain! {
+        if let syn::Data::Struct(ref data) = ast.data;
+        if let syn::Fields::Named(ref fields) = data.fields;
+        then {
+            fields.named.iter().any(|f|
+                f.ident
+                .as_ref()
+                .map(|ident_name| ident_name == "source")
+                .unwrap_or(false)
+            )
+        } else { false }
+    };
+
+    source_field_exists
+}
+
+fn generate_struct_error_with_source_field_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
 
     #[allow(non_snake_case)]
     let GenerateStructErrorCfg { error_type_name, use_bt_types, BacktraceCell, .. } =
         GenerateStructErrorCfg::new(ast);
 
-    /*
-    let error_type_name = &ast.ident;
-    let int_type_path_mode = get_internal_type_path_mode(ast);
-
-    let use_bt_types = use_bt_types_expr(int_type_path_mode);
-    #[allow(non_snake_case)]
-    let BacktraceCell = bt_type(int_type_path_mode, "BacktraceCell");
-    #[allow(non_snake_case)]
-    let BacktraceSource = bt_type(int_type_path_mode, "BacktraceSource");
-    */
-
     let err_impl_with_source = quote! {
 
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
         impl #error_type_name {
+            #[inline]
             pub fn new(kind: ErrorKind) -> Self {
+                Self::with_backtrace(kind)
+            }
+            pub fn with_backtrace(kind: ErrorKind) -> Self {
+                Self { kind, backtrace: #BacktraceCell ::capture_backtrace(), source: ErrorSource::NoSource }
+            }
+            pub fn without_backtrace(kind: ErrorKind) -> Self {
                 // Really is not needed there, but let's keep it just to test usage of generated 'use'.
                 #use_bt_types
 
-                Self { kind, backtrace: #BacktraceCell ::capture_backtrace(), source: ErrorSource::NoSource }
-            }
-            // TODO: remove it. It is not needed anymore.
-            pub fn with_backtrace(kind: ErrorKind) -> Self {
-                Self { kind, backtrace: #BacktraceCell ::capture_backtrace(), source: ErrorSource::NoSource }
+                Self { kind, backtrace: #BacktraceCell ::empty(), source: ErrorSource::NoSource }
             }
             pub fn with_source(kind: ErrorKind, source: ErrorSource) -> Self {
                 Self { kind, backtrace: #BacktraceCell ::inherit_or_capture(&source), source }
@@ -172,23 +222,12 @@ pub(crate) fn generate_struct_error_with_source_field_impl_block(ast: &syn::Deri
 }
 
 
-pub(crate) fn generate_struct_error_backtrace_source_impl_block(ast: &syn::DeriveInput)
+fn generate_struct_error_backtrace_source_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
 
     #[allow(non_snake_case)]
     let GenerateStructErrorCfg { error_type_name, BacktraceSource, BacktraceCell, .. } =
         GenerateStructErrorCfg::new(ast);
-
-    /*
-    let error_type_name = &ast.ident;
-    let int_type_path_mode = get_internal_type_path_mode(ast);
-
-    let use_bt_types = use_bt_types_expr(int_type_path_mode);
-    #[allow(non_snake_case)]
-    let BacktraceCell = bt_type(int_type_path_mode, "BacktraceCell");
-    #[allow(non_snake_case)]
-    let BacktraceSource = bt_type(int_type_path_mode, "BacktraceSource");
-    */
 
     let err_backtrace_provider_impl = quote! {
 
@@ -210,23 +249,12 @@ pub(crate) fn generate_struct_error_backtrace_source_impl_block(ast: &syn::Deriv
 }
 
 
-pub(crate) fn generate_struct_error_display_impl_block(ast: &syn::DeriveInput)
+fn generate_struct_error_display_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
 
     #[allow(non_snake_case)]
     let GenerateStructErrorCfg { error_type_name, .. } =
         GenerateStructErrorCfg::new(ast);
-
-    /*
-    let error_type_name = &ast.ident;
-    let int_type_path_mode = get_internal_type_path_mode(ast);
-
-    let use_bt_types = use_bt_types_expr(int_type_path_mode);
-    #[allow(non_snake_case)]
-    let BacktraceCell = bt_type(int_type_path_mode, "BacktraceCell");
-    #[allow(non_snake_case)]
-    let BacktraceSource = bt_type(int_type_path_mode, "BacktraceSource");
-    */
 
     let err_display_impl = quote! {
 
@@ -243,24 +271,12 @@ pub(crate) fn generate_struct_error_display_impl_block(ast: &syn::DeriveInput)
 }
 
 
-pub(crate) fn generate_struct_error_with_source_debug_impl_block(ast: &syn::DeriveInput)
+fn generate_struct_error_with_source_debug_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
 
     #[allow(non_snake_case)]
     let GenerateStructErrorCfg { error_type_name, root_type_path, .. } =
         GenerateStructErrorCfg::new(ast);
-
-    /*
-    let error_type_name = &ast.ident;
-    let int_type_path_mode = get_internal_type_path_mode(ast);
-
-    let use_bt_types = use_bt_types_expr(int_type_path_mode);
-    #[allow(non_snake_case)]
-    let BacktraceCell = bt_type(int_type_path_mode, "BacktraceCell");
-    #[allow(non_snake_case)]
-    let BacktraceSource = bt_type(int_type_path_mode, "BacktraceSource");
-    let root_type_path = bt_root_path_segment(int_type_path_mode);
-    */
 
     let err_debug_impl_with_source = quote! {
 
@@ -292,24 +308,12 @@ pub(crate) fn generate_struct_error_with_source_debug_impl_block(ast: &syn::Deri
 }
 
 
-pub(crate) fn generate_struct_error_without_source_debug_impl_block(ast: &syn::DeriveInput)
+fn generate_struct_error_without_source_debug_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
 
     #[allow(non_snake_case)]
     let GenerateStructErrorCfg { error_type_name, .. } =
         GenerateStructErrorCfg::new(ast);
-
-    /*
-    let error_type_name = &ast.ident;
-    let int_type_path_mode = get_internal_type_path_mode(ast);
-
-    let use_bt_types = use_bt_types_expr(int_type_path_mode);
-    #[allow(non_snake_case)]
-    let BacktraceCell = bt_type(int_type_path_mode, "BacktraceCell");
-    #[allow(non_snake_case)]
-    let BacktraceSource = bt_type(int_type_path_mode, "BacktraceSource");
-    let root_type_path = bt_root_path_segment(int_type_path_mode);
-    */
 
     let err_debug_impl_without_source = quote! {
 
@@ -330,25 +334,61 @@ pub(crate) fn generate_struct_error_without_source_debug_impl_block(ast: &syn::D
 }
 
 
+//--------------------------------------------------------------------------------------------------
+//                            Struct Error Source enum
+//--------------------------------------------------------------------------------------------------
+//
+pub(crate) fn impl_struct_error_source(ast: &syn::DeriveInput) -> proc_macro::TokenStream {
+    let _name = ast.ident.to_string();
+
+    let StaticStructErrorSourceAttrs {
+        do_not_generate_debug, do_not_generate_display, do_not_generate_std_error, ..} =
+        StaticStructErrorSourceAttrs::new(ast);
+
+    let err_src_impl = generate_error_source_backtrace_source_impl_block(ast);
+
+    let debug_err_src_impl =
+        if do_not_generate_debug { quote!() }
+        else { generate_error_source_debug_impl_block(ast) };
+
+    let from_impl: proc_macro2::TokenStream = generate_error_source_variants_from_impl_block(ast);
+
+    let into_impl = generate_error_source_variants_into_impl_block(ast);
+
+    let display_err_src_impl =
+        if do_not_generate_display { quote!() }
+        else { generate_error_source_display_impl_block(ast) };
+
+    let std_error_err_src_impl =
+        if do_not_generate_std_error { quote!() }
+        else { generate_error_source_std_error_impl_block(ast) };
+
+    let err_impl_ts: proc_macro2::TokenStream = err_src_impl;
+
+    // as separate var to avoid warn/error in RustRover
+    let out = quote! {
+        #err_impl_ts
+        #into_impl
+        #from_impl
+        #debug_err_src_impl
+        #display_err_src_impl
+        #std_error_err_src_impl
+    };
+
+    out.into()
+}
 
 
-
-pub(crate) struct ErrorSourceVariants<'a> {
+struct ErrorSourceVariants<'a> {
     error_source_enum: ErrorSourceEnum<'a>,
     grouped_err_enum_variants_by_arg_type: HashMap<String, Vec<ErrorSourceEnumVariant<'a>>>,
     duplicated_err_enum_src_types: HashSet<String>,
 }
 impl ErrorSourceVariants<'_> {
 
-    pub(crate) fn new<'a>(ast: &'a syn::DeriveInput) -> ErrorSourceVariants<'a> {
+    fn new<'a>(ast: &'a syn::DeriveInput) -> ErrorSourceVariants<'a> {
 
         let error_source_enum: ErrorSourceEnum<'a> = get_error_source_enum_variants(ast);
-        // let error_source_enum_temp: ErrorSourceEnum<'a> = get_error_source_enum_variants(ast);
-        // let enum_variants: Vec<&'a ErrorSourceEnumVariant> = error_source_enum_temp
-        //     .variants.iter()
-        //     .collect::<Vec<_>>();
-        // let enum_variants: &Vec<ErrorSourceEnumVariant<'a>> = &error_source_enum_temp
-        //     .variants;
 
         let grouped_err_enum_variants_by_arg_type: HashMap<String, Vec<ErrorSourceEnumVariant<'a>>> =
             error_source_enum
@@ -371,7 +411,7 @@ impl ErrorSourceVariants<'_> {
 }
 
 
-static TYPES_WITHOUT_ANY_BT: [&'static str;18] = [
+static SIMPLE_TYPES: [&'static str;18] = [
     "char",
     "i8", "i16", "i32", "i64", "i128",
     "u8", "u16", "u32", "u64", "u128",
@@ -380,7 +420,9 @@ static TYPES_WITHOUT_ANY_BT: [&'static str;18] = [
     "String", "&str", "& 'static str",
 ];
 
-pub(crate) fn generate_error_source_backtrace_source_impl_block(ast: &syn::DeriveInput)
+static TYPES_WITHOUT_ANY_BT: [&'static str;18] = SIMPLE_TYPES;
+
+fn generate_error_source_backtrace_source_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
 
     #[allow(non_snake_case)]
@@ -389,13 +431,6 @@ pub(crate) fn generate_error_source_backtrace_source_impl_block(ast: &syn::Deriv
 
     let err_src_vars = ErrorSourceVariants::new(ast);
     let enum_variants = &err_src_vars.error_source_enum.variants;
-
-    /*
-    let error_source_enum = get_error_source_enum_variants(ast);
-    let enum_variants: Vec<&ErrorSourceEnumVariant> = error_source_enum
-        .variants.iter()
-        .collect::<Vec<_>>();
-    */
 
     let err_src_bt_ref_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let var_name = vr.name;
@@ -488,17 +523,6 @@ pub(crate) fn generate_error_source_backtrace_source_impl_block(ast: &syn::Deriv
                     #(#err_src_is_taking_backtrace_supported_impl_match_branches)*
                 }
             }
-            /*
-            fn contains_self_or_child_captured_backtrace(&self) -> bool {
-                use #BacktraceCell ;
-                match self {
-                    #(#err_src_bt_provider_impl_match_branches2)*
-                    // ErrorSource::NoSource => { false }
-                    // ErrorSource::ParseBigDecimalError(_)  => { false  }
-                    // ErrorSource::CurrencyFormatError(ref src) => { src.contains_self_or_child_captured_backtrace() }
-                }
-            }
-            */
         }
     };
 
@@ -506,27 +530,11 @@ pub(crate) fn generate_error_source_backtrace_source_impl_block(ast: &syn::Deriv
 }
 
 
-pub(crate) fn generate_error_source_debug_impl_block(ast: &syn::DeriveInput)
+fn generate_error_source_debug_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
 
     let err_src_vars = ErrorSourceVariants::new(ast);
     let enum_variants = &err_src_vars.error_source_enum.variants;
-
-    /*
-    let error_source_enum = get_error_source_enum_variants(ast);
-    let enum_variants: Vec<&ErrorSourceEnumVariant> = error_source_enum
-        .variants.iter()
-        .collect::<Vec<_>>();
-
-    let TYPES_TO_WRAP_WITH_ENUM_VR_NAME: Vec<&str> = vec!(
-        "char",
-        "i8", "i16", "i32", "i64", "i128",
-        "u8", "u16", "u32", "u64", "u128",
-        "usize", "isize",
-        "f32", "f64",
-        "String", "&str", "& 'static str",
-    );
-    */
 
     let err_src_debug_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let var_name = vr.name;
@@ -545,7 +553,6 @@ pub(crate) fn generate_error_source_debug_impl_block(ast: &syn::DeriveInput)
         }
     }).collect::<Vec<_>>();
 
-    // let debug_err_src_impl = if do_not_generate_debug { quote!() } else {
     let debug_err_src_impl = quote! {
 
         #[allow(unused_imports)]
@@ -567,16 +574,8 @@ pub(crate) fn generate_error_source_debug_impl_block(ast: &syn::DeriveInput)
 }
 
 
-pub(crate) fn generate_error_source_variants_from_impl_block(ast: &syn::DeriveInput)
+fn generate_error_source_variants_from_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
-
-    // #[allow(non_snake_case)]
-    // let GenerateStructErrorCfg { BacktraceSource, BacktraceCell, .. } =
-    //     GenerateStructErrorCfg::new(ast);
-
-    // #[allow(non_snake_case)]
-    // let GenerateStructErrorAttrs { do_not_generate_display, do_not_generate_debug, .. } =
-    //     GenerateStructErrorAttrs::new(ast);
 
     #[allow(non_snake_case)]
     let StaticStructErrorSourceAttrs { struct_error_type, .. } =
@@ -584,25 +583,8 @@ pub(crate) fn generate_error_source_variants_from_impl_block(ast: &syn::DeriveIn
 
     let err_src_vars = ErrorSourceVariants::new(ast);
     let enum_variants = &err_src_vars.error_source_enum.variants;
-    let ErrorSourceVariants { grouped_err_enum_variants_by_arg_type, ..} = ErrorSourceVariants::new(ast);
-
-    /*
-    let error_source_enum = get_error_source_enum_variants(ast);
-    let enum_variants: Vec<&ErrorSourceEnumVariant> = error_source_enum
-        .variants.iter()
-        .collect::<Vec<_>>();
-
-    let grouped_err_enum_variants_by_arg_type: HashMap<String, Vec<&ErrorSourceEnumVariant>> = enum_variants.iter()
-        .filter_map(|&vr| vr.first_arg_type.map(|first_arg_type| (type_to_string(first_arg_type), vr) ))
-        .into_group_map();
-    */
-
-    /*
-    let duplicated_err_enum_src_types: HashSet<String> = grouped_err_enum_variants_by_arg_type.iter()
-        .filter(|(_, enums_vec)| enums_vec.len() > 1)
-        .map(|src_type_and_vars| src_type_and_vars.0.to_string())
-        .collect();
-    */
+    let ErrorSourceVariants { grouped_err_enum_variants_by_arg_type, ..} =
+        ErrorSourceVariants::new(ast);
 
     let from_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let variant_enum_name: &proc_macro2::Ident = vr.name;
@@ -667,16 +649,9 @@ pub(crate) fn generate_error_source_variants_from_impl_block(ast: &syn::DeriveIn
 }
 
 
-static TYPES_TO_WRAP_WITH_ENUM_VR_NAME: [&'static str; 18] = [
-    "char",
-    "i8", "i16", "i32", "i64", "i128",
-    "u8", "u16", "u32", "u64", "u128",
-    "usize", "isize",
-    "f32", "f64",
-    "String", "&str", "& 'static str",
-];
+static TYPES_TO_WRAP_WITH_ENUM_VR_NAME: [&'static str; 18] = SIMPLE_TYPES;
 
-pub(crate) fn generate_error_source_display_impl_block(ast: &syn::DeriveInput)
+fn generate_error_source_display_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
 
     let err_src_vars = ErrorSourceVariants::new(ast);
@@ -720,22 +695,13 @@ pub(crate) fn generate_error_source_display_impl_block(ast: &syn::DeriveInput)
 }
 
 
-static TYPES_WITHOUT_STD_ERR: [&str; 18] = [
-    "char",
-    "i8", "i16", "i32", "i64", "i128",
-    "u8", "u16", "u32", "u64", "u128",
-    "usize", "isize",
-    "f32", "f64",
-    "String", "&str", "& 'static str",
-];
+static TYPES_WITHOUT_STD_ERR: [&str; 18] = SIMPLE_TYPES;
 
-pub(crate) fn generate_error_source_std_error_impl_block(ast: &syn::DeriveInput)
+fn generate_error_source_std_error_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
 
     let err_src_vars = ErrorSourceVariants::new(ast);
     let enum_variants = &err_src_vars.error_source_enum.variants;
-    // let ErrorSourceVariants { grouped_err_enum_variants_by_arg_type, ..} = ErrorSourceVariants::new(ast);
-    // let ErrorSourceVariants { enum_variants, grouped_err_enum_variants_by_arg_type, ..} = ErrorSourceVariants::new(ast);
 
     let fn_source_items_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|ref el| {
         let var_name: &syn::Ident = el.name;
@@ -754,9 +720,8 @@ pub(crate) fn generate_error_source_std_error_impl_block(ast: &syn::DeriveInput)
             quote! { ErrorSource:: #var_name (_) => { None } }
         } else if arg_str_type.is_eq_to_str("anyhow::Error") {
             quote! { ErrorSource:: #var_name (ref src) => { Some(src.as_ref()) } }
-        } else if arg_str_type.is_eq_to_str("Box<dyn std::error::Error>")
-            || arg_str_type.is_eq_to_str("Box<dyn error::Error>")
-            || arg_str_type.is_eq_to_str("Box<dyn Error>") {
+        } else if arg_str_type.is_eq_to_one_of_str([
+            "Box<dyn std::error::Error>", "Box<dyn error::Error>", "Box<dyn Error>"]) {
             quote! { ErrorSource:: #var_name (ref src) => { Some(src.as_ref()) } }
         } else {
             // T O D O: could we use some universal way with something like TryAsRef
@@ -820,14 +785,13 @@ pub(crate) fn generate_error_source_std_error_impl_block(ast: &syn::DeriveInput)
 
 
 // TODO: try to replace on 'From'
-pub(crate) fn generate_error_source_variants_into_impl_block(ast: &syn::DeriveInput)
+fn generate_error_source_variants_into_impl_block(ast: &syn::DeriveInput)
     -> proc_macro2::TokenStream {
 
     let err_src_vars = ErrorSourceVariants::new(ast);
     let enum_variants = &err_src_vars.error_source_enum.variants;
-    let ErrorSourceVariants { error_source_enum, duplicated_err_enum_src_types, ..} = ErrorSourceVariants::new(ast);
-    // let ErrorSourceVariants { grouped_err_enum_variants_by_arg_type, ..} = ErrorSourceVariants::new(ast);
-    // let ErrorSourceVariants { error_source_enum, enum_variants, grouped_err_enum_variants_by_arg_type, duplicated_err_enum_src_types, ..} = ErrorSourceVariants::new(ast);
+    let ErrorSourceVariants { error_source_enum, duplicated_err_enum_src_types, ..} =
+        ErrorSourceVariants::new(ast);
 
     let into_impl: Vec<proc_macro2::TokenStream> = enum_variants.iter().filter_map(|ref el| {
         let var_name: &syn::Ident = el.name;
@@ -863,4 +827,3 @@ pub(crate) fn generate_error_source_variants_into_impl_block(ast: &syn::DeriveIn
     let into = quote! { #(#into_impl)* };
     into
 }
-

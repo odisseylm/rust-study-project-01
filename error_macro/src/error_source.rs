@@ -1,5 +1,8 @@
-use crate::macro_util::{ attr_list_as_string, determine_internal_type_path_mode_by_macro_src_pos,
-                         find_attr, InternalTypePathMode };
+use crate::bt::MY_BACKTRACE_AND_ERR_CRATE;
+use crate::macro_util::{
+    attr_list_as_string, determine_internal_type_path_mode_by_macro_src_pos, find_attr,
+    InternalTypePathMode,
+};
 
 
 #[derive(Debug, Clone)]
@@ -13,55 +16,6 @@ pub struct ErrorSourceEnum<'a> {
     pub name: & 'a syn::Ident,
     pub variants: Vec<ErrorSourceEnumVariant<'a>>,
 }
-
-
-/*
-
-use crate::macro_util::{ type_path_to_string };
-
-Seems it is needed in case of integration tests in THIS subproject.
-
-impl core::fmt::Debug for ErrorSourceEnumVariant<'_> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        use syn::Type;
-
-        let detailed_impl: Option<core::fmt::Result> = self.first_arg_type.and_then(|t| {
-            if let Type::Path(ref type_path) = t {
-                    Some(write!(f, "ErrorSourceEnumVariant {{ {}, type: {} }}", self.name, type_path_to_string(&type_path)))
-            } else { None }
-        });
-
-        detailed_impl.unwrap_or_else(|| {
-            let as_str = match self.first_arg_type {
-                None                         => { "No"          }
-                Some(ref t) => {
-                    match t {
-                        Type::Array(_)       => { "array"       }
-                        Type::BareFn(_)      => { "BareFn"      }
-                        Type::Group(_)       => { "Group"       }
-                        Type::ImplTrait(_)   => { "ImplTrait"   }
-                        Type::Infer(_)       => { "Infer"       }
-                        Type::Macro(_)       => { "Macro"       }
-                        Type::Never(_)       => { "Never"       }
-                        Type::Paren(_)       => { "Paren"       }
-                        Type::Path(_)        => { "Path"        }
-                        Type::Ptr(_)         => { "Ptr"         }
-                        Type::Reference(_)   => { "Reference"   }
-                        Type::Slice(_)       => { "Slice"       }
-                        Type::TraitObject(_) => { "TraitObject" }
-                        Type::Tuple(_)       => { "Tuple"       }
-                        Type::Verbatim(_)    => { "Verbatim"    }
-                        _                    => { "_"           }
-                    }
-                }
-            };
-
-            write!(f, "ErrorSourceEnumVariant {{ {}, type: {} }}", self.name, as_str)
-        })
-    }
-}
-*/
-
 
 
 pub fn get_error_source_enum_variants<'a>(ast: & 'a syn::DeriveInput) -> ErrorSourceEnum<'a> {
@@ -121,4 +75,48 @@ pub fn get_internal_type_path_mode(ast: &syn::DeriveInput) -> InternalTypePathMo
 }
 
 
-const MY_BACKTRACE_AND_ERR_CRATE: &str = "mvv_common";
+/*
+use crate::macro_util::{ type_path_to_string };
+
+Seems it is needed in case of integration tests in THIS subproject.
+
+impl core::fmt::Debug for ErrorSourceEnumVariant<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        use syn::Type;
+
+        let detailed_impl: Option<core::fmt::Result> = self.first_arg_type.and_then(|t| {
+            if let Type::Path(ref type_path) = t {
+                    Some(write!(f, "ErrorSourceEnumVariant {{ {}, type: {} }}", self.name, type_path_to_string(&type_path)))
+            } else { None }
+        });
+
+        detailed_impl.unwrap_or_else(|| {
+            let as_str = match self.first_arg_type {
+                None                         => { "No"          }
+                Some(ref t) => {
+                    match t {
+                        Type::Array(_)       => { "array"       }
+                        Type::BareFn(_)      => { "BareFn"      }
+                        Type::Group(_)       => { "Group"       }
+                        Type::ImplTrait(_)   => { "ImplTrait"   }
+                        Type::Infer(_)       => { "Infer"       }
+                        Type::Macro(_)       => { "Macro"       }
+                        Type::Never(_)       => { "Never"       }
+                        Type::Paren(_)       => { "Paren"       }
+                        Type::Path(_)        => { "Path"        }
+                        Type::Ptr(_)         => { "Ptr"         }
+                        Type::Reference(_)   => { "Reference"   }
+                        Type::Slice(_)       => { "Slice"       }
+                        Type::TraitObject(_) => { "TraitObject" }
+                        Type::Tuple(_)       => { "Tuple"       }
+                        Type::Verbatim(_)    => { "Verbatim"    }
+                        _                    => { "_"           }
+                    }
+                }
+            };
+
+            write!(f, "ErrorSourceEnumVariant {{ {}, type: {} }}", self.name, as_str)
+        })
+    }
+}
+*/

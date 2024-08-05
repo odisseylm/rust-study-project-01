@@ -1,5 +1,6 @@
 use mvv_common::test::{ TestDisplayStringOps };
 
+
 struct AAA {
     val1: &'static str,
     val2: i32,
@@ -26,7 +27,6 @@ impl AAA {
 fn test_1_for_each_by_ref() {
 
     use mvv_tuple_heter_iter_macro::for_each_by_ref;
-    // for_each_by_ref2!("fdf");
 
     let s = AAA {
         val1: "John",
@@ -142,22 +142,4 @@ fn test_const_condition() {
 
     println!("t.0: {:?}", t.0);
     println!("t.1: {:?}", t.1);
-
-    // #[cfg(not(foo))]
-    #[cfg(yryryuru)]
-    #[cfg_attr(all(1==2))]
-    {
-        println!("t.2: {:?}", t.2);
-    }
-
-    // #[cfg(1 = 2)]
-    // {
-    //     println!("t.2: {:?}", t.2);
-    // }
-    //
-    // if cfg!(foo) {
-    //     println!("t.2: {:?}", t.2);
-    // }
-
-
 }
