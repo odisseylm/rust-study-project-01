@@ -1,4 +1,5 @@
 use core::str::FromStr;
+use std::collections::{HashMap, HashSet};
 use strum_macros::Display;
 
 
@@ -143,9 +144,30 @@ fn remove_space_chars_impl(str: &str) -> String {
 #[allow(dead_code)]
 pub trait StringOp {
     fn remove_space_chars(&self) -> String;
+    fn is_eq_to_one_of_str<const N: usize>(&self, strings: [&str;N]) -> bool;
+    fn ends_with_one_of<const N: usize>(&self, strings: [&str;N]) -> bool;
 }
 impl StringOp for String {
-    fn remove_space_chars(&self) -> String { remove_space_chars_impl(self.as_str()) }
+    fn remove_space_chars(&self) -> String {
+        remove_space_chars_impl(self.as_str())
+    }
+    fn is_eq_to_one_of_str<const N: usize>(&self, strings: [&str;N]) -> bool {
+        is_eq_to_one_of_str_impl(self, strings)
+    }
+    fn ends_with_one_of<const N: usize>(&self, strings: [&str; N]) -> bool {
+        ends_with_one_of_impl(self, strings)
+    }
+}
+impl StringOp for str {
+    fn remove_space_chars(&self) -> String {
+        <String as StringOp>::remove_space_chars(&self.to_string())
+    }
+    fn is_eq_to_one_of_str<const N: usize>(&self, strings: [&str;N]) -> bool {
+        is_eq_to_one_of_str_impl(self, strings)
+    }
+    fn ends_with_one_of<const N: usize>(&self, strings: [&str; N]) -> bool {
+        ends_with_one_of_impl(self, strings)
+    }
 }
 
 pub trait OptionStringOp {
@@ -154,8 +176,6 @@ pub trait OptionStringOp {
 }
 impl OptionStringOp for Option<String> {
     fn is_eq_to_str(&self, str: &str) -> bool {
-        // It moves ??? Unexpected a bit???
-        // self.is_some_and(|t| t.as_str() == str)
         match self {
             None => { false }
             Some(ref self_string) => { str == self_string.as_str() }
@@ -173,21 +193,45 @@ impl OptionStringOp for Option<String> {
 }
 impl OptionStringOp for Option<&str> {
     fn is_eq_to_str(&self, str: &str) -> bool {
-        // It moves ??? Unexpected a bit???
-        // self.is_some_and(|t| t.as_str() == str)
         match self {
             None => { false }
             Some(ref self_string) => { str == *self_string }
         }
     }
     fn is_eq_to_one_of_str<const N: usize>(&self, strings: [&str;N]) -> bool {
-        for str in strings {
-            if self.is_eq_to_str(str) {
-                return true;
-            }
+        match self {
+            None => { false }
+            Some(self_string) => { is_eq_to_one_of_str_impl(self_string, strings) }
         }
-        false
     }
+}
+
+
+fn is_eq_to_one_of_str_impl<const N: usize>(string: &str, strings: [&str;N]) -> bool {
+    for str in strings {
+        if string == str {
+            return true;
+        }
+    }
+    false
+}
+
+fn ends_with_one_of_impl<const N: usize>(string: &str, strings: [&str;N]) -> bool {
+    for str in strings {
+        if string.ends_with(str) {
+            return true;
+        }
+    }
+    false
+}
+
+pub(crate) fn keys_with_duplicates<V>(grouped_err_enum_variants_by_arg_type: &HashMap<String, Vec<V>>)
+    -> HashSet<String> {
+    let keys_with_duplicates: HashSet<String> = grouped_err_enum_variants_by_arg_type.iter()
+        .filter(|(_, enums_vec)| enums_vec.len() > 1)
+        .map(|src_type_and_vars| src_type_and_vars.0.to_string())
+        .collect();
+    keys_with_duplicates
 }
 
 pub fn type_to_string(t: &syn::Type) -> String {

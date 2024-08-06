@@ -14,6 +14,7 @@ use crate::{
         type_to_string, type_to_string_without_spaces,
     },
 };
+use crate::macro_util::keys_with_duplicates;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -397,10 +398,7 @@ impl ErrorSourceVariants<'_> {
                 .filter_map(|vr| vr.first_arg_type.map(|first_arg_type| (type_to_string(first_arg_type), vr.clone()) ))
                 .into_group_map();
 
-        let duplicated_err_enum_src_types: HashSet<String> = grouped_err_enum_variants_by_arg_type.iter()
-            .filter(|(_, enums_vec)| enums_vec.len() > 1)
-            .map(|src_type_and_vars| src_type_and_vars.0.to_string())
-            .collect();
+        let duplicated_err_enum_src_types: HashSet<String> = keys_with_duplicates(&grouped_err_enum_variants_by_arg_type);
 
         ErrorSourceVariants::<'a> {
             error_source_enum,

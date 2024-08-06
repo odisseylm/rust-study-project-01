@@ -1,5 +1,5 @@
 use core::fmt::{ self, Debug, Display };
-use std::sync::Arc;
+// use std::sync::Arc;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -8,6 +8,11 @@ pub type BacktraceCell = BacktraceCell_PtrCellImpl;
 // pub type BacktraceSource = BacktraceSourceInternal<BacktraceCell_ArcImpl>;
 // trait BacktraceSource = BacktraceSourceInternal<BacktraceCell>;
 
+impl From<BacktraceCell> for std::backtrace::Backtrace {
+    fn from(value: BacktraceCell) -> Self {
+        value.move_out().take_std_backtrace()
+    }
+}
 
 /*
 enum BacktraceInner {
@@ -182,6 +187,11 @@ impl BacktraceCell_PtrCellImpl {
         }
     }
 
+    pub fn take_std_backtrace(&self) -> std::backtrace::Backtrace {
+        self.cell.take(ptr_cell::Semantics::Relaxed)
+            .unwrap_or_else(|| std::backtrace::Backtrace::disabled())
+    }
+
     //
     // fn inherit_or_capture_impl<Src: BacktraceSource>(src: &Src) -> Self {
     //     let mut bt = src.take_backtrace();
@@ -255,6 +265,7 @@ impl Display for BacktraceCell_PtrCellImpl {
 
 
 //--------------------------------------------------------------------------------------------------
+/*
 #[allow(non_camel_case_types)]
 pub struct BacktraceCell_ArcImpl {
     cell: Arc<Option<std::backtrace::Backtrace>>,
@@ -278,6 +289,13 @@ impl BacktraceCell_ArcImpl {
         let copy = Arc::clone(&self.cell);
         // self.cell. ; ?? how to move/clear immutable Arc ??
         Self { cell: copy }
+    }
+
+    pub fn take_std_backtrace(&self) -> std::backtrace::Backtrace {
+        match self.cell.as_ref() {
+            None => std::backtrace::Backtrace::disabled(),
+            Some(bt) => bt.
+        }
     }
 
     // TODO: for backward compatibility, REMOVE it later, I do not think that we need it.
@@ -336,12 +354,14 @@ impl Display for BacktraceCell_ArcImpl {
         }
     }
 }
+*/
 
 
 //--------------------------------------------------------------------------------------------------
 #[cfg(test)]
 mod tests {
 
+    /*
     mod arc_impl_test {
         pub type BacktraceCell = super::super::BacktraceCell_ArcImpl;
 
@@ -384,6 +404,7 @@ mod tests {
             assert!(!c2.is_empty());
         }
     }
+    */
 
     mod ptr_cell_impl_test {
         pub type BacktraceCell = super::super::BacktraceCell_PtrCellImpl;
