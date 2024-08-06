@@ -15,6 +15,275 @@ members = [
 resolver = "2"
 
 
+
+#[workspace.build-dependencies]
+#cargo_metadata = "0.18.1"
+#cargo-progenitor = "0.7.0"
+#syn = "2.0.72"
+#prettyplease = "0.2.20"
+
+
+
+[workspace.dependencies]
+# build-dependencies
+cargo_metadata = "0.18.1"
+syn = "2.0.72"
+prettyplease = "0.2.20"
+
+quote = "1.0.36"
+proc-macro2 = "1.0.82"
+# proc-macro-crate = "3.1.0"
+
+
+# dependencies
+if_chain = "1.0.2"
+cfg-if = "1.0.0"
+
+static_assertions = "1.1.0" # 4 years gao
+static_assertions_next = "1.1.2" # probably successor of 'static_assertions' ??
+#const-zero = "0.1.1" # dperected, just redirection to 'std/core'
+
+const_format = "0.2.32"
+const-str = "0.5.7"
+place_macro = "1.0.0"
+
+seq-macro = "0.3.5"
+forr = "0.2.3"
+
+bigdecimal = "0.4.3"
+#bigdecimal = {  version = "0.4.3", features = ["default", "serde" ] }
+iban = { version = "0.1.7", features = ["default"] }
+uuid = { version = "1.10.0", features = ["default", "v4", "serde", ] }
+
+trait-variant = "0.1.2"  # ???
+
+serde = { version = "1.0.201", features = ["derive", "std", "rc", "serde_derive" ] }
+serde_json = { version = "1.0.117", features = [ "default", ] }
+#serde_json = { version = "1.0.117", features = ["default", ] }
+#serde_json5 = "0.1.0
+#serde_as = "0.0.1"
+serde_with = "3.8.1"
+#serde_with_macros = "3.8.1"
+#display_json = "0.2.1"
+
+anyhow = { version = "1.0.83", features = ["backtrace"] }
+#anyhow = { version = "1.0.83"} # , features = ["backtrace"] } // it means third-party "backtrace"
+thiserror = "1.0.60"
+#snafu = "0.8.2"
+
+indoc = "2.0.5"  # for creating multiline string
+
+derivative = "2.2.0"
+derive_more = "0.99.18"  # (Struct) Display, and so on easy impl
+educe = "0.6.0"
+#derive_more = {  version = "0.99.18", features = ["default", "from_str"] }  # (Struct) Display, and so on easy impl
+strum = "0.26"    # Enum Display, and so on easy impl
+strum_macros = "0.26"
+
+# Display generating by format
+#display_attr = "0.1.1"
+#parse-display = "0.9.1"
+#derive_more = ...
+#displaythis = "1.0.23"
+
+## !!! Out dated !!!
+## !!! backtrace = "0.3.71"
+
+# # Seems it does not work.
+# color-backtrace = "0.6.1"
+
+# static (mutable) varibales support
+ctor = "0.2.8"
+once_cell = "1.19.0"
+lazy_static = "1.4.0" # required for nutype
+static_init = "1.0.3"
+ptr_cell = "2.2.1"
+
+regex = "1.10.5" # required for nutype
+
+log = "0.4.21"
+env_logger = "0.11.3"
+log4rs = "1.3.0"
+#tracing = "0.1.40"
+tracing = {  version = "0.1.40", features = ["attributes", "log", ] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing-futures = "0.2.5"
+#tracing-log = "0.2.0"
+#tracing-attributes = "0.1.27"
+tracing-timing = "0.6.0"
+
+dotenv = "0.15.0"  # Loading env vars from .env file
+
+inherent = "1.0.11"
+readonly = "0.2.12"
+extension-trait = "1.0.2"
+ambassador = { version = "0.4.0" }  # Delegation support
+
+fixedstr = {  version = "0.5.7", features = ["serde"] }
+
+num = "0.4.3"
+nutype = {  version = "0.4.2", features = ["default", "regex", "serde", ] }
+nonzero_lit = "0.1.2"
+
+implicit-clone = {  version = "0.4.9", features = ["default", "derive", "implicit-clone-derive"] }
+
+chrono = {  version = "0.4.38", features = ["default", "serde"] }
+chrono-tz = "0.9.0"
+time = "0.3.36"
+
+#type-rules = { version = "0.2.3", features = ["derive", "regex", "serde"] }
+type-rules = { version = "0.2.3", features = ["derive", "regex"] }
+
+axum = {  version = "0.7.5" , features = ["default", "macros"] }
+#axum-handle-error-extract = "0.1.0"
+async-trait = "0.1.80"
+#axum = {  version = "0.7.5", features = ["default", "tracing", ] }
+#tower = "0.4.13"
+tower = {  version = "0.4.13", features = ["full"] }
+#tower-http = "0.5.2"
+tower-http = {  version = "0.5.2", features = ["default", "trace", "tracing"] }
+tower-async-http = "0.2.0"
+
+axum-login = {  version = "0.15.2" }
+oauth2 = "4.4.2"
+# support for Argon2, PBKDF2, and scrypt password hashing algorithms
+password-auth = "1.0.0"
+
+#axum-auth = "0.7.0"
+axum-extra = { version = "0.9.3", features = ["typed-header"] }
+axum-ctx = "0.4.0"
+#axum-handler-error = "0.1.1"
+#axum-error = "0.2.0"
+#axum-htpasswd = "0.2.0"
+#axum-limit = ""
+#axum-openapi = ""
+#axum-request-validator = "0.1.0"
+#axum-route = ""
+#axum-swagger-ui = "0.3.0"
+#axum-template = "2.3.0" # ++
+axum-typed-routing = "0.2.1"
+#axum_health = ""
+axum_session_auth = "0.14.0"
+axum_static = "1.7.1"
+#axum-request-validator = "0.1.0"
+axum-valid = { version = "0.18.0", features = ["default", "validify", "validator", "basic"] }
+#axum-valid = { version = "0.18.0", features = ["default", "full_garde", "basic"] }
+#axum-valid = { version = "0.18.0", features = ["garde", "basic"], default-features = false }
+validator = {  version = "0.18.1", features = ["derive", "validator_derive"] }
+#garde = { version = "0.20.0", features = ["derive"] }
+validify = "1.4.0"
+#axum_typed_multipart = "0.11.1"
+#axum_static_include = "0.3.0"
+jsonwebtoken = "9.3.0"
+
+#tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread"] }
+#tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread", "macros"] }
+tokio = { version = "1.38.0", features = ["full"] }
+tokio-test = "0.4.4"
+#tokio-async-await-test = "0.1.0"
+#bytes = "1.6.0"
+
+askama = { version = "0.12.1", features = ["with-axum"] }
+askama_axum = "0.4.0"
+
+openapiv3 = "2.0.0"
+
+utoipa = { version = "4.2.3", features = [
+    "default", "axum_extras",
+    "decimal", "uuid", "url", "chrono",
+    "debug",
+    # "openapi_extensions", "yaml",
+    # "preserve_order", "preserve_path_order",
+] }
+utoipa-swagger-ui = {  version = "7.1.0", features = [
+    "default", "url", "debug", "debug-embed", "reqwest",
+    "axum", "vendored",
+] }
+indexmap = "2.2.6"
+
+#progenitor.workspace = true
+# for generated code
+futures = "0.3.30"
+base64 = "0.22.1"
+rand = "0.8.5"
+regress = "0.10.0"
+
+# HTTP
+http = "1.1.0"
+# http library
+hyper = "1.3.1"
+reqwest = { version = "0.12.4", features = ["default", "json", "stream"] }
+url = "2.5.1"
+
+sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal"] }
+# Hm... Why I had to duplicate all options?
+sqlx-postgres = { version = "0.7.4", features = ["bigdecimal", "chrono", "uuid"] }
+
+quick_cache = "0.6.0"
+#lru-cache = "0.1.2"
+#xlru-cache = "0.1.2"
+#lru_time_cache = "0.11.11"
+lru = "0.12.3"
+#clru = "0.6.2"
+#fast-lru = "0.1.2"
+#const-lru = "1.0.0"
+#lru-mem = "0.3.0"
+#lfu_cache = "1.3.0"
+#lfu = "0.2.5"
+#async_cache = "0.3.1"
+#faststr = "0.2.19"
+associative-cache = "2.0.0"
+
+#inline-xml = "0.3.2"
+## similars
+#xml-macro = "0.2.0"
+#quick-xml = "0.32.0"
+
+itertools = "0.13.0"
+by_address = "1.2.1"
+
+#tuple_len = "3.0.0"
+#tuple_length = "0.2.0"
+
+progenitor = { version = "0.7.0" }
+progenitor-impl = { version = "0.7.0" }
+progenitor-client = { version = "0.7.0" }
+#cargo-progenitor = { version = "0.7.0" }
+
+
+#[workspace.dev-dependencies]
+
+#mockall = "0.12.1"
+#test-case = "3.3.1"
+#test-case = "2.2.2"
+test-case = "*"
+assertables = "7.0.1"
+
+#assert_json = "0.1.0"
+assert-json-diff = "2.0.2"
+
+#jsondiff = "0.1.0"
+
+#assert-str = "0.1.0"
+#assert-text = "0.2.9"
+#assert_eq_all = "0.1.1"
+#assert_fn = "1.0.7"
+#assert_json = "0.1.0" // requires 'thiserror v1.0.60 (*)'
+#assert-call = "0.1.1"
+#assert_no_alloc = "1.1.2"
+#assert_approx_eq = "1.1.0"
+#assert_that = "0.1.2"
+#assert_panic_free = "1.0.2"
+#assert_matches = "1.5.0"
+
+# # Seems it does not work.
+# color-backtrace = "0.6.1"
+# ctor = "0.2.8"
+
+macro_rules_attribute = "0.2.0"
+
+
+
 # With changed reqwest from version 11 to 12. Otherwise, project is not compiled :-(
 [patch.crates-io]
 
@@ -25,6 +294,8 @@ replace = [ { sub_dep = "reqwest", from_ver = "0.11.27", to_ver = "0.12.5" } ]
 replace = [ { sub_dep = "reqwest", from_ver = "0.11.27", to_ver = "0.12.5" } ]
 [workspace.metadata.patch-replace-sub-dependencies.progenitor-client]
 replace = [ { sub_dep = "reqwest", from_ver = "0.11.27", to_ver = "0.12.5" } ]
+#[workspace.metadata.patch-replace-sub-dependencies.cargo-progenitor]
+#replace = [ { sub_dep = "reqwest", from_ver = "0.11.27", to_ver = "0.12.5" } ]
 
 
 

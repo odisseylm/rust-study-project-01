@@ -18,20 +18,14 @@ default = ["tuple_len_16", ]
 
 
 [dependencies]
-if_chain = "1.0.2"
+if_chain.workspace = true
 
-syn = "2.0.65"
-quote = "1.0.36"
-proc-macro2 = "1.0.82"
-itertools = "0.13.0"
-#walkdir = "2.3"
-strum = "0.26"
-strum_macros = "0.26"
-# proc-macro-crate = "3.1.0"
-#log = "0.4.21"
-#env_logger = "0.11.3"
+syn.workspace = true
+quote.workspace = true
+proc-macro2.workspace = true
+itertools.workspace = true
 
-tuple_len = "3.0.0"
-tuple_length = "0.2.0"
+#tuple_len.workspace = true
+#tuple_length.workspace = true
 
 [dev-dependencies]

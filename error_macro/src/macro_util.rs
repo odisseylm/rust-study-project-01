@@ -361,25 +361,6 @@ pub fn caller_crate_root() -> PathBuf {
 */
 
 
-/*
-pub fn import_my_crate() -> Option<proc_macro2::TokenStream> {
-    use quote::quote;
-    use syn::Ident;
-    use proc_macro2::Span;
-    use proc_macro_crate::{ crate_name, FoundCrate };
-
-    let found_crate_opt = crate_name("project01"); //.expect("my-crate is present in `Cargo.toml`");
-
-    found_crate_opt.map(|found_crate|
-        match found_crate {
-            FoundCrate::Itself => quote!( crate::Something ),
-            FoundCrate::Name(name) => {
-                let ident = Ident::new(&name, Span::call_site());
-                quote!( #ident::Something )
-            }
-        }).ok()
-}
-*/
 
 #[allow(dead_code)]
 pub trait AddPMTokenStream {
