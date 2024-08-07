@@ -48,7 +48,8 @@ type StdBacktrace = std::backtrace::Backtrace;
 #[derive(
     Debug,
     thiserror::Error,
-    mvv_error_macro::ThisErrorEx,
+    mvv_error_macro::ThisErrorFromWithBacktrace,
+    mvv_error_macro::ThisErrorBacktraceSource,
 )]
 enum ThisError1 {
     #[error("ThisError1::ErrorFromString ( {0} )")]
@@ -70,11 +71,13 @@ enum ThisError1 {
     // ErrorFromThisError0 { #[source] #[from_with_bt] error: ThisError0, backtrace: StdBacktrace },
 
     #[error("ThisError1::ErrorFromEnvVarError ( {0} )")]
-    #[skip_bt_source]
+    // #[skip_bt_source]
+    #[std_error]
     ErrorFromEnvVarError( #[from] #[source] std::env::VarError),
 
     #[error("ThisError1::ErrorFromEnvVarError ( {0} )")]
     // #[inherit_or_capture]
+    // #[std_error]
     ErrorFromStdIoError( #[from_bt] #[source] std::io::Error, StdBacktrace),
 
     #[error("ThisError1::ErrorFromInt")]

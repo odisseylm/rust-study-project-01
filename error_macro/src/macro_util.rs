@@ -41,15 +41,24 @@ pub(crate) fn make_ident(ident: &str) -> proc_macro2::TokenStream {
     ident.into_token_stream()
 }
 
-pub fn has_attr(attrs: &Vec<syn::Attribute>, attr_name: &str) -> bool {
-    find_attr(attrs, attr_name).is_some()
-}
 pub fn find_attr<'a>(attrs: & 'a Vec<syn::Attribute>, attr_name: &str) -> Option<& 'a syn::Attribute> {
     attrs.iter().find(|attr|{
         let segments = &attr.meta.path().segments;
         let attr_name_as_path = segments.iter().map(|s| s.ident.to_string() ).collect::<String>();
         attr_name_as_path == attr_name
     })
+}
+pub fn find_one_of_attrs<'a, const N: usize>(attrs: &'a Vec<syn::Attribute>, attr_names: [&'a str;N])
+    -> Option<&'a syn::Attribute> {
+    attr_names.iter()
+        .find_map(|attr_name| find_attr(attrs, attr_name))
+}
+
+pub fn has_attr(attrs: &Vec<syn::Attribute>, attr_name: &str) -> bool {
+    find_attr(attrs, attr_name).is_some()
+}
+pub fn has_one_of_attrs<const N: usize>(attrs: &Vec<syn::Attribute>, attr_names: [&str;N]) -> bool {
+    find_one_of_attrs(attrs, attr_names).is_some()
 }
 
 
@@ -83,7 +92,8 @@ pub fn attr_list_as_string(attr: &syn::Attribute) -> Option<String> {
 }
 
 
-pub fn find_enum_variant_attr<'a>(variant: & 'a syn::Variant, attr_name: & str) -> Option<& 'a syn::Attribute> {
+pub fn find_enum_variant_attr<'a>(variant: & 'a syn::Variant, attr_name: & str)
+    -> Option<& 'a syn::Attribute> {
     find_attr(&variant.attrs, attr_name)
 }
 
@@ -498,3 +508,13 @@ mod tests {
         eprintln!("\n\n");
     }
 }
+
+
+pub(crate) static SIMPLE_TYPES: [&'static str;18] = [
+    "char",
+    "i8", "i16", "i32", "i64", "i128",
+    "u8", "u16", "u32", "u64", "u128",
+    "usize", "isize",
+    "f32", "f64",
+    "String", "&str", "& 'static str",
+];

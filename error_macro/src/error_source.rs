@@ -1,6 +1,6 @@
 use crate::bt::MY_BACKTRACE_AND_ERR_CRATE;
 use crate::macro_util::{
-    attr_list_as_string, determine_internal_type_path_mode_by_macro_src_pos, find_attr,
+    attr_list_as_string, determine_internal_type_path_mode_by_macro_src_pos, find_one_of_attrs,
     InternalTypePathMode,
 };
 
@@ -58,10 +58,10 @@ pub fn get_error_source_enum_variants<'a>(ast: & 'a syn::DeriveInput) -> ErrorSo
 pub fn get_internal_type_path_mode(ast: &syn::DeriveInput) -> InternalTypePathMode {
     use core::str::FromStr;
 
-    let internal_type_path_mode_attr = find_attr(&ast.attrs, "struct_error_internal_type_path_mode")
-        .or_else(|| find_attr(&ast.attrs, "struct_error_source_internal_type_path_mode"))
-        .or_else(|| find_attr(&ast.attrs, "error_source_internal_type_path_mode"))
-        .or_else(|| find_attr(&ast.attrs, "internal_type_path_mode"));
+    let internal_type_path_mode_attr = find_one_of_attrs(
+        &ast.attrs,
+        ["struct_error_internal_type_path_mode", "struct_error_source_internal_type_path_mode",
+        "error_source_internal_type_path_mode", "internal_type_path_mode"]);
 
     internal_type_path_mode_attr.and_then(|type_mode_attr| {
             attr_list_as_string(type_mode_attr)

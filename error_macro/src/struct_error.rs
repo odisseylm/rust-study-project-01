@@ -14,7 +14,7 @@ use crate::{
         type_to_string, type_to_string_without_spaces,
     },
 };
-use crate::macro_util::keys_with_duplicates;
+use crate::macro_util::{has_attr, has_one_of_attrs, keys_with_duplicates, SIMPLE_TYPES};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -72,8 +72,8 @@ struct GenerateStructErrorAttrs {
 impl GenerateStructErrorAttrs {
     fn new(ast: &syn::DeriveInput) -> Self {
         Self {
-            do_not_generate_display: find_attr( &ast.attrs, "do_not_generate_display").is_some(),
-            do_not_generate_debug: find_attr( &ast.attrs, "do_not_generate_debug").is_some(),
+            do_not_generate_display: has_attr( &ast.attrs, "do_not_generate_display"),
+            do_not_generate_debug: has_attr( &ast.attrs, "do_not_generate_debug"),
             // struct_error_internal_type_path_mode: ,
         }
     }
@@ -123,9 +123,9 @@ impl StaticStructErrorSourceAttrs {
             .expect("struct_error_type should have format: struct_error_type(MyErrorStructName)");
 
         Self {
-            do_not_generate_debug: find_attr(&ast.attrs, "do_not_generate_debug").is_some(),
-            do_not_generate_display: find_attr(&ast.attrs, "do_not_generate_display").is_some(),
-            do_not_generate_std_error: find_attr(&ast.attrs, "do_not_generate_std_error").is_some(),
+            do_not_generate_debug: has_attr(&ast.attrs, "do_not_generate_debug"),
+            do_not_generate_display: has_attr(&ast.attrs, "do_not_generate_display"),
+            do_not_generate_std_error: has_attr(&ast.attrs, "do_not_generate_std_error"),
             struct_error_type,
         }
     }
@@ -409,15 +409,6 @@ impl ErrorSourceVariants<'_> {
 }
 
 
-static SIMPLE_TYPES: [&'static str;18] = [
-    "char",
-    "i8", "i16", "i32", "i64", "i128",
-    "u8", "u16", "u32", "u64", "u128",
-    "usize", "isize",
-    "f32", "f64",
-    "String", "&str", "& 'static str",
-];
-
 static TYPES_WITHOUT_ANY_BT: [&'static str;18] = SIMPLE_TYPES;
 
 fn generate_error_source_backtrace_source_impl_block(ast: &syn::DeriveInput)
@@ -432,7 +423,9 @@ fn generate_error_source_backtrace_source_impl_block(ast: &syn::DeriveInput)
 
     let err_src_bt_ref_impl_match_branches: Vec<proc_macro2::TokenStream> = enum_variants.iter().map(|vr|{
         let var_name = vr.name;
-        let no_source_backtrace = find_enum_variant_attr(vr.variant, "no_source_backtrace").is_some();
+        // let no_source_backtrace = find_enum_variant_attr(vr.variant, "no_source_backtrace").is_some();
+        let no_source_backtrace = has_one_of_attrs(
+            &vr.variant.attrs, ["skip_bt_source", "no_source_backtrace"]);
         let is_arg_present = vr.first_arg_type.is_some();
 
         let is_arg_without_bt: bool = vr.first_arg_type
@@ -706,7 +699,7 @@ fn generate_error_source_std_error_impl_block(ast: &syn::DeriveInput)
         let is_src_arg_present: bool = el.first_arg_type.is_some();
         let arg_str_type: Option<String> = el.first_arg_type
             .map(|arg_type| type_to_string_without_spaces(arg_type));
-        let no_std_error = find_enum_variant_attr(el.variant, "no_std_error").is_some();
+        let no_std_error = has_attr(&el.variant.attrs, "no_std_error");
         let no_std_err_for_arg = el.first_arg_type
             .map(|arg_type| type_to_string(arg_type))
             .map(|arg_type_as_str| TYPES_WITHOUT_STD_ERR.contains(&arg_type_as_str.as_str()))

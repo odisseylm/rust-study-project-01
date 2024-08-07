@@ -52,39 +52,6 @@ impl BacktraceCell {
 }
 
 
-/*
-pub trait BacktraceCellContract /*: Sized */ {
-    fn empty() -> Self;
-    fn is_empty(&self) -> bool;
-    fn with_backtrace(backtrace: std::backtrace::Backtrace) -> Self;
-    fn move_out(&self) -> Self;
-
-    fn new(backtrace: Option<std::backtrace::Backtrace>) -> Self;
-    fn capture_backtrace() -> Self;
-    fn inherit_or_capture<Src: BacktraceSourceInternal<Self>>(src: &Src) -> Self;
-}
-trait BacktraceCellDefaultImpl: BacktraceCellContract + Sized {
-    fn new_impl(backtrace: Option<std::backtrace::Backtrace>) -> Self {
-        match backtrace {
-            None => <Self as BacktraceCellContract>::empty(),
-            Some(backtrace) => <Self as BacktraceCellContract>::with_backtrace(backtrace)
-        }
-    }
-    fn capture_backtrace_impl() -> Self {
-        Self::with_backtrace(std::backtrace::Backtrace::capture())
-    }
-
-    fn inherit_or_capture_impl<Src: BacktraceSourceInternal<Self>>(src: &Src) -> Self {
-        let mut bt = src.take_backtrace();
-        if bt.is_empty() {
-            bt = <Self as BacktraceCellContract>::capture_backtrace()
-        }
-        bt
-    }
-}
-*/
-
-
 pub trait BacktraceSource {
     fn backtrace_ref(&self) -> Option<&BacktraceCell>;
 
@@ -113,6 +80,24 @@ pub trait BacktraceSource {
         }
     }
 }
+
+// !!! KEEP this comment !!!
+// We d not implement it for standard Error because it may cause 'ambiguous' conflicts !!!
+// impl BacktraceSource for std::error::Error { }
+//
+// For that reason only specific functions are implemented.
+//
+pub fn std_error_contains_backtrace<Err: std::error::Error>(_err: &Err) -> bool {
+    false // TODO: implement for nightly build
+}
+pub fn std_error_backtrace_ref<Err: std::error::Error>(_err: &Err)
+    -> Option<&BacktraceCell> {
+    None
+}
+pub fn std_error_is_taking_backtrace_supported<Err: std::error::Error>(_err: &Err) -> bool {
+    false
+}
+
 
 impl BacktraceSource for anyhow::Error {
     fn backtrace_ref(&self) -> Option<&BacktraceCell> {
@@ -182,9 +167,6 @@ pub struct BacktraceCell_PtrCellImpl {
     cell: ptr_cell::PtrCell<std::backtrace::Backtrace>,
 }
 
-// impl BacktraceCellDefaultImpl for BacktraceCell_PtrCellImpl { }
-
-// #[inherent::inherent]
 impl BacktraceCell_PtrCellImpl {
     #[inline]
     pub fn empty() -> Self {
@@ -210,15 +192,6 @@ impl BacktraceCell_PtrCellImpl {
         self.cell.take(ptr_cell::Semantics::Relaxed)
             .unwrap_or_else(|| std::backtrace::Backtrace::disabled())
     }
-
-    //
-    // fn inherit_or_capture_impl<Src: BacktraceSource>(src: &Src) -> Self {
-    //     let mut bt = src.take_backtrace();
-    //     if bt.is_empty() {
-    //         bt = Self::capture_backtrace()
-    //     }
-    //     bt
-    // }
 
     // T O D O: for backward compatibility, REMOVE it later, I do not think that we need it.
     //
@@ -317,7 +290,7 @@ impl BacktraceCell_ArcImpl {
         }
     }
 
-    // TODO: for backward compatibility, REMOVE it later, I do not think that we need it.
+    // T O D O: for backward compatibility, REMOVE it later, I do not think that we need it.
     //
     // We cannot return enum copy there since this enum is 'non_exhaustive'
     // and does not support 'copy/clone'.
