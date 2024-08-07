@@ -9,12 +9,47 @@ enum ThisError0 {
     #[error("ThisError0::ErrorFromString0 ( {0} )")]
     FromString0(String),
     #[error("ThisError0::FromString0WirthBt ( {error} )")]
+    #[allow(dead_code)]
     FromString0WithBt { error: String, backtrace: BacktraceCell, },
+    #[error("ThisError0::FromFloatWithBt ( {0} )")]
+    #[allow(dead_code)]
+    FromFloatWithBt(f64, BacktraceCell),
 }
 
+impl mvv_common::backtrace::BacktraceSource for ThisError0 {
+    #[allow(unused_imports)]
+    fn backtrace_ref(&self) -> Option<&BacktraceCell> {
+        use mvv_common::backtrace::BacktraceSource;
+        match self {
+            ThisError0::FromString0(_) =>
+                None,
+            ThisError0::FromString0WithBt { ref backtrace, .. } =>
+                backtrace.backtrace_ref(),
+            ThisError0::FromFloatWithBt(_, ref backtrace) =>
+                backtrace.backtrace_ref(),
+        }
+    }
+
+    #[allow(unused_imports)]
+    fn is_taking_backtrace_supported(&self) -> bool {
+        use mvv_common::backtrace::BacktraceSource;
+        match self {
+            ThisError0::FromString0(_) =>
+                false,
+            ThisError0::FromString0WithBt { ref backtrace, .. } =>
+                backtrace.is_taking_backtrace_supported(),
+            ThisError0::FromFloatWithBt(_, ref backtrace) =>
+                backtrace.is_taking_backtrace_supported(),
+        }
+    }
+}
 type StdBacktrace = std::backtrace::Backtrace;
 
-#[derive(Debug, thiserror::Error, mvv_error_macro::ThisErrorEx)]
+#[derive(
+    Debug,
+    thiserror::Error,
+    mvv_error_macro::ThisErrorEx,
+)]
 enum ThisError1 {
     #[error("ThisError1::ErrorFromString ( {0} )")]
     // ErrorFromString( #[from] String),
@@ -25,18 +60,26 @@ enum ThisError1 {
     // #[error("ThisError1::ErrorFromThisError0 ( {0} )")]
     // ErrorFromThisError0( #[from] #[source] ThisError0),
     #[error("ThisError1::ErrorFromThisError0 ( {error} )")]
+    #[inherit_or_capture]
     // ErrorFromThisError0 { #[from] #[source] error: ThisError0, #[backtrace] backtrace: BacktraceCell },
-    ErrorFromThisError0 { #[source] #[from_bt] error: ThisError0, backtrace: BacktraceCell },
+    // ErrorFromThisError0 { #[source] #[from_bt] error: ThisError0, backtrace: BacktraceCell },
+    ErrorFromThisError0 {
+        backtrace: BacktraceCell,
+        #[source] #[from_bt] error: ThisError0,
+    },
     // ErrorFromThisError0 { #[source] #[from_with_bt] error: ThisError0, backtrace: StdBacktrace },
 
     #[error("ThisError1::ErrorFromEnvVarError ( {0} )")]
+    #[skip_bt_source]
     ErrorFromEnvVarError( #[from] #[source] std::env::VarError),
 
     #[error("ThisError1::ErrorFromEnvVarError ( {0} )")]
+    // #[inherit_or_capture]
     ErrorFromStdIoError( #[from_bt] #[source] std::io::Error, StdBacktrace),
 
     #[error("ThisError1::ErrorFromInt")]
     // ErrorFromInt( #[from] i32),
+    #[allow(dead_code)]
     ErrorFromInt(i32),
     // #[error("ThisError1::ErrorFromIntWithBt")]
     // ErrorFromInt { error: i32, backtrace: BacktraceCell, },

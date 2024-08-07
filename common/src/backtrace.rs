@@ -158,6 +158,25 @@ impl BacktraceSource for Box<dyn std::error::Error> {
 }
 
 
+impl BacktraceSource for BacktraceCell {
+    fn backtrace_ref(&self) -> Option<&BacktraceCell> {
+        Some(self)
+    }
+
+    fn contains_backtrace(&self) -> bool {
+        self.backtrace_status() != std::backtrace::BacktraceStatus::Captured
+    }
+
+    fn is_taking_backtrace_supported(&self) -> bool {
+        !self.is_empty()
+    }
+
+    fn take_backtrace(&self) -> BacktraceCell {
+        self.move_out()
+    }
+}
+
+
 #[allow(non_camel_case_types)]
 pub struct BacktraceCell_PtrCellImpl {
     cell: ptr_cell::PtrCell<std::backtrace::Backtrace>,

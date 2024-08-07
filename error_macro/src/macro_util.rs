@@ -30,7 +30,20 @@ include!("./compile_log_macros.rs");
 // extern crate self as xxx;
 // use xxx::compile_log_macros::compile_log_warn;
 
+pub(crate) fn make_ident(ident: &str) -> proc_macro2::TokenStream {
+    // proc_macro2::TokenTree::Ident(proc_macro2::Ident::new(ident.as_str(), quote!{}.span()))
 
+    // or
+    let ident: syn::Ident = syn::parse_str(ident)
+        .expect(&format!("Error of converting \"{ident}\" to Ident."));
+
+    use quote::ToTokens;
+    ident.into_token_stream()
+}
+
+pub fn has_attr(attrs: &Vec<syn::Attribute>, attr_name: &str) -> bool {
+    find_attr(attrs, attr_name).is_some()
+}
 pub fn find_attr<'a>(attrs: & 'a Vec<syn::Attribute>, attr_name: &str) -> Option<& 'a syn::Attribute> {
     attrs.iter().find(|attr|{
         let segments = &attr.meta.path().segments;
@@ -77,7 +90,8 @@ pub fn find_enum_variant_attr<'a>(variant: & 'a syn::Variant, attr_name: & str) 
 
 pub fn type_path_to_string(path: &syn::TypePath) -> String {
     use quote::ToTokens;
-    path.to_token_stream().to_string()
+    let raw = path.to_token_stream().to_string();
+    remove_spaces_from_type_string(&raw)
 }
 #[allow(dead_code)]
 pub fn type_path_to_string_without_spaces(path: &syn::TypePath) -> String {
@@ -185,7 +199,7 @@ impl OptionStringOp for Option<String> {
         match self {
             None => { false }
             Some(ref self_string) => {
-                <Option::<&str> as OptionStringOp>::is_eq_to_one_of_str(
+                <Option<&str> as OptionStringOp>::is_eq_to_one_of_str(
                     &Some(self_string.as_str()), strings)
             }
         }

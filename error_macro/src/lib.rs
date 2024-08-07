@@ -48,8 +48,11 @@ pub fn struct_error_source_macro_derive(input: proc_macro::TokenStream) -> proc_
         ///// do_not_generate_std_error,
         // enum variant
         from_with_bt, from_bt,
+        inherit_or_capture_bt, inherit_or_capture,
         no_source_backtrace,
         no_std_error,
+        //
+        skip_bt_source, std_error_bt_source,
     )
 )]
 pub fn this_error_ext_macro_derive(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
