@@ -18,6 +18,7 @@ pub struct AccountId( #[allow(dead_code)] uuid::Uuid);
 // pub type AccountIdFormatError = mvv_common::entity::id::parse::IdFormatError;
 pub type AccountIdFormatError = uuid::Error;
 
+// impl DataFormatError for AccountIdFormatError { }
 
 generate_into_inner_delegate! { AccountId, uuid::Uuid }
 generate_from_str_new_type_delegate! { AccountId, uuid::Uuid, uuid::Error }

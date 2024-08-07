@@ -127,7 +127,6 @@ pub enum ErrorKind {
 pub struct AmountOpsError {
     pub kind: ErrorKind,
     pub backtrace: BacktraceCell,
-    // #[source]
     pub source: ErrorSource,
 }
 

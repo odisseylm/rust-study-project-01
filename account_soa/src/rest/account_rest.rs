@@ -135,7 +135,7 @@ struct TransferAmountRequest {
     amount: BigDecimal,
 
     // 'validify' cannot automatically use third-party strings for length validation, but it is ok with regex.
-    #[validate(regex(CURRENCY_PATTERN))] // for 'validify' // TODO: fix validation
+    #[validate(regex(CURRENCY_PATTERN))] // for 'validify'
     #[schema(value_type = String, example = "USD")]
     currency: InnerCurStr,
 }
@@ -165,7 +165,8 @@ async fn rest_transfer_amount <
 
     // 'utoipa' conflicts with 'validify', we need to call validation manually.
     use validify::Validate;
-    transfer_request.validate().map_err(RestAppError::ValidifyErrors) ?;
+    transfer_request.validate()
+        .map_err(|err|RestAppError::ValidifyErrors(err, backtrace())) ?;
 
     rest_service.transfer(client_id, transfer_request).await
 }
@@ -203,7 +204,9 @@ pub struct AccountRest <AS: AccountService> {
 impl<AS: AccountService> AccountRest<AS> {
 
     #[tracing::instrument( skip(self) )]
-    pub async fn get_account(&self, client_id: path::ClientId, account_id: path::AccountId) -> Result<dto::Account, RestAppError> {
+    pub async fn get_account(&self, client_id: path::ClientId, account_id: path::AccountId)
+        -> Result<dto::Account, RestAppError> {
+
         use mvv_common::obj_ext::ValExt;
         use core::str::FromStr;
 
@@ -266,16 +269,15 @@ impl<AS: AccountService> AccountRest<AS> {
         let is_internal_from_account_id = from_account_id.len().is_one_of2(36, 38);
         let is_internal_to_account_id = to_account_id.len().is_one_of2(36, 38);
 
+        let currency = entity::prelude::Currency::from_inner(currency) ?;
+
         let transfer_res =
             if is_internal_from_account_id && is_internal_to_account_id {
                 self.account_service.transfer_by_id(
                     client_id,
                     AccountId::from_str(&from_account_id) ?,
                     AccountId::from_str(&to_account_id) ?,
-                    entity::prelude::Amount::new(
-                        amount,
-                        entity::prelude::Currency::from_inner(currency) ?,
-                    ),
+                    entity::prelude::Amount::new(amount, currency),
                 ).await?
 
             } else if !is_internal_from_account_id && !is_internal_to_account_id {
@@ -283,10 +285,7 @@ impl<AS: AccountService> AccountRest<AS> {
                     client_id,
                     iban::Iban::from_str(&from_account_id) ?,
                     iban::Iban::from_str(&to_account_id) ?,
-                    entity::prelude::Amount::new(
-                        amount,
-                        entity::prelude::Currency::from_inner(currency) ?,
-                    ),
+                    entity::prelude::Amount::new(amount, currency),
                 ).await?
             } else {
                 return Err(RestAppError::IllegalArgument(
@@ -333,6 +332,7 @@ async fn call_rest_input_validate_by_validator <
     Ok(Json("Ok_1"))
 }
 use validator::Validate;
+use mvv_common::backtrace::backtrace;
 use mvv_common::entity::InnerCurStr;
 
 #[derive(Debug, validator::Validate)]

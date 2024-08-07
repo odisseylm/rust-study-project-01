@@ -35,7 +35,6 @@ impl AccountService for AccountServiceImpl {
     //     Ok(r.into_inner())
     // }
 
-    // TODO: use ProgenitorErrWrapper instead of anyhow::Error with stacktrace!!!
     async fn get_client_accounts(&self, client_id: &str) -> Result<Vec<Account>, RestCallError> {
         let r = self.client.get_client_accounts(client_id).await ?;
             // .map_err(improve_prog_err) ?;

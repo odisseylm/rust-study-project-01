@@ -2,8 +2,9 @@ use core::str::FromStr;
 use bigdecimal::BigDecimal;
 use mvv_common::entity::amount::Amount;
 use mvv_common::entity::currency::Currency;
-use mvv_common::backtrace::BacktraceCell;
+use mvv_common::backtrace::backtrace;
 use mvv_common::test::TestResultUnwrap;
+//--------------------------------------------------------------------------------------------------
 
 
 #[allow(dead_code)] // it is used by private test
@@ -66,7 +67,7 @@ fn parse_amount_02(s: &str) -> Result<Amount, parse_amount_old::ParseAmountError
 
     let amount = BigDecimal::from_str(str_amount.trim_end())
         .map_err(|er| ParseAmountError { kind: ErrorKind::IncorrectAmount,
-            source: ParseBigDecimalError(er), backtrace: BacktraceCell::capture_backtrace() }) ?;
+            source: ParseBigDecimalError(er), backtrace: backtrace() }) ?;
 
     Ok(Amount::new(amount, currency))
 }

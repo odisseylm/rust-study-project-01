@@ -50,6 +50,10 @@ forr.workspace = true
 
 bigdecimal.workspace = true
 
+# Can be optional
+uuid.workspace = true
+iban.workspace = true
+
 serde = { workspace = true, features = ["derive", "std", "rc", "serde_derive" ] }
 serde_json = { workspace = true, features = [ "default", ] }
 serde_with.workspace = true

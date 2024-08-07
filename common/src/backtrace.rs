@@ -3,6 +3,7 @@ use core::fmt::{ self, Debug, Display };
 //--------------------------------------------------------------------------------------------------
 
 
+
 pub type BacktraceCell = BacktraceCell_PtrCellImpl;
 // pub type BacktraceCell = BacktraceCell_ArcImpl;
 // pub type BacktraceSource = BacktraceSourceInternal<BacktraceCell_ArcImpl>;
@@ -21,7 +22,17 @@ enum BacktraceInner {
 }
 */
 
+#[inline]
+pub fn backtrace() -> BacktraceCell {
+    BacktraceCell::new()
+}
+
 impl BacktraceCell {
+    #[inline]
+    pub fn new() -> Self {
+        Self::capture_backtrace()
+    }
+
     pub fn inherit_or_capture<Src: BacktraceSource>(src: &Src) -> Self {
         if src.contains_backtrace() {
             if src.is_taking_backtrace_supported() {
@@ -39,7 +50,7 @@ impl BacktraceCell {
         }
     }
 
-    pub fn new(backtrace: Option<std::backtrace::Backtrace>) -> Self {
+    pub fn with_optional_backtrace(backtrace: Option<std::backtrace::Backtrace>) -> Self {
         match backtrace {
             None => Self::empty(),
             Some(backtrace) => Self::with_backtrace(backtrace)
@@ -268,13 +279,13 @@ pub struct BacktraceCell_ArcImpl {
 // #[inherent::inherent]
 impl BacktraceCell_ArcImpl {
     pub fn empty() -> Self {
-        Self { cell: Arc::new(None) }
+        Self { cell: Arc::with_optional_backtrace(None) }
     }
     pub fn is_empty(&self) -> bool {
         self.cell.is_none()
     }
     pub fn with_backtrace(backtrace: std::backtrace::Backtrace) -> Self {
-        Self { cell: Arc::new(Some(backtrace)) }
+        Self { cell: Arc::with_optional_backtrace(Some(backtrace)) }
     }
     // Actually it is impossible to move out immutable Arc content
     pub fn move_out(&self) -> Self {

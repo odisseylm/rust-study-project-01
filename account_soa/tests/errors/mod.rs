@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Context};
-use mvv_common::backtrace::{BacktraceCell};
+use mvv_common::backtrace::{backtrace, BacktraceCell};
 use mvv_common::error::ToAnyHowErrorFn;
 //--------------------------------------------------------------------------------------------------
 
@@ -122,7 +122,7 @@ fn error_fn() -> Result<Entity1, MyError333> {
     r.map_err(|json_err|{ MyError333::JsonError {
         serde_error: json_err,
         // backtrace: BacktraceInfo::new_by_policy(NewBacktracePolicy::Capture),
-        backtrace: BacktraceCell::capture_backtrace(),
+        backtrace: backtrace(),
     } })
 }
 pub fn error_fn_1() -> Result<Entity1, MyError333> { error_fn() }

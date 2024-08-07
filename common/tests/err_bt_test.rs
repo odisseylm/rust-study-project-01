@@ -1,4 +1,4 @@
-use mvv_common::backtrace::BacktraceCell;
+use mvv_common::backtrace::{backtrace, BacktraceCell};
 use mvv_common::entity::{Amount, AmountFormatError};
 use mvv_common::test::{TestDisplayStringOps, TestOptionUnwrap};
 //--------------------------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ fn test_1() {
     let err0 = ThisError0::FromString0("String345".to_test_string());
     let err = ThisError1::ErrorFromThisError0 {
         error: err0,
-        backtrace: BacktraceCell::capture_backtrace().into(),
+        backtrace: backtrace().into(),
     };
     println!("### err 01: {err}");
     println!("### err 01: {err:?}");
@@ -127,5 +127,5 @@ fn test_1() {
     println!("### err 01: {err:?}");
     println!("\n------------------------------ END ------------------------------------");
 
-    assert!(false, "Test error to see console output.");
+    // assert!(false, "Test error to see console output.");
 }

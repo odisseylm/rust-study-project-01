@@ -4,7 +4,7 @@ use std::env::VarError;
 use std::sync::Arc;
 
 use oauth2::basic::BasicClient;
-
+use mvv_common::backtrace::{backtrace, BacktraceCell};
 use crate::{
     backend::{
         RequestAuthenticated, AuthBackendMode, AuthnBackendAttributes,
@@ -18,6 +18,8 @@ use crate::{
     error::AuthBackendError,
 };
 use crate::http::req_original_uri;
+//--------------------------------------------------------------------------------------------------
+
 
 
 pub trait OAuth2User {
@@ -140,7 +142,7 @@ impl <
             .exchange_code(oauth2::AuthorizationCode::new(creds.code))
             .request_async(async_http_client)
             .await
-            .map_err(Self::Error::OAuth2) ?;
+            .map_err(|err|Self::Error::OAuth2(err, backtrace())) ?;
 
         // Use access token to request user info.
         let config = &self.state.config;
@@ -151,10 +153,10 @@ impl <
             .header(AUTHORIZATION.as_str(), format!("Bearer {}", token_res.access_token().secret()))
             .send()
             .await
-            .map_err(Self::Error::Reqwest)?
+            .map_err(|err|Self::Error::Reqwest(err, backtrace())) ?
             .json::<UserInfo>()
             .await
-            .map_err(Self::Error::Reqwest)?;
+            .map_err(|err|Self::Error::Reqwest(err, backtrace())) ?;
 
         let user_res = self.state.oauth2_user_store.update_user_access_token(
             user_info.login.clone(), token_res.access_token().secret().as_str())
@@ -212,10 +214,15 @@ pub struct OAuth2Config {
     pub token_url: String,
 }
 
-#[derive(Debug, thiserror::Error)]
+#[derive(
+    Debug,
+    thiserror::Error,
+    mvv_error_macro::ThisErrorFromWithBacktrace,
+    mvv_error_macro::ThisErrorBacktraceSource,
+)]
 pub enum Oauth2ConfigError {
     #[error("Oauth2ConfigError({0})")]
-    Error(&'static str),
+    Error(&'static str, BacktraceCell),
 }
 
 impl OAuth2Config {
@@ -230,9 +237,11 @@ impl OAuth2Config {
         }
 
         let client_id = std::env::var("CLIENT_ID")
-            .map_err(|_|Oauth2ConfigError::Error("CLIENT_ID should be provided.")) ?;
+            .map_err(|_|Oauth2ConfigError::Error(
+                "CLIENT_ID should be provided.", backtrace())) ?;
         let client_secret = std::env::var("CLIENT_SECRET")
-            .map_err(|_|Oauth2ConfigError::Error("CLIENT_SECRET should be provided")) ?;
+            .map_err(|_|Oauth2ConfigError::Error(
+                "CLIENT_SECRET should be provided", backtrace())) ?;
 
         let auth_url = "https://github.com/login/oauth/authorize".to_owned();
         let token_url = "https://github.com/login/oauth/access_token".to_owned();

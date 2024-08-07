@@ -1,55 +1,32 @@
-use core::fmt::{ self, Debug, Display };
-use crate::backtrace::BacktraceCell;
+use core::fmt;
+use crate::backtrace::{ backtrace, BacktraceCell };
 use crate::string::FormatMode;
 //--------------------------------------------------------------------------------------------------
 
 
 pub fn improve_prog_err(error: progenitor_client::Error) -> RestCallError {
-    // RestCallError::ProgenitorError { error, backtrace: BacktraceInfo::capture() }
-    RestCallError::ProgenitorError { error, backtrace: BacktraceCell::capture_backtrace() }
+    RestCallError::ProgenitorError(error, backtrace())
 }
 
+#[derive(educe::Educe)] #[educe(Debug)]
+#[derive(
+    thiserror::Error,
+    mvv_error_macro::ThisErrorFromWithBacktrace,
+    mvv_error_macro::ThisErrorBacktraceSource,
+)]
 pub enum RestCallError {
-    ProgenitorError {
-        error: progenitor_client::Error,
-        backtrace: BacktraceCell,
-    },
+    #[error("ProgenitorError {0}")]
+    ProgenitorError(
+        #[source] #[from_with_bt]
+        #[educe(Debug(method(progenitor_err_dbg_fmt)))]
+        progenitor_client::Error,
+        BacktraceCell),
 }
 
 
-impl std::error::Error for RestCallError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            RestCallError::ProgenitorError { ref error, .. } => error.source()
-        }
-    }
+fn progenitor_err_dbg_fmt(error: &progenitor_client::Error, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    format_progenitor_err(f, FormatMode::Debug, error, None) // Some(backtrace))
 }
-
-
-impl From<progenitor_client::Error> for RestCallError {
-    fn from(error: progenitor_client::Error) -> Self {
-        // RestCallError::ProgenitorError { error, backtrace: BacktraceInfo::capture() }
-        RestCallError::ProgenitorError { error, backtrace: BacktraceCell::capture_backtrace() }
-    }
-}
-
-impl Display for RestCallError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RestCallError::ProgenitorError { ref error, .. } =>
-                format_progenitor_err(f, FormatMode::Display, error, None)
-        }
-    }
-}
-impl Debug for RestCallError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RestCallError::ProgenitorError { ref error, ref backtrace } =>
-                format_progenitor_err(f, FormatMode::Debug, error, Some(backtrace))
-        }
-    }
-}
-
 
 fn format_progenitor_err(
     f: &mut fmt::Formatter<'_>, format_mode: FormatMode,

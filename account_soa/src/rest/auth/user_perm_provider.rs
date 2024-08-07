@@ -13,7 +13,8 @@ use mvv_auth::{
 use mvv_common::{
     cache::{ AsyncCache, TtlMode, },
 };
-use super::user::{ AuthUser, Role, RolePermissionsSet, UserRolesExtractor };
+use mvv_common::backtrace::backtrace;
+use super::user::{AuthUser, Role, RolePermissionsSet, UserRolesExtractor };
 // -------------------------------------------------------------------------------------------------
 
 
@@ -227,7 +228,7 @@ impl PermissionProvider for SqlUserProvider {
         -> Result<Self::PermissionSet, PermissionProcessError> {
         let user: Option<AuthUser> = self.get_user_by_principal_identity(&user_principal_id).await ?;
         match user {
-            None => Err(PermissionProcessError::NoUser(user_principal_id.into())),
+            None => Err(PermissionProcessError::NoUser(user_principal_id.into(), backtrace())),
             Some(ref user) => Ok(user.permissions.implicit_clone()),
         }
     }

@@ -37,7 +37,7 @@ pub fn parse_amount(s: &str) -> Result<Amount, AmountFormatError> {
 use bigdecimal::ParseBigDecimalError;
 use crate::backtrace::BacktraceCell;
 use crate::entity::currency::parse::CurrencyFormatError;
-
+use crate::entity::error::DataFormatError;
 
 // Duplicated since copy of this code (in amount_parse_old.rs) is also used for testing StructError
 // noinspection DuplicatedCode
@@ -65,11 +65,11 @@ pub enum ErrorKind {
 pub struct AmountFormatError {
     pub kind: ErrorKind,
     #[source]
-    // #[from]
     pub source: ErrorSource,
     pub backtrace: BacktraceCell,
 }
 
+impl DataFormatError for AmountFormatError { }
 
 // Duplicated code since copy of this code (in amount_parse_old.rs) is also used for testing StructError
 // noinspection DuplicatedCode

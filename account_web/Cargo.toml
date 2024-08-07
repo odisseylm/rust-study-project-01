@@ -51,7 +51,7 @@ serde_with.workspace = true
 #serde_with_macros.workspace = true
 #display_json.workspace = true
 
-anyhow = { workspace = true } #, features = ["backtrace"] } # it means third-party "backtrace"
+anyhow.workspace = true #, features = ["backtrace"] } # it means third-party "backtrace"
 thiserror.workspace = true
 # snafu.workspace = true
 # backtrace.workspace = true   ## !!! Out dated !!!

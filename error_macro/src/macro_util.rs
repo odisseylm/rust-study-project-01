@@ -1,5 +1,6 @@
 use core::str::FromStr;
 use std::collections::{HashMap, HashSet};
+use quote::ToTokens;
 use strum_macros::Display;
 
 
@@ -98,9 +99,13 @@ pub fn find_enum_variant_attr<'a>(variant: & 'a syn::Variant, attr_name: & str)
 }
 
 
+pub fn token_stream_to_string(s: &proc_macro2::TokenStream) -> String {
+    let raw = s.to_string();
+    remove_spaces_from_type_string(&raw)
+}
 pub fn type_path_to_string(path: &syn::TypePath) -> String {
     use quote::ToTokens;
-    let raw = path.to_token_stream().to_string();
+    let raw = token_stream_to_string(&path.to_token_stream());
     remove_spaces_from_type_string(&raw)
 }
 #[allow(dead_code)]
@@ -259,25 +264,29 @@ pub(crate) fn keys_with_duplicates<V>(grouped_err_enum_variants_by_arg_type: &Ha
 }
 
 pub fn type_to_string(t: &syn::Type) -> String {
+    token_stream_to_string(&t.into_token_stream())
+
+    /*
     use syn::Type;
     match t {
-        Type::Array(_)       => { unimplemented!() }
-        Type::BareFn(_)      => { unimplemented!()}
-        Type::Group(_)       => { unimplemented!() }
-        Type::ImplTrait(_)   => { unimplemented!() }
-        Type::Infer(_)       => { unimplemented!() }
-        Type::Macro(_)       => { unimplemented!() }
-        Type::Never(_)       => { unimplemented!() }
-        Type::Paren(_)       => { unimplemented!() }
+        Type::Array(_)       => { unimplemented!("type_to_string() for Array not implemented") }
+        Type::BareFn(_)      => { unimplemented!("type_to_string() for BareFn not implemented")}
+        Type::Group(_)       => { unimplemented!("type_to_string() for Group not implemented") }
+        Type::ImplTrait(_)   => { unimplemented!("type_to_string() for ImplTrait not implemented") }
+        Type::Infer(_)       => { unimplemented!("type_to_string() for Infer not implemented") }
+        Type::Macro(_)       => { unimplemented!("type_to_string() for Macro not implemented") }
+        Type::Never(_)       => { unimplemented!("type_to_string() for Never not implemented") }
+        Type::Paren(_)       => { unimplemented!("type_to_string() for Paren not implemented") }
         Type::Path(path)     => { type_path_to_string(&path) }
-        Type::Ptr(_)         => { unimplemented!() }
-        Type::Reference(_)   => { unimplemented!() }
-        Type::Slice(_)       => { unimplemented!() }
-        Type::TraitObject(_) => { unimplemented!() }
-        Type::Tuple(_)       => { unimplemented!() }
-        Type::Verbatim(_)    => { unimplemented!() }
-        _                    => { unimplemented!() }
+        Type::Ptr(_)         => { unimplemented!("type_to_string() for Ptr not implemented") }
+        Type::Reference(ref r)   => { token_stream_to_string(&r.to_token_stream()) }
+        Type::Slice(_)       => { unimplemented!("type_to_string() for Slice not implemented") }
+        Type::TraitObject(_) => { unimplemented!("type_to_string() for TraitObject not implemented") }
+        Type::Tuple(_)       => { unimplemented!("type_to_string() for Tuple not implemented") }
+        Type::Verbatim(_)    => { unimplemented!("type_to_string() for Verbatim not implemented") }
+        _                    => { unimplemented!("type_to_string() for other not implemented") }
     }
+    */
 }
 
 pub fn type_to_string_without_spaces(t: &syn::Type) -> String {
@@ -516,5 +525,6 @@ pub(crate) static SIMPLE_TYPES: [&'static str;18] = [
     "u8", "u16", "u32", "u64", "u128",
     "usize", "isize",
     "f32", "f64",
-    "String", "&str", "& 'static str",
+    "String",
+    "&str", "&'static str",
 ];

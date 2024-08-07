@@ -275,8 +275,8 @@ pub mod predefined {
 //
 pub mod parse {
     use crate::backtrace::BacktraceCell;
+    use crate::entity::error::DataFormatError;
 
-    // #[derive(Debug, PartialEq, Copy, Clone)]
     #[derive(Debug, thiserror::Error, PartialEq)]
     #[derive(Copy, Clone)]
     pub enum ErrorKind {
@@ -286,15 +286,14 @@ pub mod parse {
         IncorrectCurrencyFormat,
     }
 
-    // #[derive(Debug, PartialEq, Copy, Clone)]
     #[derive(thiserror::Error)]
     #[derive(mvv_error_macro::StructError)]
     pub struct CurrencyFormatError {
         pub kind: ErrorKind,
-        // #[source]
-        // pub source: ErrorSource,
         pub backtrace: BacktraceCell,
     }
+
+    impl DataFormatError for CurrencyFormatError { }
 }
 
 

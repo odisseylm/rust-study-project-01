@@ -1,5 +1,5 @@
 // use mvv_common::backtrace::NewBacktracePolicy;
-use mvv_common::backtrace::BacktraceCell;
+use mvv_common::backtrace::{ backtrace, BacktraceCell };
 
 
 #[allow(dead_code)]
@@ -49,5 +49,5 @@ fn test_print_enum_with_scrum_dependency() {
     println!("{}", Suit2::Diamond);
     // println!("{}", Suit2::Club(BacktraceInfo::new()));
     // println!("{}", Suit2::Club { sat:BacktraceInfo::new_by_policy(NewBacktracePolicy::Capture) });
-    println!("{}", Suit2::Club { sat:BacktraceCell::capture_backtrace() });
+    println!("{}", Suit2::Club { sat: backtrace() });
 }

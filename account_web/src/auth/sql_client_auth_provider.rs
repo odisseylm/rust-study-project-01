@@ -11,7 +11,8 @@ use mvv_auth::{
 };
 use mvv_auth::permission::{ PermissionProcessError, PermissionProvider };
 use mvv_auth::util::sql::set_role_from_bool_column as set_role_from_col;
-use mvv_common::cache::{ AsyncCache, TtlMode, };
+use mvv_common::backtrace::backtrace;
+use mvv_common::cache::{AsyncCache, TtlMode, };
 use crate::auth::{ ClientAuthUser as AuthUser, ClientFeatureSet, ClientFeature };
 //--------------------------------------------------------------------------------------------------
 
@@ -184,7 +185,7 @@ impl PermissionProvider for SqlClientAuthUserProvider {
         let user: Option<AuthUser> = self.get_user_by_principal_identity(&user_principal_id).await ?;
         match user {
             None =>
-                Err(PermissionProcessError::NoUser(user_principal_id.into())),
+                Err(PermissionProcessError::NoUser(user_principal_id.into(), backtrace())),
             Some(ref user) =>
                 Ok(user.client_features.implicit_clone()),
         }

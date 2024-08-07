@@ -1,6 +1,6 @@
 use core::fmt;
 use std::path::PathBuf;
-use crate::backtrace::BacktraceCell;
+use crate::backtrace::{ backtrace, BacktraceCell };
 use crate::string::StaticRefOrString;
 //--------------------------------------------------------------------------------------------------
 
@@ -72,7 +72,7 @@ impl EnvVarError {
     pub fn new(var_name: StaticRefOrString, source: std::env::VarError) -> Self {
         Self {
             var_name, source,
-            backtrace: BacktraceCell::capture_backtrace(),
+            backtrace: backtrace(),
         }
     }
 }

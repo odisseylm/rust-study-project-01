@@ -13,24 +13,30 @@ use anyhow::anyhow;
 use axum::response::Response;
 use http::StatusCode;
 use log::error;
-use crate::{ AuthUserProviderError, UserId };
+use mvv_common::backtrace::BacktraceCell;
+use crate::{AuthUserProviderError, UserId };
 // -------------------------------------------------------------------------------------------------
 
 
 
-#[derive(thiserror::Error, Debug)]
+#[derive(
+    Debug,
+    thiserror::Error,
+    mvv_error_macro::ThisErrorFromWithBacktrace,
+    mvv_error_macro::ThisErrorBacktraceSource,
+)]
 #[non_exhaustive]
 pub enum PermissionProcessError {
     #[error("ConvertError({0})")]
-    ConvertError(anyhow::Error),
+    ConvertError(#[source] anyhow::Error),
     #[error("NoUser({0})")]
-    NoUser(UserId),
+    NoUser(UserId, BacktraceCell),
     #[error("GetUserError({0})")]
-    GetUserError(anyhow::Error),
+    GetUserError(#[source] anyhow::Error),
     #[error("CacheError")]
-    CacheError(anyhow::Error),
+    CacheError(#[source] anyhow::Error),
     #[error("UnknownError")]
-    UnknownError(anyhow::Error),
+    UnknownError(#[source] anyhow::Error),
 
     #[doc(hidden)]
     #[error("__NonExhaustive")]
@@ -47,12 +53,22 @@ impl From<AuthUserProviderError> for PermissionProcessError {
     fn from(value: AuthUserProviderError) -> Self {
         // PermissionProcessError::ConvertError(anyhow!("Internal error: Infallible"))
         match value {
-            AuthUserProviderError::UserNotFound(user) => PermissionProcessError::NoUser(user),
-            AuthUserProviderError::Sqlx(err) => PermissionProcessError::GetUserError(From::from(err)),
-            AuthUserProviderError::LockedResourceError => PermissionProcessError::GetUserError(From::from(value)),
-            AuthUserProviderError::ConfigurationError(conf_err) => PermissionProcessError::GetUserError(conf_err),
-            AuthUserProviderError::CacheError(err) => PermissionProcessError::CacheError(err),
-            AuthUserProviderError::UnknownError(err) => PermissionProcessError::UnknownError(err),
+            AuthUserProviderError::UserNotFound(user, backtrace) =>
+                PermissionProcessError::NoUser(user, backtrace),
+            AuthUserProviderError::Sqlx(err, backtrace) =>
+                PermissionProcessError::GetUserError(From::from(
+                    // TODO: how to use 'value' directly
+                    AuthUserProviderError::Sqlx(err, backtrace))),
+            AuthUserProviderError::LockedResourceError(backtrace) =>
+                PermissionProcessError::GetUserError(From::from(
+                    // T O D O: how to use 'value' directly
+                    AuthUserProviderError::LockedResourceError(backtrace))),
+            AuthUserProviderError::ConfigurationError(conf_err) =>
+                PermissionProcessError::GetUserError(conf_err),
+            AuthUserProviderError::CacheError(err) =>
+                PermissionProcessError::CacheError(err),
+            AuthUserProviderError::UnknownError(err) =>
+                PermissionProcessError::UnknownError(err),
             //
             err => PermissionProcessError::UnknownError(anyhow::anyhow!(err)),
         }

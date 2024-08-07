@@ -161,9 +161,6 @@ name = "anyhow"
 version = "1.0.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3d1d046238990b9cf5bcde22a3fb3584ee5cf65fb2765f454ed428c7a0063da"
-dependencies = [
- "backtrace",
-]
 
 [[package]]
 name = "arbitrary"
@@ -2718,6 +2715,7 @@ dependencies = [
  "forr",
  "http 1.1.0",
  "hyper 1.4.1",
+ "iban",
  "if_chain",
  "implicit-clone",
  "indexmap 2.2.6",
@@ -2774,6 +2772,7 @@ dependencies = [
  "type-rules",
  "url",
  "utoipa",
+ "uuid",
  "validator",
  "validify",
 ]

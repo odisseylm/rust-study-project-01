@@ -244,7 +244,7 @@ pub(crate) fn generate_bt_source(ast: &syn::DeriveInput) -> proc_macro2::TokenSt
     }
 
     let code = quote! {
-        impl mvv_common::backtrace::BacktraceSource for ThisError1 {
+        impl #root ::backtrace::BacktraceSource for #enum_name {
             #[allow(unused_imports)]
             fn backtrace_ref(&self) -> Option<&BacktraceCell> {
                 use #BacktraceSource;

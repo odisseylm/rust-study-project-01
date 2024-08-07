@@ -1,6 +1,7 @@
 use axum::response::{ IntoResponse, Response };
 use http::StatusCode;
 use log::error;
+use mvv_common::backtrace::BacktraceCell;
 use crate::backend::Oauth2ConfigError;
 
 use crate::user_provider::AuthUserProviderError;
@@ -10,7 +11,12 @@ use crate::permission::PermissionProcessError;
 
 // This enum contains ALL possible errors for ANY auth Backend.
 // Initially every impl had each own error enum... but I tired to convert them :-)
-#[derive(Debug, thiserror::Error)]
+#[derive(
+    Debug,
+    thiserror::Error,
+    mvv_error_macro::ThisErrorFromWithBacktrace,
+    mvv_error_macro::ThisErrorBacktraceSource,
+)]
 pub enum AuthBackendError {
     // axum-login treats these cases as Ok(None)
     // We have to use the same approach in our code to conform idea.
@@ -27,50 +33,51 @@ pub enum AuthBackendError {
     // ----------------------------------------------------------------------------
     //                            Internal errors
     //
-    #[error("UserProviderError")]
-    UserProviderError(AuthUserProviderError),
+    #[error("User Provider error")]
+    UserProviderError(#[from] AuthUserProviderError),
 
-    #[error(transparent)]
-    Sqlx(sqlx::Error),
+    #[error("Sqlx error")]
+    Sqlx(#[source] #[from_with_bt] sqlx::Error, BacktraceCell),
 
-    #[error(transparent)]
-    Reqwest(reqwest::Error),
+    #[error("Reqwest error")]
+    Reqwest(#[source] #[from_with_bt] reqwest::Error, BacktraceCell),
 
-    #[error(transparent)]
-    OAuth2(oauth2::basic::BasicRequestTokenError<oauth2::reqwest::AsyncHttpClientError>),
+    #[error("OAuth2 error")]
+    OAuth2(#[source] #[from_with_bt] oauth2::basic::BasicRequestTokenError<oauth2::reqwest::AsyncHttpClientError>, BacktraceCell),
 
-    #[error(transparent)]
+    #[error("OAuth2 config error")]
     OAuth2ConfigError(#[from] Oauth2ConfigError),
 
-    #[error("NoRequestedBackend")]
-    NoRequestedBackend,
+    #[error("No RequestedBackend error")]
+    NoRequestedBackend(BacktraceCell),
 
-    #[error("NoUserProvider")]
-    NoUserProvider,
+    #[error("No UserProvider error")]
+    NoUserProvider(BacktraceCell),
 
-    #[error("NoPermissionProvider")]
-    NoPermissionProvider,
+    #[error("NoPermission provider error")]
+    NoPermissionProvider(BacktraceCell),
 
-    #[error("DifferentUserProviders")]
-    DifferentUserProviders,
+    #[error("Different UserProviders configuration error")]
+    DifferentUserProviders(BacktraceCell),
 
-    #[error("DifferentPermissionProviders")]
-    DifferentPermissionProviders,
+    #[error("Different PermissionProviders configuration error")]
+    DifferentPermissionProviders(BacktraceCell),
 
-    #[error(transparent)]
-    TaskJoin(#[from] tokio::task::JoinError),
+    #[error("TaskJoin error")]
+    TaskJoin(#[source] #[from_with_bt] tokio::task::JoinError, BacktraceCell),
 
-    #[error("ConfigError({0})")]
-    ConfigError(anyhow::Error),
+    #[error("Config error: {0}")]
+    ConfigError(#[source] anyhow::Error),
 
-    #[error("RoleError({0})")]
-    RoleError(PermissionProcessError),
+    #[error("RoleError: {0}")]
+    RoleError(#[source] #[from_with_bt] PermissionProcessError, BacktraceCell),
 
     #[doc(hidden)]
     #[error("__NonExhaustive")]
     __NonExhaustive
 }
 
+/*
 impl From<AuthUserProviderError> for AuthBackendError {
     fn from(value: AuthUserProviderError) -> Self {
         AuthBackendError::UserProviderError(value)
@@ -86,6 +93,7 @@ impl From<PermissionProcessError> for AuthBackendError {
         AuthBackendError::RoleError(value)
     }
 }
+*/
 
 
 impl IntoResponse for AuthBackendError {

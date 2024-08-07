@@ -8,19 +8,24 @@ pub trait AuthUserProvider : fmt::Debug {
 }
 
 
-#[derive(Debug, thiserror::Error)]
+#[derive(
+    Debug,
+    thiserror::Error,
+    mvv_error_macro::ThisErrorFromWithBacktrace,
+    mvv_error_macro::ThisErrorBacktraceSource,
+)]
 #[non_exhaustive]
 pub enum AuthUserProviderError {
     // 1) It is used only for updates.
     // 2) If user is not found on get operation, just Ok(None) is returned.
     #[error("UserNotFound")]
-    UserNotFound(UserId),
+    UserNotFound(UserId, BacktraceCell),
 
-    #[error(transparent)]
-    Sqlx(sqlx::Error),
+    #[error("Sqlx error")]
+    Sqlx(#[source] #[from_with_bt] sqlx::Error, BacktraceCell),
 
     #[error("LockedResourceError")]
-    LockedResourceError,
+    LockedResourceError(BacktraceCell),
 
     #[error("ConfigurationError")]
     ConfigurationError(anyhow::Error),
@@ -36,11 +41,13 @@ pub enum AuthUserProviderError {
     __NonExhaustive
 }
 
+/*
 impl From<sqlx::Error> for AuthUserProviderError {
     fn from(value: sqlx::Error) -> Self {
         AuthUserProviderError::Sqlx(value)
     }
 }
+*/
 
 impl From<CacheError> for AuthUserProviderError {
     fn from(err: CacheError) -> Self {
@@ -71,5 +78,6 @@ impl From<CacheOrFetchError<AuthUserProviderError>> for AuthUserProviderError {
 pub mod mem_user_provider;
 
 pub use mem_user_provider::InMemAuthUserProvider;
+use mvv_common::backtrace::BacktraceCell;
 use mvv_common::cache::{CacheError, CacheOrFetchError};
 use crate::UserId;

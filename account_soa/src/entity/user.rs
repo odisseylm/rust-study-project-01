@@ -21,6 +21,8 @@ impl UserId {
     pub fn into_inner_inner(self) -> String { self.0.into_inner() }
 }
 
+// impl DataFormatError for UserIdFormatError { }
+
 generate_from_str_new_type_delegate! { UserId, Id, UserIdFormatError }
 generate_pg_delegate_type_info! { UserId, str }
 // generate_pg_encode!    { UserId, }

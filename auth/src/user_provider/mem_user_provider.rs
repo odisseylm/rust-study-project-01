@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::collections::HashMap;
 
 use tokio::sync::RwLock;
-
+use mvv_common::backtrace::backtrace;
 use crate::{
     user_provider::{ AuthUserProvider, AuthUserProviderError },
     backend::oauth2_auth::{ OAuth2UserStore, OAuth2User },
@@ -196,7 +196,7 @@ impl <
             .map_err(|err|PermissionProcessError::GetUserError(anyhow::Error::new(err)))?;
         let user = user_opt.ok_or_else(||
             // in theory, it should not happen
-            PermissionProcessError::NoUser(user_principal_id.into())) ?;
+            PermissionProcessError::NoUser(user_principal_id.into(), backtrace())) ?;
         self.get_user_permissions(&user).await
     }
 

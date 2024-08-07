@@ -1,5 +1,5 @@
 use std::sync::Arc;
-
+use mvv_common::backtrace::backtrace;
 use crate::{
     error::AuthBackendError,
     backend::{ AuthnBackendAttributes, authz_backend::PermissionProviderSource },
@@ -115,8 +115,8 @@ pub fn get_unique_user_provider_ref <'a,Usr, const N: usize>(
 ) -> Result<&Arc<dyn AuthUserProvider<User=Usr> + Sync + Send>, AuthBackendError> {
     get_unique_prov_ref_impl(
         possible_user_providers,
-        AuthBackendError::NoUserProvider,
-        AuthBackendError::DifferentUserProviders,
+        AuthBackendError::NoUserProvider(backtrace()),
+        AuthBackendError::DifferentUserProviders(backtrace()),
     )
 }
 
@@ -124,8 +124,10 @@ pub fn get_unique_user_provider_ref <'a,Usr, const N: usize>(
 pub fn get_unique_permission_provider_ref <'a,Usr, Perm, PermSet, const N: usize>(
     possible_perm_providers: [Option<&Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send>>;N]
 ) -> Result<&Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send>, AuthBackendError> {
-    get_unique_prov_ref_impl(possible_perm_providers,
-        AuthBackendError::NoPermissionProvider, AuthBackendError::DifferentPermissionProviders,
+    get_unique_prov_ref_impl(
+        possible_perm_providers,
+        AuthBackendError::NoPermissionProvider(backtrace()),
+        AuthBackendError::DifferentPermissionProviders(backtrace()),
     )
 }
 
@@ -200,7 +202,7 @@ mod tests {
             Some(&another_in_mem_users),
         ]);
         match unique.err().test_unwrap() {
-            AuthBackendError::DifferentUserProviders => {},
+            AuthBackendError::DifferentUserProviders(..) => {},
             _ => assert!(false, "Another error is expected"),
         }
     }
@@ -210,7 +212,7 @@ mod tests {
         let possible_providers: [Option<&ArcUsrProvider>;0] = [];
         let unique = get_unique_user_provider_ref(possible_providers);
         match unique.err().test_unwrap() {
-            AuthBackendError::NoUserProvider => {},
+            AuthBackendError::NoUserProvider(..) => {},
             _ => assert!(false, "Another error is expected"),
         }
 
@@ -218,14 +220,14 @@ mod tests {
             None,
         ]);
         match unique.err().test_unwrap() {
-            AuthBackendError::NoUserProvider => {},
+            AuthBackendError::NoUserProvider(..) => {},
             _ => assert!(false, "Another error is expected"),
         }
 
         let unique = get_unique_user_provider_ref(
             [None as OptionArcUsrProvider, None, None,]);
         match unique.err().test_unwrap() {
-            AuthBackendError::NoUserProvider => {},
+            AuthBackendError::NoUserProvider(..) => {},
             _ => assert!(false, "Another error is expected"),
         }
     }
