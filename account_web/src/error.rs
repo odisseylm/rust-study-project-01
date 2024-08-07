@@ -1,11 +1,11 @@
-use core::fmt::{ self, Debug };
-// use axum::Json;
+use core::fmt::Debug;
 use axum::response::{ IntoResponse, Response };
-// use http::StatusCode;
 use log::error;
 use mvv_auth::UserId;
-use mvv_common::backtrace::{ backtrace, BacktraceCell };
-use mvv_common::string::{ SringOps, StaticRefOrString };
+use mvv_common::{
+    backtrace::BacktraceCell,
+    string::{ SringOps, StaticRefOrString },
+};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -15,6 +15,7 @@ use mvv_common::string::{ SringOps, StaticRefOrString };
     thiserror::Error,
     mvv_error_macro::ThisErrorFromWithBacktrace,
     mvv_error_macro::ThisErrorBacktraceSource,
+    strum_macros::AsRefStr,
 )]
 pub enum WebAppError {
     #[error("AnyhowError({0})")]
@@ -27,13 +28,13 @@ pub enum WebAppError {
     #[allow(unused_attributes)]
     #[must_use = "Mainly for xxx usage."]
     #[error("Unauthenticated")]
-    Unauthenticated(UserId, BacktraceCell),
+    UnauthenticatedAccess(UserId, BacktraceCell),
 
     // In most cases authorization also should be processed on axum route layer,
     // but of course in some cases it is possible to do only later
     // (for example if user sends account ID of another client)
     #[error("Unauthorized")]
-    Unauthorized(UserId, BacktraceCell),
+    UnauthorizedAccess(UserId, BacktraceCell),
 
     #[error("HttpResponseResultError")]
     HttpResponseResultError(Response, BacktraceCell),
@@ -61,10 +62,10 @@ impl IntoResponse for WebAppError {
             WebAppError::AnyhowError(ref err) => {
                 error!("Internal error: {err:?}");
             }
-            WebAppError::Unauthenticated(ref user_id, ref backtrace) => {
+            WebAppError::UnauthenticatedAccess(ref user_id, ref backtrace) => {
                 error!("Unauthenticated error (user: {user_id}) \n {backtrace}");
             }
-            WebAppError::Unauthorized(ref user_id, ref backtrace) => {
+            WebAppError::UnauthorizedAccess(ref user_id, ref backtrace) => {
                 error!("Unauthorized access error (user: {user_id}) \n {backtrace}");
             }
             WebAppError::RestCallError(ref err) => {
@@ -103,65 +104,18 @@ impl<E> From<E> for WebAppError where E: Into<anyhow::Error> {
 
 impl From<WebAppError> for ErrorDetails {
     fn from(err: WebAppError) -> Self {
-        // TODO: simplify
         match err {
-            WebAppError::AnyhowError(ref err) => {
-                ErrorDetails {
-                    title: "Internal error".into(),
-                    short_description: err.to_string().into(),
-                    full_description: Some(StaticRefOrString::String(
-                        err.to_debug_err_string())),
-                }
-            }
-            WebAppError::Unauthenticated(..) => {
-                ErrorDetails {
-                    title: "Unauthenticated access".into(),
-                    short_description: "Unauthenticated access".into(),
-                    full_description: None,
-                }
-            }
-            WebAppError::Unauthorized(ref user_id, ..) => {
+            WebAppError::UnauthorizedAccess(ref user_id, ..) => {
                 ErrorDetails {
                     title: "Unauthorized access".into(),
                     short_description: "Unauthorized access".into(),
                     full_description: Some(format!("Unauthorized access for user [{user_id}]").into()),
                 }
             }
-            WebAppError::RestCallError(ref err) => {
+            err => {
+                let enum_name = err.as_ref().to_owned();
                 ErrorDetails {
-                    title: "RestCallError".into(),
-                    short_description: err.to_string().into(),
-                    full_description: Some(StaticRefOrString::String(
-                        err.to_debug_err_string())),
-                }
-            }
-            WebAppError::IllegalArgument(ref err) => {
-                ErrorDetails {
-                    title: "IllegalArgument".into(),
-                    short_description: err.to_string().into(),
-                    full_description: Some(StaticRefOrString::String(
-                        err.to_debug_err_string())),
-                }
-            }
-            WebAppError::ValidifyError(ref err, ..) => {
-                ErrorDetails {
-                    title: "Validation Error".into(),
-                    short_description: err.to_string().into(),
-                    full_description: Some(StaticRefOrString::String(
-                        err.to_debug_err_string())),
-                }
-            }
-            WebAppError::ValidifyErrors(ref err, ..) => {
-                ErrorDetails {
-                    title: "Validation Error".into(),
-                    short_description: err.to_string().into(),
-                    full_description: Some(StaticRefOrString::String(
-                        err.to_debug_err_string())),
-                }
-            }
-            WebAppError::HttpResponseResultError(..) => {
-                ErrorDetails {
-                    title: "ResponseResultError".into(),
+                    title: enum_name.into(),
                     short_description: err.to_string().into(),
                     full_description: Some(StaticRefOrString::String(
                         err.to_debug_err_string())),
@@ -183,7 +137,7 @@ pub impl<T> ErrDebugStrExt for T /* where T: Debug */ {
 
 
 pub struct ErrorDetails {
-    pub title: &'static str,
+    pub title: StaticRefOrString, // &'static str,
     pub short_description: StaticRefOrString,
     pub full_description: Option<StaticRefOrString>,
 }

@@ -23,13 +23,13 @@ pub type PswComparator = mvv_auth::PlainPasswordComparator;
 
 pub fn in_memory_test_users()
     -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,UserRolesExtractor>, AuthUserProviderError> {
-    InMemAuthUserProvider::with_users(vec!(
+    InMemAuthUserProvider::with_users([
         AuthUser::new(1, "vovan", "qwerty"),
         AuthUser::with_role(2, "vovan-read", "qwerty", Role::Read),
         AuthUser::with_role(3, "vovan-write", "qwerty", Role::Write),
         AuthUser::with_roles(4, "vovan-read-and-write", "qwerty",
             RolePermissionsSet::from_permissions([Role::Read, Role::Write])),
-    ))
+    ])
 }
 
 // We cache Option<AuthUser> to cache fact that user is not found.

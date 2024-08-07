@@ -41,7 +41,6 @@ cfg-if = "1.0.0"
 
 static_assertions = "1.1.0" # 4 years gao
 static_assertions_next = "1.1.2" # probably successor of 'static_assertions' ??
-#const-zero = "0.1.1" # dperected, just redirection to 'std/core'
 
 const_format = "0.2.32"
 const-str = "0.5.7"
@@ -59,15 +58,13 @@ trait-variant = "0.1.2"  # ???
 
 serde = { version = "1.0.201", features = ["derive", "std", "rc", "serde_derive" ] }
 serde_json = { version = "1.0.117", features = [ "default", ] }
-#serde_json = { version = "1.0.117", features = ["default", ] }
 #serde_json5 = "0.1.0
 #serde_as = "0.0.1"
 serde_with = "3.8.1"
 #serde_with_macros = "3.8.1"
 #display_json = "0.2.1"
 
-anyhow = { version = "1.0.83" } #, features = ["backtrace"] }
-#anyhow = { version = "1.0.83"} # , features = ["backtrace"] } // it means third-party "backtrace"
+anyhow = { version = "1.0.83"} # , features = ["backtrace"] } // it means third-party "backtrace"
 thiserror = "1.0.60"
 #snafu = "0.8.2"
 

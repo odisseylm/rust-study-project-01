@@ -321,13 +321,13 @@ pub mod test {
 
     pub fn in_memory_test_users()
         -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
-        InMemAuthUserProvider::with_users(vec!(
+        InMemAuthUserProvider::with_users([
             AuthUserExample::new(1, "vovan", "qwerty"),
             AuthUserExample::with_role(2, "vovan-read", "qwerty", Role::Read),
             AuthUserExample::with_role(3, "vovan-write", "qwerty", Role::Write),
             AuthUserExample::with_roles(4, "vovan-read-and-write", "qwerty",
                 RolePermissionsSet::from_permissions([Role::Read, Role::Write])),
-        ))
+        ])
     }
 
 }

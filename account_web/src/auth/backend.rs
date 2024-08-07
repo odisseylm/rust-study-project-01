@@ -343,13 +343,13 @@ pub mod test {
         -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet, ClientFeaturesExtractor>, AuthUserProviderError> {
         use mvv_auth::permission::PermissionSet;
 
-        InMemAuthUserProvider::with_users(vec!(
+        InMemAuthUserProvider::with_users([
             AuthUser::test_std_client("1", "vovan", "qwerty"),
             AuthUser::test_client_with_type("2", "vovan-business", "qwerty", ClientFeature::Business),
             AuthUser::test_client_with_features("3", "vovan-super-business", "qwerty",
                                                 RolePermissionsSet::from_permissions([ClientFeature::Business, ClientFeature::SuperBusiness])),
             // AuthUser::with_roles("4", "vovan-read-and-write", "qwerty",
             //     RolePermissionsSet::from_permissions([Role::Read, Role::Write])),
-        ))
+        ])
     }
 }

@@ -132,7 +132,7 @@ pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
                 value: <sqlx_postgres::Postgres as sqlx::database::HasValueRef<'r>>::ValueRef
             ) -> Result<Self, sqlx::error::BoxDynError> {
                 let v = < $DelegateType > ::decode(value) ?;
-                Ok( $Type (v)) // TODO: how to use '$Type:ty' there??
+                Ok( $Type (v)) // T O D O: how to use '$Type:ty' there??
             }
         }
 

@@ -16,12 +16,12 @@ pub fn in_mem_client_auth_user_provider()
         ClientAuthUser, ClientFeature, ClientFeatureSet, ClientFeaturesExtractor>> {
     use mvv_auth::user_provider::InMemAuthUserProvider;
 
-    Ok(InMemAuthUserProvider::with_users(vec!(
+    Ok(InMemAuthUserProvider::with_users([
         ClientAuthUser::test_std_client(
             "00000000-0000-0000-0000-000000000001", "cheburan@ukr.net", "qwerty",
         ),
         ClientAuthUser::test_std_client(
             "00000000-0000-0000-0000-000000000002", "bla-bla@bla.bla", "qwerty",
         ),
-    )) ?)
+    ]) ?)
 }

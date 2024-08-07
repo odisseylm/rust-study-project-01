@@ -52,6 +52,7 @@ where
         // optional: tracing can show connection info (without user) automatically
         // let connect_info = ConnectionInfo::from_request(&req);
         // let connect_info = ConnectionInfoRef::from_request(&req);
+        // mvv_auth::extract::ExtractCurrentUser<ClientAuthUser, AuthBackend>
 
         let inner = Extractor::from_request(req, state)
             .await
@@ -86,7 +87,8 @@ where
             // optional: tracing can show connection info (without user) automatically
             // let connect_info = ConnectionInfoRef::from_request_parts(parts);
             // error!("### ValidationError (2) [{connect_info:?}] : {v_res:?}");
-            // TODO: fix getting user
+            // T O D O: fix getting user
+            // mvv_auth::extract::ExtractCurrentUser<ClientAuthUser, AuthBackend>
             error!("### ValidationError (2) : {v_res:?}");
         }
         v_res?;

@@ -83,7 +83,7 @@ impl <
         }
     }
 
-    pub fn with_users(users: Vec<Usr>) // TODO: replace by array
+    pub fn with_users<const N: usize>(users: [Usr; N])
         -> Result<InMemAuthUserProvider<Usr,Perm,PermSet,PermExtract>, AuthUserProviderError> {
 
         let mut in_memory_state = InMemoryState::with_capacity(users.len());
@@ -225,7 +225,7 @@ mod tests {
     use crate::util::test_unwrap::TestSringOps;
 
     pub fn in_memory_test_users() -> Result<InMemAuthUserProvider<AuthUserExample,Role,RolePermissionsSet,AuthUserExamplePswExtractor>, AuthUserProviderError> {
-        InMemAuthUserProvider::with_users(vec!(AuthUserExample::new(1, "in-mem-vovan", "qwerty")))
+        InMemAuthUserProvider::with_users([AuthUserExample::new(1, "in-mem-vovan", "qwerty")])
     }
 
     // macro_rules! aw {
