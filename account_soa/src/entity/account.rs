@@ -16,12 +16,12 @@ use crate::entity::ClientId;
 #[display(fmt = "{}", _0)]
 pub struct AccountId( #[allow(dead_code)] uuid::Uuid);
 // pub type AccountIdFormatError = mvv_common::entity::id::parse::IdFormatError;
-pub type AccountIdFormatError = uuid::Error;
+pub type AccountIdFormatError = mvv_common::uuid::UuidFormatError;
 
 // impl DataFormatError for AccountIdFormatError { }
 
 generate_into_inner_delegate! { AccountId, uuid::Uuid }
-generate_from_str_new_type_delegate! { AccountId, uuid::Uuid, uuid::Error }
+generate_from_str_new_type_delegate! { AccountId, uuid::Uuid, mvv_common::uuid::UuidFormatError }
 
 generate_pg_delegate_type_info! { AccountId, uuid::Uuid }
 generate_pg_delegate_encode!    { AccountId, uuid::Uuid }

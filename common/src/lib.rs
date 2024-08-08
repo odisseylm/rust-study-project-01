@@ -23,3 +23,4 @@ pub mod map;
 pub mod cfg;
 pub mod soa;
 pub mod backtrace;
+pub mod uuid;

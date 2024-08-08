@@ -360,6 +360,33 @@ impl Display for BacktraceCell_ArcImpl {
 */
 
 
+#[macro_export] macro_rules! generate_backtrace_source_delegate {
+    ($Type:ty) => {
+
+        #[allow(unused_imports)]
+        impl BacktraceSource for $Type {
+            fn backtrace_ref(&self) -> Option<&BacktraceCell> {
+                use crate::backtrace::{BacktraceSource};
+                self.backtrace.backtrace_ref()
+            }
+            fn contains_backtrace(&self) -> bool {
+                use crate::backtrace::{BacktraceSource};
+                self.backtrace.contains_backtrace()
+            }
+            fn is_taking_backtrace_supported(&self) -> bool {
+                use crate::backtrace::{BacktraceSource};
+                self.backtrace.is_taking_backtrace_supported()
+            }
+            fn take_backtrace(&self) -> BacktraceCell {
+                use crate::backtrace::{BacktraceSource};
+                self.backtrace.take_backtrace()
+            }
+        }
+
+    };
+}
+
+
 //--------------------------------------------------------------------------------------------------
 #[cfg(test)]
 mod tests {

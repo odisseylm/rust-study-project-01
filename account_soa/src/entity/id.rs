@@ -12,11 +12,9 @@ use mvv_common::{
 #[derive(Debug, Clone, PartialEq, derive_more::Display)] // derive_more::FromStr)]
 #[display(fmt = "{}", _0)]
 pub struct ClientId( #[allow(dead_code)] uuid::Uuid);
-// pub type ClientIdFormatError = mvv_common::entity::id::parse::IdFormatError;
-// pub type ClientIdFormatError = uuid::Error;
 
 generate_into_inner_delegate!   { ClientId, uuid::Uuid }
-generate_from_str_new_type_delegate! { ClientId, uuid::Uuid, uuid::Error }
+generate_from_str_new_type_delegate! { ClientId, uuid::Uuid, mvv_common::uuid::UuidFormatError }
 generate_pg_delegate_type_info! { ClientId, uuid::Uuid }
 generate_pg_delegate_encode!    { ClientId, uuid::Uuid }
 generate_pg_delegate_decode!    { ClientId, uuid::Uuid }

@@ -7,9 +7,7 @@ use axum_extra::headers::authorization::Basic;
 use axum_extra::TypedHeader;
 use log::error;
 use mvv_common::backtrace::{backtrace, BacktraceCell};
-use mvv_common::entity::AmountFormatError;
-use mvv_common::entity::currency::parse::CurrencyFormatError;
-use mvv_common::entity::id::parse::IdFormatError;
+use mvv_common::rest::InvalidInputError;
 use crate::entity::user::UserId;
 use crate::service::account_service::AccountProcessError;
 //--------------------------------------------------------------------------------------------------
@@ -53,7 +51,7 @@ pub enum RestAppError {
     #[error("IllegalArgument {0}")]
     IllegalArgument(#[source] anyhow::Error),
     #[error("ValidationRequestError {0}")]
-    ValidationRequestError(#[source] Box<dyn std::error::Error>, BacktraceCell),
+    ValidationRequestError(#[from] InvalidInputError),
 
     #[error("ValidationError {0}")]
     ValidifyError(#[source] #[from_with_bt] validify::ValidationError, BacktraceCell),
@@ -65,31 +63,6 @@ pub enum RestAppError {
     // ...
     // Add other errors if it is needed.
 }
-
-/*
-impl fmt::Display for RestAppError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RestAppError::AnyhowError(ref anyhow_err) =>
-                write!(f, "AnyhowError: {}", anyhow_err),
-            RestAppError::Unauthorized(..) =>
-                write!(f, "NotAuthorized"),
-            RestAppError::Unauthenticated(..) =>
-                write!(f, "NotAuthenticated"),
-            RestAppError::IllegalArgument(ref anyhow_err) =>
-                write!(f, "IllegalArgument: {}", anyhow_err),
-            RestAppError::HttpResponseResultError(ref _r) =>
-                write!(f, "HttpResponseResultError"),
-            RestAppError::ValidifyError(ref err, ..) =>
-                write!(f, "ValidationError({err:?})"),
-            RestAppError::ValidifyErrors(ref err, ..) =>
-                write!(f, "ValidationErrors({err:?})"),
-            RestAppError::ValidationRequestError(ref err, ..) =>
-                write!(f, "ValidationRequestError({err:?})"),
-        }
-    }
-}
-*/
 
 
 // Tell axum how to convert `AppError` into a response.
@@ -124,8 +97,8 @@ impl IntoResponse for RestAppError {
                 error!("HttpResponseResultError: {response:?} \n {backtrace}");
                 response
             },
-            RestAppError::ValidationRequestError(ref err, ref backtrace) => {
-                error!("ValidationRequestError: {err:?} \n {backtrace}");
+            RestAppError::ValidationRequestError(ref err) => {
+                error!("ValidationRequestError: {err:?}");
                 (StatusCode::BAD_REQUEST, Json(err.to_string())).into_response()
             }
             RestAppError::AccountProcessError(ref err, ref backtrace) => {
@@ -133,36 +106,6 @@ impl IntoResponse for RestAppError {
                 (StatusCode::BAD_REQUEST, Json(err.to_string())).into_response()
             }
         }
-    }
-}
-
-
-impl From<uuid::Error> for RestAppError {
-    fn from(err: uuid::Error) -> Self {
-        RestAppError::ValidationRequestError(Box::new(err), backtrace())
-    }
-}
-impl From<iban::ParseError> for RestAppError {
-    fn from(err: iban::ParseError) -> Self {
-        RestAppError::ValidationRequestError(Box::new(err), backtrace())
-    }
-}
-impl From<IdFormatError> for RestAppError {
-    fn from(err: IdFormatError) -> Self {
-        let bt = BacktraceCell::inherit_or_capture(&err);
-        RestAppError::ValidationRequestError(Box::new(err), bt)
-    }
-}
-impl From<CurrencyFormatError> for RestAppError {
-    fn from(err: CurrencyFormatError) -> Self {
-        let bt = BacktraceCell::inherit_or_capture(&err);
-        RestAppError::ValidationRequestError(Box::new(err), bt)
-    }
-}
-impl From<AmountFormatError> for RestAppError {
-    fn from(err: AmountFormatError) -> Self {
-        let bt = BacktraceCell::inherit_or_capture(&err);
-        RestAppError::ValidationRequestError(Box::new(err), bt)
     }
 }
 

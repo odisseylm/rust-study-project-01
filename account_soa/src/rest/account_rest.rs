@@ -22,7 +22,7 @@ use crate::{
     service::{ account_service::{ AccountService }, },
 };
 use super::path;
-use mvv_common::rest::RestFutureToJson;
+use mvv_common::rest::{ AsBadReqErrExt, RestFutureToJson };
 
 use mvv_common::{
     axum_open_api_axum_route as open_api_route,
@@ -218,18 +218,19 @@ impl<AS: AccountService> AccountRest<AS> {
         log_info! ("LI get_user_account as info");
         // log_error!("LE get_user_account as error");
 
-        let client_id = ClientId::from_str(&client_id.into_inner()) ?;
+        let client_id = ClientId::from_str(&client_id.into_inner())
+            .err_to_bad_req() ?;
         let account_id = account_id.into_inner();
 
         let is_internal_account_id = account_id.len().is_one_of2(36, 38);
-        let account = if is_internal_account_id {
-            self.account_service.get_client_account_by_id(
-                client_id, AccountId::from_str(&account_id) ?,
-            ).await ?
+        let account: entity::Account = if is_internal_account_id {
+            let account_id = AccountId::from_str(&account_id)
+                .err_to_bad_req() ?;
+            self.account_service.get_client_account_by_id(client_id, account_id).await ?
         } else {
-            self.account_service.get_client_account_by_iban(
-                client_id, iban::Iban::from_str(&account_id) ?,
-            ).await ?
+            let iban = iban::Iban::from_str(&account_id)
+                .err_to_std_err_bad_req() ?;
+            self.account_service.get_client_account_by_iban(client_id, iban).await ?
         };
 
         Ok(map_account_to_rest(account))
@@ -238,7 +239,8 @@ impl<AS: AccountService> AccountRest<AS> {
 
     #[tracing::instrument( skip(self) )]
     pub async fn get_accounts(&self, client_id: path::ClientId) -> Result<Vec<dto::Account>, RestAppError> {
-        let client_id = ClientId::from_str(&client_id.into_inner()) ?;
+        let client_id = ClientId::from_str(&client_id.into_inner())
+            .err_to_bad_req() ?;
         let accounts = self.account_service.get_client_accounts(client_id).await ?;
 
         let accounts_dto = accounts.into_iter()
@@ -262,29 +264,37 @@ impl<AS: AccountService> AccountRest<AS> {
             currency,
         } = transfer_request;
 
-        let client_id = ClientId::from_str(&client_id.into_inner()) ?;
+        let client_id = ClientId::from_str(&client_id.into_inner())
+            .err_to_bad_req() ?;
         let from_account_id = from_account_id; // .into_inner();
         let to_account_id = to_account_id; // .into_inner();
 
         let is_internal_from_account_id = from_account_id.len().is_one_of2(36, 38);
         let is_internal_to_account_id = to_account_id.len().is_one_of2(36, 38);
 
-        let currency = entity::prelude::Currency::from_inner(currency) ?;
+        let currency = entity::prelude::Currency::from_inner(currency)
+            .err_to_bad_req() ?;
 
         let transfer_res =
             if is_internal_from_account_id && is_internal_to_account_id {
+                let account_id_from = AccountId::from_str(&from_account_id)
+                    .err_to_bad_req() ?;
+                let account_id_to = AccountId::from_str(&to_account_id)
+                    .err_to_bad_req() ?;
+
                 self.account_service.transfer_by_id(
-                    client_id,
-                    AccountId::from_str(&from_account_id) ?,
-                    AccountId::from_str(&to_account_id) ?,
+                    client_id, account_id_from, account_id_to,
                     entity::prelude::Amount::new(amount, currency),
                 ).await?
 
             } else if !is_internal_from_account_id && !is_internal_to_account_id {
+                let account_iban_from = iban::Iban::from_str(&from_account_id)
+                    .err_to_std_err_bad_req() ?;
+                let account_iban_to = iban::Iban::from_str(&to_account_id)
+                    .err_to_std_err_bad_req() ?;
+
                 self.account_service.transfer_by_iban(
-                    client_id,
-                    iban::Iban::from_str(&from_account_id) ?,
-                    iban::Iban::from_str(&to_account_id) ?,
+                    client_id, account_iban_from, account_iban_to,
                     entity::prelude::Amount::new(amount, currency),
                 ).await?
             } else {
