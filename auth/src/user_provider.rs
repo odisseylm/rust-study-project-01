@@ -31,7 +31,7 @@ pub enum AuthUserProviderError {
     ConfigurationError(anyhow::Error),
 
     #[error("CacheError")]
-    CacheError(anyhow::Error),
+    CacheError(anyhow::Error), // TODO: replace anyhow by Box<dyn StdError>
 
     #[error("UnknownError")]
     UnknownError(anyhow::Error),

@@ -51,18 +51,13 @@ impl From<Infallible> for PermissionProcessError {
 
 impl From<AuthUserProviderError> for PermissionProcessError {
     fn from(value: AuthUserProviderError) -> Self {
-        // PermissionProcessError::ConvertError(anyhow!("Internal error: Infallible"))
         match value {
             AuthUserProviderError::UserNotFound(user, backtrace) =>
                 PermissionProcessError::NoUser(user, backtrace),
-            AuthUserProviderError::Sqlx(err, backtrace) =>
-                PermissionProcessError::GetUserError(From::from(
-                    // TODO: how to use 'value' directly
-                    AuthUserProviderError::Sqlx(err, backtrace))),
-            AuthUserProviderError::LockedResourceError(backtrace) =>
-                PermissionProcessError::GetUserError(From::from(
-                    // T O D O: how to use 'value' directly
-                    AuthUserProviderError::LockedResourceError(backtrace))),
+            vr @ AuthUserProviderError::Sqlx(..) =>
+                PermissionProcessError::GetUserError(vr.into()),
+            vr @ AuthUserProviderError::LockedResourceError(..) =>
+                PermissionProcessError::GetUserError(vr.into()),
             AuthUserProviderError::ConfigurationError(conf_err) =>
                 PermissionProcessError::GetUserError(conf_err),
             AuthUserProviderError::CacheError(err) =>
