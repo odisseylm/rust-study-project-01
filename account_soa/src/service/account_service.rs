@@ -287,13 +287,11 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for Account {
 
         let account = Account::new(account::new::Args {
             id: row.try_get(col_name!("ID")) ?,
-            // TODO: How do cast properly/shortly ??
-            iban: { let iban: IbanWrapper = row.try_get(col_name!("IBAN")) ?; iban.0 },
+            iban: row.try_get::<IbanWrapper,_>(col_name!("IBAN")) ?.0,
             client_id: row.try_get(col_name!("CLIENT_ID")) ?,
             name: row.try_get(col_name!("NAME")) ?,
             amount: Amount::new(
-                // How do cast properly/shortly ??
-                { let amount: BigDecimalWrapper = row.try_get(col_name!("AMOUNT")) ?; amount.0 },
+                row.try_get::<BigDecimalWrapper,_>(col_name!("AMOUNT")) ?.0,
                 row.try_get(col_name!("CUR")) ?,
             ),
             created_at: row.try_get(col_name!("CREATED_AT")) ?,
