@@ -57,30 +57,28 @@ pub struct Amount {
 
 
 #[derive(utoipa::ToSchema)]
-// #[schema(as = api::models::Account)]
-#[schema(as = Account)]
+#[schema(as = Account)] // api::models::Account)]
 #[derive(Debug, PartialEq)]
 #[derive(Serialize, Deserialize)]
 #[derive(derive_more::Display)]
 #[display(fmt = "Account {{ {id}, iban: {iban}, client: {client_id}, amount: {amount}, created/updated at: {created_at}/{updated_at} }}")]
 #[serde(rename_all = "camelCase")]
-// #[derive(validator::Validate)]
 #[derive(validify::Validify)]
 pub struct Account {
     /// Account ID (UUID)
-    #[validate(length(min=1, max=320), regex(ID_PATTERN))]
+    // #[validate(length(min=1, max=320), regex(ID_PATTERN))]
     #[schema(example = "00000000-0000-0000-0000-000000000101")]
-    pub id: String, // TODO: use uuid
+    pub id: uuid::Uuid, // String
 
     /// Account IBAN
     #[validate(length(min=16, max=34), regex(ID_PATTERN))]
     #[schema(example = "UA903052992990004149123456789")]
-    pub iban: String,
+    pub iban: String, // iban::Iban - Iban does not implement/support serde
 
     /// Client ID (UUID)
-    #[validate(length(min=1, max=320), regex(ID_PATTERN))]
+    // #[validate(length(min=1, max=320), regex(ID_PATTERN))]
     #[schema(example = "00000000-0000-0000-0000-000000000001")]
-    pub client_id: String, // TODO: use uuid
+    pub client_id: uuid::Uuid, // String
 
     /// Account (short) name
     #[validate(length(min=1, max=320))] // TODO: add simple validation // , regex(ID_PATTERN))]
@@ -88,8 +86,7 @@ pub struct Account {
     pub name: String,
 
     #[validify]
-    // #[schema(value_type = api::models::Amount)]
-    #[schema(value_type = Amount)]
+    #[schema(value_type = Amount)] // api::models::Amount)]
     pub amount: Amount,
 
     pub created_at: chrono::DateTime<Utc>,

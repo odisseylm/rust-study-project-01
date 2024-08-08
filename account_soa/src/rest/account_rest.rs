@@ -314,9 +314,9 @@ fn map_account_to_rest(account: entity::Account) -> dto::Account {
     let AccountParts { id, iban, client_id, name, amount, created_at, updated_at } = account.into_parts();
     let AmountParts { value: amount_value, currency } = amount.into_parts();
     dto::Account {
-        id: id.into_inner().to_string(),
+        id: id.into_inner(), // .to_string(),
         iban: iban.to_string(), // hm... where 'into_inner()' ??
-        client_id: client_id.into_inner().to_string(),
+        client_id: client_id.into_inner(), //.to_string(),
         name,
         amount: dto::Amount { value: amount_value, currency: currency.into_inner() },
         created_at,
