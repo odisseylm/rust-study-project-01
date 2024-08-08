@@ -229,8 +229,7 @@ impl AccountServiceImpl {
                  where CLIENT_ID = $1 and IBAN = $2 and CUR = $3 ")
             .bind(client_id)
             .bind(&IbanRefWrapper(iban))
-            // .bind(&amount.currency) // TODO: add DB support for Currency
-            .bind(currency.as_str())
+            .bind(&currency)
             .bind(BigDecimalWrapper(amount)) // or &BigDecimalRefWrapper(&amount.value)
             .bind(&now)
             .execute(&mut **tx) // &*self.database_connection)
@@ -262,8 +261,7 @@ impl AccountServiceImpl {
                  where CLIENT_ID = $1 and ID = $2 and CUR = $3 ")
             .bind(client_id)
             .bind(&id)
-            // .bind(&amount.currency) // TODO: add DB support for Currency
-            .bind(currency.as_str())
+            .bind(&currency)
             .bind(BigDecimalWrapper(amount)) // or .bind(&BigDecimalRefWrapper(&amount.value))
             .bind(&now)
             .execute(&mut **tx) // &*self.database_connection)

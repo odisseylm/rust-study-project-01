@@ -1,9 +1,5 @@
 use core::char;
-use crate::{
-    generate_pg_decode_from_str,
-    generate_pg_delegate_type_info,
-    json_str_ser_deser_impl,
-};
+use crate::{generate_pg_decode_from_str, generate_pg_delegate_type_info, generate_pg_encode_from_as_str, json_str_ser_deser_impl};
 use crate::string::DisplayValueExample;
 //--------------------------------------------------------------------------------------------------
 
@@ -20,8 +16,8 @@ pub struct Currency(InnerCurStr); // ([u8;3]);
 
 json_str_ser_deser_impl! { Currency }
 generate_pg_delegate_type_info! { Currency, str }
-// generate_pg_encode_to_str!    { Currency, }
-generate_pg_decode_from_str! { Currency }
+generate_pg_encode_from_as_str! { Currency }
+generate_pg_decode_from_str!    { Currency }
 
 
 pub type CurrencyFormatError = parse::CurrencyFormatError;

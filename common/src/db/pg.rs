@@ -177,6 +177,23 @@ pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
 }
 
 
+#[macro_export] macro_rules! generate_pg_encode_from_as_str {
+    ($Type:ident) => { // ($Type:ty) => {
+
+        #[allow(unused_imports)]
+        #[allow(unused_qualifications)]
+        impl<'r,'a> sqlx::Encode<'r, sqlx_postgres::Postgres> for $Type {
+            fn encode_by_ref(
+                &self,
+                buf: &mut <sqlx_postgres::Postgres as sqlx::database::HasArguments<'r>>::ArgumentBuffer,
+            ) -> sqlx::encode::IsNull {
+                let str: &str = self.as_str();
+                <&str as sqlx::Encode<sqlx_postgres::Postgres>>::encode(str, buf)
+            }
+        }
+    }
+}
+
 /*
 impl<'r> sqlx::Encode<'r, Postgres> for AccountId {
     fn encode_by_ref(&self, buf: &mut <Postgres as HasArguments<'r>>::ArgumentBuffer) -> sqlx::encode::IsNull {
