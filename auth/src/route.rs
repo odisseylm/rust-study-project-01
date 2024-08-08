@@ -1,15 +1,20 @@
 use core::fmt::Display;
 use askama_axum::IntoResponse;
-use axum::body::Body;
-use axum::extract::{Request, State};
+use axum::{
+    body::Body, extract::{Request, State},
+};
 use http::StatusCode;
 use log::error;
 
-use crate::backend::{
-    AuthnBackendAttributes, RequestAuthenticated, authz_backend::AuthorizeBackend,
+use crate::{
+    backend::{
+        AuthnBackendAttributes, RequestAuthenticated,
+        authz_backend::{AuthorizeBackend, PermissionProviderSource},
+    },
+    permission::util::log_unauthorized_access,
 };
-use crate::backend::authz_backend::PermissionProviderSource;
-use crate::permission::util::log_unauthorized_access;
+//--------------------------------------------------------------------------------------------------
+
 
 
 pub async fn validate_authentication_chain <Backend> (
@@ -70,8 +75,7 @@ pub async fn validate_authorization_chain <Backend> (
                 }
             }
             Err(err) => {
-                // TODO: verify printed result and stack-trace
-                error!("Permission process error: {}", err);
+                error!("Permission process internal error: {err:?}");
                 StatusCode::INTERNAL_SERVER_ERROR.into_response()
             }
         }
