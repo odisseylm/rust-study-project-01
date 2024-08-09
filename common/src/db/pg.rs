@@ -57,11 +57,10 @@ pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
         #[allow(unused_qualifications)]
         impl sqlx::Type<sqlx_postgres::Postgres> for $Type {
             fn type_info() -> <sqlx_postgres::Postgres as sqlx::Database>::TypeInfo {
-                // <Postgres as sqlx::Database>::TypeInfo::with_name("???")
                 <$DelegateType as sqlx::Type<sqlx_postgres::Postgres>>::type_info()
             }
             fn compatible(ty: &<sqlx_postgres::Postgres as sqlx::Database>::TypeInfo) -> bool {
-                <$DelegateType as sqlx::Type<sqlx_postgres::Postgres>>::compatible(ty)
+                <$DelegateType as sqlx::Type<sqlx_postgres::Postgres> >::compatible(ty)
             }
         }
 
@@ -76,11 +75,10 @@ pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
         #[allow(unused_qualifications)]
         impl<'a> sqlx::Type<sqlx_postgres::Postgres> for $Type<'a> {
             fn type_info() -> <sqlx_postgres::Postgres as sqlx::Database>::TypeInfo {
-                // <Postgres as sqlx::Database>::TypeInfo::with_name("???")
                 <$DelegateType as sqlx::Type<sqlx_postgres::Postgres>>::type_info()
             }
             fn compatible(ty: &<sqlx_postgres::Postgres as sqlx::Database>::TypeInfo) -> bool {
-                <$DelegateType as sqlx::Type<sqlx_postgres::Postgres>>::compatible(ty)
+                <$DelegateType as sqlx::Type<sqlx_postgres::Postgres> >::compatible(ty)
             }
         }
 
@@ -98,7 +96,7 @@ pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
                 &self,
                 buf: &mut <sqlx_postgres::Postgres as sqlx::database::HasArguments<'r>>::ArgumentBuffer,
             ) -> sqlx::encode::IsNull {
-                <& $DelegateType as sqlx::Encode<sqlx_postgres::Postgres>>::encode(&self.0, buf)
+                <& $DelegateType as sqlx::Encode<sqlx_postgres::Postgres> >::encode(&self.0, buf)
             }
         }
     }
@@ -115,7 +113,7 @@ pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
                 &self,
                 buf: &mut <sqlx_postgres::Postgres as sqlx::database::HasArguments<'r>>::ArgumentBuffer,
             ) -> sqlx::encode::IsNull {
-                <& $DelegateType as sqlx::Encode<sqlx_postgres::Postgres>>::encode(&self.0, buf)
+                <& $DelegateType as sqlx::Encode<sqlx_postgres::Postgres> >::encode(&self.0, buf)
             }
         }
     }
@@ -131,7 +129,7 @@ pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
             fn decode(
                 value: <sqlx_postgres::Postgres as sqlx::database::HasValueRef<'r>>::ValueRef
             ) -> Result<Self, sqlx::error::BoxDynError> {
-                let v = < $DelegateType > ::decode(value) ?;
+                let v = < $DelegateType as sqlx::Decode<'r, sqlx_postgres::Postgres> > ::decode(value) ?;
                 Ok( $Type (v)) // T O D O: how to use '$Type:ty' there??
             }
         }
@@ -150,8 +148,7 @@ pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
                 value: <sqlx_postgres::Postgres as sqlx::database::HasValueRef<'r>>::ValueRef
             ) -> Result<Self, sqlx::error::BoxDynError> {
                 let as_str = <String as sqlx::Decode<'r, sqlx_postgres::Postgres>>::decode(value) ?;
-                use core::str::FromStr;
-                Ok( $Type (<$DelegateType>::from_str(&as_str) ?))
+                Ok( $Type (<$DelegateType as core::str::FromStr>::from_str(&as_str) ?))
             }
         }
 
@@ -168,8 +165,7 @@ pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
                 value: <sqlx_postgres::Postgres as sqlx::database::HasValueRef<'r>>::ValueRef
             ) -> Result<Self, sqlx::error::BoxDynError> {
                 let as_str: &str = <&str as sqlx::Decode<'r, sqlx_postgres::Postgres>>::decode(value) ?;
-                use core::str::FromStr;
-                Ok( <$Type>::from_str(as_str) ?)
+                Ok( <$Type as core::str::FromStr>::from_str(as_str) ?)
             }
         }
 

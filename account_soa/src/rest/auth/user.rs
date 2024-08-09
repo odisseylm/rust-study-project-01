@@ -7,6 +7,7 @@ use mvv_auth::{
     permission::PermissionSet,
     user_provider::mem_user_provider::UserPermissionsExtractor,
 };
+use mvv_auth::SecureString;
 // use diesel::prelude::*;
 //--------------------------------------------------------------------------------------------------
 
@@ -25,8 +26,8 @@ pub type RolePermissionsSet = mvv_auth::permission::predefined::RolePermissionsS
 pub struct AuthUser {
     pub id: i64,
     pub username: String,
-    pub password: Option<String>,
-    pub access_token: Option<String>,
+    pub password: Option<SecureString>,
+    pub access_token: Option<SecureString>,
     pub permissions: RolePermissionsSet,
 }
 
@@ -34,33 +35,33 @@ pub struct AuthUser {
 impl AuthUser {
     pub fn new(id: i64, username: &'static str, password: &'static str) -> AuthUser {
         AuthUser {
-            id, username: username.to_string(), password: Some(password.to_string()),
+            id, username: username.to_string(), password: Some(password.into()),
             access_token: None,
             permissions: RolePermissionsSet::new(),
         }
     }
     pub fn with_role(id: i64, username: &'static str, password: &'static str, role: Role) -> AuthUser {
         AuthUser {
-            id, username: username.to_string(), password: Some(password.to_string()),
+            id, username: username.to_string(), password: Some(password.into()),
             access_token: None,
             permissions: RolePermissionsSet::from_permission(role),
         }
     }
     pub fn with_roles(id: i64, username: &'static str, password: &'static str, roles: RolePermissionsSet) -> AuthUser {
         AuthUser {
-            id, username: username.to_string(), password: Some(password.to_string()),
+            id, username: username.to_string(), password: Some(password.into()),
             access_token: None,
             permissions: roles,
         }
     }
-    pub fn access_token(&mut self, access_token: Option<String>) {
+    pub fn access_token(&mut self, access_token: Option<SecureString>) {
         self.access_token = access_token;
     }
     pub fn has_password<PswComparator: PasswordComparator>(&self, cred_psw: &str) -> bool {
         match self.password {
             None => false,
             Some(ref usr_psw) =>
-                PswComparator::passwords_equal(usr_psw, cred_psw),
+                PswComparator::passwords_equal(usr_psw.as_str(), cred_psw),
         }
     }
 }
@@ -116,20 +117,20 @@ impl axum_login::AuthUser for AuthUser {
 
 
 impl PswUser for AuthUser {
-    fn password(&self) -> Option<String> {
+    fn password(&self) -> Option<SecureString> {
         self.password.clone()
     }
-    fn password_mut(&mut self, password: Option<String>) {
+    fn password_mut(&mut self, password: Option<SecureString>) {
         self.password = password.clone()
     }
 }
 
 
 impl OAuth2User for AuthUser {
-    fn access_token(&self) -> Option<String> {
+    fn access_token(&self) -> Option<SecureString> {
         self.access_token.clone()
     }
-    fn access_token_mut(&mut self, access_token: Option<String>) {
+    fn access_token_mut(&mut self, access_token: Option<SecureString>) {
         self.access_token = access_token.clone()
     }
 }

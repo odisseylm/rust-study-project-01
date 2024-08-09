@@ -6,9 +6,8 @@ use crate::{
     },
     user_provider::mem_user_provider::UserPermissionsExtractor,
     backend::{ oauth2_auth::OAuth2User, psw_auth::PswUser },
-    psw::PasswordComparator,
+    psw::{ PasswordComparator, SecureString },
 };
-
 
 #[derive(Clone)]
 // #[derive(serde::Serialize, serde::Deserialize)]
@@ -16,8 +15,8 @@ use crate::{
 #[readonly::make]
 pub struct AuthUserExample {
     pub username: String,
-    pub password: Option<String>,
-    pub access_token: Option<String>,
+    pub password: Option<SecureString>,
+    pub access_token: Option<SecureString>,
     pub id: i64,
     pub permissions: RolePermissionsSet,
 }
@@ -44,19 +43,19 @@ impl AuthUserExample {
     }
     pub fn with_roles(id: i64, username: &'static str, password: &'static str, roles: RolePermissionsSet) -> AuthUserExample {
         AuthUserExample {
-            id, username: username.to_string(), password: Some(password.to_string()),
+            id, username: username.to_string(), password: Some(password.into()),
             access_token: None,
             permissions: roles,
         }
     }
-    pub fn access_token(&mut self, access_token: Option<String>) {
+    pub fn access_token(&mut self, access_token: Option<SecureString>) {
         self.access_token = access_token;
     }
     pub fn has_password<PswComparator: PasswordComparator>(&self, cred_psw: &str) -> bool {
         match self.password {
             None => false,
             Some(ref usr_psw) =>
-                PswComparator::passwords_equal(usr_psw, cred_psw),
+                PswComparator::passwords_equal(usr_psw.as_str(), cred_psw),
         }
     }
 }
@@ -96,19 +95,19 @@ impl axum_login::AuthUser for AuthUserExample {
 }
 
 impl PswUser for AuthUserExample {
-    fn password(&self) -> Option<String> {
+    fn password(&self) -> Option<SecureString> {
         self.password.clone()
     }
-    fn password_mut(&mut self, password: Option<String>) {
+    fn password_mut(&mut self, password: Option<SecureString>) {
         self.password = password.clone()
     }
 }
 
 impl OAuth2User for AuthUserExample {
-    fn access_token(&self) -> Option<String> {
+    fn access_token(&self) -> Option<SecureString> {
         self.access_token.clone()
     }
-    fn access_token_mut(&mut self, access_token: Option<String>) {
+    fn access_token_mut(&mut self, access_token: Option<SecureString>) {
         self.access_token = access_token.clone()
     }
 }

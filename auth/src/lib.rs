@@ -23,7 +23,7 @@ pub use error::AuthBackendError;
 
 pub use user_provider::{ AuthUserProvider, AuthUserProviderError };
 
-pub use psw::{ PasswordComparator, PlainPasswordComparator };
+pub use psw::{ PasswordComparator, PlainPasswordComparator, SecureString, clear_string_chars };
 
 pub mod http {
     use axum::extract::OriginalUri;

@@ -107,7 +107,7 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for crate::auth::ClientAuthUser {
             client_id: client_id.to_string(),
             email,
             active,
-            password: Some(user_psw), // TODO: add Password entity with auto-cleaning in 'drop'
+            password: Some(user_psw.into()),
             access_token: None,
             client_features,
         })

@@ -160,7 +160,7 @@ impl <
             None => Ok(None),
             Some(map_value) => {
                 let mut v = map_value.write().await;
-                v.deref_mut().access_token_mut(Some(secret_token.to_string()));
+                v.deref_mut().access_token_mut(Some(secret_token.into()));
                 Ok(Some(v.deref().clone()))
             }
         }
@@ -264,7 +264,7 @@ mod tests {
         let usr = usr_opt.test_unwrap();
         assert_eq!(usr.id, 1i64);
         assert_eq!(usr.username.as_str(), "in-mem-vovan");
-        assert_eq!(usr.password, Some("qwerty".to_test_string()));
+        assert_eq!(usr.password, Some("qwerty".into()));
         assert_eq!(usr.access_token, None);
 
         // -----------------------------------------------------------------------------------------
@@ -278,9 +278,9 @@ mod tests {
         let usr = usr_opt.test_unwrap();
         assert_eq!(usr.id, 1i64);
         assert_eq!(usr.username.as_str(), "in-mem-vovan");
-        assert_eq!(usr.password, Some("qwerty".to_test_string()));
+        assert_eq!(usr.password, Some("qwerty".into()));
         assert_ne!(usr.access_token, None);
-        assert_eq!(usr.access_token, Some("token1".to_test_string()));
+        assert_eq!(usr.access_token, Some("token1".into()));
 
         // -----------------------------------------------------------------------------------------
         // let usr_opt_res = users.get_user_by_id(&1i64).await;
@@ -293,9 +293,9 @@ mod tests {
         let usr = usr_opt.test_unwrap();
         assert_eq!(usr.id, 1i64);
         assert_eq!(usr.username.as_str(), "in-mem-vovan");
-        assert_eq!(usr.password, Some("qwerty".to_test_string()));
+        assert_eq!(usr.password, Some("qwerty".into()));
         assert_ne!(usr.access_token, None);
-        assert_eq!(usr.access_token, Some("token1".to_test_string()));
+        assert_eq!(usr.access_token, Some("token1".into()));
 
         println!("Test tests_TestAuthUserProvider is completed.")
     }

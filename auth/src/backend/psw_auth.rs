@@ -6,19 +6,19 @@ use std::sync::Arc;
 use crate::{
     error::AuthBackendError,
     user_provider::{ AuthUserProvider, AuthUserProviderError },
-    psw::PasswordComparator,
+    psw::{ PasswordComparator, SecureString },
     backend::authz_backend::{ AuthorizeBackend, PermissionProviderSource },
     permission::{
         PermissionProvider, PermissionSet,
-        empty_perm_provider::{ AlwaysAllowedPermSet }
+        empty_perm_provider::{ AlwaysAllowedPermSet, EmptyPerm }
     },
 };
-use crate::permission::empty_perm_provider::EmptyPerm;
+//--------------------------------------------------------------------------------------------------
 
 
 pub trait PswUser {
-    fn password(&self) -> Option<String>;
-    fn password_mut(&mut self, password: Option<String>);
+    fn password(&self) -> Option<SecureString>;
+    fn password_mut(&mut self, password: Option<SecureString>);
 }
 
 
@@ -97,7 +97,7 @@ impl<
             None => Ok(None),
             Some(usr) => {
                 let usr_psw = usr.password();
-                let usr_psw = usr_psw.as_deref().unwrap_or("");
+                let usr_psw = usr_psw.as_ref().map(|psw|psw.as_str()).unwrap_or("");
                 if !usr_psw.is_empty() && PswComp::passwords_equal(usr_psw, creds.password.as_str()) {
                     Ok(Some(usr.clone()))
                 } else {
@@ -155,7 +155,7 @@ impl<
 #[derive(Clone, serde::Deserialize)]
 pub struct PswAuthCredentials {
     pub username: String,
-    pub password: String,
+    pub password: SecureString,
     // seems it source/initial page... It is a bit bad design, but...
     pub next: Option<String>,
 }

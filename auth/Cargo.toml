@@ -33,6 +33,8 @@ forr.workspace = true
 static_assertions.workspace = true
 #const_format ={ workspace = true }
 
+const-str.workspace = true
+
 trait-variant.workspace = true
 
 #serde = { workspace = true, features = ["derive", "std", "rc", "serde_derive" ] }
@@ -65,7 +67,7 @@ uuid.workspace = true
 axum.workspace = true
 async-trait.workspace = true
 tower.workspace = true
-tower-http = { workspace = true, features = ["default", "trace", "tracing"] }
+tower-http.workspace = true
 tower-async-http.workspace = true
 
 axum-login.workspace = true
@@ -74,7 +76,7 @@ oauth2.workspace = true
 password-auth.workspace = true
 
 #axum-auth.workspace = true
-axum-extra = { workspace = true, features = ["typed-header"] }
+axum-extra.workspace = true
 axum-ctx.workspace = true
 axum-typed-routing.workspace = true
 axum_session_auth.workspace = true
@@ -85,13 +87,13 @@ tokio-test.workspace = true
 
 http.workspace = true
 hyper.workspace = true
-reqwest = { workspace = true, features = ["json"] }
+reqwest.workspace = true
 url.workspace = true
 
-sqlx = { workspace = true, features = ["sqlite", "time", "runtime-tokio"] } #, optional = true }
+sqlx.workspace = true
+sqlx-postgres.workspace = true
 
-
-askama = { workspace = true, features = ["with-axum"] }
+askama.workspace = true
 askama_axum.workspace = true
 
 itertools.workspace = true

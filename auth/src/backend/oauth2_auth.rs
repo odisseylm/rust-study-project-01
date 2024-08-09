@@ -10,21 +10,22 @@ use crate::{
         RequestAuthenticated, AuthBackendMode, AuthnBackendAttributes,
         authz_backend::{ AuthorizeBackend, PermissionProviderSource, },
     },
+    http::req_original_uri,
     permission::{
         PermissionProvider, PermissionSet,
         empty_perm_provider::{ AlwaysAllowedPermSet, EmptyPerm, },
     },
     user_provider::{ AuthUserProvider, AuthUserProviderError, },
     error::AuthBackendError,
+    psw::SecureString
 };
-use crate::http::req_original_uri;
 //--------------------------------------------------------------------------------------------------
 
 
 
 pub trait OAuth2User {
-    fn access_token(&self) -> Option<String>;
-    fn access_token_mut(&mut self, access_token: Option<String>);
+    fn access_token(&self) -> Option<SecureString>;
+    fn access_token_mut(&mut self, access_token: Option<SecureString>);
 }
 
 #[axum::async_trait]

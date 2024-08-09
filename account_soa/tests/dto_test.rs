@@ -7,6 +7,10 @@ use mvv_account_soa::rest::dto::{ Account, Amount };
 use mvv_common::test::{ TestDisplayStringOps, TestDebugStringOps, TestOptionUnwrap, TestResultUnwrap };
 //--------------------------------------------------------------------------------------------------
 
+#[track_caller]
+fn uuid_from_str(str: &str) -> uuid::Uuid {
+    uuid::Uuid::from_str(str).test_unwrap()
+}
 
 
 #[test]
@@ -70,8 +74,8 @@ fn amount_from_json_test() {
 #[test]
 fn account_display_and_debug_fmt_test() {
     let account = Account {
-        id: "abcdef-123".to_test_string(),
-        client_id: "qwerty-456".to_test_string(),
+        id: uuid_from_str("ebe86a70-835b-43be-8069-65a0dccc2876"),
+        client_id: uuid_from_str("7911a64a-7aef-4ade-ace0-0299849b28a6"),
         iban: "UA90 305299 2990004149123456789".to_test_string(),
         name: "Account 2".to_test_string(),
         amount: Amount {
@@ -86,13 +90,13 @@ fn account_display_and_debug_fmt_test() {
 
     assert_eq!(
         account.to_test_display_string(),
-        "Account { abcdef-123, iban: UA90 305299 2990004149123456789, client: qwerty-456, amount: 123.0456 USD, created/updated at: 2024-05-30 20:29:57 UTC/2024-05-31 20:29:57 UTC }",
+        "Account { ebe86a70-835b-43be-8069-65a0dccc2876, iban: UA90 305299 2990004149123456789, client: 7911a64a-7aef-4ade-ace0-0299849b28a6, amount: 123.0456 USD, created/updated at: 2024-05-30 20:29:57 UTC/2024-05-31 20:29:57 UTC }",
     );
     assert_eq!(
             account.to_test_debug_string(),
-            "Account { id: \"abcdef-123\", \
+            "Account { id: ebe86a70-835b-43be-8069-65a0dccc2876, \
              iban: \"UA90 305299 2990004149123456789\", \
-             client_id: \"qwerty-456\", \
+             client_id: 7911a64a-7aef-4ade-ace0-0299849b28a6, \
              name: \"Account 2\", \
              amount: Amount { value: 123.0456 (BigDecimal(sign=Plus, scale=4, digits=[1230456])), currency: USD }, \
              created_at: 2024-05-30T20:29:57Z, updated_at: 2024-05-31T20:29:57Z }",
@@ -103,8 +107,8 @@ fn account_display_and_debug_fmt_test() {
 #[test]
 fn account_to_json() {
     let account = Account {
-        id: "abcdef-123".to_test_string(),
-        client_id: "qwerty-456".to_test_string(),
+        id: uuid_from_str("ebe86a70-835b-43be-8069-65a0dccc2876"),
+        client_id: uuid_from_str("7911a64a-7aef-4ade-ace0-0299849b28a6"),
         iban: "UA90 305299 2990004149123456789".to_test_string(),
         name: "Account 3".to_test_string(),
         amount: Amount {
@@ -119,9 +123,9 @@ fn account_to_json() {
 
     let account_json = serde_json::to_string(&account).test_unwrap();
     assert_eq!(account_json, const_str::replace!( indoc! {r#"
-               {"id":"abcdef-123",
+               {"id":"ebe86a70-835b-43be-8069-65a0dccc2876",
                "iban":"UA90 305299 2990004149123456789",
-               "clientId":"qwerty-456",
+               "clientId":"7911a64a-7aef-4ade-ace0-0299849b28a6",
                "name":"Account 3",
                "amount":{"value":123.0456,"currency":"USD"},
                "createdAt":"2024-05-30T20:29:57Z",
@@ -133,8 +137,8 @@ fn account_to_json() {
         serde_json::Value::from_str(account_json.as_str()).test_unwrap(),
         serde_json::json!(
             {
-            "id": "abcdef-123",
-            "clientId": "qwerty-456",
+            "id": "ebe86a70-835b-43be-8069-65a0dccc2876",
+            "clientId": "7911a64a-7aef-4ade-ace0-0299849b28a6",
             "iban":"UA90 305299 2990004149123456789",
             "name":"Account 3",
             "amount": { "value": 123.0456, "currency":"USD" },
@@ -152,9 +156,9 @@ fn account_from_json() {
 
     let as_json = serde_json::json!(
             {
-            "id": "abcdef-123",
+            "id": "ebe86a70-835b-43be-8069-65a0dccc2876",
             "iban":"UA90 305299 2990004149123456789",
-            "clientId": "qwerty-456",
+            "clientId": "7911a64a-7aef-4ade-ace0-0299849b28a6",
             "name":"Account 4",
             "amount": { "value": 123.0456, "currency":"USD" },
             // "amount": "123.0456 USD",
@@ -165,8 +169,8 @@ fn account_from_json() {
 
     let account_from_json: Account = serde_json::from_str(&as_json.to_test_string()).test_unwrap();
 
-    assert_eq!(account_from_json.id, "abcdef-123");
-    assert_eq!(account_from_json.client_id, "qwerty-456");
+    assert_eq!(account_from_json.id.to_test_string(), "ebe86a70-835b-43be-8069-65a0dccc2876");
+    assert_eq!(account_from_json.client_id.to_test_string(), "7911a64a-7aef-4ade-ace0-0299849b28a6");
     assert_eq!(account_from_json.amount, Amount {
         value: BigDecimal::from_str("123.0456").test_unwrap(),
         currency: InnerCurStr::from_str("USD").test_unwrap(),
@@ -176,8 +180,8 @@ fn account_from_json() {
 
 
     let orig_account = Account {
-        id: "abcdef-123".to_test_string(),
-        client_id: "qwerty-456".to_test_string(),
+        id: uuid_from_str("ebe86a70-835b-43be-8069-65a0dccc2876"),
+        client_id: uuid_from_str("7911a64a-7aef-4ade-ace0-0299849b28a6"),
         iban: "UA90 305299 2990004149123456789".to_test_string(),
         name: "Account 4".to_test_string(),
         amount: Amount {
@@ -200,8 +204,8 @@ fn account_from_json_with_alt_amount_format() {
 
     let as_json = serde_json::json!(
             {
-            "id": "abcdef-123",
-            "userId": "qwerty-456",
+            "id": "ebe86a70-835b-43be-8069-65a0dccc2876",
+            "userId": "7911a64a-7aef-4ade-ace0-0299849b28a6",
             "amount": "123.0456 BRL", // alt format
             "createdAt": "2024-05-30T20:29:57Z",
             "updatedAt": "2024-05-31T20:29:57Z",
@@ -223,8 +227,8 @@ fn account_from_json_with_alt_amount_format() {
 fn validate_account_by_validator_test() {
     let as_json = serde_json::json!(
             {
-            "id": "abcdef-123",
-            "userId": "qwerty-456",
+            "id": "ebe86a70-835b-43be-8069-65a0dccc2876",
+            "userId": "7911a64a-7aef-4ade-ace0-0299849b28a6",
             "amount": { "value": 123.0456, "currency":"us2" },// "ДОЛ" },
             // "amount": "123.0456 USD",
             "createdAt": "2024-05-30T20:29:57Z",
@@ -252,8 +256,8 @@ fn validate_account_by_validator_test() {
 fn validate_account_by_validify_test() {
     let as_json = serde_json::json!(
             {
-            "id": "abcdef-123",
-            "clientId": "qwerty-456",
+            "id": "ebe86a70-835b-43be-8069-65a0dccc2876",
+            "clientId": "7911a64a-7aef-4ade-ace0-0299849b28a6",
             "iban":"UA903515330000026006035900712",
             "name":"Account 4",
             "amount": { "value": 123.0456, "currency":"us2" },// "ДОЛ" },

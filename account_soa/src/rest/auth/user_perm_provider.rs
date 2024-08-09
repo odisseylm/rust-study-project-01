@@ -139,7 +139,7 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for AuthUser {
         Ok(AuthUser {
             id: user_id,
             username,
-            password: Some(user_psw),
+            password: Some(user_psw.into()),
             access_token: None,
             permissions: roles,
         })

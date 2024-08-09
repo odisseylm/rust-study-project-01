@@ -72,7 +72,7 @@ impl <
                 use axum_login::AuthnBackend;
                 self.authenticate(PswAuthCredentials {
                     username: basic.username().to_string(),
-                    password: basic.password().to_string(),
+                    password: basic.password().into(),
                     next: None,
                 }).await
             } else { Ok(None) };

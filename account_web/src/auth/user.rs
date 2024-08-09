@@ -8,6 +8,7 @@ use mvv_auth::{
     permission::{ PermissionSet, PermissionProcessError, bits_perm_set::BitsPermissionSet, },
     user_provider::mem_user_provider::UserPermissionsExtractor,
 };
+use mvv_auth::SecureString;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -48,8 +49,8 @@ pub struct ClientAuthUser {
     pub client_id: String,
     pub email: String,
     pub active: bool,
-    pub password: Option<String>,
-    pub access_token: Option<String>,
+    pub password: Option<SecureString>,
+    pub access_token: Option<SecureString>,
     pub client_features: RolePermissionsSet,
 }
 
@@ -59,7 +60,7 @@ impl ClientAuthUser {
         ClientAuthUser {
             client_id: client_id.to_string(), email: email.to_string(),
             active: true,
-            password: Some(password.to_string()),
+            password: Some(password.into()),
             access_token: None,
             client_features: RolePermissionsSet::from_permission(ClientFeature::Standard),
         }
@@ -70,7 +71,7 @@ impl ClientAuthUser {
         ClientAuthUser {
             client_id: client_id.to_string(), email: email.to_string(),
             active: true,
-            password: Some(password.to_string()),
+            password: Some(password.into()),
             access_token: None,
             client_features: RolePermissionsSet::from_permissions([ClientFeature::Standard, client_feature]),
         }
@@ -79,19 +80,19 @@ impl ClientAuthUser {
         ClientAuthUser {
             client_id: client_id.to_string(), email: email.to_string(),
             active: true,
-            password: Some(password.to_string()),
+            password: Some(password.into()),
             access_token: None,
             client_features,
         }
     }
-    pub fn access_token(&mut self, access_token: Option<String>) {
+    pub fn access_token(&mut self, access_token: Option<SecureString>) {
         self.access_token = access_token;
     }
     pub fn has_password<PswComparator: PasswordComparator>(&self, cred_psw: &str) -> bool {
         match self.password {
             None => false,
             Some(ref usr_psw) =>
-                PswComparator::passwords_equal(usr_psw, cred_psw),
+                PswComparator::passwords_equal(usr_psw.as_str(), cred_psw),
         }
     }
 }
@@ -148,20 +149,20 @@ impl axum_login::AuthUser for ClientAuthUser {
 
 
 impl PswUser for ClientAuthUser {
-    fn password(&self) -> Option<String> {
+    fn password(&self) -> Option<SecureString> {
         self.password.clone()
     }
-    fn password_mut(&mut self, password: Option<String>) {
+    fn password_mut(&mut self, password: Option<SecureString>) {
         self.password = password.clone()
     }
 }
 
 
 impl OAuth2User for ClientAuthUser {
-    fn access_token(&self) -> Option<String> {
+    fn access_token(&self) -> Option<SecureString> {
         self.access_token.clone()
     }
-    fn access_token_mut(&mut self, access_token: Option<String>) {
+    fn access_token_mut(&mut self, access_token: Option<SecureString>) {
         self.access_token = access_token.clone()
     }
 }
