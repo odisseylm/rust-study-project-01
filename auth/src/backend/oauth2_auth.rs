@@ -17,7 +17,7 @@ use crate::{
     },
     user_provider::{ AuthUserProvider, AuthUserProviderError, },
     error::AuthBackendError,
-    psw::SecureString
+    SecureString,
 };
 //--------------------------------------------------------------------------------------------------
 

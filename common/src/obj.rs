@@ -114,3 +114,39 @@
 
     };
 }
+
+
+#[macro_export] macro_rules! generate_simple_display {
+    ($Type:ty, $string:literal) => {
+        impl core::fmt::Display for $Type {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, $string)
+            }
+        }
+    };
+    ($Type:ty, $string:literal, $($args:expr),*) => {
+        impl core::fmt::Display for $Type {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, $string, $($args),*)
+            }
+        }
+    };
+}
+
+
+#[macro_export] macro_rules! generate_simple_debug {
+    ($Type:ty, $string:literal) => {
+        impl core::fmt::Debug for $Type {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, $string)
+            }
+        }
+    };
+    ($Type:ty, $string:literal, $($args:expr),*) => {
+        impl core::fmt::Debug for $Type {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                write!(f, $string, $($args),*)
+            }
+        }
+    };
+}

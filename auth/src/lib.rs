@@ -15,6 +15,7 @@ mod test;
 pub mod route;
 pub mod user_id;
 pub mod extract;
+mod secure_str;
 
 pub use user_id::UserId;
 
@@ -23,7 +24,8 @@ pub use error::AuthBackendError;
 
 pub use user_provider::{ AuthUserProvider, AuthUserProviderError };
 
-pub use psw::{ PasswordComparator, PlainPasswordComparator, SecureString, clear_string_chars };
+pub use psw::{ PasswordComparator, PlainPasswordComparator };
+pub use secure_str::{ SecureString, clear_string_chars };
 
 pub mod http {
     use axum::extract::OriginalUri;

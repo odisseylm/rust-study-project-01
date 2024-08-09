@@ -1,12 +1,13 @@
 use core::fmt;
 use implicit_clone::ImplicitClone;
 use crate::{
+    SecureString,
     permission::{
         PermissionSet, predefined::{ Role, RolePermissionsSet },
     },
     user_provider::mem_user_provider::UserPermissionsExtractor,
     backend::{ oauth2_auth::OAuth2User, psw_auth::PswUser },
-    psw::{ PasswordComparator, SecureString },
+    psw::{ PasswordComparator },
 };
 
 #[derive(Clone)]

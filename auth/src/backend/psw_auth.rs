@@ -4,9 +4,10 @@ use core::marker::PhantomData;
 use std::sync::Arc;
 
 use crate::{
+    SecureString,
     error::AuthBackendError,
     user_provider::{ AuthUserProvider, AuthUserProviderError },
-    psw::{ PasswordComparator, SecureString },
+    psw::{ PasswordComparator },
     backend::authz_backend::{ AuthorizeBackend, PermissionProviderSource },
     permission::{
         PermissionProvider, PermissionSet,
