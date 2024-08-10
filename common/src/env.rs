@@ -62,6 +62,11 @@ pub fn required_env_var (env_var_name: &'static str) -> Result<String, EnvVarErr
         .ok_or_else(|| EnvVarError::new(env_var_name.into(), std::env::VarError::NotPresent))
 }
 
+pub fn required_env_var_2 (env_var_name: &str) -> Result<String, EnvVarError> {
+    env_var_2(env_var_name) ?
+        .ok_or_else(|| EnvVarError::new(env_var_name.to_owned().into(), std::env::VarError::NotPresent))
+}
+
 #[derive(Debug, thiserror::Error)]
 pub struct EnvVarError {
     pub var_name: StaticRefOrString, // &'static str,

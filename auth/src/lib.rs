@@ -17,6 +17,8 @@ pub mod user_id;
 pub mod extract;
 mod secure_str;
 
+pub mod psw_hash;
+
 pub use user_id::UserId;
 
 pub use backend::{ AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction };

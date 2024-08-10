@@ -28,16 +28,16 @@ fn clear_string_chars_test() {
 #[ignore] // Impossible to write test since heap is already reallocated/taken
           // by some other code (even in single test!) => it contains new (random) data.
 fn password_string_cleaning_after_drop_test() {
-    let mut as_raw_ptr: *const u8;
-    let mut len = 0usize;
+    let as_raw_ptr: *const u8;
+    let len: usize;
 
     let mut as_raw_bytes = Vec::<u8>::new();
     let mut as_raw_bytes_after_cleaning = Vec::<u8>::new();
 
     {
         let psw_str: SecureString = "qwerty".into();
-        assert_eq!("Psw[...]", psw_str.to_test_display_string());
-        assert_eq!("Psw[...]", psw_str.to_test_debug_string());
+        assert_eq!("Secure[...]", psw_str.to_test_display_string());
+        assert_eq!("Secure[...]", psw_str.to_test_debug_string());
 
         // let aa = unsafe { psw_str.as_bytes().as_ptr_range() };
         let as_bytes = psw_str.as_bytes();
@@ -57,16 +57,16 @@ fn password_string_cleaning_after_drop_test() {
     }
     println!("After attempt to read freed heap memory");
 
-    // Impossible to write test since heap is already reallocated/taken
-    // by some other code (even in single test!) => it contains new (random) data.
-
     assert_ne!(
         as_raw_bytes_after_cleaning.as_slice(),
         b"qwerty");
 
-    assert_eq!(
-        as_raw_bytes_after_cleaning.as_slice(),
-        b"\0\0\0\0\0\0");
+    // Impossible to write test since heap is already reallocated/taken
+    // by some other code (even in single test!) => it contains new (random) data.
+    //
+    // assert_eq!(
+    //     as_raw_bytes_after_cleaning.as_slice(),
+    //     b"\0\0\0\0\0\0");
 
     // assert!(false, "To see console output");
 }

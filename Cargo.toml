@@ -145,6 +145,15 @@ axum-login = {  version = "0.15.2" }
 oauth2 = "4.4.2"
 # support for Argon2, PBKDF2, and scrypt password hashing algorithms
 password-auth = "1.0.0"
+password-hash = {  version = "0.5.0", features = ["default", "std"] }
+argon2 = { version = "0.5.3", features = ["default", "std", "password-hash"] }
+pbkdf2 = { version = "0.12.2", features = ["default", "std", "password-hash", "simple"] }
+scrypt = { version = "0.11.0", features = ["default", "std", "password-hash"] }
+rand = { version = "0.8.5", features = ["default", "std", "getrandom", "rand_chacha" ] }
+#getrandom = { version = "0.2.15", features = ["std", "core"]}
+rand_hc = { version = "0.3.2" , features = [] }
+rand_chacha = { version = "0.3.1", features = ["default", "std"] }
+#rand_hc = { version = "*" , features = ["default", "getrandom"] }
 
 #axum-auth = "0.7.0"
 axum-extra = { version = "0.9.3", features = ["typed-header"] }
@@ -202,7 +211,6 @@ indexmap = "2.2.6"
 # for generated code
 futures = "0.3.30"
 base64 = "0.22.1"
-rand = "0.8.5"
 regress = "0.10.0"
 
 # HTTP
