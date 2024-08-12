@@ -255,6 +255,7 @@ progenitor-impl = { version = "0.7.0" }
 progenitor-client = { version = "0.7.0" }
 #cargo-progenitor = { version = "0.7.0" }
 
+fs_extra = "1.3.0"
 
 #[workspace.dev-dependencies]
 
@@ -284,6 +285,8 @@ assert-json-diff = "2.0.2"
 # # Seems it does not work.
 # color-backtrace = "0.6.1"
 # ctor = "0.2.8"
+
+rustainers = { version = "0.12.0", features = ["default", "regex"]}
 
 macro_rules_attribute = "0.2.0"
 

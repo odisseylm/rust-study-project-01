@@ -1,3 +1,5 @@
+pub mod integration;
+
 use core::fmt::Debug;
 use std::fmt::Display;
 // Actually this code is designed for unit test only,

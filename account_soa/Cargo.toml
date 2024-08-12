@@ -202,3 +202,5 @@ assert-json-diff.workspace = true
 # color-backtrace.workspace = true
 
 macro_rules_attribute.workspace = true
+
+rustainers.workspace = true

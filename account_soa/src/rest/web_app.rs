@@ -7,10 +7,13 @@ use log::{ error /*, info*/ };
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use mvv_common::env::process_env_load_res;
-use mvv_common::exe::current_exe_name;
-use mvv_common::server_conf::get_server_port;
-use mvv_common::utoipa::{generate_open_api, nest_open_api, to_generate_open_api, UpdateApiFile};
+use mvv_common::{
+    env::process_env_load_res,
+    exe::current_exe_name,
+    rest::health_check_router,
+    server_conf::get_server_port,
+    utoipa::{generate_open_api, nest_open_api, to_generate_open_api, UpdateApiFile},
+};
 
 use crate::service::{
     account_service::{ AccountService, AccountServiceImpl },
@@ -106,6 +109,7 @@ async fn create_app_route <
     let login_route = composite_login_router();
 
     let app_router = Router::new()
+        .merge(health_check_router())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", create_open_api()))
         .merge(login_route)
         .merge(protected_page_01_router())

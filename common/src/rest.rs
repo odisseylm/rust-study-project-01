@@ -58,3 +58,12 @@ pub impl<V: 'static, E: 'static> AsBadReqErrExt<V,E> for Result<V,E> {
         })
     }
 }
+
+
+pub fn health_check_router() -> axum::Router {
+    use axum::routing::get as GET;
+    axum::Router::new()
+        .route("/healthcheck",  GET(|| async { "OK" }))
+        .route("/health_check", GET(|| async { "OK" }))
+        .route("/health-check", GET(|| async { "OK" }))
+}
