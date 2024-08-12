@@ -115,7 +115,11 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
 
     let runner = rustainers::runner::Runner::docker() ?;
 
-    info!("Attempt to run docker compose for [account_soa]", );
+    info!("### Attempt to run docker compose for [account_soa]", );
+
+    // to make sure - clean up previous session
+    info!("#### Clean previous docker compose session");
+    docker_compose_down(&temp_docker_compose_dir);
 
     let compose_containers_fut = runner.compose_start_with_options(
         AccountSoaTestContainers::new(&temp_docker_compose_dir).await ?,
@@ -169,14 +173,11 @@ async fn run_account_soa_docker_compose() {
 
     let port: u16 = port.test_unwrap().into();
 
-    // use futures::future::FutureExt;
-    // let test_res = run_test(test_get_all_client_accounts(port)).await;
-    let test_res: Result<(), anyhow::Error> = Ok(test_get_all_client_accounts(port).await);
-    let _:() = test_res.test_unwrap();
+    test_get_all_client_accounts(port).await;
 
-    let pause_timeout = Duration::from_secs(5);
-    info!("### Pause for {}s...", pause_timeout.as_secs());
-    tokio::time::sleep(pause_timeout).await;
+    // let pause_timeout = Duration::from_secs(5);
+    // info!("### Pause for {}s...", pause_timeout.as_secs());
+    // tokio::time::sleep(pause_timeout).await;
 
     let _ = compose_containers;
     info!("### Stopping containers...");
