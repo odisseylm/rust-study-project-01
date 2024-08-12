@@ -315,6 +315,8 @@ dependencies = [
     "private_docker_build_prepare_labels",
 ]
 
+[tasks.build-docker-debug-local]
+dependencies = ["build-debug-local-docker"]
 
 
 # -----------------------------------------------------------------------------

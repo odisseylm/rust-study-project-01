@@ -157,6 +157,7 @@ validify.workspace = true
 #axum_static_include.workspace = true
 
 tokio.workspace = true
+futures.workspace = true
 tokio-test.workspace = true
 
 askama.workspace = true

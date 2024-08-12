@@ -2,6 +2,7 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use anyhow::anyhow;
+use log::warn;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -131,4 +132,11 @@ pub fn docker_compose_down(docker_compose_file_dir: &Path) -> anyhow::Result<()>
         .arg("down")
         .status() ?;
     Ok(())
+}
+
+pub fn docker_compose_down_silent(docker_compose_file_dir: &Path) {
+    let res = docker_compose_down(docker_compose_file_dir);
+    if let Err(err) = res {
+        warn!("Docker compose down failed => {err:?}")
+    }
 }

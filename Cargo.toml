@@ -185,6 +185,7 @@ jsonwebtoken = "9.3.0"
 #tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread"] }
 #tokio = { version = "1.38.0", features = ["rt", "rt-multi-thread", "macros"] }
 tokio = { version = "1.38.0", features = ["full"] }
+futures = "0.3.30"
 tokio-test = "0.4.4"
 #tokio-async-await-test = "0.1.0"
 #bytes = "1.6.0"
@@ -209,7 +210,6 @@ indexmap = "2.2.6"
 
 #progenitor.workspace = true
 # for generated code
-futures = "0.3.30"
 base64 = "0.22.1"
 regress = "0.10.0"
 

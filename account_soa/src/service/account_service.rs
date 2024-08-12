@@ -73,7 +73,7 @@ impl AccountService for AccountServiceImpl {
                  AMOUNT, CUR, \
                  CREATED_AT, UPDATED_AT \
                  from ACCOUNTS \
-                 where CLIENT_ID = $1 ")
+                 where CLIENT_ID = $1 order by CREATED_AT ")
             .bind(&client_id.into_inner())
             .fetch_all(&*self.database_connection)
             .await

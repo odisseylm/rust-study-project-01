@@ -1,17 +1,20 @@
+use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use anyhow::anyhow;
-use log::{error, info};
+use assert_json_diff::{assert_json_eq, assert_json_include};
+use assertables::{assert_ge, assert_ge_as_result};
+use log::{error, info, warn};
+use reqwest::Response;
 use rustainers::compose::{
     ComposeContainers, ComposeError, ComposeRunOption,
     RunnableComposeContainers, RunnableComposeContainersBuilder,
     ToRunnableComposeContainers,
 };
 use rustainers::{ExposedPort, Port, WaitStrategy};
-use mvv_common::test::integration::{
-    docker_compose_down, prepare_docker_compose, PrepareDockerComposeCfg,
-};
-use mvv_common::test::TestResultUnwrap;
+use mvv_common::test::integration::{ docker_compose_down_silent as docker_compose_down, prepare_docker_compose, PrepareDockerComposeCfg};
+use mvv_common::test::{TestOptionUnwrap, TestResultUnwrap};
+use serde_json::json;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -132,7 +135,7 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
                 },
                 Err(err) => {
                     error!("FAILURE of Account SOA launch => Error {{ {err:?} }}");
-                    let _ = docker_compose_down(&temp_docker_compose_dir);
+                    docker_compose_down(&temp_docker_compose_dir);
                     Err(anyhow!(err))
                 },
             }
@@ -140,14 +143,14 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
         Err(err) => {
             error!("FAILURE of Account SOA launch => Error {{ {err:?} }}");
             info!("Shut down docker compose manually...");
-            let _ = docker_compose_down(&temp_docker_compose_dir);
+            docker_compose_down(&temp_docker_compose_dir);
             Err(anyhow!(err))
         },
     }
 }
 
 #[tokio::test]
-#[ignore]
+// #[ignore]
 async fn run_account_soa_docker_compose() {
 
     env_logger::builder()
@@ -157,6 +160,27 @@ async fn run_account_soa_docker_compose() {
     let (temp_docker_compose_dir, compose_containers) = launch_account_soa_docker_compose().await.test_unwrap();
 
     // THERE should be real REST tests.
+    tokio::time::sleep(Duration::from_secs(2)).await; // just in case
+
+    let port = compose_containers.account_soa_http_port.host_port().await;
+    if port.is_err() {
+        docker_compose_down(&temp_docker_compose_dir);
+    }
+
+    let port: u16 = port.test_unwrap().into();
+
+    use futures::future::FutureExt;
+    let test_res = AssertUnwindSafe(test_get_all_client_accounts(port)).catch_unwind().await;
+
+    if test_res.is_err() {
+        docker_compose_down(&temp_docker_compose_dir);
+    }
+
+    let test_res = test_res.test_unwrap();
+    if test_res.is_err() {
+        docker_compose_down(&temp_docker_compose_dir);
+    }
+    test_res.test_unwrap();
 
     let pause_timeout = Duration::from_secs(10);
     info!("### Pause for {}s...", pause_timeout.as_secs());
@@ -167,7 +191,74 @@ async fn run_account_soa_docker_compose() {
 
     // to make sure to 'remove containers, networks'
     info!("### Cleaning...");
-    docker_compose_down(&temp_docker_compose_dir).test_unwrap();
+    docker_compose_down(&temp_docker_compose_dir);
 
     info!("### Test is completed");
+}
+
+
+async fn test_get_all_client_accounts(account_soa_port: u16) -> anyhow::Result<()> {
+
+    let base_url = format!("http://localhost:{account_soa_port}");
+    let url = format!("{base_url}/api/client/00000000-0000-0000-0000-000000000001/account/all");
+
+    let client = reqwest::Client::new();
+    let resp: Response = client.get(url)
+        .basic_auth("vovan-read", Some("qwerty"))
+        .send()
+        .await ?;
+
+    assert_eq!(resp.status().as_u16(), 200);
+
+    use core::str::FromStr;
+    let body_as_str: String = resp.text().await ?;
+
+    let actual = serde_json::Value::from_str(&body_as_str).test_unwrap();
+    println!("### response: {actual}");
+
+    let accounts: serde_json::Value = actual;
+    let first_account: &serde_json::Value = accounts.get(0).test_unwrap();
+
+    assert_ge!(accounts.as_array().test_unwrap().len(), 3);
+
+    assert_json_eq!(
+        first_account,
+        json!(
+            {
+                "amount": {
+                  "currency": "USD",
+                  "value": 150
+                },
+                "clientId": "00000000-0000-0000-0000-000000000001",
+                "createdAt": "2021-11-10T15:14:13Z",
+                "iban":  "UA71 3736 5721 7292 6969 8418 3239 3",
+                "id": "00000000-0000-0000-0000-000000000101",
+                "name":  "USD account 1",
+                "updatedAt": "2021-11-10T15:14:15Z",
+            }
+        )
+    );
+
+    /*
+    assert_json_include!(
+        // actual: accounts, // not supported so crazy include :-)
+        actual: first_account,
+        expected: json!(
+            {
+                "amount": {
+                  "currency": "USD",
+                  "value": 150
+                },
+                "clientId": "00000000-0000-0000-0000-000000000001",
+                "createdAt": "2021-11-10T15:14:13Z",
+                "iban":  "UA71 3736 5721 7292 6969 8418 3239 3",
+                "id": "00000000-0000-0000-0000-000000000101",
+                "name":  "USD account 1",
+                "updatedAt": "2021-11-10T15:14:15Z",
+            }
+        )
+    );
+    */
+
+    Ok(())
 }

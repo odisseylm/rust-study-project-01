@@ -36,6 +36,7 @@ pub enum InvalidInputError {
 
 #[extension_trait::extension_trait]
 pub impl<V: 'static, E: 'static> AsBadReqErrExt<V,E> for Result<V,E> {
+
     fn err_to_anyhow_bad_req(self) -> Result<V, InvalidInputError>
         where E: Into<anyhow::Error>
     {
@@ -44,11 +45,13 @@ pub impl<V: 'static, E: 'static> AsBadReqErrExt<V,E> for Result<V,E> {
             InvalidInputError::AsAnyhow(as_anyhow)
         })
     }
+
     fn err_to_std_err_bad_req(self) -> Result<V, InvalidInputError>
         where E: std::error::Error
     {
         self.map_err(|err| InvalidInputError::AsStdError(Box::new(err), backtrace()))
     }
+
     fn err_to_bad_req(self) -> Result<V, InvalidInputError>
         where E: std::error::Error + BacktraceSource
     {

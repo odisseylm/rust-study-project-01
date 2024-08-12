@@ -2472,6 +2472,7 @@ dependencies = [
  "extension-trait",
  "fixedstr",
  "forr",
+ "futures",
  "http 1.1.0",
  "hyper 1.4.1",
  "iban",
