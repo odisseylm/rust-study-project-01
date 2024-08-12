@@ -1,10 +1,9 @@
-use std::panic::AssertUnwindSafe;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use anyhow::anyhow;
-use assert_json_diff::{assert_json_eq, assert_json_include};
+use assert_json_diff::{assert_json_eq};
 use assertables::{assert_ge, assert_ge_as_result};
-use log::{error, info, warn};
+use log::{debug, error, info};
 use reqwest::Response;
 use rustainers::compose::{
     ComposeContainers, ComposeError, ComposeRunOption,
@@ -12,7 +11,7 @@ use rustainers::compose::{
     ToRunnableComposeContainers,
 };
 use rustainers::{ExposedPort, Port, WaitStrategy};
-use mvv_common::test::integration::{ docker_compose_down_silent as docker_compose_down, prepare_docker_compose, PrepareDockerComposeCfg};
+use mvv_common::test::integration::{AutoDockerComposeDown, docker_compose_down_silent as docker_compose_down, prepare_docker_compose, PrepareDockerComposeCfg};
 use mvv_common::test::{TestOptionUnwrap, TestResultUnwrap};
 use serde_json::json;
 //--------------------------------------------------------------------------------------------------
@@ -158,31 +157,24 @@ async fn run_account_soa_docker_compose() {
         .init();
 
     let (temp_docker_compose_dir, compose_containers) = launch_account_soa_docker_compose().await.test_unwrap();
+    let auto_docker_compose_down = AutoDockerComposeDown {
+        docker_compose_file_dir: temp_docker_compose_dir.to_path_buf(),
+        log_message: Some("### Cleaning..."),
+    };
 
     // THERE should be real REST tests.
     tokio::time::sleep(Duration::from_secs(2)).await; // just in case
 
     let port = compose_containers.account_soa_http_port.host_port().await;
-    if port.is_err() {
-        docker_compose_down(&temp_docker_compose_dir);
-    }
 
     let port: u16 = port.test_unwrap().into();
 
-    use futures::future::FutureExt;
-    let test_res = AssertUnwindSafe(test_get_all_client_accounts(port)).catch_unwind().await;
+    // use futures::future::FutureExt;
+    // let test_res = run_test(test_get_all_client_accounts(port)).await;
+    let test_res: Result<(), anyhow::Error> = Ok(test_get_all_client_accounts(port).await);
+    let _:() = test_res.test_unwrap();
 
-    if test_res.is_err() {
-        docker_compose_down(&temp_docker_compose_dir);
-    }
-
-    let test_res = test_res.test_unwrap();
-    if test_res.is_err() {
-        docker_compose_down(&temp_docker_compose_dir);
-    }
-    test_res.test_unwrap();
-
-    let pause_timeout = Duration::from_secs(10);
+    let pause_timeout = Duration::from_secs(5);
     info!("### Pause for {}s...", pause_timeout.as_secs());
     tokio::time::sleep(pause_timeout).await;
 
@@ -191,13 +183,13 @@ async fn run_account_soa_docker_compose() {
 
     // to make sure to 'remove containers, networks'
     info!("### Cleaning...");
-    docker_compose_down(&temp_docker_compose_dir);
+    let _ = auto_docker_compose_down;
 
     info!("### Test is completed");
 }
 
 
-async fn test_get_all_client_accounts(account_soa_port: u16) -> anyhow::Result<()> {
+async fn test_get_all_client_accounts(account_soa_port: u16) {
 
     let base_url = format!("http://localhost:{account_soa_port}");
     let url = format!("{base_url}/api/client/00000000-0000-0000-0000-000000000001/account/all");
@@ -206,15 +198,16 @@ async fn test_get_all_client_accounts(account_soa_port: u16) -> anyhow::Result<(
     let resp: Response = client.get(url)
         .basic_auth("vovan-read", Some("qwerty"))
         .send()
-        .await ?;
+        .await
+        .test_unwrap();
 
     assert_eq!(resp.status().as_u16(), 200);
 
     use core::str::FromStr;
-    let body_as_str: String = resp.text().await ?;
+    let body_as_str: String = resp.text().await.test_unwrap();
 
     let actual = serde_json::Value::from_str(&body_as_str).test_unwrap();
-    println!("### response: {actual}");
+    debug!("### response: {actual}");
 
     let accounts: serde_json::Value = actual;
     let first_account: &serde_json::Value = accounts.get(0).test_unwrap();
@@ -259,6 +252,19 @@ async fn test_get_all_client_accounts(account_soa_port: u16) -> anyhow::Result<(
         )
     );
     */
-
-    Ok(())
 }
+
+
+/*
+/// We use this special function wrapper to avoid missed clean up
+/// due to panic by assert (or unwrap in test code)
+/// We also could use `AssertUnwindSafe(our_test_method_future).catch_unwind().await`
+/// but this approach is easier and works enough properly (at least in our tests).
+async fn run_test<>(f: impl Future<Output=()> + Send + Sync + 'static) -> anyhow::Result<()> {
+    let res = tokio::spawn(f).await;
+    match res {
+        Ok(res) => Ok(res),
+        Err(err) => Err(anyhow!(err)),
+    }
+}
+*/

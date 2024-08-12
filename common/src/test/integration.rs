@@ -2,7 +2,7 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use anyhow::anyhow;
-use log::warn;
+use log::{info, warn};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -138,5 +138,18 @@ pub fn docker_compose_down_silent(docker_compose_file_dir: &Path) {
     let res = docker_compose_down(docker_compose_file_dir);
     if let Err(err) = res {
         warn!("Docker compose down failed => {err:?}")
+    }
+}
+
+pub struct AutoDockerComposeDown {
+    pub docker_compose_file_dir: PathBuf,
+    pub log_message: Option<&'static str>,
+}
+impl Drop for AutoDockerComposeDown {
+    fn drop(&mut self) {
+        if let Some(log_message) = self.log_message {
+            info!("{}", log_message);
+        }
+        docker_compose_down_silent(&self.docker_compose_file_dir)
     }
 }
