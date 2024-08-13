@@ -1,3 +1,5 @@
+use std::ffi::OsString;
+use itertools::Itertools;
 use quote::quote;
 use crate::macro_util::*;
 use crate::utils::{ make_ident, split_params };
@@ -94,4 +96,39 @@ fn get_method_name(method_with_gen_params: &str) -> String {
         route_method_name
     };
     route_method_name
+}
+
+
+#[proc_macro_attribute]
+pub fn integration_test(attrs: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc_macro::TokenStream {
+
+    let fn_item: syn::ItemFn = syn::parse(item)
+        .expect("[integration_test] macro expects function");
+    let syn::ItemFn { attrs: item_attrs, vis, sig, block } = fn_item;
+    let attrs: proc_macro2::TokenStream = attrs.into();
+
+    let is_it_1 = std::env::var("INTEGRATION_TEST").is_ok();
+    let is_it_2 = std::env::var("INTEGRATION_TESTS").is_ok();
+    let is_exact = std::env::args_os().contains(&OsString::from("--exact"));
+
+    let test_enabled = is_it_1 || is_it_2 || is_exact;
+
+    let out = if test_enabled {
+        quote! {
+            #attrs
+            #(#item_attrs)*
+            #vis #sig #block
+        }
+    } else {
+        let ignore_msg = quote! { "Integration tests are not enabled" };
+        quote! {
+            #attrs
+            #(#item_attrs)*
+            #[ignore = #ignore_msg ]
+            #vis #sig #block
+        }
+    };
+
+    let out: proc_macro2::TokenStream = out.into();
+    out.into()
 }

@@ -6,7 +6,7 @@ edition = "2021"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
-    'cfg(feature, values("performance_tests", "special-integration-tests"))',
+    'cfg(feature, values("performance_tests", "special-integration-tests", "integration-tests", "integration_tests"))',
 ] }
 
 [features]
@@ -19,6 +19,12 @@ ambassador = [ "dep:ambassador" ]
 
 default = [ "ambassador", "serde_json_raw_value" ]
 
+# Having 'integration_tests' conflicts with '--all-features' (we will need enable build with all features manually)
+# If we use 'integration_tests' cfg paramete, it causes FULL rebuilds (of ALL dependencies) a lot of times.
+# The easiest approach (at that moment) is using env variable which is set by 'cargo make' task
+# in 'integration-test' task.
+#
+# integration_tests = []
 
 [build-dependencies]
 cargo_metadata.workspace = true
@@ -203,5 +209,8 @@ assert-json-diff.workspace = true
 # color-backtrace.workspace = true
 
 macro_rules_attribute.workspace = true
+
+test-with = { version = "0.13.0", features = ["default", "runtime", "executable"] }
+libtest-with = { version = "0.7.0-1", features = ["net", "resource", "user", "executable"] }
 
 rustainers.workspace = true

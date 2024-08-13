@@ -8,6 +8,9 @@ ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
 # It does not work... I do not know why.
 # PROJECT_DIR = "${CARGO_MAKE_CURRENT_TASK_INITIAL_MAKEFILE_DIRECTORY}"
 
+CARGO_VERB_P_0 = "--verbose"
+CARGO_BUILD_VERB_P = "-vv" # "--verbose"
+CARGO_TEST_VERB_P = "--verbose"
 
 # profile based environment override
 #  CARGO_MAKE_CARGO_PROFILE=dev
@@ -59,7 +62,16 @@ private = true
 description = "Runs the rust compiler."
 category = "Build"
 command = "cargo"
-args = ["build", "--all-features"]
+env = { RUST_BACKTRACE = "${RUST_BACKTRACE}" }
+args = [
+    "@@remove-empty(CARGO_VERB_P_0)",
+    "build",
+    "@@remove-empty(CARGO_BUILD_VERB_P)",
+    "--all-features",
+    # "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
+    # "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
+
+]
 dependencies = [
     "pre-build",
 ]
@@ -71,6 +83,27 @@ dependencies = [
     "real-build",
     "generate-open-api",
     "post-build",
+]
+
+
+[tasks.test]
+category = "Test"
+# toolchain = "${CARGO_MAKE_RUST_DEFAULT_TOOLCHAIN}"
+env = { RUST_BACKTRACE = "${RUST_BACKTRACE}" }
+command = "cargo"
+args = [
+    "@@remove-empty(CARGO_VERB_P_0)",
+    "test",
+    "@@remove-empty(CARGO_TEST_VERB_P)",
+    "--all-features",
+    # ???
+    # "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
+    # "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
+]
+dependencies = [
+    "build",
+    "rebuild-disabled-integration-tests",
+    # "generate-open-api",
 ]
 
 
@@ -199,7 +232,8 @@ env = { DOCKER_IMAGE_LABELS = [
 
 
 
-[tasks.build-docker]
+[tasks.build-docker-prod]
+condition = { profiles = [ "prod", "production", "release" ] }
 cwd = "${ROOT_PROJECT_DIR}"
 command = "docker"
 args = [
@@ -228,16 +262,17 @@ dependencies = [
     "private_docker_build_prepare_labels",
 ]
 
-[tasks.build-docker-prod]
+
+[tasks.build-docker]
 workspace = false
-alias = "build-docker"
+dependencies = [
+    "build-docker-prod",  # will be called only in prod/release profile
+    # "build-debug-docker", # for DEV profile
+    "build-debug-local-docker", # for DEV profile
+]
 
-[tasks.build-prod-docker]
-workspace = false
-alias = "build-docker"
 
-
-[tasks.build-debug-docker]
+[tasks.build-docker-debug]
 cwd = "${ROOT_PROJECT_DIR}"
 command = "docker"
 args = ["build",
@@ -267,10 +302,6 @@ dependencies = [
     "private_docker_build_prepare_labels",
 ]
 
-[tasks.build-docker-debug]
-workspace = false
-alias = "build-debug-docker"
-
 
 [tasks.get-ubuntu-info-vars]
 workspace = false
@@ -284,7 +315,8 @@ script = "echo UBUNTU_VERSION: ${UBUNTU_VERSION}"
 # CARGO_MAKE_WORKSPACE_PACKAGE_NAME
 #
 #
-[tasks.build-debug-local-docker]
+[tasks.build-docker-debug-local]
+condition = { profiles = [ "dev", "development", "debug" ] }
 command = "docker"
 cwd = "${ROOT_PROJECT_DIR}"
 args = [
@@ -315,9 +347,6 @@ dependencies = [
     "private_docker_build_prepare_labels",
 ]
 
-[tasks.build-docker-debug-local]
-dependencies = ["build-debug-local-docker"]
-
 
 # -----------------------------------------------------------------------------
 [tasks.docker-compose-up]
@@ -328,14 +357,14 @@ args = [
     "--project-directory", "${PROJECT_DIR}",
     "--project-name", "rust-account-soa-project",                # "${project.artifactId}",
     "up",
-    #"rust-account-soa", # "${docker-compose-service-up}",
+    # "rust-account-soa", # "${docker-compose-service-up}",
     ]
 workspace = false
 dependencies = [
     "init_docker_vars",
-#    "build",
-#    "test",
-#    "private_docker_build_prepare_labels",
+    # "build",
+    # "test",
+    # "private_docker_build_prepare_labels",
 ]
 
 
@@ -390,3 +419,116 @@ dependencies = [
     "docker-compose-up",
 ]
 # -----------------------------------------------------------------------------
+
+[tasks.touch-integration-tests]
+command = "cargo"
+args = [
+    # "@@remove-empty(CARGO_VERB_P_0)",
+    "xtask",
+    "x-touch-files",
+    "tests", # dir
+    "integration_*", # very simple mask
+]
+
+
+[tasks.rebuild-disabled-integration-tests]
+env = { INTEGRATION_TESTS = { unset = true} }
+command = "cargo"
+args = [
+    "@@remove-empty(CARGO_VERB_P_0)",
+    "build",
+    "@@remove-empty(CARGO_BUILD_VERB_P)",
+    "--all-features",
+    # "--features", "integration_tests",
+    "--test", "integration_*",
+]
+dependencies = [ "touch-integration-tests" ]
+
+[tasks.rebuild-enabled-integration-tests]
+env = { INTEGRATION_TESTS = "true"  }
+command = "cargo"
+args = [
+    "@@remove-empty(CARGO_VERB_P_0)",
+    "build",
+    "@@remove-empty(CARGO_BUILD_VERB_P)",
+    "--all-features",
+    # "--features", "integration_tests",
+    "--test", "integration_*",
+]
+dependencies = [ "touch-integration-tests" ]
+
+
+
+[tasks.integration-tests]
+command = "cargo"
+# Using 'cfg' causes FULL recompilation of ALL dependencies (and proejct files)
+# when we switch on/off it :-(
+#env = { RUSTFLAGS="--cfg integration_tests", CARGO_BUILD_RUSTFLAGS="--cfg integration_tests", RUST_TEST_THREADS = 1 }
+env = { INTEGRATION_TESTS = "true" , RUST_TEST_THREADS = "1", RUST_BACKTRACE = "${RUST_BACKTRACE}" }
+args = [
+    "@@remove-empty(CARGO_VERB_P_0)",
+    "test",
+    "@@remove-empty(CARGO_TEST_VERB_P)",
+    "--all-features",
+    # "--features", "integration_tests",
+    #
+#    "--config",  "test_mode=integration_tests",
+#    "--config",  "rustc-cfg='integration_tests'",
+#    "--config",  "rustc-cfg='test_mode=integration_tests'",
+#    "--config",  "cfg='test_mode=integration_tests'",
+#    "--config",  "rustflags=--cfg 'test_mode=integration_tests'",
+    ##### 'build.rustdocflags = ["--html-in-header", "header.html"]'
+#    "--config",  "'rustflags=[--cfg test_mode=integration_tests]",
+#    "--config",  "'rustflags=[test_mode=integration_tests]",
+#    "--config",  "rustc-cfg='test_mode=integration_tests'",
+    "--test", "integration_*",
+    "--jobs", "1", # no parallel
+    "--",
+    "--nocapture",
+
+    # --workspace,
+    # --exclude <SPEC>
+    # --lib,   # Test only this package's library
+    # --bins,  # Test all binaries
+    # --bin [<NAME>]
+    # --tests             Test all test targets
+    # --test [<NAME>]     Test only the specified test target
+    # --all-targets       Test all targets (does not include doctests)
+    # -F, --features <FEATURES>  Space or comma separated list of features to activate
+    # --all-features         Activate all available features
+    # --no-default-features  Do not activate the `default` feature
+    # -j, --jobs <N>                Number of parallel jobs, defaults to # of CPUs.
+    # -r, --release                 Build artifacts in release mode, with optimizations
+    # --profile <PROFILE-NAME>  Build artifacts with the specified profile
+    # --target [<TRIPLE>]       Build for the target triple
+    # --target-dir <DIRECTORY>  Directory for all generated artifacts
+    # --unit-graph              Output build graph in JSON (unstable)
+    # --timings[=<FMTS>]        Timing output formats (unstable) (comma separated): html, json
+]
+dependencies = [
+    "build",
+    "rebuild-enabled-integration-tests",
+    # "build-docker",
+]
+
+
+########################################################################################################################
+#                                              Aliases                                                                 #
+########################################################################################################################
+
+[tasks.build-debug-local-docker]
+alias = "build-docker-debug-local"
+
+[tasks.build-local-debug-docker]
+alias = "build-docker-debug-local"
+
+[tasks.integration-test]
+alias = "integration-tests"
+
+[tasks.build-debug-docker]
+workspace = false
+alias = "build-docker-debug"
+
+[tasks.build-prod-docker]
+workspace = false
+alias = "build-docker-prod"

@@ -3,6 +3,7 @@ use std::time::Duration;
 use anyhow::anyhow;
 use assert_json_diff::{assert_json_eq};
 use assertables::{assert_ge, assert_ge_as_result};
+use itertools::Itertools;
 use log::{debug, error, info};
 use reqwest::Response;
 use rustainers::compose::{
@@ -152,9 +153,39 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
     }
 }
 
+
+#[test]
+fn integration_test_666() {
+    let as_str = std::env::vars()
+        .map(|e|format!("{} = {}", e.0, e.1) )
+        .join("\n");
+
+    println!("{as_str}");
+
+    // GIO_LAUNCHED_DESKTOP_FILE = /home/vmelnykov/Desktop/RustRover.desktop
+    // RUST_BACKTRACE = short
+    // RUST_RECURSION_COUNT = 1 ???
+    //
+    // Arg '--exact'
+}
+
+
+
 #[tokio::test]
 // #[ignore]
-async fn run_account_soa_docker_compose() {
+// #[cfg_attr(not(any(feature = "integration-tests", feature = "integration_tests")), ignore)]
+// #[cfg_attr(not(any(
+//     feature = "integration-tests", feature = "integration_tests",
+//     test_mode = "integration-tests", test_mode = "integration_tests",
+//     integration_tests,
+// )), ignore)]
+
+// #[test_with::env(INTEGRATION_TESTS)]
+#[mvv_proc_macro::integration_test]
+
+// #[mvv_proc_macro::integration_test22]
+// #[test_with::runtime_ignore_if(something_happened)]
+async fn integration_test_run_account_soa_docker_compose() {
 
     env_logger::builder()
         .filter(None, log::LevelFilter::Info)

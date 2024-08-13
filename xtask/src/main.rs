@@ -1,23 +1,35 @@
+mod touch_files;
+
+use crate::touch_files::touch_files_task;
 
 fn main() {
-    let task = std::env::args().nth(1);
-    match task.as_deref() {
-        Some("patch-subdep-ver") => generate_patch(),
-        Some("x-patch-subdep-ver") => generate_patch(),
-        _ => print_help(),
-    }
+    let mut args = std::env::args();
+    let task = args.nth(1);
 
-    generate_patch()
+    match task.as_deref() {
+        // Some("patch-subdep-ver") =>
+        //     generate_patch(),
+        // Some("x-patch-subdep-ver") =>
+        //     generate_patch(),
+        Some("x-touch-files") =>
+            touch_files_task(),
+        _ => {
+            print_help();
+            panic!("No task")
+        },
+    }
 }
 
 fn print_help() {
     eprintln!(
         "Tasks: \n \
-           x-patch-subdep-ver   calls `cargo patch-subdep-ver` \n \
+           x-touch-files dir mask \n \
+           x-touch-files mask \n \
         "
     )
 }
 
+/*
 fn generate_patch() {
     use std::process::Command;
 
@@ -33,6 +45,7 @@ fn generate_patch() {
         println!("### xTask generate_patch => patch dir already exists");
     }
 }
+*/
 
 
 
