@@ -2,7 +2,6 @@ use core::fmt;
 use anyhow::anyhow;
 use implicit_clone::ImplicitClone;
 use mvv_auth::{
-    PasswordComparator,
     backend::psw_auth::PswUser,
     backend::oauth2_auth::OAuth2User,
     permission::{ PermissionSet, PermissionProcessError, bits_perm_set::BitsPermissionSet, },
@@ -88,6 +87,7 @@ impl ClientAuthUser {
     pub fn access_token(&mut self, access_token: Option<SecureString>) {
         self.access_token = access_token;
     }
+    /*
     pub fn has_password<PswComparator: PasswordComparator>(&self, cred_psw: &str) -> bool {
         match self.password {
             None => false,
@@ -95,6 +95,7 @@ impl ClientAuthUser {
                 PswComparator::passwords_equal(usr_psw.as_str(), cred_psw),
         }
     }
+    */
 }
 
 
@@ -124,6 +125,7 @@ impl fmt::Debug for ClientAuthUser {
 }
 
 
+//noinspection DuplicatedCode
 impl axum_login::AuthUser for ClientAuthUser {
     type Id = String;
 

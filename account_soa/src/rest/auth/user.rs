@@ -1,14 +1,12 @@
 use core::fmt;
 use implicit_clone::ImplicitClone;
 use mvv_auth::{
-    PasswordComparator,
     backend::psw_auth::PswUser,
     backend::oauth2_auth::OAuth2User,
     permission::PermissionSet,
     user_provider::mem_user_provider::UserPermissionsExtractor,
 };
 use mvv_auth::SecureString;
-// use diesel::prelude::*;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -57,6 +55,7 @@ impl AuthUser {
     pub fn access_token(&mut self, access_token: Option<SecureString>) {
         self.access_token = access_token;
     }
+    /*
     pub fn has_password<PswComparator: PasswordComparator>(&self, cred_psw: &str) -> bool {
         match self.password {
             None => false,
@@ -64,6 +63,7 @@ impl AuthUser {
                 PswComparator::passwords_equal(usr_psw.as_str(), cred_psw),
         }
     }
+    */
 }
 
 
@@ -92,6 +92,7 @@ impl fmt::Debug for AuthUser {
 }
 
 
+//noinspection DuplicatedCode
 impl axum_login::AuthUser for AuthUser {
     type Id = String;
 

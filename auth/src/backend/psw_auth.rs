@@ -1,6 +1,5 @@
 use core::fmt;
 use core::fmt::Debug;
-use core::marker::PhantomData;
 use std::sync::Arc;
 
 use crate::{
@@ -26,25 +25,25 @@ pub trait PswUser {
 // #[derive(Clone)]
 pub struct PswAuthBackendImpl <
     User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
+    //PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone = AlwaysAllowedPermSet<EmptyPerm>,
 > {
+    pub(crate) psw_comparator: Arc<dyn PasswordComparator + Send + Sync>,
     pub(crate) users_provider: Arc<dyn AuthUserProvider<User=User> + Send + Sync>,
     pub(crate) permission_provider: Arc<dyn PermissionProvider<User=User,Permission=<PermSet as PermissionSet>::Permission,PermissionSet=PermSet> + Send + Sync>,
-    _pd: PhantomData<PswComparator>,
 }
 
 
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
+    // PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> Clone for PswAuthBackendImpl<Usr,PswComp,PermSet> {
+> Clone for PswAuthBackendImpl<Usr,PermSet> {
     fn clone(&self) -> Self {
-        PswAuthBackendImpl::<Usr,PswComp,PermSet> {
+        PswAuthBackendImpl::<Usr,PermSet> {
+            psw_comparator: Arc::clone(&self.psw_comparator),
             users_provider: Arc::clone(&self.users_provider),
             permission_provider: Arc::clone(&self.permission_provider),
-            _pd: PhantomData,
         }
     }
     fn clone_from(&mut self, source: &Self) {
@@ -55,17 +54,17 @@ impl <
 
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> PswAuthBackendImpl<Usr,PswComp,PermSet> {
+> PswAuthBackendImpl<Usr,PermSet> {
     pub(crate) fn new(
+        psw_comparator: Arc<dyn PasswordComparator + Send + Sync>,
         users_provider: Arc<dyn AuthUserProvider<User=Usr> + Send + Sync>,
         permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=<PermSet as PermissionSet>::Permission,PermissionSet=PermSet> + Send + Sync>,
-    ) -> PswAuthBackendImpl<Usr,PswComp,PermSet> {
-        PswAuthBackendImpl::<Usr,PswComp,PermSet> {
+    ) -> PswAuthBackendImpl<Usr,PermSet> {
+        PswAuthBackendImpl::<Usr,PermSet> {
+            psw_comparator: Arc::clone(&psw_comparator),
             users_provider: Arc::clone(&users_provider),
             permission_provider: Arc::clone(&permission_provider),
-            _pd: PhantomData,
         }
     }
     pub(crate) fn users_provider(&self) -> Arc<dyn AuthUserProvider<User=Usr> + Send + Sync> {
@@ -77,9 +76,8 @@ impl <
 #[axum::async_trait]
 impl<
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> axum_login::AuthnBackend for PswAuthBackendImpl<Usr,PswComp,PermSet>
+> axum_login::AuthnBackend for PswAuthBackendImpl<Usr,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     type User = Usr;
@@ -99,7 +97,7 @@ impl<
             Some(usr) => {
                 let usr_psw = usr.password();
                 let usr_psw = usr_psw.as_ref().map(|psw|psw.as_str()).unwrap_or("");
-                if !usr_psw.is_empty() && PswComp::passwords_equal(usr_psw, creds.password.as_str()) {
+                if !usr_psw.is_empty() && self.psw_comparator.passwords_equal(usr_psw, creds.password.as_str()) {
                     Ok(Some(usr.clone()))
                 } else {
                     Ok(None)
@@ -120,9 +118,8 @@ impl<
 #[axum::async_trait]
 impl<
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> PermissionProviderSource for PswAuthBackendImpl<Usr,PswComp,PermSet>
+> PermissionProviderSource for PswAuthBackendImpl<Usr,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     type User = Usr;
@@ -147,9 +144,8 @@ impl<
 #[axum::async_trait]
 impl<
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> AuthorizeBackend for PswAuthBackendImpl<Usr,PswComp,PermSet>
+> AuthorizeBackend for PswAuthBackendImpl<Usr,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 { }
 

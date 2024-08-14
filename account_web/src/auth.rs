@@ -25,7 +25,8 @@ pub type CompositeAuthBackend = backend::CompositeAuthBackend;
 
 #[allow(unused_qualifications)] // false-positive warning
 pub type PswAuthCredentials = mvv_auth::backend::PswAuthCredentials;
-pub type LoginFormAuthnBackend = mvv_auth::backend::LoginFormAuthBackend<AuthUser,PswComparator,RolePermissionsSet>;
+#[allow(unused_qualifications)]
+pub type LoginFormAuthnBackend = mvv_auth::backend::LoginFormAuthBackend<AuthUser,RolePermissionsSet>;
 
 
 pub use user_perm_provider::{ AuthUserProvider, in_mem_client_auth_user_provider };
@@ -47,6 +48,7 @@ pub type ExtractCurrentUser = mvv_auth::extract::ExtractCurrentUser<ClientAuthUs
 
 
 #[extension_trait::extension_trait]
+//noinspection DuplicatedCode
 pub impl <S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for axum::Router<S> {
     #[track_caller]
     fn authn_required(self) -> Self {

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use mvv_auth::{
+    PasswordComparator,
     AuthUserProvider,
     backend::OAuth2UserStore,
     permission::PermissionProvider,
@@ -16,7 +17,10 @@ pub async fn composite_auth_manager_layer <
                + AuthUserProvider<User=AuthUser>
                + PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet>
                + OAuth2UserStore,
-> (user_perm_provider: Arc<UsrProvider>)
+> (
+    psw_comp: Arc<dyn PasswordComparator + Send + Sync>,
+    user_perm_provider: Arc<UsrProvider>,
+)
     -> Result<axum_login::AuthManagerLayer<CompositeAuthBackend, axum_login::tower_sessions::MemoryStore>, anyhow::Error> {
 
     use axum_login::{
@@ -34,7 +38,7 @@ pub async fn composite_auth_manager_layer <
         .with_same_site(SameSite::Lax) // Ensure we send the cookie from the OAuth redirect.
         .with_expiry(Expiry::OnInactivity(Duration::days(1)));
 
-    let backend = CompositeAuthBackend::new(user_perm_provider) ?;
+    let backend = CompositeAuthBackend::new(Arc::clone(&psw_comp), user_perm_provider) ?;
     let auth_layer: axum_login::AuthManagerLayer<CompositeAuthBackend, MemoryStore> =
         AuthManagerLayerBuilder::new(backend, session_layer).build();
     Ok(auth_layer)

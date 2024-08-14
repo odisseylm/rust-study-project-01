@@ -6,6 +6,7 @@ use log::{error, info};
 
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use mvv_auth::PlainPasswordComparator;
 
 use mvv_common::{
     env::process_env_load_res,
@@ -39,15 +40,14 @@ fn create_prod_dependencies() -> Result<Arc<Dependencies<AccountServiceImpl>>, a
     //let account_rest = Arc::new(AccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
 
     Ok(Arc::new(Dependencies::<AccountServiceImpl> { state: Arc::new(DependenciesState {
+        psw_comp: Arc::new(PlainPasswordComparator::new()),
         database_connection: Arc::clone(&db),
         account_service: Arc::clone(&account_service),
-        // account_rest: Arc::clone(&account_rest),
-        // user_perm_provider: Arc::new(SqlUserProvider::with_cache(Arc::clone(&db)) ?)
-        // user_perm_provider: Arc::new(in_mem_client_auth_user_provider() ?)
         user_perm_provider: Arc::new(SqlClientAuthUserProvider::with_cache(Arc::clone(&db)) ?)
     })}))
 }
 
+//noinspection DuplicatedCode
 fn init_logger() {
 
     // Set environment for logging configuration
@@ -101,6 +101,7 @@ fn create_open_api() -> utoipa::openapi::OpenApi {
 }
 
 
+//noinspection DuplicatedCode
 async fn create_app_route <
         AccountS: AccountService + Send + Sync + 'static,
         // AccountR: AccountRest<AccountS> + Send + Sync,
@@ -112,7 +113,9 @@ async fn create_app_route <
     use crate::auth::{ composite_auth_manager_layer, composite_login_router };
 
     let auth_layer = composite_auth_manager_layer(
-        Arc::clone(&dependencies.state.user_perm_provider)).await ?;
+        dependencies.state.psw_comp.clone(),
+        Arc::clone(&dependencies.state.user_perm_provider),
+    ).await ?;
     let login_route = composite_login_router();
 
     let app_router = Router::new()

@@ -16,6 +16,7 @@ use tower_http::{trace::TraceLayer};
 use tower::{ service_fn, ServiceBuilder };
 use super::super::auth::CompositeAuthBackend;
 use mvv_auth::examples::composite_auth::CompositeAuthnBackendExample;
+use mvv_auth::PlainPasswordComparator;
 use mvv_auth::route::validate_authentication_chain;
 use crate::rest::auth::{
     RequiredAuthenticationExtension,
@@ -173,7 +174,7 @@ pub async fn temp_handler() {
     use crate::rest::auth::user_perm_provider::in_memory_test_users;
 
     let auth_layer: axum_login::AuthManagerLayer<CompositeAuthBackend, axum_login::tower_sessions::MemoryStore> =
-        composite_auth_manager_layer(Arc::new(in_memory_test_users().test_unwrap())).await.test_unwrap();
+        composite_auth_manager_layer(Arc::new(PlainPasswordComparator::new()), Arc::new(in_memory_test_users().test_unwrap())).await.test_unwrap();
 
     // !!! WORKING router !!!
     // let app_router = Router::new()

@@ -55,31 +55,31 @@ impl Default for LoginFormAuthConfig {
 // #[cfg_attr(feature = "ambassador", delegate(AuthorizeBackend, target = "psw_backend"))]
 pub struct LoginFormAuthBackend <
     User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone = AlwaysAllowedPermSet<EmptyPerm>,
 >   where
         <PermSet as PermissionSet>::Permission : Hash + Eq,
 {
-    psw_backend: PswAuthBackendImpl<User,PswComparator,PermSet>,
+    psw_backend: PswAuthBackendImpl<User,PermSet>,
     pub config: LoginFormAuthConfig,
 }
 
 
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> LoginFormAuthBackend<Usr,PswComp,PermSet>
+> LoginFormAuthBackend<Usr,PermSet>
     where
         <PermSet as PermissionSet>::Permission : Hash + Eq,
 {
     pub fn new(
+        psw_comparator: Arc<dyn PasswordComparator + Send + Sync>,
         users_provider: Arc<dyn AuthUserProvider<User=Usr> + Sync + Send>,
         config: LoginFormAuthConfig,
         permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=<PermSet as PermissionSet>::Permission,PermissionSet=PermSet> + Sync + Send>,
-    ) -> LoginFormAuthBackend<Usr,PswComp,PermSet> {
-        LoginFormAuthBackend::<Usr,PswComp,PermSet> {
+    ) -> LoginFormAuthBackend<Usr,PermSet> {
+        LoginFormAuthBackend::<Usr,PermSet> {
             psw_backend: PswAuthBackendImpl::new(
+                psw_comparator,
                 users_provider,
                 permission_provider,
             ),
@@ -123,9 +123,8 @@ impl <
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> PermissionProviderSource for LoginFormAuthBackend<Usr,PswComp,PermSet>
+> PermissionProviderSource for LoginFormAuthBackend<Usr,PermSet>
     where
         <PermSet as PermissionSet>::Permission : Hash + Eq,
         Usr: axum_login::AuthUser<Id = String>,
@@ -151,9 +150,8 @@ impl <
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> AuthorizeBackend for LoginFormAuthBackend<Usr,PswComp,PermSet>
+> AuthorizeBackend for LoginFormAuthBackend<Usr,PermSet>
     where
         <PermSet as PermissionSet>::Permission : Hash + Eq,
         Usr: axum_login::AuthUser<Id = String>,
@@ -162,9 +160,8 @@ impl <
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> RequestAuthenticated for LoginFormAuthBackend<Usr,PswComp,PermSet>
+> RequestAuthenticated for LoginFormAuthBackend<Usr,PermSet>
     where
         <PermSet as PermissionSet>::Permission : Hash + Eq,
         Usr: axum_login::AuthUser<Id = String>,
@@ -174,9 +171,8 @@ impl <
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> AuthnBackendAttributes for LoginFormAuthBackend<Usr,PswComp,PermSet>
+> AuthnBackendAttributes for LoginFormAuthBackend<Usr,PermSet>
     where
         <PermSet as PermissionSet>::Permission : Hash + Eq,
         Usr: axum_login::AuthUser<Id = String>,
@@ -260,7 +256,6 @@ pub mod web {
     // use axum_login::tower_sessions::Session;
     use serde::Deserialize;
     use crate::backend::psw_auth::PswUser;
-    use crate::PasswordComparator;
     use crate::permission::PermissionSet;
 
 
@@ -283,7 +278,6 @@ pub mod web {
 
     pub fn login_router <
         User: axum_login::AuthUser + PswUser + 'static,
-        PswComparator: PasswordComparator + Debug + Clone + Send + Sync + 'static,
         // !!! We cannot use there default params (like EmptyPerm/AlwaysAllowedPermSet) because axum_login
         // uses type_id for looking data in the session.
         Perm: Hash + Eq + Debug + Clone + Send + Sync+ 'static,
@@ -292,9 +286,9 @@ pub mod web {
         where User: axum_login::AuthUser<Id = String>,
     {
         Router::new()
-            .route("/login", POST(post::login::<User,PswComparator,Perm,PermSet>))
+            .route("/login", POST(post::login::<User,Perm,PermSet>))
             .route("/login", GET(get::login))
-            .route("/logout", GET(get::logout::<User,PswComparator,Perm,PermSet>))
+            .route("/logout", GET(get::logout::<User,Perm,PermSet>))
     }
 
     mod post {
@@ -303,26 +297,25 @@ pub mod web {
         use core::fmt::Debug;
         use core::hash::Hash;
         use log::error;
-        use crate::{ PasswordComparator };
         use crate::backend::{ LoginFormAuthBackend, PswAuthCredentials, psw_auth::PswUser };
         use crate::permission::PermissionSet;
 
+        //noinspection DuplicatedCode
         pub async fn login <
             User: axum_login::AuthUser + PswUser,
-            PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
             // !!! We cannot use there default params (like EmptyPerm/AlwaysAllowedPermSet) because axum_login
             // uses type_id for looking data in the session.
             Perm: Hash + Eq + Debug + Clone + Send + Sync,
             PermSet: PermissionSet<Permission=Perm> + Clone,
         > (
-            mut auth_session: axum_login::AuthSession<LoginFormAuthBackend<User,PswComparator,PermSet>>,
+            mut auth_session: axum_login::AuthSession<LoginFormAuthBackend<User,PermSet>>,
             Form(creds): Form<PswAuthCredentials>,
         ) -> impl IntoResponse
             where
                 <PermSet as PermissionSet>::Permission : Hash + Eq,
                 User: axum_login::AuthUser<Id = String>,
         {
-            let auth_res: Result<Option<User>, axum_login::Error<LoginFormAuthBackend<User,PswComparator,PermSet>>> =
+            let auth_res: Result<Option<User>, axum_login::Error<LoginFormAuthBackend<User,PermSet>>> =
                 auth_session.authenticate(creds.clone()).await;
 
             let user = match auth_res {
@@ -366,7 +359,6 @@ pub mod web {
         use core::fmt::Debug;
         use core::hash::Hash;
         use super::*;
-        use crate::PasswordComparator;
         use crate::backend::{ LoginFormAuthBackend, psw_auth::PswUser };
         use crate::permission::PermissionSet;
 
@@ -376,12 +368,11 @@ pub mod web {
 
         pub async fn logout <
             User: axum_login::AuthUser + PswUser,
-            PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
             // !!! We cannot use there default params (like EmptyPerm/AlwaysAllowedPermSet) because axum_login
             // uses type_id for looking data in the session.
             Perm: Hash + Eq + Debug + Clone + Send + Sync,
             PermSet: PermissionSet<Permission=Perm> + Clone,
-        > (mut auth_session: axum_login::AuthSession<LoginFormAuthBackend<User,PswComparator,PermSet>>)
+        > (mut auth_session: axum_login::AuthSession<LoginFormAuthBackend<User,PermSet>>)
             -> impl IntoResponse
             where
                 <PermSet as PermissionSet>::Permission : Hash + Eq,

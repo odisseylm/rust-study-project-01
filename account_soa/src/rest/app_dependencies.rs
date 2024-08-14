@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use mvv_auth::PlainPasswordComparator;
 use crate::rest::account_rest::AccountRest;
 use crate::rest::auth::user_perm_provider::SqlUserProvider;
 use crate::service::account_service::AccountService;
@@ -13,6 +14,7 @@ pub struct DependenciesState <
     pub database_connection: Arc<sqlx_postgres::PgPool>,
     pub account_service: Arc<AccountS>,
     pub account_rest: Arc<AccountRest<AccountS>>,
+    pub psw_comparator: Arc<PlainPasswordComparator>,
     pub user_perm_provider: Arc<SqlUserProvider>,
 }
 
@@ -24,6 +26,7 @@ pub struct Dependencies <
 }
 
 
+//noinspection DuplicatedCode
 impl <
     AccountS: AccountService + Send + Sync + 'static,
     // AccountR: AccountRest<AccountS> + Send + Sync,

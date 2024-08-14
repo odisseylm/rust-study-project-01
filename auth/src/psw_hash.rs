@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use log::{error, warn};
 use mvv_common::{
     backtrace::{backtrace, BacktraceCell},
@@ -11,7 +12,7 @@ use crate::{PasswordComparator, SecureString};
 pub struct PswHashConfig {
     pub algorithm: String, // algorithm name is case-sensitive
     pub version: Option<password_hash::Decimal>,
-    pub salt: password_hash::SaltString,
+    pub salt: Option<password_hash::SaltString>,
 }
 
 
@@ -75,7 +76,7 @@ impl PswHashConfig {
         Ok(PswHashConfig {
             algorithm: alg_name.to_owned(),
             version: alg_ver,
-            salt: password_hash::SaltString::from_b64(&salt_b64) ?,
+            salt: Some(password_hash::SaltString::from_b64(&salt_b64) ?),
         })
     }
 }
@@ -116,6 +117,7 @@ pub mod algorithm {
     // Scrypt has no versions (at least now)
 }
 
+
 fn is_argon_alg(alg: &str) -> bool {
     alg.starts_with("argon")
 }
@@ -126,7 +128,8 @@ fn is_scrypt_alg(alg: &str) -> bool {
     alg.starts_with("scrypt")
 }
 
-pub fn hash_password<'a>(cfg: &'a PswHashConfig, plain_psw: &'a SecureString)
+
+pub fn hash_password<'a>(cfg: &'a PswHashConfig, plain_psw: &'a SecureString, salt: password_hash::Salt<'a>)
     -> Result<password_hash::PasswordHash<'a>, PswHashError> {
     use password_hash::{ Ident, PasswordHasher };
 
@@ -134,7 +137,6 @@ pub fn hash_password<'a>(cfg: &'a PswHashConfig, plain_psw: &'a SecureString)
     let psw_bytes = plain_psw.as_bytes();
     let alg_param = Some(Ident::new(cfg.algorithm.as_str()) ?);
     let ver = cfg.version;
-    let salt = cfg.salt.as_salt();
 
     match alg_name { // algorithm name is case-sensitive
         alg if is_argon_alg(alg) => {
@@ -206,11 +208,27 @@ pub fn generate_salt() -> Result<password_hash::SaltString, PswHashError> {
     Ok(password_hash::SaltString::generate(rng))
 }
 
+#[derive(Debug, Clone)]
+pub struct Pepper {
+    value: SecureString,
+}
 
 
-pub struct PswHashComparator;
+pub struct PswHashComparator {
+    pepper: Pepper,
+}
+impl PswHashComparator {
+    fn apply_pepper<'a>(&self, user_password: &'a str) -> Cow<'a, str> {
+        // TODO: use pepper
+        Cow::Borrowed(user_password)
+    }
+}
 impl PasswordComparator for PswHashComparator {
-    fn passwords_equal(user_password: &str, credentials_password: &str) -> bool {
+    fn passwords_equal(&self, user_password: &str, credentials_password: &str) -> bool {
+
+        let user_password = self.apply_pepper(user_password);
+        let user_password = user_password.as_ref();
+
         let psw_hash = password_hash::PasswordHash::new(user_password);
         match psw_hash {
             Err(ref err) => {

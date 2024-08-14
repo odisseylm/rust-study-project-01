@@ -2,7 +2,7 @@ use password_hash::{Ident, SaltString};
 use tokio_test::{assert_err, assert_ok};
 use mvv_auth::psw_hash::{generate_salt, verify_password};
 use mvv_auth::SecureString;
-use mvv_common::test::{TestDisplayStringOps, TestResultUnwrap};
+use mvv_common::test::{TestDisplayStringOps, TestOptionUnwrap, TestResultUnwrap};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -123,34 +123,97 @@ fn test_generate_salt() {
 
 
 #[test]
-fn test_create_psw_hash_and_verify() {
+fn test_create_psw_hash_and_verify_with_cfg_salt() {
     use mvv_auth::psw_hash::{
         algorithm::{ ARGON2D_ALG, ARGON2_VER_V0x10 },
         hash_password, PswHashConfig,
     };
 
-    let salt_str = "BAavSXRIKbL+vyGb9uVZkg";
-    let salt = SaltString::from_b64(salt_str).test_unwrap();
+    let salt_str_1 = "BAavSXRIKbL+vyGb9uVZkg";
+    let salt_1 = SaltString::from_b64(salt_str_1).test_unwrap();
 
-    let cfg = PswHashConfig {
+    let salt_str_2 = "YKjwEaoF/etx5+yyqAlwuQ";
+    let salt_2 = SaltString::from_b64(salt_str_2).test_unwrap();
+
+    let cfg_1 = PswHashConfig {
         algorithm: ARGON2D_ALG.to_string(),
         version: Some(ARGON2_VER_V0x10),
-        salt,
+        salt: Some(salt_1),
     };
 
-    let plain_psw1 = SecureString::from_string("qwerty1".to_test_string());
-    let psw_hash1 = hash_password(&cfg, &plain_psw1).test_unwrap();
-    println!("psw_hash1: {psw_hash1}");
+    let cfg_2 = PswHashConfig {
+        algorithm: ARGON2D_ALG.to_string(),
+        version: Some(ARGON2_VER_V0x10),
+        salt: Some(salt_2),
+    };
 
-    let plain_psw2 = SecureString::from_string("qwerty2".to_test_string());
-    let psw_hash2 = hash_password(&cfg, &plain_psw2).test_unwrap();
-    println!("psw_hash2: {psw_hash2}");
+    let plain_psw_1 = SecureString::from_string("qwerty1".to_test_string());
+    let psw_hash_1 = hash_password(&cfg_1, &plain_psw_1, cfg_1.salt.as_ref().test_unwrap().as_salt()).test_unwrap();
+    println!("psw_hash_1: {psw_hash_1}");
 
-    assert_ok!(verify_password(plain_psw1.as_bytes(), &psw_hash1));
-    assert_ok!(verify_password(plain_psw2.as_bytes(), &psw_hash2));
+    let psw_hash_1_2 = hash_password(&cfg_2, &plain_psw_1, cfg_2.salt.as_ref().test_unwrap().as_salt()).test_unwrap();
+    println!("psw_hash_1_2: {psw_hash_1_2}");
 
-    assert_err!(verify_password(plain_psw1.as_bytes(), &psw_hash2));
-    assert_err!(verify_password(&plain_psw2.as_bytes(), &psw_hash1));
+    assert_ne!(psw_hash_1, psw_hash_1_2);
+
+
+    let plain_psw_2 = SecureString::from_string("qwerty2".to_test_string());
+    let psw_hash_2 = hash_password(&cfg_1, &plain_psw_2, cfg_1.salt.as_ref().test_unwrap().as_salt()).test_unwrap();
+    println!("psw_hash_2: {psw_hash_2}");
+
+    assert_ok!(verify_password(plain_psw_1.as_bytes(), &psw_hash_1));
+    assert_ok!(verify_password(plain_psw_1.as_bytes(), &psw_hash_1_2));
+    assert_ok!(verify_password(plain_psw_2.as_bytes(), &psw_hash_2));
+
+    assert_err!(verify_password(plain_psw_1.as_bytes(), &psw_hash_2));
+    assert_err!(verify_password(&plain_psw_2.as_bytes(), &psw_hash_1));
+
+    // assert!(false, "To see output");
+}
+
+
+#[test]
+fn test_create_psw_hash_and_verify_with_generated_salt() {
+    use mvv_auth::psw_hash::{
+        algorithm::{ ARGON2D_ALG, ARGON2_VER_V0x10 },
+        hash_password, PswHashConfig,
+    };
+
+    let cfg_1 = PswHashConfig {
+        algorithm: ARGON2D_ALG.to_string(),
+        version: Some(ARGON2_VER_V0x10),
+        salt: None,
+    };
+
+    let cfg_2 = PswHashConfig {
+        algorithm: ARGON2D_ALG.to_string(),
+        version: Some(ARGON2_VER_V0x10),
+        salt: None,
+    };
+
+    let plain_psw_1 = SecureString::from_string("qwerty1".to_test_string());
+    let fuck1 = generate_salt().test_unwrap();
+    let psw_hash_1 = hash_password(&cfg_1, &plain_psw_1, fuck1.as_salt()).test_unwrap();
+    println!("psw_hash_1: {psw_hash_1}");
+
+    let fuck2 = generate_salt().test_unwrap();
+    let psw_hash_1_2 = hash_password(&cfg_2, &plain_psw_1, fuck2.as_salt()).test_unwrap();
+    println!("psw_hash_1_2: {psw_hash_1_2}");
+
+    assert_ne!(psw_hash_1, psw_hash_1_2);
+
+
+    let plain_psw_2 = SecureString::from_string("qwerty2".to_test_string());
+    let fuck3 = generate_salt().test_unwrap();
+    let psw_hash_2 = hash_password(&cfg_1, &plain_psw_2, fuck3.as_salt()).test_unwrap();
+    println!("psw_hash_2: {psw_hash_2}");
+
+    assert_ok!(verify_password(plain_psw_1.as_bytes(), &psw_hash_1));
+    assert_ok!(verify_password(plain_psw_1.as_bytes(), &psw_hash_1_2));
+    assert_ok!(verify_password(plain_psw_2.as_bytes(), &psw_hash_2));
+
+    assert_err!(verify_password(plain_psw_1.as_bytes(), &psw_hash_2));
+    assert_err!(verify_password(&plain_psw_2.as_bytes(), &psw_hash_1));
 
     // assert!(false, "To see output");
 }

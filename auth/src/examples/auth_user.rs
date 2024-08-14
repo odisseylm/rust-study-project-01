@@ -7,7 +7,6 @@ use crate::{
     },
     user_provider::mem_user_provider::UserPermissionsExtractor,
     backend::{ oauth2_auth::OAuth2User, psw_auth::PswUser },
-    psw::{ PasswordComparator },
 };
 
 #[derive(Clone)]
@@ -52,13 +51,18 @@ impl AuthUserExample {
     pub fn access_token(&mut self, access_token: Option<SecureString>) {
         self.access_token = access_token;
     }
-    pub fn has_password<PswComparator: PasswordComparator>(&self, cred_psw: &str) -> bool {
+    /*
+    pub fn has_password(&self) -> bool {
+        self.password.is_some()
+    }
+    pub fn has_password(&self, psw_comp: &dyn PasswordComparator, cred_psw: &str) -> bool {
         match self.password {
             None => false,
             Some(ref usr_psw) =>
-                PswComparator::passwords_equal(usr_psw.as_str(), cred_psw),
+                psw_comp.passwords_equal(usr_psw.as_str(), cred_psw),
         }
     }
+    */
 }
 
 
@@ -78,6 +82,7 @@ impl axum_login::AuthUser for AuthUserExample {
     fn id(&self) -> Self::Id {
         self.username.to_lowercase().clone()
     }
+    //noinspection DuplicatedCode
     fn session_auth_hash(&self) -> &[u8] {
         if let Some(access_token) = &self.access_token {
             return access_token.as_bytes();

@@ -6,7 +6,7 @@ use axum::response::{ IntoResponse, Response };
 use implicit_clone::ImplicitClone;
 
 use mvv_auth::{
-    AuthBackendError, PlainPasswordComparator,
+    AuthBackendError, PlainPasswordComparator, PasswordComparator,
     backend::{
         AuthBackendMode, AuthnBackendAttributes, ProposeAuthAction,
         ProposeHttpBasicAuthAction, ProposeLoginFormAuthAction, RequestAuthenticated,
@@ -25,33 +25,37 @@ use mvv_auth::{
 };
 use mvv_common::backtrace::backtrace;
 use super::user::{AuthUser, Role, RolePermissionsSet };
-use super::user_perm_provider::{ PswComparator };
 // -------------------------------------------------------------------------------------------------
 
 
 
 #[derive(Clone)]
+//noinspection DuplicatedCode
 pub struct CompositeAuthBackend <
     > {
     user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send>,
     permission_provider: Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send>,
     //
-    http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,PlainPasswordComparator,RolePermissionsSet>>,
-    login_form_auth_backend: Option<LoginFormAuthBackend<AuthUser,PlainPasswordComparator,RolePermissionsSet>>,
+    http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,RolePermissionsSet>>,
+    login_form_auth_backend: Option<LoginFormAuthBackend<AuthUser,RolePermissionsSet>>,
     oauth2_backend: Option<OAuth2AuthBackend<AuthUser,RolePermissionsSet>>,
 }
 
 
+//noinspection DuplicatedCode
 impl CompositeAuthBackend {
     fn backends(&self) -> (
-        &Option<HttpBasicAuthBackend<AuthUser,PlainPasswordComparator,RolePermissionsSet>>,
-        &Option<LoginFormAuthBackend<AuthUser,PlainPasswordComparator,RolePermissionsSet>>,
+        &Option<HttpBasicAuthBackend<AuthUser,RolePermissionsSet>>,
+        &Option<LoginFormAuthBackend<AuthUser,RolePermissionsSet>>,
         &Option<OAuth2AuthBackend<AuthUser,RolePermissionsSet>>,
     ) {
         (&self.http_basic_auth_backend, &self.login_form_auth_backend, &self.oauth2_backend)
     }
 
-    pub fn new <UsrProvider> (users_and_perm_provider: Arc<UsrProvider>)
+    pub fn new <UsrProvider> (
+        psw_comp: Arc<dyn PasswordComparator + Send + Sync>,
+        users_and_perm_provider: Arc<UsrProvider>,
+    )
         -> Result<CompositeAuthBackend, AuthBackendError>
     where
         UsrProvider: Send + Sync + 'static
@@ -91,13 +95,15 @@ impl CompositeAuthBackend {
             }
         };
 
-        let http_basic_auth_backend = HttpBasicAuthBackend::<AuthUser, PswComparator, RolePermissionsSet>::new(
+        let http_basic_auth_backend = HttpBasicAuthBackend::<AuthUser, RolePermissionsSet>::new(
+            Arc::clone(&psw_comp),
             Arc::clone(&user_provider),
             // AuthBackendMode::AuthProposed, // It makes sense for pure server SOA (especially for testing)
             AuthBackendMode::AuthSupported,
             Arc::clone(&permission_provider),
         );
-        let login_form_auth_backend = LoginFormAuthBackend::<AuthUser, PswComparator, RolePermissionsSet>::new(
+        let login_form_auth_backend = LoginFormAuthBackend::<AuthUser, RolePermissionsSet>::new(
+            Arc::clone(&psw_comp),
             Arc::clone(&user_provider),
             // It makes sense for web-app
             LoginFormAuthConfig {
@@ -118,13 +124,14 @@ impl CompositeAuthBackend {
     }
 
     pub fn test_users() -> Result<CompositeAuthBackend, anyhow::Error> {
+        let psw_comp: Arc<dyn PasswordComparator + Sync + Send> = Arc::new(PlainPasswordComparator::new());
         let in_mem_users = Arc::new(test::in_memory_test_users() ?);
         let user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Sync + Send> = in_mem_users.implicit_clone();
         let permission_provider: Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send> = in_mem_users.implicit_clone();
 
         Ok(CompositeAuthBackend {
-            http_basic_auth_backend: Some(HttpBasicAuthBackend::new(Arc::clone(&user_provider), AuthBackendMode::AuthProposed, Arc::clone(&permission_provider))),
-            login_form_auth_backend: Some(LoginFormAuthBackend::new(Arc::clone(&user_provider), LoginFormAuthConfig {
+            http_basic_auth_backend: Some(HttpBasicAuthBackend::new(Arc::clone(&psw_comp), Arc::clone(&user_provider), AuthBackendMode::AuthProposed, Arc::clone(&permission_provider))),
+            login_form_auth_backend: Some(LoginFormAuthBackend::new(Arc::clone(&psw_comp), Arc::clone(&user_provider), LoginFormAuthConfig {
                 auth_mode: AuthBackendMode::AuthSupported,
                 login_url: "/login",
             }, Arc::clone(&permission_provider))),
@@ -146,6 +153,7 @@ impl CompositeAuthBackend {
 
 
 #[axum::async_trait]
+//noinspection DuplicatedCode
 impl RequestAuthenticated for CompositeAuthBackend {
 
     async fn do_authenticate_request <
@@ -211,6 +219,7 @@ impl RequestAuthenticated for CompositeAuthBackend {
 
 
 #[axum::async_trait]
+//noinspection DuplicatedCode
 impl axum_login::AuthnBackend for CompositeAuthBackend {
     type User = AuthUser;
     type Credentials = CompositeAuthCredentials;
@@ -255,6 +264,7 @@ pub enum CompositeProposeAuthAction {
 }
 impl ProposeAuthAction for CompositeProposeAuthAction { }
 #[inherent::inherent]
+//noinspection DuplicatedCode
 impl IntoResponse for CompositeProposeAuthAction {
     #[allow(dead_code)] // !! It is really used IMPLICITLY !!
     fn into_response(self) -> Response {
@@ -279,6 +289,7 @@ impl From<ProposeLoginFormAuthAction> for CompositeProposeAuthAction {
 
 
 #[axum::async_trait]
+//noinspection DuplicatedCode
 impl AuthnBackendAttributes for CompositeAuthBackend {
     type ProposeAuthAction = CompositeProposeAuthAction;
 
@@ -309,6 +320,7 @@ impl AuthnBackendAttributes for CompositeAuthBackend {
 
 
 #[axum::async_trait]
+//noinspection DuplicatedCode
 impl PermissionProviderSource for CompositeAuthBackend {
     type User = AuthUser;
     type Permission = Role;

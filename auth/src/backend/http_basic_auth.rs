@@ -33,28 +33,27 @@ use crate::backend::{
 #[cfg_attr(feature = "ambassador", delegate(axum_login::AuthnBackend, target = "psw_backend"))]
 pub struct HttpBasicAuthBackend <
     User: axum_login::AuthUser + PswUser,
-    PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone = AlwaysAllowedPermSet<EmptyPerm>,
 > where User: axum_login::AuthUser<Id = String> {
-    psw_backend: PswAuthBackendImpl<User,PswComparator,PermSet>,
+    psw_backend: PswAuthBackendImpl<User,PermSet>,
     pub auth_mode: AuthBackendMode,
 }
 
 
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> HttpBasicAuthBackend<Usr,PswComp,PermSet>
+> HttpBasicAuthBackend<Usr,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     pub fn new(
+        psw_comparator: Arc<dyn PasswordComparator + Send + Sync>,
         users_provider: Arc<dyn AuthUserProvider<User=Usr> + Send + Sync>,
         auth_mode: AuthBackendMode,
         permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=<PermSet as PermissionSet>::Permission,PermissionSet=PermSet> + Send + Sync>,
-    ) -> HttpBasicAuthBackend<Usr,PswComp,PermSet> {
-        HttpBasicAuthBackend::<Usr,PswComp,PermSet> {
-            psw_backend: PswAuthBackendImpl::new(users_provider, permission_provider),
+    ) -> HttpBasicAuthBackend<Usr,PermSet> {
+        HttpBasicAuthBackend::<Usr,PermSet> {
+            psw_backend: PswAuthBackendImpl::new(psw_comparator, users_provider, permission_provider),
             auth_mode,
         }
     }
@@ -113,9 +112,8 @@ impl <
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> PermissionProviderSource for HttpBasicAuthBackend<Usr,PswComp,PermSet>
+> PermissionProviderSource for HttpBasicAuthBackend<Usr,PermSet>
     where
         Usr: axum_login::AuthUser<Id = String> {
     type User = Usr;
@@ -139,9 +137,8 @@ impl <
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> AuthorizeBackend for HttpBasicAuthBackend<Usr,PswComp,PermSet>
+> AuthorizeBackend for HttpBasicAuthBackend<Usr,PermSet>
     where Usr: axum_login::AuthUser<Id = String> {
     //noinspection DuplicatedCode
 }
@@ -150,9 +147,8 @@ impl <
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> AuthnBackendAttributes for HttpBasicAuthBackend<Usr,PswComp,PermSet>
+> AuthnBackendAttributes for HttpBasicAuthBackend<Usr,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     type ProposeAuthAction = ProposeHttpBasicAuthAction;
@@ -187,9 +183,8 @@ impl axum::response::IntoResponse for ProposeHttpBasicAuthAction {
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
-> RequestAuthenticated for HttpBasicAuthBackend<Usr,PswComp,PermSet>
+> RequestAuthenticated for HttpBasicAuthBackend<Usr,PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
 {
     async fn do_authenticate_request <
@@ -257,7 +252,8 @@ mod tests {
 
         let users = Arc::new(in_memory_test_users().test_unwrap());
         let users: Arc<dyn AuthUserProvider<User=AuthUserExample> + Send + Sync> = users;
-        let _basic_auth = LoginFormAuthBackend::<AuthUserExample, PlainPasswordComparator>::new(
+        let _basic_auth = LoginFormAuthBackend::<AuthUserExample>::new(
+            Arc::new(PlainPasswordComparator::new()),
             users,
             LoginFormAuthConfig { login_url: "/test_login", auth_mode: AuthBackendMode::AuthSupported },
             empty_always_allowed_perm_provider_arc(),

@@ -98,8 +98,10 @@ mod tests {
     #[tokio::test]
     async fn test_wrap_authn_backend_as_dyn() {
         let test_users = Arc::new(in_memory_test_users().test_unwrap());
-        let psw_auth = LoginFormAuthBackend::<AuthUserExample,PlainPasswordComparator,PermSet>::new(
-            test_users,
+        let psw_comp = Arc::new(PlainPasswordComparator::new());
+
+        let psw_auth = LoginFormAuthBackend::<AuthUserExample,PermSet>::new(
+            psw_comp, test_users,
             LoginFormAuthConfig { auth_mode: AuthBackendMode::AuthSupported, login_url: "/login" },
             always_allowed_perm_provider_arc(),
         );
@@ -110,14 +112,14 @@ mod tests {
         ).await;
         assert!(r.is_ok());
 
-        let as_dyn: Arc<AuthnBackendDynWrapperImpl<AuthUserExample, PswAuthCredentials, AuthBackendError, LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,PermSet>>> =
+        let as_dyn: Arc<AuthnBackendDynWrapperImpl<AuthUserExample, PswAuthCredentials, AuthBackendError, LoginFormAuthBackend<AuthUserExample,PermSet>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
         let r = as_dyn.authn_backend.authenticate(PswAuthCredentials {
             username: "dyn-wrap-vovan".to_test_string(), password: "qwerty".into(), next: None }
         ).await;
         assert!(r.is_ok());
 
-        let as_dyn: Arc<dyn AuthnBackendDynWrapper<User=AuthUserExample, Credentials=PswAuthCredentials, Error=AuthBackendError, RealAuthnBackend=LoginFormAuthBackend<AuthUserExample,PlainPasswordComparator,PermSet>>> =
+        let as_dyn: Arc<dyn AuthnBackendDynWrapper<User=AuthUserExample, Credentials=PswAuthCredentials, Error=AuthBackendError, RealAuthnBackend=LoginFormAuthBackend<AuthUserExample,PermSet>>> =
             Arc::new(wrap_authn_backend_as_dyn(psw_auth.clone()));
         let r = as_dyn.authenticate(PswAuthCredentials {
             username: "dyn-wrap-vovan".to_test_string(), password: "qwerty".into(), next: None }

@@ -28,7 +28,7 @@ pub type CompositeAuthBackend = backend::CompositeAuthBackend;
 
 #[allow(unused_qualifications)] // false-positive warning
 pub type PswAuthCredentials = mvv_auth::backend::PswAuthCredentials;
-pub type LoginFormAuthnBackend = LoginFormAuthBackend<AuthUser,PswComparator,RolePermissionsSet>;
+pub type LoginFormAuthnBackend = LoginFormAuthBackend<AuthUser,RolePermissionsSet>;
 
 
 // -------------------------------------------------------------------------
@@ -42,6 +42,7 @@ pub type AuthSession = axum_login::AuthSession<AuthBackend>;
 
 
 #[extension_trait::extension_trait]
+//noinspection DuplicatedCode
 pub impl <S: Clone + Send + Sync + 'static> RequiredAuthenticationExtension for axum::Router<S> {
     #[track_caller]
     fn authn_required(self) -> Self {
