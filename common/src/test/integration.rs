@@ -2,6 +2,7 @@ use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use anyhow::anyhow;
+use itertools::Itertools;
 use log::{info, warn};
 //--------------------------------------------------------------------------------------------------
 
@@ -152,4 +153,16 @@ impl Drop for AutoDockerComposeDown {
         }
         docker_compose_down_silent(&self.docker_compose_file_dir)
     }
+}
+
+
+pub fn is_integration_tests_enabled() -> bool {
+
+    let is_it_1 = std::env::var("INTEGRATION_TEST").is_ok();
+    let is_it_2 = std::env::var("INTEGRATION_TESTS").is_ok();
+    let is_exact = std::env::args_os().contains(&OsString::from("--exact"));
+
+    let test_enabled = is_it_1 || is_it_2 || is_exact;
+
+    test_enabled
 }

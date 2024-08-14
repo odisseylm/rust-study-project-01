@@ -123,20 +123,28 @@ env = { "PRIVATE_SRC_OR_TEST_SRC_ARE_CHANGED" = true }
 [tasks.test]
 command = "cargo"
 args = ["test"]
-condition_script = ["""
-    if [ "${CARGO_MAKE_TASK}" = "test" ] || [ "${CARGO_MAKE_TASK}" = "build" ] || [ "${PRIVATE_SRC_OR_TEST_SRC_ARE_CHANGED}" = "true" ]
-    then
-        "true"
-    else
-        "false"
-    fi
-"""]
-dependencies = ["private_set_var__src_or_test_are_changed", "build"]
+#condition_script = ["""
+#    if [ "${CARGO_MAKE_TASK}" = "test" ] || [ "${CARGO_MAKE_TASK}" = "build" ] || [ "${PRIVATE_SRC_OR_TEST_SRC_ARE_CHANGED}" = "true" ]
+#    then
+#        "true"
+#    else
+#        "false"
+#    fi
+#"""]
+#dependencies = ["private_set_var__src_or_test_are_changed", "build"]
+#
+#
+#[tasks.implicit-test]
+#workspace = false
+#dependencies = ["test"]
 
 
-[tasks.implicit-test]
+[tasks.integration-tests]
+category = "Test"
 workspace = false
-dependencies = ["test"]
+env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = ["account_soa"] }
+# I do not understand why, but member-subtask should have another name?!
+run_task = { name = "integration-tests-member", fork = true }
 
 
 [tasks.my-flow]
@@ -168,3 +176,11 @@ condition_script = [" 0 "]
 workspace = false
 script = "echo  '                                                             **********   task3'"
 dependencies = ["task2" ]
+
+
+########################################################################################################################
+#                                         Optional aliases                                                             #
+########################################################################################################################
+
+[tasks.integration-test]
+alias = "integration-tests"

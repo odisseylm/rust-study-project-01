@@ -1,5 +1,3 @@
-use std::ffi::OsString;
-use itertools::Itertools;
 use quote::quote;
 use crate::macro_util::*;
 use crate::utils::{ make_ident, split_params };
@@ -99,6 +97,7 @@ fn get_method_name(method_with_gen_params: &str) -> String {
 }
 
 
+/*
 #[proc_macro_attribute]
 pub fn integration_test(attrs: proc_macro::TokenStream, item: proc_macro::TokenStream) -> proc_macro::TokenStream {
 
@@ -132,3 +131,4 @@ pub fn integration_test(attrs: proc_macro::TokenStream, item: proc_macro::TokenS
     let out: proc_macro2::TokenStream = out.into();
     out.into()
 }
+*/

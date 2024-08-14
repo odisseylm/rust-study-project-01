@@ -45,8 +45,6 @@ fn generate_patch() {
         println!("### xTask generate_patch => patch dir already exists");
     }
 }
-*/
-
 
 
 #[allow(dead_code)]
@@ -102,3 +100,4 @@ impl BuildEnv {
         }
     }
 }
+*/

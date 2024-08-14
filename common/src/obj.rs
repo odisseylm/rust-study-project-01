@@ -150,3 +150,20 @@
         }
     };
 }
+
+
+/// It designed ONLY for logging! It may stop working after next Rust/tokio update :-)
+#[macro_export] macro_rules! fn_name {
+    () => {{
+        fn f() {}
+        #[inline]
+        fn type_name_of<T>(_: T) -> &'static str {
+            std::any::type_name::<T>()
+        }
+        let name = type_name_of(f);
+        let name = name.strip_suffix("::f").unwrap_or(name);
+        let name = name.strip_suffix("::{{closure}}").unwrap_or(name);
+        let name = name.strip_suffix("{{closure}}").unwrap_or(name);
+        name
+    }}
+}

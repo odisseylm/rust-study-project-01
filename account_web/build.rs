@@ -72,6 +72,8 @@ fn generate_rest_client() {
 
     if to_write {
         std::fs::write(generated_file_path, generated_content).unwrap();
+    } else {
+        println!("Generated [{generated_file_path:?}] is not changed.");
     }
 }
 

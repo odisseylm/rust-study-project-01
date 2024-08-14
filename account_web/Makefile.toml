@@ -65,6 +65,8 @@ dependencies = [
 
 
 [tasks.build]
+command = "echo" # nned to use (override with) some 'noop' command to avoid building twice
+args = [ "build flow"]
 dependencies = [
     "pre-build",
     "real-build",

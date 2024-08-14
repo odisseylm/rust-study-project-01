@@ -8,9 +8,9 @@ ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
 # It does not work... I do not know why.
 # PROJECT_DIR = "${CARGO_MAKE_CURRENT_TASK_INITIAL_MAKEFILE_DIRECTORY}"
 
-CARGO_VERB_P_0 = "--verbose"
-CARGO_BUILD_VERB_P = "-vv" # "--verbose"
-CARGO_TEST_VERB_P = "--verbose"
+CARGO_VERB_P_0     = ""   # "--verbose"
+CARGO_BUILD_VERB_P = ""   # "-vv" # "--verbose"
+CARGO_TEST_VERB_P  = ""   # "--verbose"
 
 # profile based environment override
 #  CARGO_MAKE_CARGO_PROFILE=dev
@@ -78,6 +78,8 @@ dependencies = [
 
 
 [tasks.build]
+command = "echo" # overriding/disabling predefined build command
+args = [ "build flow" ]
 dependencies = [
     "pre-build",
     "real-build",
@@ -102,8 +104,6 @@ args = [
 ]
 dependencies = [
     "build",
-    "rebuild-disabled-integration-tests",
-    # "generate-open-api",
 ]
 
 
@@ -420,51 +420,13 @@ dependencies = [
 ]
 # -----------------------------------------------------------------------------
 
-[tasks.touch-integration-tests]
-command = "cargo"
-args = [
-    # "@@remove-empty(CARGO_VERB_P_0)",
-    "xtask",
-    "x-touch-files",
-    "tests", # dir
-    "integration_*", # very simple mask
-]
-
-
-[tasks.rebuild-disabled-integration-tests]
-env = { INTEGRATION_TESTS = { unset = true} }
-command = "cargo"
-args = [
-    "@@remove-empty(CARGO_VERB_P_0)",
-    "build",
-    "@@remove-empty(CARGO_BUILD_VERB_P)",
-    "--all-features",
-    # "--features", "integration_tests",
-    "--test", "integration_*",
-]
-dependencies = [ "touch-integration-tests" ]
-
-[tasks.rebuild-enabled-integration-tests]
-env = { INTEGRATION_TESTS = "true"  }
-command = "cargo"
-args = [
-    "@@remove-empty(CARGO_VERB_P_0)",
-    "build",
-    "@@remove-empty(CARGO_BUILD_VERB_P)",
-    "--all-features",
-    # "--features", "integration_tests",
-    "--test", "integration_*",
-]
-dependencies = [ "touch-integration-tests" ]
-
-
 
 [tasks.integration-tests]
 command = "cargo"
 # Using 'cfg' causes FULL recompilation of ALL dependencies (and proejct files)
 # when we switch on/off it :-(
 #env = { RUSTFLAGS="--cfg integration_tests", CARGO_BUILD_RUSTFLAGS="--cfg integration_tests", RUST_TEST_THREADS = 1 }
-env = { INTEGRATION_TESTS = "true" , RUST_TEST_THREADS = "1", RUST_BACKTRACE = "${RUST_BACKTRACE}" }
+env = { INTEGRATION_TESTS = "true", RUST_TEST_THREADS = "1", RUST_BACKTRACE = "${RUST_BACKTRACE}" }
 args = [
     "@@remove-empty(CARGO_VERB_P_0)",
     "test",
@@ -507,13 +469,16 @@ args = [
 ]
 dependencies = [
     "build",
-    "rebuild-enabled-integration-tests",
     # "build-docker",
 ]
 
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without it)
+[tasks.integration-tests-member]
+alias = "integration-tests"
+
 
 ########################################################################################################################
-#                                              Aliases                                                                 #
+#                                         Optional aliases                                                             #
 ########################################################################################################################
 
 [tasks.build-debug-local-docker]

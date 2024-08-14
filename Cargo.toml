@@ -38,6 +38,7 @@ proc-macro2 = "1.0.82"
 # dependencies
 if_chain = "1.0.2"
 cfg-if = "1.0.0"
+#function_name = "0.3.0"
 
 static_assertions = "1.1.0" # 4 years gao
 static_assertions_next = "1.1.2" # probably successor of 'static_assertions' ??
