@@ -97,7 +97,7 @@ impl<
             Some(usr) => {
                 let usr_psw = usr.password();
                 let usr_psw = usr_psw.as_ref().map(|psw|psw.as_str()).unwrap_or("");
-                if !usr_psw.is_empty() && self.psw_comparator.passwords_equal(usr_psw, creds.password.as_str()) {
+                if !usr_psw.is_empty() && self.psw_comparator.passwords_equal(creds.password.as_str(), usr_psw) {
                     Ok(Some(usr.clone()))
                 } else {
                     Ok(None)
