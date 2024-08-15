@@ -18,7 +18,12 @@ use crate::{
 
 pub trait PswUser {
     fn password(&self) -> Option<SecureString>;
-    fn password_mut(&mut self, password: Option<SecureString>);
+    //
+    // 'auth' crate is designed only for authentication/authorization
+    // and not designed for creating users.
+    // For that reason 'password_mut' is removed now
+    //
+    // fn password_mut(&mut self, password: Option<SecureString>);
 }
 
 
@@ -97,7 +102,7 @@ impl<
             Some(usr) => {
                 let usr_psw = usr.password();
                 let usr_psw = usr_psw.as_ref().map(|psw|psw.as_str()).unwrap_or("");
-                if !usr_psw.is_empty() && self.psw_comparator.passwords_equal(creds.password.as_str(), usr_psw) {
+                if !usr_psw.is_empty() && self.psw_comparator.passwords_equal(usr_psw, creds.password.as_str()) {
                     Ok(Some(usr.clone()))
                 } else {
                     Ok(None)

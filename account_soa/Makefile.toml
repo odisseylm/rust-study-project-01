@@ -12,6 +12,13 @@ CARGO_VERB_P_0     = ""   # "--verbose"
 CARGO_BUILD_VERB_P = ""   # "-vv" # "--verbose"
 CARGO_TEST_VERB_P  = ""   # "--verbose"
 
+CARGO_FEATURES_P1  = ""
+CARGO_FEATURES_P2  = ""
+#CARGO_FEATURES_P1  = "--features"
+#CARGO_FEATURES_P2  = "feature1,feature2"
+#CARGO_FEATURES_P1  = "--all-features"
+#CARGO_FEATURES_P2  = "--no-default-features"
+
 # profile based environment override
 #  CARGO_MAKE_CARGO_PROFILE=dev
 #  CARGO_MAKE_PROFILE=development
@@ -67,7 +74,8 @@ args = [
     "@@remove-empty(CARGO_VERB_P_0)",
     "build",
     "@@remove-empty(CARGO_BUILD_VERB_P)",
-    "--all-features",
+    "@@remove-empty(CARGO_FEATURES_P1)",
+    "@@remove-empty(CARGO_FEATURES_P2)",
     # "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
     # "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
 
@@ -97,8 +105,8 @@ args = [
     "@@remove-empty(CARGO_VERB_P_0)",
     "test",
     "@@remove-empty(CARGO_TEST_VERB_P)",
-    "--all-features",
-    # ???
+    "@@remove-empty(CARGO_FEATURES_P1)",
+    "@@remove-empty(CARGO_FEATURES_P2)",
     # "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
     # "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
 ]
@@ -431,7 +439,8 @@ args = [
     "@@remove-empty(CARGO_VERB_P_0)",
     "test",
     "@@remove-empty(CARGO_TEST_VERB_P)",
-    "--all-features",
+    "@@remove-empty(CARGO_FEATURES_P1)",
+    "@@remove-empty(CARGO_FEATURES_P2)",
     # "--features", "integration_tests",
     #
 #    "--config",  "test_mode=integration_tests",

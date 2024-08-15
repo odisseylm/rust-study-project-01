@@ -121,9 +121,11 @@ impl PswUser for AuthUser {
     fn password(&self) -> Option<SecureString> {
         self.password.clone()
     }
+    /*
     fn password_mut(&mut self, password: Option<SecureString>) {
         self.password = password.clone()
     }
+    */
 }
 
 

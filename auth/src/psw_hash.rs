@@ -1,10 +1,6 @@
 use std::borrow::Cow;
-use std::fmt::{Display, Formatter};
 use log::{error, warn};
-use mvv_common::{
-    backtrace::{backtrace, BacktraceCell},
-    string::StaticRefOrString,
-};
+use mvv_common::{backtrace::{backtrace, BacktraceCell}, generate_display_delegate, string::StaticRefOrString};
 use crate::{PasswordComparator, SecureString};
 //--------------------------------------------------------------------------------------------------
 
@@ -43,6 +39,8 @@ pub enum PswHashError {
     ConfigError(StaticRefOrString, BacktraceCell),
     #[error("NotInitialized {{ {0} }}")]
     NotInitialized(StaticRefOrString, BacktraceCell),
+    #[error("PasswordHashFormatError")]
+    PasswordHashFormatError(BacktraceCell),
 
     // Use it to verify that password is incorrect.
     #[error("InvalidPassword")]
@@ -160,130 +158,35 @@ fn is_scrypt_alg(alg: &str) -> bool {
 }
 
 
-/// Due to design of 'password_hash' crate we cannot just return PswHashAndSalt from function
-/// (at least without usage Pin and heap allocation).
-/// Please if you want to use high-level the simplest API, just create this struct
-/// amd pass it to hash_password function.
-#[derive(Debug)]
-pub struct PswHashAndSalt<'a> {
-    pub salt_str: Option<password_hash::SaltString>,
-    pub hash: Option<password_hash::PasswordHash<'a>>,
-    // salt_str: Option<password_hash::SaltString>,
-    // hash: Option<password_hash::PasswordHash<'a>>,
-}
-
-impl<'a> PswHashAndSalt<'a> {
-    pub fn empty() -> Self {
-        PswHashAndSalt {
-            salt_str: None,
-            hash: None,
-        }
-    }
-    pub fn hash(&'a self) -> Result<&'a password_hash::PasswordHash<'a>, PswHashError> {
-        let hash = self.hash.as_ref()
-            .ok_or_else(|| PswHashError::NotInitialized(
-                "PswHashAndSalt 'hash' is not initialized.".into(), backtrace())) ?;
-        Ok(hash)
-    }
-}
-
-pub struct PswHashAndSaltAsDisplay<'a> {
-    hash: &'a password_hash::PasswordHash<'a>,
-}
-impl <'a> Display for PswHashAndSaltAsDisplay<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        <password_hash::PasswordHash as Display>::fmt(&self.hash, f)
-    }
-}
-
-
-impl<'a> PswHashAndSalt<'a> {
-    pub fn as_display(&'a self) -> Result<PswHashAndSaltAsDisplay<'a>, PswHashError> {
-        let d = PswHashAndSaltAsDisplay::<'a> {
-            hash: self.hash.as_ref()
-                .ok_or_else(|| PswHashError::NotInitialized(
-                    "PswHashAndSalt 'hash' is not initialized.".into(), backtrace())) ?
-        };
-        Ok(d)
-    }
-    // pub fn as_display_mut(&mut self) -> Result<PswHashAndSaltAsDisplay<'a>, PswHashError> {
-    //     let d = PswHashAndSaltAsDisplay::<'a> {
-    //         hash: self.hash.as_ref()
-    //             .ok_or_else(|| PswHashError::NotInitialized(
-    //                 "PswHashAndSalt 'hash' is not initialized.".into(), backtrace())) ?
-    //     };
-    //     Ok(d)
-    // }
-}
-
-/*
-/// Due to design of 'password_hash' crate we cannot just return PswHashAndSalt
+/// !!! Unstable design !!!
+///
+/// Due to design of 'password_hash' crate we cannot just return structure with password_hash objects
 /// (at least without usage Pin and heap allocation)
-pub fn hash_password<'a>(cfg: &'a PswHashConfig, plain_psw: &'a SecureString, output: &mut PswHashAndSalt<'a>)
-    -> Result<(), PswHashError> {
-    hash_password_using_rnd_gen(cfg, plain_psw, SaltRndGenType::Default, output)
-}
+#[derive(Debug, PartialEq, Eq)]
+pub struct PswHash(pub String);
+generate_display_delegate! { PswHash }
 
-/// Due to design of 'password_hash' crate we cannot just return PswHashAndSalt
+
+/// Due to design of 'password_hash' crate we cannot just return structure with password_hash objects
 /// (at least without usage Pin and heap allocation)
-pub fn hash_password_using_rnd_gen<'a>(
-    cfg: &'a PswHashConfig, plain_psw: &'a SecureString,
-    salt_rnd_gen_type: SaltRndGenType, output: &mut PswHashAndSalt<'a>)
-    -> Result<(), PswHashError> {
-
-    use password_hash::Salt;
-
-    // let salt_str = generate_salt_using_rnd_gen(salt_rnd_gen_type) ?;
-    // let salt: Salt<'a> = salt_str.as_salt();
-    //
-    // output.salt_str = Some(salt_str);
-    // output.hash = Some(hash_password_with_salt(cfg, plain_psw, salt ) ?);
-
-    output.salt_str = Some(generate_salt_using_rnd_gen(salt_rnd_gen_type) ?);
-    // let salt: Salt<'b> = output.salt_str.as_ref().unwrap().as_salt();
-    // let salt: Salt = output.salt_str.as_ref().unwrap().as_salt();
-    // output.hash = Some(hash_password_with_salt(cfg, plain_psw, salt) ?);
-    // match output.salt_str {
-    //     None => {}
-    //     Some(ref salt_str) => {
-    //         // output.hash = Some(hash_password_with_salt::<'a>(cfg, plain_psw, salt_str.as_salt() ) ?);
-    //         output.hash = Some(hash_password_with_salt(cfg, plain_psw, salt ) ?);
-    //     }
-    // }
-
-    Ok(())
+pub fn hash_psw_str(cfg: &PswHashConfig, plain_psw: &SecureString)
+    -> Result<String, PswHashError> {
+    hash_psw_str_using_rnd_gen(cfg, plain_psw, SaltRndGenType::Default)
 }
-pub fn hash_password_using_rnd_gen22<'a>(
-    cfg: &'a PswHashConfig, plain_psw: &'a SecureString,
-    salt_rnd_gen_type: SaltRndGenType)
-    -> Result<PswHashAndSalt<'a>, PswHashError> {
 
-    use password_hash::Salt;
+/// Due to design of 'password_hash' crate we cannot just return structure with password_hash objects
+/// (at least without usage Pin and heap allocation)
+pub fn hash_psw_str_using_rnd_gen(
+    cfg: &PswHashConfig, plain_psw: &SecureString, salt_rnd_gen_type: SaltRndGenType)
+    -> Result<String, PswHashError> {
 
-    // let salt_str = generate_salt_using_rnd_gen(salt_rnd_gen_type) ?;
-    // let salt: Salt<'a> = salt_str.as_salt();
-    //
-    // output.salt_str = Some(salt_str);
-    // output.hash = Some(hash_password_with_salt(cfg, plain_psw, salt ) ?);
-
-    let mut output = PswHashAndSalt::<'a> { salt_str: None, hash: None };
-    output.salt_str = Some(generate_salt_using_rnd_gen(salt_rnd_gen_type) ?);
-    // let salt: Salt<'b> = output.salt_str.as_ref().unwrap().as_salt();
-    //let salt: Salt = output.salt_str.as_ref().unwrap().as_salt();
-    output.hash = Some(hash_password_with_salt(cfg, plain_psw, output.salt_str.as_ref().unwrap().as_salt()) ?);
-    // match output.salt_str {
-    //     None => {}
-    //     Some(ref salt_str) => {
-    //         // output.hash = Some(hash_password_with_salt::<'a>(cfg, plain_psw, salt_str.as_salt() ) ?);
-    //         output.hash = Some(hash_password_with_salt(cfg, plain_psw, salt ) ?);
-    //     }
-    // }
-
-    Ok(output)
+    let salt = generate_salt_using_rnd_gen(salt_rnd_gen_type) ?;
+    let hash = hash_psw_with_salt(cfg, plain_psw, salt.as_salt()) ?;
+    Ok(hash.to_string())
 }
-*/
 
-pub fn hash_password_with_salt<'a>(cfg: &'a PswHashConfig, plain_psw: &'a SecureString, salt: password_hash::Salt<'a>)
+
+pub fn hash_psw_with_salt<'a>(cfg: &'a PswHashConfig, plain_psw: &'a SecureString, salt: password_hash::Salt<'a>)
     -> Result<password_hash::PasswordHash<'a>, PswHashError> {
     use password_hash::{ Ident, PasswordHasher };
 
@@ -315,7 +218,17 @@ pub fn hash_password_with_salt<'a>(cfg: &'a PswHashConfig, plain_psw: &'a Secure
 }
 
 
-pub fn verify_password<'a>(
+pub fn verify_psw_by_hash_str(
+    plain_psw_bytes: &[u8],
+    psw_hash: &str,
+) -> Result<(), PswHashError> {
+    let psw_hash = password_hash::PasswordHash::try_from(psw_hash)
+        .map_err(|_| PswHashError::PasswordHashFormatError(backtrace())) ?;
+    verify_psw(plain_psw_bytes, &psw_hash)
+}
+
+
+pub fn verify_psw(
     plain_psw_bytes: &[u8],
     psw_hash: &password_hash::PasswordHash<'_>,
 ) -> Result<(), PswHashError> {
@@ -387,6 +300,9 @@ pub struct PswHashComparator {
     pepper: Option<Pepper>,
 }
 impl PswHashComparator {
+    pub fn new() -> Self {
+        PswHashComparator { pepper: None }
+    }
     fn apply_pepper<'a>(&self, user_password: &'a str) -> Cow<'a, str> {
         // T O DO : use pepper if you think it is really needed
         // but read please this https://stackoverflow.com/questions/16891729/best-practices-salting-peppering-passwords
@@ -394,30 +310,20 @@ impl PswHashComparator {
     }
 }
 impl PasswordComparator for PswHashComparator {
-    fn passwords_equal(&self, user_password: &str, credentials_password: &str) -> bool {
+    fn passwords_equal(&self, user_psw_or_psw_hash: &str, credentials_password: &str) -> bool {
 
-        let user_password = self.apply_pepper(user_password);
-        let user_password = user_password.as_ref();
+        let credentials_password = self.apply_pepper(credentials_password);
+        let credentials_password = credentials_password.as_ref();
 
-        let psw_hash = password_hash::PasswordHash::new(user_password);
-        match psw_hash {
-            Err(ref err) => {
-                error!("Error of parsing password hash. {err:?}");
-                false
-            }
-            Ok(psw_hash) => {
-                let verify_res = verify_password(
-                    credentials_password.as_bytes(), &psw_hash);
-                match verify_res {
-                    Ok( () ) => true,
-                    Err(err) => match err {
-                        PswHashError::InvalidPassword =>
-                            false,
-                        err => {
-                            warn!("Error password hash validation: {err:?}");
-                            false
-                        }
-                    }
+        let verify_res = verify_psw_by_hash_str(credentials_password.as_bytes(), user_psw_or_psw_hash);
+        match verify_res {
+            Ok( () ) => true,
+            Err(err) => match err {
+                PswHashError::InvalidPassword =>
+                    false,
+                err => {
+                    warn!("Error password hash validation: {err:?}");
+                    false
                 }
             }
         }

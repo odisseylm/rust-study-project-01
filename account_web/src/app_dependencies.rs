@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use mvv_auth::PlainPasswordComparator;
+use mvv_auth::{PasswordComparator};
 use crate::{
     auth::AuthUserProvider,
     service::account_service::AccountService,
@@ -15,7 +15,7 @@ pub struct DependenciesState <
     pub database_connection: Arc<sqlx_postgres::PgPool>,
     pub account_service: Arc<AccountS>,
     //pub account_rest: Arc<AccountRest<AccountS>>,
-    pub psw_comp: Arc<PlainPasswordComparator>,
+    pub psw_comp: Arc<dyn PasswordComparator + Send + Sync>,
     pub user_perm_provider: Arc<AuthUserProvider>,
 }
 

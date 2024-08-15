@@ -2,7 +2,8 @@
 create table USERS (
   ID       BIGSERIAL primary key,
   NAME     VARCHAR(256) collate ENGLISH_CI not null unique, -- unique primary key,
-  PASSWORD VARCHAR(256) not null
+  PASSWORD VARCHAR(256) not null,
+  PSW_HASH VARCHAR(256) not null
 );
 
 -- or

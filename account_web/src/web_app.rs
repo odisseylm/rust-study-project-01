@@ -6,7 +6,7 @@ use log::{error, info};
 
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-use mvv_auth::PlainPasswordComparator;
+use mvv_auth::PswHashComparator;
 
 use mvv_common::{
     env::process_env_load_res,
@@ -40,7 +40,7 @@ fn create_prod_dependencies() -> Result<Arc<Dependencies<AccountServiceImpl>>, a
     //let account_rest = Arc::new(AccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
 
     Ok(Arc::new(Dependencies::<AccountServiceImpl> { state: Arc::new(DependenciesState {
-        psw_comp: Arc::new(PlainPasswordComparator::new()),
+        psw_comp: Arc::new(PswHashComparator::new()), // PlainPasswordComparator::new()),
         database_connection: Arc::clone(&db),
         account_service: Arc::clone(&account_service),
         user_perm_provider: Arc::new(SqlClientAuthUserProvider::with_cache(Arc::clone(&db)) ?)

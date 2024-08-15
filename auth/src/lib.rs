@@ -27,6 +27,7 @@ pub use error::AuthBackendError;
 pub use user_provider::{ AuthUserProvider, AuthUserProviderError };
 
 pub use psw::{ PasswordComparator, PlainPasswordComparator };
+pub use psw_hash::{ PswHashComparator };
 pub use secure_str::{ SecureString, clear_string_chars };
 
 pub mod http {

@@ -1,7 +1,7 @@
 
 
 pub trait PasswordComparator {
-    fn passwords_equal(&self, user_password: &str, credentials_password: &str) -> bool;
+    fn passwords_equal(&self, user_psw_or_psw_hash: &str, credentials_password: &str) -> bool;
 }
 
 

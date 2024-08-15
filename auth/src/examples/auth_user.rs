@@ -104,9 +104,11 @@ impl PswUser for AuthUserExample {
     fn password(&self) -> Option<SecureString> {
         self.password.clone()
     }
+    /*
     fn password_mut(&mut self, password: Option<SecureString>) {
         self.password = password.clone()
     }
+    */
 }
 
 impl OAuth2User for AuthUserExample {

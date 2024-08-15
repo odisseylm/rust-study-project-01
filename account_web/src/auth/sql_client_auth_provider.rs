@@ -65,7 +65,7 @@ impl SqlClientAuthUserProvider {
         // Column 'email' should be case-insensitive in database.
         let res= sqlx::query_as(
             "select \
-                 c.CLIENT_ID, c.EMAIL, cr.PSW, \
+                 c.CLIENT_ID, c.EMAIL, cr.PSW_HASH, \
                  c.ACTIVE, c.BUSINESS_USER, c.SUPER_BUSINESS_USER \
                  from CLIENTS c \
                  inner join CLIENTS_CREDS cr on c.CLIENT_ID = cr.CLIENT_ID \
@@ -93,7 +93,8 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for crate::auth::ClientAuthUser {
 
         let client_id: uuid::Uuid = row.try_get(col_name!("CLIENT_ID")) ?;
         let email: String = row.try_get(col_name!("EMAIL") ) ?;
-        let user_psw: String = row.try_get(col_name!("PSW")) ?;
+        // let user_psw: String = row.try_get(col_name!("PSW")) ?;
+        let user_psw_hash: String = row.try_get(col_name!("PSW_HASH")) ?;
         let active: bool = row.try_get(col_name!("ACTIVE")) ?;
 
         let mut client_features = ClientFeatureSet::new();
@@ -107,7 +108,8 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for crate::auth::ClientAuthUser {
             client_id: client_id.to_string(),
             email,
             active,
-            password: Some(user_psw.into()),
+            password: None, // Some(user_psw.into()),
+            password_hash: Some(user_psw_hash.into()),
             access_token: None,
             client_features,
         })

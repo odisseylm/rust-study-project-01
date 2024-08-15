@@ -16,6 +16,7 @@ create table CLIENTS (
 create table CLIENTS_CREDS (
     CLIENT_ID  CLIENT_ID    primary key, -- and foreign key
     PSW        VARCHAR(256) not null,
+    PSW_HASH   VARCHAR(256) not null,
 
     constraint FK_CLIENT_ID foreign key(CLIENT_ID) references CLIENTS(CLIENT_ID)
 );

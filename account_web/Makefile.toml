@@ -8,6 +8,17 @@ ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
 # It does not work... I do not know why.
 # PROJECT_DIR = "${CARGO_MAKE_CURRENT_TASK_INITIAL_MAKEFILE_DIRECTORY}"
 
+CARGO_VERB_P_0     = ""   # "--verbose"
+CARGO_BUILD_VERB_P = ""   # "-vv" # "--verbose"
+CARGO_TEST_VERB_P  = ""   # "--verbose"
+
+CARGO_FEATURES_P1  = ""
+CARGO_FEATURES_P2  = ""
+#CARGO_FEATURES_P1  = "--features"
+#CARGO_FEATURES_P2  = "feature1,feature2"
+#CARGO_FEATURES_P1  = "--all-features"
+#CARGO_FEATURES_P2  = "--no-default-features"
+
 
 # profile based environment override
 #  CARGO_MAKE_CARGO_PROFILE=dev
@@ -58,7 +69,12 @@ private = true
 description = "Runs the rust compiler."
 category = "Build"
 command = "cargo"
-args = ["build", "--all-features"]
+args = [
+    "build",
+    "@@remove-empty(CARGO_BUILD_VERB_P)",
+    "@@remove-empty(CARGO_FEATURES_P1)",
+    "@@remove-empty(CARGO_FEATURES_P2)",
+]
 dependencies = [
     "pre-build",
 ]
@@ -72,6 +88,25 @@ dependencies = [
     "real-build",
     "generate-open-api",
     "post-build",
+]
+
+
+[tasks.test]
+category = "Test"
+# toolchain = "${CARGO_MAKE_RUST_DEFAULT_TOOLCHAIN}"
+env = { RUST_BACKTRACE = "${RUST_BACKTRACE}" }
+command = "cargo"
+args = [
+    "@@remove-empty(CARGO_VERB_P_0)",
+    "test",
+    "@@remove-empty(CARGO_TEST_VERB_P)",
+    "@@remove-empty(CARGO_FEATURES_P1)",
+    "@@remove-empty(CARGO_FEATURES_P2)",
+    # "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
+    # "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
+]
+dependencies = [
+    "build",
 ]
 
 

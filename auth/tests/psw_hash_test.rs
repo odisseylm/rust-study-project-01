@@ -1,7 +1,8 @@
 use password_hash::{Ident, SaltString};
 use tokio_test::{assert_err, assert_ok};
 // use mvv_auth::psw_hash::{generate_salt, PswHashAndSalt, SaltRndGenType, verify_password};
-use mvv_auth::psw_hash::{generate_salt, verify_password};
+use mvv_auth::psw_hash::{generate_salt, hash_psw_str, hash_psw_with_salt, PswHashConfig, SaltRndGenType, verify_psw, verify_psw_by_hash_str};
+use mvv_auth::psw_hash::algorithm::{ARGON2_VER_V0x10, ARGON2D_ALG};
 use mvv_auth::SecureString;
 use mvv_common::test::{TestDisplayStringOps, TestOptionUnwrap, TestResultUnwrap};
 //--------------------------------------------------------------------------------------------------
@@ -128,7 +129,7 @@ fn test_generate_salt() {
 fn test_create_psw_hash_and_verify_with_cfg_salt() {
     use mvv_auth::psw_hash::{
         algorithm::{ ARGON2D_ALG, ARGON2_VER_V0x10 },
-        hash_password_with_salt, PswHashConfig,
+        hash_psw_with_salt, PswHashConfig,
     };
 
     let salt_str_1 = "BAavSXRIKbL+vyGb9uVZkg";
@@ -152,46 +153,38 @@ fn test_create_psw_hash_and_verify_with_cfg_salt() {
     };
 
     let plain_psw_1 = SecureString::from_string("qwerty1".to_test_string());
-    let psw_hash_1 = hash_password_with_salt(&cfg_1, &plain_psw_1, cfg_1.salt.as_ref().test_unwrap().as_salt()).test_unwrap();
+    let psw_hash_1 = hash_psw_with_salt(&cfg_1, &plain_psw_1, cfg_1.salt.as_ref().test_unwrap().as_salt()).test_unwrap();
     println!("psw_hash_1: {psw_hash_1}");
 
-    let psw_hash_1_2 = hash_password_with_salt(&cfg_2, &plain_psw_1, cfg_2.salt.as_ref().test_unwrap().as_salt()).test_unwrap();
+    let psw_hash_1_2 = hash_psw_with_salt(&cfg_2, &plain_psw_1, cfg_2.salt.as_ref().test_unwrap().as_salt()).test_unwrap();
     println!("psw_hash_1_2: {psw_hash_1_2}");
 
     assert_ne!(psw_hash_1, psw_hash_1_2);
 
 
     let plain_psw_2 = SecureString::from_string("qwerty2".to_test_string());
-    let psw_hash_2 = hash_password_with_salt(&cfg_1, &plain_psw_2, cfg_1.salt.as_ref().test_unwrap().as_salt()).test_unwrap();
+    let psw_hash_2 = hash_psw_with_salt(&cfg_1, &plain_psw_2, cfg_1.salt.as_ref().test_unwrap().as_salt()).test_unwrap();
     println!("psw_hash_2: {psw_hash_2}");
 
-    assert_ok!(verify_password(plain_psw_1.as_bytes(), &psw_hash_1));
-    assert_ok!(verify_password(plain_psw_1.as_bytes(), &psw_hash_1_2));
-    assert_ok!(verify_password(plain_psw_2.as_bytes(), &psw_hash_2));
+    assert_ok!(verify_psw(plain_psw_1.as_bytes(), &psw_hash_1));
+    assert_ok!(verify_psw(plain_psw_1.as_bytes(), &psw_hash_1_2));
+    assert_ok!(verify_psw(plain_psw_2.as_bytes(), &psw_hash_2));
 
-    assert_err!(verify_password(plain_psw_1.as_bytes(), &psw_hash_2));
-    assert_err!(verify_password(&plain_psw_2.as_bytes(), &psw_hash_1));
+    assert_err!(verify_psw(plain_psw_1.as_bytes(), &psw_hash_2));
+    assert_err!(verify_psw(&plain_psw_2.as_bytes(), &psw_hash_1));
 
     // assert!(false, "To see output");
 }
 
 
-/*
 #[test]
 fn test_create_psw_hash_and_verify_with_generated_salt() {
     use mvv_auth::psw_hash::{
         algorithm::{ ARGON2D_ALG, ARGON2_VER_V0x10 },
-        hash_password, PswHashConfig,
+        hash_psw_str, PswHashConfig,
     };
 
-    let cfg_1 = PswHashConfig {
-        algorithm: ARGON2D_ALG.to_string(),
-        version: Some(ARGON2_VER_V0x10),
-        salt_rnd_gen_type: Some(SaltRndGenType::Default),
-        salt: None,
-    };
-
-    let cfg_2 = PswHashConfig {
+    let cfg = PswHashConfig {
         algorithm: ARGON2D_ALG.to_string(),
         version: Some(ARGON2_VER_V0x10),
         salt_rnd_gen_type: Some(SaltRndGenType::Default),
@@ -199,36 +192,83 @@ fn test_create_psw_hash_and_verify_with_generated_salt() {
     };
 
     let plain_psw_1 = SecureString::from_string("qwerty1".to_test_string());
-    let mut psw_hash_and_salt_1 = PswHashAndSalt::empty();
-    // let fuck = &mut psw_hash_and_salt_1;
-    hash_password(&cfg_1, &plain_psw_1, &mut psw_hash_and_salt_1).test_unwrap();
-    // println!("psw_hash_1: {:?}", psw_hash_and_salt_1.hash.as_ref().test_unwrap());
-    println!("psw_hash_1: {}", psw_hash_and_salt_1.as_display().test_unwrap());
+    let psw_hash_and_salt_1 = hash_psw_str(&cfg, &plain_psw_1).test_unwrap();
+    println!("psw_hash_1: {psw_hash_and_salt_1}");
 
-    // let fuck2 = fuck.as_display_mut().test_unwrap();
-    // println!("psw_hash_1: {fuck2}");
-
-    let mut psw_hash_and_salt_1_2 = PswHashAndSalt::empty();
-    hash_password(&cfg_2, &plain_psw_1, &mut psw_hash_and_salt_1_2).test_unwrap();
+    let psw_hash_and_salt_1_2 = hash_psw_str(&cfg, &plain_psw_1).test_unwrap();
     let psw_hash_and_salt_1_2 = psw_hash_and_salt_1_2;
-    println!("psw_hash_1_2: {}", psw_hash_and_salt_1_2.as_display().test_unwrap());
+    println!("psw_hash_1_2: {psw_hash_and_salt_1_2}");
 
-    assert_ne!(psw_hash_and_salt_1.hash().test_unwrap(), psw_hash_and_salt_1_2.hash().test_unwrap());
+    assert_ne!(psw_hash_and_salt_1, psw_hash_and_salt_1_2);
 
 
     let plain_psw_2 = SecureString::from_string("qwerty2".to_test_string());
-    let mut psw_hash_and_salt_2 = PswHashAndSalt::empty();
-    hash_password(&cfg_1, &plain_psw_2, &mut psw_hash_and_salt_2).test_unwrap();
+    let psw_hash_and_salt_2 = hash_psw_str(&cfg, &plain_psw_2).test_unwrap();
     let psw_hash_and_salt_2 = psw_hash_and_salt_2;
-    println!("psw_hash_2: {}", psw_hash_and_salt_2.as_display().test_unwrap());
+    println!("psw_hash_2: {psw_hash_and_salt_2}");
 
-    assert_ok!(verify_password(plain_psw_1.as_bytes(), &psw_hash_and_salt_1.hash().test_unwrap()));
-    assert_ok!(verify_password(plain_psw_1.as_bytes(), &psw_hash_and_salt_1_2.hash().test_unwrap()));
-    assert_ok!(verify_password(plain_psw_2.as_bytes(), &psw_hash_and_salt_2.hash().test_unwrap()));
+    assert_ok!(verify_psw_by_hash_str(plain_psw_1.as_bytes(), &psw_hash_and_salt_1));
+    assert_ok!(verify_psw_by_hash_str(plain_psw_1.as_bytes(), &psw_hash_and_salt_1_2));
+    assert_ok!(verify_psw_by_hash_str(plain_psw_2.as_bytes(), &psw_hash_and_salt_2));
 
-    assert_err!(verify_password(plain_psw_1.as_bytes(), &psw_hash_and_salt_2.hash().test_unwrap()));
-    assert_err!(verify_password(&plain_psw_2.as_bytes(), &psw_hash_and_salt_1.hash().test_unwrap()));
+    assert_err!(verify_psw_by_hash_str(plain_psw_1.as_bytes(), &psw_hash_and_salt_2));
+    assert_err!(verify_psw_by_hash_str(&plain_psw_2.as_bytes(), &psw_hash_and_salt_1));
 
     // assert!(false, "To see output");
 }
-*/
+
+
+#[test]
+fn test_parsing_from_dif_encodes() {
+    use mvv_auth::psw_hash::{
+        algorithm::{ ARGON2D_ALG, ARGON2_VER_V0x10 },
+        PswHashConfig,
+    };
+
+    let salt_str = "BAavSXRIKbL+vyGb9uVZkg";
+    let salt_str = SaltString::from_b64(salt_str).test_unwrap();
+
+    let cfg = PswHashConfig {
+        algorithm: ARGON2D_ALG.to_string(),
+        version: Some(ARGON2_VER_V0x10),
+        salt_rnd_gen_type: Some(SaltRndGenType::Default),
+        salt: Some(salt_str),
+    };
+
+    let plain_psw = SecureString::from_string("qwerty1".to_test_string());
+    let psw_hash = hash_psw_with_salt(&cfg, &plain_psw, cfg.salt.as_ref().test_unwrap().as_salt()).test_unwrap();
+    println!("psw_hash: {psw_hash}");
+    let psw_hash_str = psw_hash.to_string();
+    let ph: password_hash::PasswordHash = psw_hash_str.as_str().try_into().test_unwrap();
+    println!("psw_hash: {ph}");
+
+    // assert!(false, "To see output");
+}
+
+
+#[test]
+fn generate_psw_hashes() {
+
+    let cfg = PswHashConfig {
+        algorithm: ARGON2D_ALG.to_string(),
+        version: Some(ARGON2_VER_V0x10),
+        salt_rnd_gen_type: Some(SaltRndGenType::Default),
+        // salt: Some(salt_str),
+        salt: None,
+    };
+
+    let psw = "psw4";
+    let hash = hash_psw_str(&cfg, &SecureString::from_string(psw.to_owned())).test_unwrap();
+    println!("psw [{psw}]: [{hash}]");
+
+    // assert!(false, "To see output");
+}
+
+// psw [qwerty]: [$argon2d$v=16$m=19456,t=2,p=1$66zW697+kjcdOfLDOs6GGA$76kr0gFz1xQ6o2bpTqwoetOn0RoJ7QrSxRoMwLkA0xg]
+// psw [qwerty]: [$argon2d$v=16$m=19456,t=2,p=1$1jd9ljbST1E/CsGOiBOsOg$4NUBW5Rf7Cm/E/+YtoQw2Vg3270pO5EWufqo3qmS7oE]
+// psw [qwerty]: [$argon2d$v=16$m=19456,t=2,p=1$EUXO4jWOfnouAFF+CipWgQ$TleOX6tIVbCkynIGptjzRTcFVSbS2K3tZcmPckwJVt8]
+// psw [psw1]: [$argon2d$v=16$m=19456,t=2,p=1$6suBJobcNzc8KE/leXzHKQ$etGYL8dLVSIFlX7TyclQczqfmx4hPm64nV3819H4vEo]
+// psw [psw2]: [$argon2d$v=16$m=19456,t=2,p=1$lJ4IasWc2DTlqUobU0IWGw$ef49CpVe7Id4Sg2P4Ly7UdYkwlih5H8CsPy0ITzwLiM]
+// psw [psw3]: [$argon2d$v=16$m=19456,t=2,p=1$GjKFhhuGE1wDSpPwPCVIJQ$wOZVOOvDFYTyhjCtRXYr3X0i6IFvseKQNtjHYrgNCQA]
+// psw [psw4]: [$argon2d$v=16$m=19456,t=2,p=1$n3UFN93PKuf2OrK2xyXs+w$0pt4vmIHK3bWycKXJW6IWkQ/P9WWikpCrol5gcvll1k]
+

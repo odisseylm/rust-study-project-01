@@ -49,6 +49,7 @@ pub struct ClientAuthUser {
     pub email: String,
     pub active: bool,
     pub password: Option<SecureString>,
+    pub password_hash: Option<SecureString>,
     pub access_token: Option<SecureString>,
     pub client_features: RolePermissionsSet,
 }
@@ -60,6 +61,7 @@ impl ClientAuthUser {
             client_id: client_id.to_string(), email: email.to_string(),
             active: true,
             password: Some(password.into()),
+            password_hash: None,
             access_token: None,
             client_features: RolePermissionsSet::from_permission(ClientFeature::Standard),
         }
@@ -71,6 +73,7 @@ impl ClientAuthUser {
             client_id: client_id.to_string(), email: email.to_string(),
             active: true,
             password: Some(password.into()),
+            password_hash: None,
             access_token: None,
             client_features: RolePermissionsSet::from_permissions([ClientFeature::Standard, client_feature]),
         }
@@ -80,6 +83,7 @@ impl ClientAuthUser {
             client_id: client_id.to_string(), email: email.to_string(),
             active: true,
             password: Some(password.into()),
+            password_hash: None,
             access_token: None,
             client_features,
         }
@@ -119,6 +123,7 @@ impl fmt::Debug for ClientAuthUser {
             .field("email", &self.email)
             .field("features", &self.client_features)
             .field("psw", &"[...]")
+            .field("psw_hash", &"[...]")
             .field("access_token", &"[...]")
             .finish()
     }
@@ -138,7 +143,7 @@ impl axum_login::AuthUser for ClientAuthUser {
         }
 
         if let Some(password) = &self.password {
-            // ???
+            // ??? TODO: Is it secure at all??? ??? ???
             // We use the password hash as the auth hash -> what this means
             // is when the user changes their password the auth session becomes invalid.
             //
@@ -152,11 +157,16 @@ impl axum_login::AuthUser for ClientAuthUser {
 
 impl PswUser for ClientAuthUser {
     fn password(&self) -> Option<SecureString> {
-        self.password.clone()
+        // self.password.clone()
+        self.password_hash.clone()
     }
-    fn password_mut(&mut self, password: Option<SecureString>) {
-        self.password = password.clone()
+    /*
+    fn password_mut(&mut self, _password: Option<SecureString>) {
+        // self.password = password.clone()
+        error!("ClientAuthUser::password_mut is not implemented since now it uses 'password hash'");
+        self.password = None
     }
+    */
 }
 
 
