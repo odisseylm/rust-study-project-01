@@ -11,7 +11,7 @@ use rustainers::compose::{
     ToRunnableComposeContainers,
 };
 use rustainers::{ExposedPort, Port, WaitStrategy};
-use mvv_common::test::integration::{AutoDockerComposeDown, docker_compose_down_silent as docker_compose_down, is_integration_tests_enabled, prepare_docker_compose, PrepareDockerComposeCfg};
+use mvv_common::test::integration::{AutoDockerComposeDown, docker_compose_down_silent as docker_compose_down, is_integration_tests_enabled, prepare_docker_compose, PrepareDockerComposeCfg, Replace};
 use mvv_common::test::{TestOptionUnwrap, TestResultUnwrap};
 use serde_json::json;
 use mvv_common::fn_name;
@@ -80,13 +80,21 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
     // CARGO_PKG_NAME = mvv_account_soa
     // OUT_DIR = /home/.../target/debug/build/mvv_account_soa-a02bfbee150dfc8f/out
 
+    let tests_session_id = chrono::Local::now().timestamp();
+
     let sub_project_dir = std::env::var("CARGO_MANIFEST_DIR").test_unwrap();
     let sub_project_dir: PathBuf = sub_project_dir.into();
     let project_dir = sub_project_dir.join("..").canonicalize().test_unwrap();
+    let new_network = format!("it-tests-rust-account-soa-{tests_session_id}");
 
     use mvv_common::test::integration::Copy;
 
     let cfg = PrepareDockerComposeCfg {
+        tests_session_id,
+        // Project names must contain only lowercase letters, decimal digits, dashes,
+        // and underscores, and must begin with a lowercase letter or decimal digit.
+        // See https://github.com/compose-spec/compose-spec/blob/main/spec.md
+        //
         name: "rust_account_soa".to_owned(),
         base_from_dir: sub_project_dir,
         copy: vec!(
@@ -102,6 +110,33 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
                 to: vec!("SomeMyCustomPath".to_owned()),
             },
             */
+            Replace::by_str(
+                p("docker-compose.yml"),
+                [
+                    "name: container-runtime-tests",
+                    "name:container-runtime-tests",
+                    "name:\tcontainer-runtime-tests",
+                ],
+                [&format!("name: {new_network}")],
+            ),
+            //
+            // Disable port's publishing to specific/hardcoded ports because they can be used already
+            // and test will fail.
+            // It is needed
+            // * to have possibility to run integration tests without stopping
+            //   already launched testing docker-compose environment
+            // * to safe launch integration tests on build server
+            //
+            Replace::by_str(
+                p("docker-compose.yml"),
+                [ "- 5432:5432", "-5432:5432", "-\t5432:5432", ],
+                ["- 5432"],
+            ),
+            Replace::by_str(
+                p("docker-compose.yml"),
+                [ "- 8101:8080", "-8101:8080", "-\t8101:8080", ],
+                ["- 8080"],
+            ),
         ),
     };
 

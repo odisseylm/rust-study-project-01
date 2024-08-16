@@ -1,0 +1,169 @@
+
+[tasks.init_docker_vars]
+
+
+[tasks.printenv]
+private = true
+command = "printenv"
+[tasks.temp-fail]
+private = true
+command = "unknown-cmd"
+
+
+# TODO: How to reuse it?
+[tasks.private_docker_build_prepare_labels]
+env = { DOCKER_IMAGE_LABELS = [
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
+    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+] }
+
+
+
+[tasks.build-docker-prod]
+condition = { profiles = [ "prod", "production", "release" ] }
+cwd = "${ROOT_PROJECT_DIR}"
+command = "docker"
+args = [
+    "build",
+    "--file", "${PROJECT_DIR}/docker/Dockerfile",
+    # "--tag", "rust-mvv-webapp",
+    "--tag", "${DOCKER_IMAGE_TAG}",
+    # ?? How to reuse it?
+    #    ${DOCKER_IMAGE_LABELS},
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
+    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+    ".",]
+workspace = false
+dependencies = [
+    "build",
+    "test",
+    "init_docker_vars",
+    "private_docker_build_prepare_labels",
+]
+
+
+[tasks.build-docker]
+workspace = false
+dependencies = [
+    "build-docker-prod",  # will be called only in prod/release profile
+    # "build-debug-docker", # for DEV profile
+    "build-debug-local-docker", # for DEV profile
+]
+
+
+[tasks.build-docker-debug]
+cwd = "${ROOT_PROJECT_DIR}"
+command = "docker"
+args = ["build",
+    "--file", "${PROJECT_DIR}/docker/Dockerfile",
+    "--tag", "${DOCKER_IMAGE_TAG}-debug",
+    "--build-arg", "RELEASE_OR_DEBUG_BUILD_PARAM=",
+    "--build-arg", "RELEASE_OR_DEBUG_TARGET_DIR=./target/debug",
+    # ?? How to reuse it?
+    #${DOCKER_IMAGE_LABELS},
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
+    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+    ".",]
+workspace = false
+dependencies = [
+    "build",
+    "test",
+    "init_docker_vars",
+    "private_docker_build_prepare_labels",
+]
+
+
+[tasks.get-ubuntu-info-vars]
+workspace = false
+# get Ubuntu bersion => cat /etc/os-release | grep VERSION_ID | sed -e "s/^VERSION_ID=\"//" -e "s/\"//"
+env = { UBUNTU_VERSION = { script = ["cat /etc/os-release | grep VERSION_ID | sed -e \"s/^VERSION_ID=\\\"//\"  -e \"s/\\\"//\""] } }
+script = "echo UBUNTU_VERSION: ${UBUNTU_VERSION}"
+
+# CARGO_MAKE_CRATE_TARGET_DIRECTORY
+# ${CARGO_TARGET_DIR}
+# CARGO_MAKE_CRATE_CURRENT_WORKSPACE_MEMBER
+# CARGO_MAKE_WORKSPACE_PACKAGE_NAME
+#
+#
+[tasks.build-docker-debug-local]
+condition = { profiles = [ "dev", "development", "debug" ] }
+command = "docker"
+cwd = "${ROOT_PROJECT_DIR}"
+args = [
+    "build",
+    "--file", "${PROJECT_DIR}/docker/Dockerfile-local",
+    "--tag", "${DOCKER_IMAGE_TAG}-debug",
+    # "--tag", "${DOCKER_IMAGE_TAG}-debug-local",
+    "--build-arg", "UBUNTU_VERSION=${UBUNTU_VERSION}",
+    # ?? How to reuse it?
+    #${DOCKER_IMAGE_LABELS},
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
+    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+    ".",]
+workspace = false
+dependencies = [
+    "init_docker_vars",
+#    "print-PROJECT_DIR",
+#    "temp-fail",
+    "get-ubuntu-info-vars",
+    "init_docker_vars",
+    "build",
+    # "test",
+    "private_docker_build_prepare_labels",
+]
+
+
+
+########################################################################################################################
+#                                         Optional aliases                                                             #
+########################################################################################################################
+
+[tasks.build-debug-local-docker]
+alias = "build-docker-debug-local"
+
+[tasks.build-local-debug-docker]
+alias = "build-docker-debug-local"
+
+[tasks.build-debug-docker]
+workspace = false
+alias = "build-docker-debug"
+
+[tasks.build-prod-docker]
+workspace = false
+alias = "build-docker-prod"

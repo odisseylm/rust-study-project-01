@@ -1,0 +1,76 @@
+
+# See
+#  https://github.com/compose-spec/compose-spec/blob/main/spec.md
+#  https://docs.docker.com/compose/
+#  https://docker-docs.uclv.cu/compose/compose-file/
+
+
+[tasks.docker-compose-up]
+command = "docker-compose"
+args = [
+    "--file", "${PROJECT_DIR}/docker/docker-compose.yml",      # ${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose.env",  # "${docker-env-file}",
+    "--project-directory", "${PROJECT_DIR}",
+    "--project-name", "rust-account-soa-project",                # "${project.artifactId}",
+    "up",
+    # "rust-account-soa", # "${docker-compose-service-up}",
+]
+workspace = false
+dependencies = [
+    "init_docker_vars",
+    # "build",
+    # "test",
+    # "private_docker_build_prepare_labels",
+]
+
+
+
+[tasks.docker-compose-down]
+command = "docker-compose"
+args = [
+    "--file", "${PROJECT_DIR}/docker/docker-compose.yml",      # ${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose.env",  # "${docker-env-file}",
+    "--project-directory", "${PROJECT_DIR}",
+    "--project-name", "rust-account-soa-project",                # "${project.artifactId}",
+    "down",
+    #"rust-account-soa", # "${docker-compose-service-up}",
+]
+workspace = false
+dependencies = [
+    "init_docker_vars",
+    #    "build",
+    #    "test",
+    #    "private_docker_build_prepare_labels",
+]
+
+
+
+[tasks.docker-compose-rerun]
+workspace = false
+dependencies = [
+    # "build",
+    # "test",
+    # "build-debug-docker",
+    "docker-compose-down",
+    "docker-compose-up",
+]
+
+
+
+[tasks.docker-debug-rebuild-rerun-all]
+workspace = false
+dependencies = [
+    "build",
+    # "test",
+    "build-debug-docker",
+    "docker-compose-down",
+    "docker-compose-up",
+]
+
+
+[tasks.docker-compose-down-up]
+workspace = false
+dependencies = [
+    "docker-compose-down",
+    "docker-compose-up",
+]

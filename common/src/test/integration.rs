@@ -19,9 +19,19 @@ pub struct Replace {
     pub from: Vec<String>,
     pub to: Vec<String>,
 }
+impl Replace {
+    pub fn by_str<const N: usize, const M: usize>(file: PathBuf, from: [&str;N], to: [&str;M]) -> Self {
+        Replace {
+            file,
+            from: from.into_iter().map(|s|s.to_owned()).collect::<Vec<_>>(),
+            to: to.into_iter().map(|s|s.to_owned()).collect::<Vec<_>>(),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct PrepareDockerComposeCfg {
+    pub tests_session_id: i64,
     pub name: String, // used last sub-dir name (to have good logging in rustainers)
     pub base_from_dir: PathBuf,
     pub copy: Vec<Copy>,
@@ -42,7 +52,13 @@ pub fn prepare_docker_compose(project_dir: &Path, cfg: &PrepareDockerComposeCfg)
     -> Result<PathBuf, anyhow::Error> {
 
     let target_dir = project_dir.join("target/temp/docker_compose_tests");
-    let root_to_dir = format!("~tmp-{}/{}", chrono::Local::now().timestamp(), cfg.name);
+    let tests_session_id = cfg.tests_session_id;
+
+    // Since 'rustainers' does not support setting docker compose 'project_name',
+    // we have to use (last) directory name as unique project name
+    // See 'Specify a project name' https://docs.docker.com/compose/project-name/
+    //
+    let root_to_dir = format!("{}-{tests_session_id}", cfg.name);
     let root_to_dir = target_dir.join(&root_to_dir);
 
     std::fs::create_dir_all(&root_to_dir) ?;

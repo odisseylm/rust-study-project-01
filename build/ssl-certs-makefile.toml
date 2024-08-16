@@ -1,0 +1,154 @@
+
+[tasks.generate-ssl-certs-prepare]
+private = true
+workspace = false
+env = { "TEST_CERTS_DIR" = "${ROOT_PROJECT_DIR}/target/debug/generated-test-resources" }
+command = "mkdir"
+args = ["-p", "${TEST_CERTS_DIR}"]
+
+
+
+[tasks.delete-ssl-certs-prepare]
+private = true
+workspace = false
+command = "/bin/sh"
+cwd = "${TEST_CERTS_DIR}"
+args = [
+    "-c",
+    # " rm -f ${TEST_CERTS_DIR}/*.key ${TEST_CERTS_DIR}/*.crt ${TEST_CERTS_DIR}/*.cert ",
+    " rm -f *.key *.crt *.cert ",
+]
+dependencies = ["generate-ssl-certs-prepare"]
+
+
+
+### Does NOT work
+#[tasks.delete-ssl-certs-prepare]
+#workspace = false
+#command = "rm"
+#cwd = "${TEST_CERTS_DIR}"
+#args = [
+#    "-f", "*.key", "*.crt", "*.cert ",
+#]
+#dependencies = ["generate-ssl-certs-prepare"]
+
+
+
+[tasks.generate-ssl-certs]
+workspace = false
+dependencies = [
+    "generate-ssl-certs-prepare",
+    "generate-ssl-certs--for-account-soa",
+    "generate-ssl-certs--for-database",
+]
+
+
+
+[tasks.regenerate-ssl-certs]
+workspace = false
+dependencies = [
+    "generate-ssl-certs-prepare",
+    "delete-ssl-certs-prepare",
+    "generate-ssl-certs--for-account-soa",
+    "generate-ssl-certs--for-database",
+]
+
+
+
+[tasks.generate-ssl-certs--for-database]
+private = true
+workspace = false
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/database.key", "${TEST_CERTS_DIR}/database.crt"] }
+command = "openssl"
+args = [
+    "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "30",
+    "-nodes",
+    "-keyout", "${TEST_CERTS_DIR}/database.key",
+    "-out", "${TEST_CERTS_DIR}/database.crt", "-subj", "/CN=database",
+    "-addext", "subjectAltName=DNS:database-0,DNS:database_0,DNS:database-1,DNS:database_1",
+]
+dependencies = ["generate-ssl-certs-prepare"]
+
+
+
+[tasks.generate-ssl-certs--for-account-soa]
+private = true
+workspace = false
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-soa.key", "${TEST_CERTS_DIR}/rust-account-soa.crt"] }
+command = "openssl"
+args = [
+    "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "30",
+    "-nodes",
+    "-keyout", "${TEST_CERTS_DIR}/rust-account-soa.key",
+    "-out", "${TEST_CERTS_DIR}/rust-account-soa.crt", "-subj", "/CN=rust-account-soa",
+    "-addext", "subjectAltName=DNS:rust-account-soa-0,DNS:rust-account-soa_0,DNS:rust-account-soa-1,DNS:rust-account-soa_1,DNS:rust-account-soa-2,DNS:rust-account-soa_2",
+    # "-addext", "subjectAltName=DNS:rust-account-soa-0,DNS:*.example.com,IP:10.0.0.1",
+
+    # account-soa_0
+    # account-soa-0 bank-plugin-account-soa_0
+    # bank-plugin-account-soa-0 bank-plugin-tests-1661111370-account-soa_0 bank-plugin-tests-1661111370-account-soa-0
+    # account-soa_1
+    # account-soa-1 bank-plugin-account-soa_1
+    # bank-plugin-account-soa-1 bank-plugin-tests-1661111370-account-soa_1 bank-plugin-tests-1661111370-account-soa-1
+    # account-soa_2
+    # account-soa-2 bank-plugin-account-soa_2
+    # bank-plugin-account-soa-2 bank-plugin-tests-1661111370-account-soa_2 bank-plugin-tests-1661111370-account-soa-2
+
+    #
+    # mvv-bank localhost
+    # mvv-bank_0 mvv-bank-0 bank-plugin-mvv-bank_0 bank-plugin-mvv-bank-0 bank-plugin-tests-1661111370-mvv-bank_0 bank-plugin-tests-1661111370-mvv-bank-0
+    # mvv-bank_1 mvv-bank-1 bank-plugin-mvv-bank_1 bank-plugin-mvv-bank-1 bank-plugin-tests-1661111370-mvv-bank_1 bank-plugin-tests-1661111370-mvv-bank-1
+    # mvv-bank_2 mvv-bank-2 bank-plugin-mvv-bank_2 bank-plugin-mvv-bank-2 bank-plugin-tests-1661111370-mvv-bank_2 bank-plugin-tests-1661111370-mvv-bank-2
+]
+# <hosts>${generated-dev-certs-hosts}</hosts>
+# <generated-dev-certs-hosts>localhost,database,${project.build.finalName}</generated-dev-certs-hosts>
+dependencies = ["generate-ssl-certs-prepare"]
+
+
+
+[tasks.generate-ssl-certs--for-account-web]
+private = true
+workspace = false
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-web.key", "${TEST_CERTS_DIR}/rust-account-web.crt"] }
+command = "openssl"
+args = [
+    "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "30",
+    "-nodes",
+    "-keyout", "${TEST_CERTS_DIR}/rust-account-web.key",
+    "-out", "${TEST_CERTS_DIR}/rust-account-web.crt", "-subj", "/CN=rust-account-web",
+    "-addext", "subjectAltName=DNS:rust-account-web-0,DNS:rust-account-web_0,DNS:rust-account-web-1,DNS:rust-account-web_1,DNS:rust-account-web-2,DNS:rust-account-web_2",
+    # "-addext", "subjectAltName=DNS:rust-account-web-0,DNS:*.example.com,IP:10.0.0.1",
+
+    # account-web_0
+    # account-web-0 bank-plugin-account-web_0
+    # bank-plugin-account-web-0 bank-plugin-tests-1661111370-account-web_0 bank-plugin-tests-1661111370-account-web-0
+    # account-web_1
+    # account-web-1 bank-plugin-account-web_1
+    # bank-plugin-account-web-1 bank-plugin-tests-1661111370-account-web_1 bank-plugin-tests-1661111370-account-web-1
+    # account-web_2
+    # account-web-2 bank-plugin-account-web_2
+    # bank-plugin-account-web-2 bank-plugin-tests-1661111370-account-web_2 bank-plugin-tests-1661111370-account-web-2
+]
+# <hosts>${generated-dev-certs-hosts}</hosts>
+# <generated-dev-certs-hosts>localhost,database,${project.build.finalName}</generated-dev-certs-hosts>
+dependencies = ["generate-ssl-certs-prepare"]
+
+
+
+########################################################################################################################
+#                                         Optional aliases                                                             #
+########################################################################################################################
+
+[tasks.generate-certs]
+workspace = false
+alias = "generate-ssl-certs"
+[tasks.gen-certs]
+workspace = false
+alias = "generate-ssl-certs"
+
+[tasks.regenerate-certs]
+workspace = false
+alias = "regenerate-ssl-certs"
+[tasks.regen-certs]
+workspace = false
+alias = "regenerate-ssl-certs"

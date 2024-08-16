@@ -1,34 +1,5 @@
-#[tasks.format]
-#install_crate = "rustfmt"
-#command = "cargo"
-#args = ["fmt", "--", "--emit=files"]
 
-[tasks.clean]
-command = "cargo"
-args = ["clean"]
+extend = { path = "../build/common-makefile.toml" }
 
-#[tasks.build]
-#command = "cargo"
-#args = ["build"]
-##dependencies = ["clean"]
-#dependencies = []
-
-[tasks.test]
-command = "cargo"
-args = ["test"]
-
-#[tasks.my-flow]
-#script = "echo \"Fucking cargo make!!! (from my-flow)\""
-#dependencies = [
-#    #    "format",
-#    "build",
-#    "test"
-#]
-
-#[tasks.myflow]
-#script = "echo \"Fucking cargo make!!! (from myflow)\""
-#dependencies = [
-#    #"format",
-#    "build",
-#    "test"
-#]
+[env]
+PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/error_macro"

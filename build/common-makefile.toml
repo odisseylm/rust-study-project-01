@@ -1,0 +1,185 @@
+
+[env]
+RUST_BACKTRACE = 1
+
+ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
+
+CARGO_VERB_P_0     = ""   # "--verbose"
+CARGO_BUILD_VERB_P = ""   # "-vv" # "--verbose"
+CARGO_TEST_VERB_P  = ""   # "--verbose"
+
+CARGO_FEATURES_P1  = ""
+CARGO_FEATURES_P2  = ""
+#CARGO_FEATURES_P1  = "--features"
+#CARGO_FEATURES_P2  = "feature1,feature2"
+#CARGO_FEATURES_P1  = "--all-features"
+#CARGO_FEATURES_P2  = "--no-default-features"
+
+# profile based environment override
+#  CARGO_MAKE_CARGO_PROFILE=dev
+#  CARGO_MAKE_PROFILE=development
+#
+# profile based environment override
+[env.development]
+DEV = true
+TARGET_SUB_DIR = "debug"
+[env.production]
+PROD = true
+TARGET_SUB_DIR = "release"
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+[tasks.format]
+condition_script = [" 0 "]
+[tasks.format-flow]
+condition_script = [" 0 "]
+[tasks.format-toml]
+condition_script = [" 0 "]
+[tasks.format-toml-flow]
+condition_script = [" 0 "]
+
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Actually there are predefined pre-build/post-build tasks,
+# BUT they are not executed by default as pre/post when you call `cargo make build`
+# only when you use `cargo make build-flow`.
+# Strange beahvior...
+#
+# [tasks.pre-build]
+# command = "/bin/sh"
+# args = [ "-c", "echo Task pre-build 56789" ]
+# [tasks.post-build]
+# command = "/bin/sh"
+# args = [ "-c", "echo Task post-build 987654321" ]
+
+
+
+[tasks.rs-compile]
+description = "Runs the rust compiler."
+category = "Build"
+command = "cargo"
+env = { RUST_BACKTRACE = "${RUST_BACKTRACE}" }
+args = [
+    "@@remove-empty(CARGO_VERB_P_0)",
+    "build",
+    "@@remove-empty(CARGO_BUILD_VERB_P)",
+    "@@remove-empty(CARGO_FEATURES_P1)",
+    "@@remove-empty(CARGO_FEATURES_P2)",
+    # "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
+    # "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
+
+]
+dependencies = [
+    "pre-build",
+]
+
+
+
+[tasks.generate-open-api]
+#env = { DEBUG_SUB_DIR = { value = "debug", condition = { env = ["CARGO_MAKE_CARGO_PROFILE", "dev"] } } }
+cwd = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}"
+command = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/${TARGET_SUB_DIR}/${SOA_EXECUTABLE}"
+args = [ "--generate-open-api" ]
+
+
+
+[tasks.build]
+command = "echo" # overriding/disabling predefined build command
+args = [ "build flow" ]
+dependencies = [
+    "pre-build",
+    "rs-compile",
+    # "generate-open-api",
+    "post-build",
+]
+
+
+
+[tasks.test]
+category = "Test"
+# toolchain = "${CARGO_MAKE_RUST_DEFAULT_TOOLCHAIN}"
+env = { RUST_BACKTRACE = "${RUST_BACKTRACE}" }
+command = "cargo"
+args = [
+    "@@remove-empty(CARGO_VERB_P_0)",
+    "test",
+    "@@remove-empty(CARGO_TEST_VERB_P)",
+    "@@remove-empty(CARGO_FEATURES_P1)",
+    "@@remove-empty(CARGO_FEATURES_P2)",
+    # "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
+    # "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
+]
+dependencies = [
+    "build",
+]
+
+
+
+[tasks.integration-tests]
+command = "cargo"
+# Using 'cfg' causes FULL recompilation of ALL dependencies (and proejct files)
+# when we switch on/off it :-(
+#env = { RUSTFLAGS="--cfg integration_tests", CARGO_BUILD_RUSTFLAGS="--cfg integration_tests", RUST_TEST_THREADS = 1 }
+env = { INTEGRATION_TESTS = "true", RUST_TEST_THREADS = "1", RUST_BACKTRACE = "${RUST_BACKTRACE}" }
+args = [
+    "@@remove-empty(CARGO_VERB_P_0)",
+    "test",
+    "@@remove-empty(CARGO_TEST_VERB_P)",
+    "@@remove-empty(CARGO_FEATURES_P1)",
+    "@@remove-empty(CARGO_FEATURES_P2)",
+    # "--features", "integration_tests",
+    #
+    #    "--config",  "test_mode=integration_tests",
+    #    "--config",  "rustc-cfg='integration_tests'",
+    #    "--config",  "rustc-cfg='test_mode=integration_tests'",
+    #    "--config",  "cfg='test_mode=integration_tests'",
+    #    "--config",  "rustflags=--cfg 'test_mode=integration_tests'",
+    ##### 'build.rustdocflags = ["--html-in-header", "header.html"]'
+    #    "--config",  "'rustflags=[--cfg test_mode=integration_tests]",
+    #    "--config",  "'rustflags=[test_mode=integration_tests]",
+    #    "--config",  "rustc-cfg='test_mode=integration_tests'",
+    "--test", "integration_*",
+    "--jobs", "1", # no parallel
+    "--",
+    "--nocapture",
+
+    # --workspace,
+    # --exclude <SPEC>
+    # --lib,   # Test only this package's library
+    # --bins,  # Test all binaries
+    # --bin [<NAME>]
+    # --tests             Test all test targets
+    # --test [<NAME>]     Test only the specified test target
+    # --all-targets       Test all targets (does not include doctests)
+    # -F, --features <FEATURES>  Space or comma separated list of features to activate
+    # --all-features         Activate all available features
+    # --no-default-features  Do not activate the `default` feature
+    # -j, --jobs <N>                Number of parallel jobs, defaults to # of CPUs.
+    # -r, --release                 Build artifacts in release mode, with optimizations
+    # --profile <PROFILE-NAME>  Build artifacts with the specified profile
+    # --target [<TRIPLE>]       Build for the target triple
+    # --target-dir <DIRECTORY>  Directory for all generated artifacts
+    # --unit-graph              Output build graph in JSON (unstable)
+    # --timings[=<FMTS>]        Timing output formats (unstable) (comma separated): html, json
+]
+dependencies = [
+    "build",
+    # "build-docker",
+]
+
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
+[tasks.integration-tests-member]
+alias = "integration-tests"
+
+
+
+########################################################################################################################
+#                                         Optional aliases                                                             #
+########################################################################################################################
+
+[tasks.tests]
+alias = "test"
+[tasks.integration-test]
+alias = "integration-tests"
