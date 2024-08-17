@@ -102,6 +102,7 @@ pub impl <
     }
 }
 
+#[allow(dead_code)] // It is REALLY used.
 fn validate_path_params(open_api_path: &str, open_api_path_item: &PathItem) {
     use crate::map::MapOpsExt;
 

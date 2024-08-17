@@ -4,10 +4,15 @@ version = "0.1.0"
 edition = "2021"
 
 
+#[profile.release]
+#strip = "symbols"  # possible: "none", "debuginfo", "symbols" (default "none")
+
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(feature, values("performance_tests", "special-integration-tests", "integration-tests", "integration_tests"))',
 ] }
+
 
 [features]
 # error_generic_member_access = []

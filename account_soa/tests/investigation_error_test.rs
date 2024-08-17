@@ -26,40 +26,6 @@ use mvv_common::backtrace_old::is_anyhow_backtrace_enabled;
 use mvv_common::test::{ TestDisplayStringOps };
 
 
-// #[derive(Deserialize)]
-// struct ClusterMap {
-//     int_value: i32,
-//     field: String,
-// }
-
-
-// #[test]
-// fn test_print_current_stack_trace() {
-//     mvv_common::backtrace::enable_backtrace();
-//     mvv_common::backtrace::print_current_stack_trace();
-// }
-
-/* TODO: impl
-#[test]
-fn test_str_backtrace() {
-
-    let str_bt = "
-       5: error_test::errors::fn_wrap_by_my_error_using_map_err_and_anyhow_macro
-             at ./tests/errors/mod.rs:234:5
-       6: error_test::errors::fn_wrap_by_my_error_using_map_err_and_anyhow_macro_01
-             at ./tests/errors/mod.rs:236:100
-       ";
-
-    let bt = BacktraceInfo::from_str(str_bt);
-
-    println!("str backtrace status: {:?}", bt.backtrace_status());
-    println!("\n--------------------------------------------------\n");
-    println!("str backtrace: {}", bt);
-    println!("\n--------------------------------------------------\n");
-    println!("str backtrace: {:?}", bt);
-}
-*/
-
 
 #[test]
 fn test_result_stack_trace() {
@@ -261,7 +227,9 @@ fn test_result_error_stacktrace_of_anyhow() {
 
     let r = fn_wrap_by_my_error_using_map_err_and_with_context_05();
     let err = r.err().test_unwrap();
+    println!("----------------------------------------------------------");
     println!("err: {err:?}");
+    println!("----------------------------------------------------------");
 
     let mut output = String::new();
     write(&mut output, format_args!("{err:?}")).test_unwrap();
@@ -271,16 +239,21 @@ fn test_result_error_stacktrace_of_anyhow() {
     if is_anyhow_backtrace_enabled() {
         assert_contains!(output, "Stack backtrace:");
 
-        assert_contains!(output, "2: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context\n             at ./tests/errors/mod.rs:");
-        assert_contains!(output, "3: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_01\n             at ./tests/errors/mod.rs:");
-        assert_contains!(output, "4: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_02\n             at ./tests/errors/mod.rs:");
-        assert_contains!(output, "5: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_03\n             at ./tests/errors/mod.rs:");
-        assert_contains!(output, "6: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_04\n             at ./tests/errors/mod.rs:");
-        assert_contains!(output, "7: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_05\n             at ./tests/errors/mod.rs:");
+        if cfg!(debug_assertions) {
+            assert_contains!(output, "2: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context\n             at ./tests/errors/mod.rs:");
+            assert_contains!(output, "3: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_01\n             at ./tests/errors/mod.rs:");
+            assert_contains!(output, "4: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_02\n             at ./tests/errors/mod.rs:");
+            assert_contains!(output, "5: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_03\n             at ./tests/errors/mod.rs:");
+            assert_contains!(output, "6: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_04\n             at ./tests/errors/mod.rs:");
+            assert_contains!(output, "7: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_05\n             at ./tests/errors/mod.rs:");
 
-        assert_contains!(output, "8: investigation_error_test::test_result_error_stacktrace_of_anyhow\n             at ./tests/investigation_error_test.rs:");
-        // it is risky/dependant
-        assert_contains!(output, "9: investigation_error_test::test_result_error_stacktrace_of_anyhow::{{closure}}\n             at ./tests/investigation_error_test.rs");
+            assert_contains!(output, "8: investigation_error_test::test_result_error_stacktrace_of_anyhow\n             at ./tests/investigation_error_test.rs:");
+            // it is risky/dependant
+            assert_contains!(output, "9: investigation_error_test::test_result_error_stacktrace_of_anyhow::{{closure}}\n             at ./tests/investigation_error_test.rs");
+        } else {
+            // only one method call accessible :-(
+            assert_contains!(output, "0: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_05")
+        }
     }
 }
 

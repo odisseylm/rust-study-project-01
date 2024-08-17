@@ -1,5 +1,16 @@
 
 [tasks.init_docker_vars]
+command = "cp"
+args = [
+    "${CARGO_MAKE_CARGO_HOME}/bin/cargo-patch-subdep-ver",
+    "${ROOT_PROJECT_DIR}/target/externals/"
+]
+dependencies = [ "init_docker_vars_0" ]
+[tasks.init_docker_vars_0]
+command = "mkdir"
+args = [ "-p", "${ROOT_PROJECT_DIR}/target/externals" ]
+
+[tasks.init_docker_external]
 
 
 [tasks.printenv]
@@ -29,23 +40,23 @@ env = { DOCKER_IMAGE_LABELS = [
 
 
 [tasks.build-docker-prod]
+private = true
 condition = { profiles = [ "prod", "production", "release" ] }
 cwd = "${ROOT_PROJECT_DIR}"
 command = "docker"
 args = [
     "build",
     "--file", "${PROJECT_DIR}/docker/Dockerfile",
-    # "--tag", "rust-mvv-webapp",
     "--tag", "${DOCKER_IMAGE_TAG}",
+    "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
+
     # ?? How to reuse it?
     #    ${DOCKER_IMAGE_LABELS},
+
     "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
     "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
     "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
     "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
-    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
-    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
-    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
     "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
     "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
     "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
@@ -56,20 +67,15 @@ dependencies = [
     "build",
     "test",
     "init_docker_vars",
+    "init_docker_external",
     "private_docker_build_prepare_labels",
 ]
 
 
-[tasks.build-docker]
-workspace = false
-dependencies = [
-    "build-docker-prod",  # will be called only in prod/release profile
-    # "build-debug-docker", # for DEV profile
-    "build-debug-local-docker", # for DEV profile
-]
-
 
 [tasks.build-docker-debug]
+private = true
+condition = { profiles = [ "dev", "develop", "development", "debug" ] }
 cwd = "${ROOT_PROJECT_DIR}"
 command = "docker"
 args = ["build",
@@ -77,15 +83,15 @@ args = ["build",
     "--tag", "${DOCKER_IMAGE_TAG}-debug",
     "--build-arg", "RELEASE_OR_DEBUG_BUILD_PARAM=",
     "--build-arg", "RELEASE_OR_DEBUG_TARGET_DIR=./target/debug",
+    "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
+
     # ?? How to reuse it?
     #${DOCKER_IMAGE_LABELS},
+
     "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
     "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
     "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
     "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
-    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
-    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
-    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
     "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
     "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
     "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
@@ -96,8 +102,23 @@ dependencies = [
     "build",
     "test",
     "init_docker_vars",
+    "init_docker_external",
     "private_docker_build_prepare_labels",
 ]
+
+
+
+[tasks.build-docker]
+workspace = false
+dependencies = [
+    "build-docker-prod",  # will be called only in prod/release profile
+    "build-debug-docker", # for DEV profile
+]
+
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
+[tasks.build-docker-member]
+alias = "build-docker"
+
 
 
 [tasks.get-ubuntu-info-vars]
@@ -106,12 +127,7 @@ workspace = false
 env = { UBUNTU_VERSION = { script = ["cat /etc/os-release | grep VERSION_ID | sed -e \"s/^VERSION_ID=\\\"//\"  -e \"s/\\\"//\""] } }
 script = "echo UBUNTU_VERSION: ${UBUNTU_VERSION}"
 
-# CARGO_MAKE_CRATE_TARGET_DIRECTORY
-# ${CARGO_TARGET_DIR}
-# CARGO_MAKE_CRATE_CURRENT_WORKSPACE_MEMBER
-# CARGO_MAKE_WORKSPACE_PACKAGE_NAME
-#
-#
+
 [tasks.build-docker-debug-local]
 condition = { profiles = [ "dev", "development", "debug" ] }
 command = "docker"
@@ -119,18 +135,17 @@ cwd = "${ROOT_PROJECT_DIR}"
 args = [
     "build",
     "--file", "${PROJECT_DIR}/docker/Dockerfile-local",
-    "--tag", "${DOCKER_IMAGE_TAG}-debug",
-    # "--tag", "${DOCKER_IMAGE_TAG}-debug-local",
+    "--tag", "${DOCKER_IMAGE_TAG}-debug-local",
     "--build-arg", "UBUNTU_VERSION=${UBUNTU_VERSION}",
+    "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
+
     # ?? How to reuse it?
     #${DOCKER_IMAGE_LABELS},
+
     "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
     "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
     "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
     "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
-    # Hm... CARGO_MAKE_PROJECT_VERSION is not set?!
-    #"--label", "PROJECT_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
-    #"--label", "PACKAGE_VERSION=${CARGO_MAKE_PROJECT_VERSION}",
     "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
     "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
     "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
@@ -139,14 +154,18 @@ args = [
 workspace = false
 dependencies = [
     "init_docker_vars",
-#    "print-PROJECT_DIR",
-#    "temp-fail",
+    "init_docker_external",
     "get-ubuntu-info-vars",
     "init_docker_vars",
+    "init_docker_external",
     "build",
     # "test",
     "private_docker_build_prepare_labels",
 ]
+
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
+[tasks.build-docker-debug-local-member]
+alias = "build-docker-debug-local"
 
 
 
@@ -156,14 +175,10 @@ dependencies = [
 
 [tasks.build-debug-local-docker]
 alias = "build-docker-debug-local"
-
 [tasks.build-local-debug-docker]
 alias = "build-docker-debug-local"
 
 [tasks.build-debug-docker]
-workspace = false
 alias = "build-docker-debug"
-
 [tasks.build-prod-docker]
-workspace = false
 alias = "build-docker-prod"

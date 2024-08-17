@@ -41,12 +41,14 @@ RUN    mkdir ./src                                                 \
     && mkdir ./common/src                                          \
     && mkdir ./proc_macro                                          \
     && mkdir ./proc_macro/src                                      \
-    && mkdir ./error_macro                                  \
-    && mkdir ./error_macro/src                              \
+    && mkdir ./error_macro                                         \
+    && mkdir ./error_macro/src                                     \
     && mkdir ./tuple_heter_iter                                    \
     && mkdir ./tuple_heter_iter/src                                \
     && mkdir ./tuple_heter_iter_macro                              \
     && mkdir ./tuple_heter_iter_macro/src                          \
+    && mkdir ./xtask                                               \
+    && mkdir ./xtask/src                                           \
     && echo "fn main() { }" > ./account_soa/src/bin/main.rs        \
     && echo "// dummy file" > ./account_soa/src/lib.rs             \
     && echo "fn main() { }" > ./account_web/src/bin/main.rs        \
@@ -54,9 +56,12 @@ RUN    mkdir ./src                                                 \
     && echo "// dummy file" > ./auth/src/lib.rs                    \
     && echo "// dummy file" > ./common/src/lib.rs                  \
     && echo "// dummy file" > ./proc_macro/src/lib.rs              \
-    && echo "// dummy file" > ./error_macro/src/lib.rs      \
+    && echo "// dummy file" > ./error_macro/src/lib.rs             \
     && echo "// dummy file" > ./tuple_heter_iter/src/lib.rs        \
-    && echo "// dummy file" > ./tuple_heter_iter_macro/src/lib.rs
+    && echo "// dummy file" > ./tuple_heter_iter_macro/src/lib.rs  \
+    && echo "fn main() { }" > ./xtask/src/main.rs
+
+COPY target/externals/cargo-patch-subdep-ver  /usr/local/cargo/bin/cargo-patch-subdep-ver/
 
 # COPY error_macro/Cargo.lock error_macro/Cargo.toml ./error_macro/
 COPY account_soa/Cargo.toml             ./account_soa/
@@ -67,9 +72,13 @@ COPY proc_macro/Cargo.toml              ./proc_macro/
 COPY error_macro/Cargo.toml             ./error_macro/
 COPY tuple_heter_iter/Cargo.toml        ./tuple_heter_iter/
 COPY tuple_heter_iter_macro/Cargo.toml  ./tuple_heter_iter_macro/
+COPY xtask/Cargo.toml                   ./xtask/
 
 
 # Build the dependencies without the actual source code to cache dependencies separately
+# RUN cargo patch-subdep-ver
+RUN /usr/local/cargo/bin/cargo-patch-subdep-ver/cargo-patch-subdep-ver
+
 RUN    cargo check $RELEASE_OR_DEBUG_BUILD_PARAM --workspace --all-targets --all-features \
     && cargo build $RELEASE_OR_DEBUG_BUILD_PARAM --workspace
 
@@ -80,9 +89,10 @@ RUN    rm ./account_soa/src/*.rs                  \
     && rm ./auth/src/*.rs                         \
     && rm ./common/src/*.rs                       \
     && rm ./proc_macro/src/*.rs                   \
-    && rm ./error_macro/src/*.rs           \
+    && rm ./error_macro/src/*.rs                  \
     && rm ./tuple_heter_iter/src/*.rs             \
-    && rm ./tuple_heter_iter_macro/src/*.rs
+    && rm ./tuple_heter_iter_macro/src/*.rs       \
+    && rm ./xtask/src/*.rs
 
 #RUN ls --recursive ./src/
 COPY account_soa/src/             ./account_soa/src/
@@ -96,15 +106,17 @@ COPY proc_macro/src/              ./proc_macro/src/
 COPY error_macro/src/             ./error_macro/src/
 COPY tuple_heter_iter/src/        ./tuple_heter_iter/src/
 COPY tuple_heter_iter_macro/src/  ./tuple_heter_iter_macro/src/
+COPY xtask/src/                   ./xtask/src/
 
 RUN    touch ./account_soa/src/lib.rs             \
     && touch ./account_web/src/lib.rs             \
     && touch ./auth/src/lib.rs                    \
     && touch ./common/src/lib.rs                  \
     && touch ./proc_macro/src/lib.rs              \
-    && touch ./error_macro/src/lib.rs      \
+    && touch ./error_macro/src/lib.rs             \
     && touch ./tuple_heter_iter/src/lib.rs        \
-    && touch ./tuple_heter_iter_macro/src/lib.rs
+    && touch ./tuple_heter_iter_macro/src/lib.rs  \
+    && touch ./xtask/src/main.rs
 
 
 RUN cargo build $RELEASE_OR_DEBUG_BUILD_PARAM --workspace
@@ -118,6 +130,8 @@ RUN cp $RELEASE_OR_DEBUG_TARGET_DIR/mvv_account_soa /bin/mvv_account_soa
 FROM debian:bullseye-slim AS final
 #FROM debian:buster-slim
 #FROM debian:bookworm-slim
+
+ARG RUN_RUST_BACKTRACE=full
 
 
 RUN adduser                   \

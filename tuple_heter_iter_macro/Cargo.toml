@@ -8,6 +8,10 @@ edition = "2021"
 proc-macro = true
 
 
+#[profile.release]
+#strip = "symbols"  # possible: "none", "debuginfo", "symbols" (default "none")
+
+
 [features]
 # possible values: tuple_len_16, tuple_len_32, tuple_len_64
 tuple_len_16 = []

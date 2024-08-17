@@ -35,9 +35,14 @@ fn expected_sys_default_bt_capture_part() -> &'static str {
 #[test]
 fn test_currency_format_error_new() {
     let err = CurrencyFormatError::new(CurErrorKind::NoCurrency);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); //  "\ncapture");
     assert_eq!(err.kind, CurErrorKind::NoCurrency);
-    assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\ncapture");
+
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); //  "\ncapture");
+        assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        assert_contains!(err.backtrace_ref().to_test_string(), "mvv_common::entity::currency::parse::CurrencyFormatError::with_backtrace");
+    }
 }
 
 #[test]
@@ -45,20 +50,36 @@ fn test_currency_format_error_with_backtrace() {
     use mvv_common::entity::currency::parse::{CurrencyFormatError, ErrorKind };
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::IncorrectCurrencyFormat); //); // , NewBacktracePolicy::Default);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); //  "\ncapture");
+
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        // No real stack-trace, but seems in prod resulting stacktrace is +- ok
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::currency::parse::CurrencyFormatError::with_backtrace");
+    }
     assert_eq!(err.kind, ErrorKind::IncorrectCurrencyFormat);
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency); // , NewBacktracePolicy::Capture);
-    assert_contains!(err.backtrace.to_test_string(), expected_sys_default_bt_capture_part()); //  "\ncapture");
-    assert_contains!(err.backtrace_ref().to_test_string(), expected_sys_default_bt_capture_part()); //  , "macro1_test.rs"); //  "\ncapture");
-
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), expected_sys_default_bt_capture_part()); //  "\ncapture");
+        assert_contains!(err.backtrace_ref().to_test_string(), expected_sys_default_bt_capture_part()); //  , "macro1_test.rs"); //  "\ncapture");
+    } else {
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::currency::parse::CurrencyFormatError::with_backtrace"); //  "\ncapture");
+        assert_contains!(err.backtrace_ref().to_test_string(), "mvv_common::entity::currency::parse::CurrencyFormatError::with_backtrace"); //  , "macro1_test.rs"); //  "\ncapture");
+    }
     // let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency); // , NewBacktracePolicy::NoBacktrace);
     // assert_eq!(err.backtrace.to_test_string(), "Backtrace disabled");
     // assert_eq!(err.backtrace_ref().to_test_string(), "Backtrace disabled");
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency); // , NewBacktracePolicy::ForceCapture);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); //  "\nforce_capture");
-    assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\nforce_capture");
+
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); //  "\nforce_capture");
+        assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\nforce_capture");
+    } else {
+        assert_contains!(err.backtrace.to_test_string(), " mvv_common::entity::currency::parse::CurrencyFormatError::with_backtrace");
+        assert_contains!(err.backtrace_ref().to_test_string(), " mvv_common::entity::currency::parse::CurrencyFormatError::with_backtrace");
+    }
 }
 
 #[test]
@@ -94,9 +115,18 @@ fn test_amount_format_error_new() {
     use mvv_common::entity::amount::parse::{ ErrorKind };
 
     let err = AmountFormatError::new(ErrorKind::NoCurrency);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        // No real stack-trace, but seems in prod resulting stacktrace is +- ok
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::amount::parse::AmountFormatError::with_backtrace");
+    }
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); // "\ncapture");
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        assert_contains!(err.backtrace_ref().to_test_string(), "mvv_common::entity::amount::parse::AmountFormatError::with_backtrace");
+    }
 }
 
 
@@ -105,20 +135,31 @@ fn test_amount_format_error_with_backtrace() {
     use mvv_common::entity::amount::parse::{ ErrorKind };
 
     let err = AmountFormatError::with_backtrace(ErrorKind::IncorrectCurrency); // , NewBacktracePolicy::Default);
-    assert_contains!(err.backtrace.to_test_string(),  "macro1_test.rs"); // expected_default_bt_capture_part());
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        // No real stack-trace, but seems in prod resulting stacktrace is +- ok
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::amount::parse::AmountFormatError::with_backtrace");
+    }
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
 
     let err = AmountFormatError::with_backtrace(ErrorKind::NoCurrency); // , NewBacktracePolicy::Capture);
-    assert_contains!(err.backtrace.to_test_string(), expected_sys_default_bt_capture_part()); //  "macro1_test.rs"); // "\ncapture");
-    assert_contains!(err.backtrace_ref().to_test_string(), expected_sys_default_bt_capture_part()); // , "macro1_test.rs"); // "\ncapture");
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), expected_sys_default_bt_capture_part()); //  "macro1_test.rs"); // "\ncapture");
+        assert_contains!(err.backtrace_ref().to_test_string(), expected_sys_default_bt_capture_part()); // , "macro1_test.rs"); // "\ncapture");
+    }
 
     // let err = AmountFormatError::with_backtrace(ErrorKind::IncorrectAmount); // , NewBacktracePolicy::NoBacktrace);
     // assert_eq!(err.backtrace.to_test_string(), "Backtrace disabled");
     // assert_eq!(err.backtrace_ref().to_test_string(), "Backtrace disabled");
 
     let err = AmountFormatError::with_backtrace(ErrorKind::NoCurrency); // , NewBacktracePolicy::ForceCapture);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\nforce_capture");
-    assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); // "\nforce_capture");
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        // No real stack-trace, but seems in prod resulting stacktrace is +- ok
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::amount::parse::AmountFormatError::with_backtrace");
+    }
 }
 
 
@@ -129,44 +170,79 @@ fn test_amount_format_error_with_source() {
 
     let err = AmountFormatError::with_source(ErrorKind::NoCurrency, ErrorSource::NoSource);
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
-    assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
+        assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        // No real stack-trace, but seems in prod resulting stacktrace is +- ok
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::amount::parse::AmountFormatError::with_source");
+    }
 
     let err = AmountFormatError::with_source(ErrorKind::NoCurrency, ErrorSource::CurrencyFormatError(
         CurrencyFormatError::with_backtrace(currency::parse::ErrorKind::NoCurrency))); // , NewBacktracePolicy::ForceCapture)));
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\nforce_capture");
-    assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); // "\nforce_capture");
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
+        assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        // No real stack-trace, but seems in prod resulting stacktrace is +- ok
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::currency::parse::CurrencyFormatError::with_backtrace");
+    }
 
     let err = AmountFormatError::with_from(ErrorKind::NoCurrency,
                                            CurrencyFormatError::with_backtrace(currency::parse::ErrorKind::NoCurrency)); // , NewBacktracePolicy::ForceCapture));
     assert_eq!(err.kind, ErrorKind::NoCurrency);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\nforce_capture");
-    assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); // "\nforce_capture");
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
+        assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        // No real stack-trace, but seems in prod resulting stacktrace is +- ok
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::currency::parse::CurrencyFormatError::with_backtrace");
+    }
 
     let err = AmountFormatError::with_source(ErrorKind::IncorrectCurrency, ErrorSource::CurrencyFormatError(
         CurrencyFormatError::with_backtrace(currency::parse::ErrorKind::NoCurrency))); // , NewBacktracePolicy::ForceCapture)));
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\nforce_capture");
-    assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); // "\nforce_capture");
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
+        assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        // No real stack-trace, but seems in prod resulting stacktrace is +- ok
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::currency::parse::CurrencyFormatError::with_backtrace");
+    }
 
     let err = AmountFormatError::with_from(ErrorKind::IncorrectCurrency,
                                            CurrencyFormatError::with_backtrace(currency::parse::ErrorKind::NoCurrency)); // , NewBacktracePolicy::ForceCapture));
     assert_eq!(err.kind, ErrorKind::IncorrectCurrency);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\nforce_capture");
-    assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); // "\nforce_capture");
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
+        assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        // No real stack-trace, but seems in prod resulting stacktrace is +- ok
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::currency::parse::CurrencyFormatError::with_backtrace");
+    }
 
     let err = AmountFormatError::with_source(ErrorKind::IncorrectAmount, ErrorSource::ParseBigDecimalError(
         bigdecimal::ParseBigDecimalError::Other("some decimal error".to_test_string())));
     assert_eq!(err.kind, ErrorKind::IncorrectAmount);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
-    assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); // "\ncapture");
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
+        assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        // No real stack-trace, but seems in prod resulting stacktrace is +- ok
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::amount::parse::AmountFormatError::with_source");
+    }
 
     let err = AmountFormatError::with_from(ErrorKind::IncorrectAmount,
                                            bigdecimal::ParseBigDecimalError::Other("some decimal error".to_test_string()));
     assert_eq!(err.kind, ErrorKind::IncorrectAmount);
-    assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
-    assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); // "\ncapture");
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
+        assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        // No real stack-trace, but seems in prod resulting stacktrace is +- ok
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::amount::parse::AmountFormatError::with_from");
+    }
 }
 
 
@@ -176,7 +252,12 @@ fn test_amount_format_error_src() {
     use mvv_common::entity::amount::parse::{ ErrorSource };
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency); // , NewBacktracePolicy::Default);
-    assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); // "\ncapture");
+    if cfg!(debug_assertions) {
+        assert_contains!(err.backtrace.to_test_string(), "macro1_test.rs"); // "\ncapture");
+        assert_contains!(err.backtrace_ref().to_test_string(), "macro1_test.rs"); //  "\ncapture");
+    } else {
+        assert_contains!(err.backtrace.to_test_string(), "mvv_common::entity::currency::parse::CurrencyFormatError::with_backtrace");
+    }
 
     let err_src: ErrorSource = err.into();
     match err_src {

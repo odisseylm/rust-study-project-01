@@ -97,7 +97,6 @@ impl <
 #[axum::async_trait]
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet<Permission=Perm> + Clone,
 > axum_login::AuthnBackend for LoginFormAuthBackend<Usr, PswComp, PermSet>
     where Usr: axum_login::AuthUser<Id = String>,
@@ -253,7 +252,6 @@ pub mod web {
         routing::{get as GET, post as POST},
         Form, Router,
     };
-    // use axum_login::tower_sessions::Session;
     use serde::Deserialize;
     use crate::backend::psw_auth::PswUser;
     use crate::permission::PermissionSet;

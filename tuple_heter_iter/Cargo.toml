@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 
+#[profile.release]
+#strip = "symbols"  # possible: "none", "debuginfo", "symbols" (default "none")
+
+
 [features]
 # possible values: tuple_len_16, tuple_len_32, tuple_len_64
 tuple_len_16 = ["mvv_tuple_heter_iter_macro/tuple_len_16"]

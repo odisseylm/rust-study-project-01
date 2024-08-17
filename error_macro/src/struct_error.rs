@@ -146,12 +146,15 @@ fn generate_struct_error_without_source_field_impl_block(ast: &syn::DeriveInput)
         impl #error_type_name {
 
             #[inline]
+            #[track_caller]
             pub fn new(kind: ErrorKind) -> Self {
                 Self::with_backtrace(kind)
             }
+            #[track_caller]
             pub fn with_backtrace(kind: ErrorKind) -> Self {
                 Self { kind, backtrace: #BacktraceCell ::capture_backtrace() }
             }
+            #[track_caller]
             pub fn without_backtrace(kind: ErrorKind) -> Self {
                 // Really is not needed there, but let's keep it just to test usage of generated 'use'.
                 #use_bt_types
@@ -196,21 +199,26 @@ fn generate_struct_error_with_source_field_impl_block(ast: &syn::DeriveInput)
         #[allow(unused_qualifications)]
         impl #error_type_name {
             #[inline]
+            #[track_caller]
             pub fn new(kind: ErrorKind) -> Self {
                 Self::with_backtrace(kind)
             }
+            #[track_caller]
             pub fn with_backtrace(kind: ErrorKind) -> Self {
                 Self { kind, backtrace: #BacktraceCell ::capture_backtrace(), source: ErrorSource::NoSource }
             }
+            #[track_caller]
             pub fn without_backtrace(kind: ErrorKind) -> Self {
                 // Really is not needed there, but let's keep it just to test usage of generated 'use'.
                 #use_bt_types
 
                 Self { kind, backtrace: #BacktraceCell ::empty(), source: ErrorSource::NoSource }
             }
+            #[track_caller]
             pub fn with_source(kind: ErrorKind, source: ErrorSource) -> Self {
                 Self { kind, backtrace: #BacktraceCell ::inherit_or_capture(&source), source }
             }
+            #[track_caller]
             pub fn with_from<ES: Into<ErrorSource>>(kind: ErrorKind, source: ES) -> Self {
                 let src = source.into();
                 Self { kind, backtrace: #BacktraceCell ::inherit_or_capture(&src), source: src }

@@ -1,6 +1,6 @@
 
 [env]
-RUST_BACKTRACE = 1
+RUST_BACKTRACE = "1"
 
 ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
 
@@ -23,9 +23,40 @@ CARGO_FEATURES_P2  = ""
 [env.development]
 DEV = true
 TARGET_SUB_DIR = "debug"
+#PROFILE_PARAM_0 = "--profile"
+#PROFILE_PARAM_1 = "development"
+RELEASE_PARAM_0 = ""
+[env.develop]
+DEV = true
+TARGET_SUB_DIR = "debug"
+#PROFILE_PARAM_0 = "--profile"
+#PROFILE_PARAM_1 = "develop"
+RELEASE_PARAM_0 = ""
+[env.dev]
+DEV = true
+TARGET_SUB_DIR = "debug"
+#PROFILE_PARAM_0 = "--profile"
+#PROFILE_PARAM_1 = "dev"
+RELEASE_PARAM_0 = ""
+
 [env.production]
 PROD = true
 TARGET_SUB_DIR = "release"
+#PROFILE_PARAM_0 = "--profile"
+#PROFILE_PARAM_1 = "production"
+RELEASE_PARAM_0 = "--release"
+[env.prod]
+PROD = true
+TARGET_SUB_DIR = "release"
+#PROFILE_PARAM_0 = "--profile"
+#PROFILE_PARAM_1 = "prod"
+RELEASE_PARAM_0 = "--release"
+[env.release]
+PROD = true
+TARGET_SUB_DIR = "release"
+#PROFILE_PARAM_0 = "--profile"
+#PROFILE_PARAM_1 = "release"
+RELEASE_PARAM_0 = "--release"
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -67,6 +98,7 @@ args = [
     "@@remove-empty(CARGO_BUILD_VERB_P)",
     "@@remove-empty(CARGO_FEATURES_P1)",
     "@@remove-empty(CARGO_FEATURES_P2)",
+    "@@remove-empty(RELEASE_PARAM_0)",
     # "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
     # "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
 
@@ -108,6 +140,7 @@ args = [
     "@@remove-empty(CARGO_TEST_VERB_P)",
     "@@remove-empty(CARGO_FEATURES_P1)",
     "@@remove-empty(CARGO_FEATURES_P2)",
+    "@@remove-empty(RELEASE_PARAM_0)",
     # "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
     # "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
 ]
@@ -129,6 +162,8 @@ args = [
     "@@remove-empty(CARGO_TEST_VERB_P)",
     "@@remove-empty(CARGO_FEATURES_P1)",
     "@@remove-empty(CARGO_FEATURES_P2)",
+    "@@remove-empty(RELEASE_PARAM_0)",
+
     # "--features", "integration_tests",
     #
     #    "--config",  "test_mode=integration_tests",

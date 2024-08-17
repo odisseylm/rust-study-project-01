@@ -32,7 +32,11 @@ pub async fn validate_authentication_chain <Backend> (
     match is_auth_res {
         Ok(None) => StatusCode::UNAUTHORIZED.into_response(),
         Ok(_) => next.run(req).await,
-        Err(action) => action.into_response()
+        Err(err_action) => {
+            // Since it is 'layer' code it is not going to global web-app error flow and do not log error (with stack-trace).
+            error!("Authentication error: {err_action:?}");
+            err_action.into_response()
+        }
     }
 }
 

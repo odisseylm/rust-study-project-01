@@ -234,17 +234,6 @@ mod tests {
         InMemAuthUserProvider::with_users([AuthUserExample::new(1, "http-vovan", "qwerty")])
     }
 
-    /*
-    #[test]
-    fn test_try_into_when_impl() {
-        let users = Arc::new(in_memory_test_users().test_unwrap());
-        let users: Arc<dyn AuthUserProvider<User =AuthUserExample> + Send + Sync> = users;
-        let perm_provider = always_allowed_perm_provider_arc::<AuthUserExample,PermSet>();
-        let basic_auth = HttpBasicAuthBackend::<AuthUserExample,PlainPasswordComparator,Perm,PermSet>::new(users, AuthBackendMode::AuthSupported, perm_provider);
-
-        let _as_eee: Result<Arc<dyn RequestUserAuthnBackendDyn<User=AuthUserExample>>, _> =  basic_auth.try_into();
-    }
-    */
 
     #[test]
     fn test_try_into_when_no_impl() {

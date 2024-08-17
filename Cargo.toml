@@ -15,6 +15,29 @@ members = [
 resolver = "2"
 
 
+# See
+#  https://doc.rust-lang.org/cargo/reference/profiles.html
+#  https://nnethercote.github.io/perf-book/build-configuration.html
+#
+[profile.release]
+# Possible strip values: "none", "debuginfo", "symbols" (default "none")
+
+# Use strip 'symbols' to strip both debug info and symbols
+#strip = "symbols" # disables use of stack-trace (you will see just empty list of nothing)
+
+# 'debuginfo' removes stack trace of inlined (due to optimization) functions
+#strip = "debuginfo" # ok
+
+##
+#strip = "none"
+
+# Similar to debug profile
+#debug = true
+
+# sizes
+#  default 29M
+#  strip 'none' 34M
+#  strip 'debuginfo' 29M
 
 #[workspace.build-dependencies]
 #cargo_metadata = "0.18.1"

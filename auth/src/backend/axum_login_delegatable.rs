@@ -1,6 +1,9 @@
 
 // use axum_login::AuthnBackend;
 
+/// This is copy of axum_login::AuthnBackend to have possibility to generate
+/// delegates using 'ambassador' crate.
+///
 #[cfg(feature = "ambassador")]
 #[axum::async_trait]
 #[ambassador::delegatable_trait_remote]

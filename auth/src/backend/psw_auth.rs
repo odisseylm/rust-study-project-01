@@ -1,7 +1,7 @@
 use core::fmt;
 use core::fmt::Debug;
 use std::sync::Arc;
-
+use log::error;
 use crate::{
     SecureString,
     error::AuthBackendError,
@@ -30,7 +30,6 @@ pub trait PswUser {
 // #[derive(Clone)]
 pub struct PswAuthBackendImpl <
     User: axum_login::AuthUser + PswUser,
-    //PswComparator: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone = AlwaysAllowedPermSet<EmptyPerm>,
 > {
     pub(crate) psw_comparator: Arc<dyn PasswordComparator + Send + Sync>,
@@ -41,7 +40,6 @@ pub struct PswAuthBackendImpl <
 
 impl <
     Usr: axum_login::AuthUser + PswUser,
-    // PswComp: PasswordComparator + Debug + Clone + Send + Sync,
     PermSet: PermissionSet + Clone,
 > Clone for PswAuthBackendImpl<Usr,PermSet> {
     fn clone(&self) -> Self {
@@ -90,11 +88,15 @@ impl<
     type Error = AuthBackendError;
 
     async fn authenticate(&self, creds: Self::Credentials) -> Result<Option<Self::User>, Self::Error> {
-        let usr_res = self.users_provider.get_user_by_principal_identity(&creds.username.clone()).await;
+        let usr_res = self.get_user(&creds.username.clone()).await;
 
         let usr_opt = match usr_res {
             Ok(usr_opt) => usr_opt,
-            Err(err) => return Err(Self::Error::UserProviderError(err))
+            Err(err) => {
+                // Since it is 'layer' code it is not going to global web-app error flow and do not log error (with stack-trace).
+                error!("Authentication error: {err:?}");
+                return Err(err);
+            }
         };
 
         match usr_opt {

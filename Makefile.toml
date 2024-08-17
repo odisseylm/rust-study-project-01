@@ -2,9 +2,12 @@
 [config]
 init_task = "init"
 end_task = "end"
+#skip_core_tasks = true
+
 
 [tasks.init]
 dependencies = ["create_dep_patchs"]
+
 
 [tasks.create_dep_patchs]
 command = "cargo"
@@ -12,30 +15,22 @@ args = ["patch-subdep-ver"]
 condition = { files_not_exist = ["target/patch-override-sub-dep"] }
 
 
-#[config]
-#skip_core_tasks = true
-
 [env]
-# Vars
-RUST_BACKTRACE = 1
 
-EVALUATED_VAR = { script = ["echo SOME VALUE"] }
-STRING = "value"
-BOOL_VALUE = true
-COMPOSITE = "${BOOL_VALUE} ${RUST_BACKTRACE}"
-LIST_VALUE = [ "VALUE1", "VALUE2", "VALUE3" ]
-VARIABLE = {unset = true}
+#DOCKER_MODULES = [ "account_soa", "account_web" ]
+DOCKER_MODULES = [ "account_soa" ]
 
 # short alias
-ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
-
+#ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
+#
 # profile based environment override
-[env.development]
-DEV = true
-TARGET_SUB_DIR = "debug"
-[env.production]
-PROD = true
-TARGET_SUB_DIR = "release"
+#[env.development]
+#DEV = true
+#TARGET_SUB_DIR = "debug"
+#[env.production]
+#PROD = true
+#TARGET_SUB_DIR = "release"
+
 
 [tasks.format]
 condition_script = [" 0 "]
@@ -82,15 +77,15 @@ condition_script = [" 0 "]
 #    {name = "access",  level = "info",  output = "/var/log/access.log"},
 #]
 
-[tasks.test-condition-files-modified]
-condition = { files_modified = { input = [
-  "./examples/condition.toml",
-  "./src/**/*",
-], output = [
-  "./target/**/cargo-make*",
-] } }
-command = "echo"
-args = ["condition was met, sources updated..."]
+#[tasks.test-condition-files-modified]
+#condition = { files_modified = { input = [
+#  "./examples/condition.toml",
+#  "./src/**/*",
+#], output = [
+#  "./target/**/cargo-make*",
+#] } }
+#command = "echo"
+#args = ["condition was met, sources updated..."]
 
 
 # Eample to set var if some arg is present (`cargo make examples verbose`)
@@ -112,17 +107,15 @@ args = ["condition was met, sources updated..."]
 
 
 
-
-[tasks.private_set_var__src_or_test_are_changed]
-private = true
-#condition = { files_modified = { input = ["${CARGO_MAKE_WORKING_DIRECTORY}/Cargo.toml", otheers ], output = ["./target/**/main"] } }
-condition = { files_modified = { input = ["./Cargo.toml", "./src/**/*.rs", "./tests/**/*.rs", "./test_resources/**/*"], output = ["./target/**/main"] } }
-env = { "PRIVATE_SRC_OR_TEST_SRC_ARE_CHANGED" = true }
-
-
-[tasks.test]
-command = "cargo"
-args = ["test"]
+#[tasks.private_set_var__src_or_test_are_changed]
+#private = true
+#condition = { files_modified = { input = ["./Cargo.toml", "./src/**/*.rs", "./tests/**/*.rs", "./test_resources/**/*"], output = ["./target/**/main"] } }
+#env = { "PRIVATE_SRC_OR_TEST_SRC_ARE_CHANGED" = true }
+#
+#
+#[tasks.test]
+#command = "cargo"
+#args = ["test"]
 #condition_script = ["""
 #    if [ "${CARGO_MAKE_TASK}" = "test" ] || [ "${CARGO_MAKE_TASK}" = "build" ] || [ "${PRIVATE_SRC_OR_TEST_SRC_ARE_CHANGED}" = "true" ]
 #    then
@@ -139,6 +132,9 @@ args = ["test"]
 #dependencies = ["test"]
 
 
+
+#-----------------------------------------------------------------------------------------------------------------------
+
 [tasks.integration-tests]
 category = "Test"
 workspace = false
@@ -147,35 +143,23 @@ env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = ["account_soa"] }
 run_task = { name = "integration-tests-member", fork = true }
 
 
-[tasks.my-flow]
-env = { "SOME_ENV_VAR" = "value" }
-script = '''
-echo var: ${SOME_ENV_VAR}
-'''
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+[tasks.build-docker]
 workspace = false
-dependencies = [
-    "build",
-    "test"
-]
-
-[tasks.myflow]
-alias = "my-flow"
+env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
+# I do not understand why, but member-subtask should have another name?!
+run_task = { name = "build-docker-member", fork = true }
 
 
-[tasks.task1]
+[tasks.build-docker-debug-local]
+category = "Test"
 workspace = false
-script = "echo  '                                                             **********   task1'"
+env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
+# I do not understand why, but member-subtask should have another name?!
+run_task = { name = "build-docker-debug-local-member", fork = true }
 
-[tasks.task2]
-workspace = false
-script = "echo  '                                                             **********   task2'"
-dependencies = ["task1" ]
-condition_script = [" 0 "]
-
-[tasks.task3]
-workspace = false
-script = "echo  '                                                             **********   task3'"
-dependencies = ["task2" ]
 
 
 ########################################################################################################################
