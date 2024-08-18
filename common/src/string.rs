@@ -1,5 +1,6 @@
 // use const_format::ascii_str;
 use core::fmt::{ self, Debug };
+use std::ffi::OsStr;
 use log::error;
 //--------------------------------------------------------------------------------------------------
 
@@ -125,4 +126,17 @@ pub fn remove_optional_suffix(mut str: String, suffix: &str) -> String {
         str.truncate(str.len() - suffix.len());
     }
     str
+}
+
+
+// static OS_STR_1: OsStr = OsStr::from_str("1").unwrap();
+// static OS_STR_TRUE: OsStr = OsStr::from_str("true").unwrap();
+//
+// Is it safe ???
+// static OS_STR_1: &OsStr = OsStr::new("1");
+// static OS_STR_TRUE: &OsStr = OsStr::new("true");
+
+pub fn is_os_str_true(str: &OsStr) -> bool {
+    // str == OS_STR_1 || str.eq_ignore_ascii_case(OS_STR_1)
+    str == OsStr::new("1") || str.eq_ignore_ascii_case(OsStr::new("true"))
 }

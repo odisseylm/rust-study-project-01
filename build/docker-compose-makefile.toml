@@ -5,19 +5,55 @@
 #  https://docker-docs.uclv.cu/compose/compose-file/
 
 
+
+#-----------------------------------------------------------------------------------------------------------------------
+[tasks.init-docker-compose-env-vars]
+private = true
+workspace = false
+dependencies = [
+    "init-prod-DOCKER_IMAGE_PROFILE_SUFFIX",
+    # "init-debug-DOCKER_IMAGE_PROFILE_SUFFIX",
+    "init-debug-local-DOCKER_IMAGE_PROFILE_SUFFIX",
+]
+
+[tasks.init-prod-DOCKER_IMAGE_PROFILE_SUFFIX]
+private = true
+workspace = false
+condition = { profiles = [ "prod", "production", "release" ] }
+env = { DOCKER_IMAGE_PROFILE_SUFFIX = "" }
+
+#[tasks.init-debug-DOCKER_IMAGE_PROFILE_SUFFIX]
+#private = true
+#workspace = false
+#condition = { profiles = [ "dev", "develop", "development", "debug" ] }
+#env = { DOCKER_IMAGE_PROFILE_SUFFIX = "-debug" }
+
+[tasks.init-debug-local-DOCKER_IMAGE_PROFILE_SUFFIX]
+private = true
+workspace = false
+#condition = { profiles = [ "dev-local", "develop-local", "development-local", "debug-local" ] }
+condition = { profiles = [ "dev", "develop", "development", "debug" ] }
+env = { DOCKER_IMAGE_PROFILE_SUFFIX = "-debug-local" }
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+
+
 [tasks.docker-compose-up]
 command = "docker-compose"
 args = [
     "--file", "${PROJECT_DIR}/docker/docker-compose.yml",      # ${docker-compose-file}",
     "--env-file", "${PROJECT_DIR}/docker/docker-compose.env",  # "${docker-env-file}",
     "--project-directory", "${PROJECT_DIR}",
-    "--project-name", "rust-account-soa-project",                # "${project.artifactId}",
+    "--project-name", "${DOCKER_COMPOSE_PROJECT_NAME}",                # "${project.artifactId}",
     "up",
     # "rust-account-soa", # "${docker-compose-service-up}",
 ]
+env = { DOCKER_IMAGE_PROFILE_SUFFIX = "${DOCKER_IMAGE_PROFILE_SUFFIX}" }
 workspace = false
 dependencies = [
     "init_docker_vars",
+    "init-docker-compose-env-vars",
     # "build",
     # "test",
     # "private_docker_build_prepare_labels",
@@ -31,13 +67,14 @@ args = [
     "--file", "${PROJECT_DIR}/docker/docker-compose.yml",      # ${docker-compose-file}",
     "--env-file", "${PROJECT_DIR}/docker/docker-compose.env",  # "${docker-env-file}",
     "--project-directory", "${PROJECT_DIR}",
-    "--project-name", "rust-account-soa-project",                # "${project.artifactId}",
+    "--project-name", "${DOCKER_COMPOSE_PROJECT_NAME}",                # "${project.artifactId}",
     "down",
     #"rust-account-soa", # "${docker-compose-service-up}",
 ]
 workspace = false
 dependencies = [
     "init_docker_vars",
+    "init-docker-compose-env-vars",
     #    "build",
     #    "test",
     #    "private_docker_build_prepare_labels",

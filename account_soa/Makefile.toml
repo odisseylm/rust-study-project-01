@@ -9,6 +9,7 @@ extend = [
 [env]
 SOA_EXECUTABLE = "mvv_account_soa"
 DOCKER_IMAGE_TAG = "mvv_rust_account_soa"
+DOCKER_COMPOSE_PROJECT_NAME = "rust-account-soa-project"
 
 #ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
 PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/account_soa"

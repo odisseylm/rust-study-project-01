@@ -1,7 +1,10 @@
 pub mod integration;
 
 use core::fmt::Debug;
+use std::ffi::OsString;
 use std::fmt::Display;
+use itertools::Itertools;
+use crate::string::is_os_str_true;
 // Actually this code is designed for unit test only,
 // but in that case due to strange rust project tests build approach
 // it causes showing 'unused code'.
@@ -156,5 +159,22 @@ pub impl<V,E> TestResultDisplayErrOps for Result<V,E> where E: core::fmt::Displa
         use core::fmt::Write;
         write!(str_buf, "{}", err).test_unwrap();
         str_buf
+    }
+}
+
+
+
+pub fn is_manually_launched_task() -> bool {
+    let is_exact = std::env::args_os().contains(&OsString::from("--exact"));
+    is_exact
+}
+
+
+#[allow(non_snake_case)]
+pub fn is_CI_build() -> bool {
+    let ci_env_var = std::env::var_os(&OsString::from("CARGO_MAKE_CI"));
+    match ci_env_var {
+        None => false,
+        Some(ref v) => is_os_str_true(v),
     }
 }

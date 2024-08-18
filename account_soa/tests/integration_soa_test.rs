@@ -11,7 +11,11 @@ use rustainers::compose::{
     ToRunnableComposeContainers,
 };
 use rustainers::{ExposedPort, Port, WaitStrategy};
-use mvv_common::test::integration::{AutoDockerComposeDown, docker_compose_down_silent as docker_compose_down, is_integration_tests_enabled, prepare_docker_compose, PrepareDockerComposeCfg, Replace};
+use mvv_common::test::integration::{
+    AutoDockerComposeDown, docker_compose_down_silent as docker_compose_down,
+    is_integration_tests_enabled, prepare_docker_compose,
+    PrepareDockerComposeCfg, Replace, get_docker_image_profile,
+};
 use mvv_common::test::{TestOptionUnwrap, TestResultUnwrap};
 use serde_json::json;
 use mvv_common::fn_name;
@@ -113,9 +117,9 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
             Replace::by_str(
                 p("docker-compose.yml"),
                 [
-                    "name: container-runtime-tests",
-                    "name:container-runtime-tests",
-                    "name:\tcontainer-runtime-tests",
+                    "name: account-soa-it-tests",
+                    "name:account-soa-it-tests",
+                    "name:\taccount-soa-it-tests",
                 ],
                 [&format!("name: {new_network}")],
             ),
@@ -141,6 +145,10 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
     };
 
     let temp_docker_compose_dir = prepare_docker_compose(&project_dir, &cfg) ?;
+
+    let docker_image_profile = get_docker_image_profile();
+    let docker_image_profile_suffix: &str = docker_image_profile.as_docker_tag_suffix();
+    std::env::set_var("DOCKER_IMAGE_PROFILE_SUFFIX", docker_image_profile_suffix);
 
     let option: ComposeRunOption = ComposeRunOption::builder()
         // Wait interval for service health check

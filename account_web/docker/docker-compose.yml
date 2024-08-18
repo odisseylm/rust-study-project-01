@@ -1,7 +1,7 @@
 
 networks:
   rust-account-soa-net:
-    name: account-soa-it-tests
+    name: account-web-it-tests
 
 services:
   rust-account-soa:
@@ -10,8 +10,7 @@ services:
     #  service: account-soa
     #  file: ${BASE_DIR}/../account-soa/src/main/docker/docker-compose.yml
     #
-    # image: ${DOCKER_IMAGE_PREFIX}rust-mvv-webapp-debug # mvv-registry/mvv.bank/pseudo2-account-soa
-    # image: mvv_rust_account_soa-debug-local # mvv-registry/mvv.bank/pseudo2-account-soa
+    #image: ${DOCKER_IMAGE_PREFIX}rust-mvv-webapp-debug # mvv-registry/mvv.bank/pseudo2-account-soa
     image: mvv_rust_account_soa${DOCKER_IMAGE_PROFILE_SUFFIX}
     networks:
       - rust-account-soa-net
@@ -19,7 +18,7 @@ services:
       # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
 
       - SERVER_PORT=8080
-      - SERVER_SERVLET_CONTEXTPATH=/account-soa
+      # - SERVER_SERVLET_CONTEXTPATH=/account-soa
 
       # - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/mvvbank
       # - SPRING_DATASOURCE_USERNAME=mvvbank
@@ -33,13 +32,13 @@ services:
       - POSTGRES_USER=rust_mvvbank
       - POSTGRES_PASSWORD=psw
 
-      - SERVER_SSL_KEYALIAS=account-soa
-      - SERVER_SSL_KEYSTORE
-      - SERVER_SSL_KEYSTORETYPE
-      - SERVER_SSL_KEYSTOREPASSWORD
-      - SERVER_SSL_KEYPASSWORD
-      - SERVER_SSL_TRUSTSTORE
-      - SERVER_SSL_TRUSTSTOREPASSWORD
+      # - SERVER_SSL_KEYALIAS=account-soa
+      # - SERVER_SSL_KEYSTORE
+      # - SERVER_SSL_KEYSTORETYPE
+      # - SERVER_SSL_KEYSTOREPASSWORD
+      # - SERVER_SSL_KEYPASSWORD
+      # - SERVER_SSL_TRUSTSTORE
+      # - SERVER_SSL_TRUSTSTOREPASSWORD
     # volumes:
     #   - ./target/generated-test-resources/certs/:/certs/:readonly
     ports:
@@ -51,6 +50,62 @@ services:
       - database:db_postgres
     depends_on:
       - database
+    deploy:
+      #replicas: ${DOCKER_COMPOSE_SCALE_REPLICA_COUNT}
+      replicas: 1
+
+
+  rust-account-web:
+    # 'extends' is not supported yet by io.fabric8 plugin
+    # extends:
+    #  service: account-soa
+    #  file: ${BASE_DIR}/../account-soa/src/main/docker/docker-compose.yml
+    #
+    #image: ${DOCKER_IMAGE_PREFIX}rust-mvv-webapp-debug # mvv-registry/mvv.bank/pseudo2-account-soa
+    image: mvv_rust_account_web${DOCKER_IMAGE_PROFILE_SUFFIX}
+    networks:
+      - rust-account-soa-net
+    environment:
+      # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
+
+      - SERVER_PORT=8080
+      # - SERVER_SERVLET_CONTEXTPATH=/account-web
+
+      # - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/mvvbank
+      # - SPRING_DATASOURCE_USERNAME=mvvbank
+      # - SPRING_DATASOURCE_PASSWORD=psw
+      # - ACCOUNT_DATASOURCE_URL=jdbc:postgresql://database:5432/rust_mvvbank
+      # - ACCOUNT_DATASOURCE_USERNAME=rust_mvvbank
+      # - ACCOUNT_DATASOURCE_PASSWORD=psw
+
+      - POSTGRES_HOST=database
+      - POSTGRES_DB=rust_mvvbank
+      - POSTGRES_USER=rust_mvvbank
+      - POSTGRES_PASSWORD=psw
+
+      - DEPENDENCIES_ACCOUNTSOA_REST_BASEURLS=http://rust-account-soa:8080
+      - DEPENDENCIES_ACCOUNTSOA_USER=vovan-read
+      - DEPENDENCIES_ACCOUNTSOA_PSW=qwerty
+
+      # - SERVER_SSL_KEYALIAS=account-soa
+      # - SERVER_SSL_KEYSTORE
+      # - SERVER_SSL_KEYSTORETYPE
+      # - SERVER_SSL_KEYSTOREPASSWORD
+      # - SERVER_SSL_KEYPASSWORD
+      # - SERVER_SSL_TRUSTSTORE
+      # - SERVER_SSL_TRUSTSTOREPASSWORD
+    # volumes:
+    #   - ./target/generated-test-resources/certs/:/certs/:readonly
+    ports:
+      # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:
+      # - 8095:8080
+      - 8102:8080
+      # - ${DOCKER_HOST_DEBUG_ACCOUNT_SOA_PORT_WITH_COLON}8000
+    links:
+      - database:db_postgres
+    depends_on:
+      - database
+      - rust-account-soa
     deploy:
       #replicas: ${DOCKER_COMPOSE_SCALE_REPLICA_COUNT}
       replicas: 1
@@ -76,9 +131,7 @@ services:
       # - ${DOCKER_HOST_POSTGRES_DB_PORT_WITH_COLON}5432
       - 5432:5432
     volumes:
-      # - ./../src/test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
-      # - ./../test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
-      - ./test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
+      - ./../account_soa/test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s

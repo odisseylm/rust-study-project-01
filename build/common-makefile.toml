@@ -38,6 +38,13 @@ TARGET_SUB_DIR = "debug"
 #PROFILE_PARAM_0 = "--profile"
 #PROFILE_PARAM_1 = "dev"
 RELEASE_PARAM_0 = ""
+[env.debug]
+DEV = true
+TARGET_SUB_DIR = "debug"
+#PROFILE_PARAM_0 = "--profile"
+#PROFILE_PARAM_1 = "dev"
+RELEASE_PARAM_0 = ""
+
 
 [env.production]
 PROD = true
@@ -150,6 +157,15 @@ dependencies = [
 
 
 
+#-----------------------------------------------------------------------------------------------------------------------
+[tasks.init-integration-tests]
+private = true
+workspace = false
+dependencies = [
+    "init-docker-compose-env-vars",
+]
+
+
 [tasks.integration-tests]
 command = "cargo"
 # Using 'cfg' causes FULL recompilation of ALL dependencies (and proejct files)
@@ -200,6 +216,7 @@ args = [
     # --timings[=<FMTS>]        Timing output formats (unstable) (comma separated): html, json
 ]
 dependencies = [
+    "init-integration-tests",
     "build",
     # "build-docker",
 ]

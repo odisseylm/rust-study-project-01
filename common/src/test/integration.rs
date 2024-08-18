@@ -4,6 +4,7 @@ use std::process::Command;
 use anyhow::anyhow;
 use itertools::Itertools;
 use log::{info, warn};
+use super::{is_CI_build, is_manually_launched_task};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -181,4 +182,66 @@ pub fn is_integration_tests_enabled() -> bool {
     let test_enabled = is_it_1 || is_it_2 || is_exact;
 
     test_enabled
+}
+
+
+#[derive(Debug, Copy, Clone)]
+#[derive(strum::Display, strum::IntoStaticStr, strum::EnumIter)]
+pub enum DockerImageProfile {
+    Release,
+    Debug,
+    DebugLocal,
+}
+impl DockerImageProfile {
+    pub fn as_docker_tag_suffix(&self) -> &'static str {
+        match self {
+            DockerImageProfile::Release => "",
+            DockerImageProfile::Debug => "-debug",
+            DockerImageProfile::DebugLocal => "-debug-local",
+        }
+    }
+}
+
+
+pub fn get_docker_image_profile() -> DockerImageProfile {
+
+    let profile_suffix_from_env = crate::env::env_var("DOCKER_IMAGE_PROFILE_SUFFIX")
+        .unwrap_or_else(|_|Some(String::new())).unwrap_or_else(||String::new());
+
+    // If it is already directly set in makefile.toml, we just inherit it.
+    if !profile_suffix_from_env.is_empty() {
+        use strum::IntoEnumIterator;
+
+        let image_profile_from_env = DockerImageProfile::iter()
+            .find(|el|{
+                let s: &'static str = el.as_docker_tag_suffix();
+                s == profile_suffix_from_env
+            });
+
+        if let Some(image_profile) = image_profile_from_env {
+            return image_profile;
+        }
+    }
+
+    let docker_image_profile: DockerImageProfile =
+        if cfg!(debug_assertions) {
+            if is_CI_build() {
+                // Is it possible, CI 'debug' build?
+                DockerImageProfile::Debug
+            } else if is_manually_launched_task() {
+                DockerImageProfile::DebugLocal
+            } else {
+                // At that moment I do not see sense to use 'pure' 2-phase rust docker build with 'debug'
+                // * Such build is time expensive/consuming (similar to 'release')
+                // * Requires additional disk usage
+                //
+                // DockerImageProfile::Debug
+
+                DockerImageProfile::DebugLocal
+            }
+        } else {
+            DockerImageProfile::Release // prod/release mode
+        };
+
+    docker_image_profile
 }

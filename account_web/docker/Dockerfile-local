@@ -1,0 +1,33 @@
+#ARG UBUNTU_VERSION=22.04
+ARG UBUNTU_VERSION
+# Your desktop version should be used.
+# Otherwise you will need to add configuration steps for compatibility with
+# local built exe file.
+#
+FROM ubuntu:${UBUNTU_VERSION}
+
+ARG RUN_RUST_BACKTRACE=full
+
+EXPOSE 80 8080 443 8443 8000 2735 3000
+
+LABEL rust-test-label-03=value-3
+
+RUN apt-get -qq update &&                       \
+    # apt-get -qq install openssl
+    apt-get -qq update && apt-get -qq install libssl-dev
+
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "10001" \
+    appuser
+USER appuser
+
+
+COPY target/debug/mvv_account_web  ./bin/
+
+ENV RUST_BACKTRACE=$RUN_RUST_BACKTRACE
+ENTRYPOINT ["/bin/mvv_account_web", "arg1", "arg2"]

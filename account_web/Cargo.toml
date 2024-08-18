@@ -28,6 +28,8 @@ mvv_common = { version = "0.1.0", path = "../common" }
 mvv_auth = { version = "0.1.0", path = "../auth" }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
+# It is not used a lib, but we need its 'bin' to generate OpenAPI spec and corresponding stubs.
+mvv_account_soa = { version = "0.1.0", path = "../account_soa", optional = true }
 
 # -------------------------------------------------------------------------
 if_chain.workspace = true

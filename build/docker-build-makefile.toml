@@ -14,7 +14,6 @@ args = [ "-p", "${ROOT_PROJECT_DIR}/target/externals" ]
 
 
 [tasks.printenv]
-private = true
 command = "printenv"
 [tasks.temp-fail]
 private = true
