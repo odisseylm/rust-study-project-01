@@ -15,6 +15,7 @@ use mvv_common::{
     // utoipa::{ generate_open_api, nest_open_api, to_generate_open_api, UpdateApiFile },
 };
 use mvv_common::cfg::SslConfValue;
+use mvv_common::exe::current_exe_dir;
 use mvv_common::utoipa::to_generate_open_api;
 use crate::{
     app_dependencies::{ Dependencies, DependenciesState },
@@ -34,7 +35,7 @@ use crate::service::account_service::{AccountSoaConnectCfg, create_account_servi
 
 fn create_prod_dependencies() -> Result<Arc<Dependencies<AccountServiceImpl>>, anyhow::Error> {
 
-    let db = Arc::new(mvv_common::db::pg::pg_db_connection("account_web") ?);
+    let db = Arc::new(mvv_common::db::pg::pg_db_ssl_connection("account_web") ?);
 
     let account_soa_cfg = AccountSoaConnectCfg::load_from_env() ?;
 
@@ -179,6 +180,8 @@ async fn create_app_route <
 pub async fn web_app_main() -> Result<(), anyhow::Error> {
 
     let env_filename = format!(".{}.env", current_exe_name() ?);
+
+    std::env::set_var("EXE_PATH_DIR", current_exe_dir() ?);
     let dotenv_res = dotenv::from_filename(&env_filename);
 
     init_logger();
@@ -218,7 +221,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     // axum::serve(listener, app_router).await ?;
 
     use std::net::SocketAddr;
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     axum_server::bind_rustls(addr, rust_tls_config)
         .serve(app_router.into_make_service())
         .await ?;

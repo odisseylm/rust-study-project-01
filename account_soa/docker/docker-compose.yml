@@ -32,7 +32,7 @@ services:
       - ACCOUNT_SOA_SSL_KEY_PATH=/certs/rust-account-soa.key.pem
       - ACCOUNT_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
     volumes:
-      - ../target/generated-test-resources/ssl/:/certs/:readonly
+      - ../target/generated-test-resources/ssl/:/certs/:ro
     ports:
       # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:
       - 8101:8080
@@ -55,7 +55,12 @@ services:
     # -l - enable SSL connections
     # TODO: how disable plain TCP connection; `-c listen_addresses=''` blocks everything.
     # entrypoint: docker-entrypoint.sh postgres -l -c ssl=on -c ssl_cert_file=/certs/database.crt.pem -c ssl_key_file=/certs/database.key.pem -c listen_addresses=''
-    entrypoint: docker-entrypoint.sh postgres -l -c ssl=on -c ssl_cert_file=/certs/database.crt.pem -c ssl_key_file=/certs/database.key.pem
+    command: sh -c "
+         cp /certs/database.key.pem /usr/lib/ssl/database-test.key.pem &&
+         chown postgres /usr/lib/ssl/database-test.key.pem &&
+         chmod go-r /usr/lib/ssl/database-test.key.pem &&
+         docker-entrypoint.sh postgres -l -c ssl=on -c ssl_cert_file=/certs/database.crt.pem -c ssl_key_file=/usr/lib/ssl/database-test.key.pem
+      "
     environment:
       POSTGRES_DB: rust_mvvbank
       POSTGRES_USER: rust_mvvbank
@@ -63,7 +68,7 @@ services:
     ports:
       - 5432:5432  # - ${DOCKER_HOST_POSTGRES_DB_PORT_WITH_COLON}5432
     volumes:
-      - ./test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
+      - ./test_resources/postgres/init/:/docker-entrypoint-initdb.d/:ro
       #
       # Other system certificates /usr/lib/ssl/
       #
@@ -75,7 +80,7 @@ services:
       # /var/lib/postgresql/data/postgresql.conf
       # /var/lib/postgresql/data/pg_hba.conf
       #
-      - ../target/generated-test-resources/ssl/:/certs/:readonly
+      - ../target/generated-test-resources/ssl/:/certs/:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s

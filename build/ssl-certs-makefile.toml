@@ -16,7 +16,7 @@ cwd = "${TEST_CERTS_DIR}"
 args = [
     "-c",
     # " rm -f ${TEST_CERTS_DIR}/*.key ${TEST_CERTS_DIR}/*.crt ${TEST_CERTS_DIR}/*.cert ",
-    " rm -f *.key *.crt *.cert ",
+    " rm -f *.key *.crt *.cert *.pem ",
 ]
 dependencies = ["generate-ssl-certs-prepare"]
 
@@ -57,7 +57,7 @@ dependencies = [
 
 
 
-[tasks.generate-ssl-certs--for-database]
+[tasks.generate-ssl-certs--for-database-impl]
 private = true
 workspace = false
 condition = { files_not_exist = ["${TEST_CERTS_DIR}/database.key.pem", "${TEST_CERTS_DIR}/database.crt.pem"] }
@@ -68,13 +68,21 @@ args = [
     "-keyout", "${TEST_CERTS_DIR}/database.key.pem",
     "-outform", "PEM",
     "-out", "${TEST_CERTS_DIR}/database.crt.pem", "-subj", "/CN=database",
-    "-addext", "subjectAltName=DNS:database-0,DNS:database_0,DNS:database-1,DNS:database_1",
+    # TODO: add aliases for tests (see java project)
+    "-addext", "subjectAltName=DNS:localhost,DNS:database-0,DNS:database_0,DNS:database-1,DNS:database_1",
 ]
 dependencies = ["generate-ssl-certs-prepare"]
 
+[tasks.generate-ssl-certs--for-database]
+private = true
+workspace = false
+script = [ "chmod ugo+r \"${TEST_CERTS_DIR}/database.key.pem\"" ]
+dependencies = [
+    "generate-ssl-certs--for-database-impl"
+]
 
 
-[tasks.generate-ssl-certs--for-account-soa]
+[tasks.generate-ssl-certs--for-account-soa-impl]
 private = true
 workspace = false
 condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-soa.key.pem", "${TEST_CERTS_DIR}/rust-account-soa.crt.pem"] }
@@ -84,8 +92,9 @@ args = [
     "-nodes",
     "-keyout", "${TEST_CERTS_DIR}/rust-account-soa.key.pem",
     "-outform", "PEM",
+    # TODO: add aliases for tests (see java project)
     "-out", "${TEST_CERTS_DIR}/rust-account-soa.crt.pem", "-subj", "/CN=rust-account-soa",
-    "-addext", "subjectAltName=DNS:rust-account-soa-0,DNS:rust-account-soa_0,DNS:rust-account-soa-1,DNS:rust-account-soa_1,DNS:rust-account-soa-2,DNS:rust-account-soa_2",
+    "-addext", "subjectAltName=DNS:rust-account-soa,DNS:localhost,DNS:rust-account-soa-0,DNS:rust-account-soa_0,DNS:rust-account-soa-1,DNS:rust-account-soa_1,DNS:rust-account-soa-2,DNS:rust-account-soa_2",
     # "-addext", "subjectAltName=DNS:rust-account-soa-0,DNS:*.example.com,IP:10.0.0.1",
 
     # account-soa_0
@@ -108,12 +117,20 @@ args = [
 # <generated-dev-certs-hosts>localhost,database,${project.build.finalName}</generated-dev-certs-hosts>
 dependencies = ["generate-ssl-certs-prepare"]
 
-
-
-[tasks.generate-ssl-certs--for-account-web]
+[tasks.generate-ssl-certs--for-account-soa]
 private = true
 workspace = false
-condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-web.key", "${TEST_CERTS_DIR}/rust-account-web.crt.pem"] }
+script = [ "chmod ugo+r \"${TEST_CERTS_DIR}/rust-account-soa.key.pem\"" ]
+dependencies = [
+    "generate-ssl-certs--for-account-soa-impl"
+]
+
+
+
+[tasks.generate-ssl-certs--for-account-web-impl]
+private = true
+workspace = false
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-web.key.pem", "${TEST_CERTS_DIR}/rust-account-web.crt.pem"] }
 command = "openssl"
 args = [
     "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "30",
@@ -121,7 +138,8 @@ args = [
     "-keyout", "${TEST_CERTS_DIR}/rust-account-web.key.pem",
     "-outform", "PEM",
     "-out", "${TEST_CERTS_DIR}/rust-account-web.crt.pem", "-subj", "/CN=rust-account-web",
-    "-addext", "subjectAltName=DNS:rust-account-web-0,DNS:rust-account-web_0,DNS:rust-account-web-1,DNS:rust-account-web_1,DNS:rust-account-web-2,DNS:rust-account-web_2",
+    # TODO: add aliases for tests (see java project)
+    "-addext", "subjectAltName=DNS:rust-account-web,DNS:localhost,DNS:rust-account-web-0,DNS:rust-account-web_0,DNS:rust-account-web-1,DNS:rust-account-web_1,DNS:rust-account-web-2,DNS:rust-account-web_2",
     # "-addext", "subjectAltName=DNS:rust-account-web-0,DNS:*.example.com,IP:10.0.0.1",
 
     # account-web_0
@@ -137,6 +155,14 @@ args = [
 # <hosts>${generated-dev-certs-hosts}</hosts>
 # <generated-dev-certs-hosts>localhost,database,${project.build.finalName}</generated-dev-certs-hosts>
 dependencies = ["generate-ssl-certs-prepare"]
+
+[tasks.generate-ssl-certs--for-account-web]
+private = true
+workspace = false
+script = [ "chmod ugo+r \"${TEST_CERTS_DIR}/rust-account-web.key.pem\"" ]
+dependencies = [
+    "generate-ssl-certs--for-account-web-impl"
+]
 
 
 

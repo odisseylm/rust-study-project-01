@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use http::HeaderMap;
 use reqwest::Certificate;
 use mvv_common::{
@@ -108,7 +109,8 @@ pub fn create_account_service(cfg: &AccountSoaConnectCfg) -> anyhow::Result<Acco
 
     let cert: Certificate = match cfg.server_cert {
         SslConfValue::Path(ref cert_path) =>{
-            let pem = std::io::read_to_string(cert_path) ?;
+            let pem = std::fs::read_to_string(cert_path)
+                .map_err(|err| anyhow!("Error of reading from [{cert_path:?}] ({err:?})")) ?;
             Certificate::from_pem(pem.as_bytes()) ?
         }
         SslConfValue::Value(ref value) =>

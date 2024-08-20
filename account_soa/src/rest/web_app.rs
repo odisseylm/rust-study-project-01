@@ -212,7 +212,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     // axum::serve(listener, app_router).await ?;
 
     use std::net::SocketAddr;
-    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
     axum_server::bind_rustls(addr, rust_tls_config)
         .serve(app_router.into_make_service())
         .await ?;
