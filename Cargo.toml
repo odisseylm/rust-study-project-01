@@ -155,7 +155,9 @@ time = "0.3.36"
 #type-rules = { version = "0.2.3", features = ["derive", "regex", "serde"] }
 type-rules = { version = "0.2.3", features = ["derive", "regex"] }
 
-axum = {  version = "0.7.5" , features = ["default", "macros"] }
+axum = { version = "0.7.5" , features = ["default", "macros"] }
+# !! 'axum-server' is maintained by community independently from axum !!
+axum-server = { version = "0.7.1" }
 #axum-handle-error-extract = "0.1.0"
 async-trait = "0.1.80"
 #axum = {  version = "0.7.5", features = ["default", "tracing", ] }
@@ -244,7 +246,9 @@ hyper = "1.3.1"
 reqwest = { version = "0.12.4", features = ["default", "json", "stream"] }
 url = "2.5.1"
 
-sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal"] }
+#sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "tls-rustls", "runtime-tokio-rustls"] }
+#sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "runtime-tokio-rustls"] }
+sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "tls-rustls"] }
 # Hm... Why I had to duplicate all options?
 sqlx-postgres = { version = "0.7.4", features = ["bigdecimal", "chrono", "uuid"] }
 

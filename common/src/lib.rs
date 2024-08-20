@@ -24,3 +24,4 @@ pub mod cfg;
 pub mod soa;
 pub mod backtrace;
 pub mod uuid;
+pub mod secure;

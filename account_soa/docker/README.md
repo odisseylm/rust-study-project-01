@@ -4,6 +4,7 @@
  - `docker run mvv_rust_account_soa /bin/bash -it`
  - `docker run -it mvv_rust_account_soa /bin/bash` # hm... Does not work for this image ?!?!
  - `docker run --name test333 -it --rm --entrypoint="/bin/bash" mvv_rust_account_soa-debug-local`
+ - `docker run --name test333 -it --rm --entrypoint="/bin/bash" postgres:16`
 
 
 Clean

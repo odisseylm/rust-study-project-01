@@ -2,7 +2,7 @@
 [tasks.generate-ssl-certs-prepare]
 private = true
 workspace = false
-env = { "TEST_CERTS_DIR" = "${ROOT_PROJECT_DIR}/target/debug/generated-test-resources" }
+env = { "TEST_CERTS_DIR" = "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl" }
 command = "mkdir"
 args = ["-p", "${TEST_CERTS_DIR}"]
 
@@ -38,8 +38,9 @@ dependencies = ["generate-ssl-certs-prepare"]
 workspace = false
 dependencies = [
     "generate-ssl-certs-prepare",
-    "generate-ssl-certs--for-account-soa",
     "generate-ssl-certs--for-database",
+    "generate-ssl-certs--for-account-soa",
+    "generate-ssl-certs--for-account-web",
 ]
 
 
@@ -49,8 +50,9 @@ workspace = false
 dependencies = [
     "generate-ssl-certs-prepare",
     "delete-ssl-certs-prepare",
-    "generate-ssl-certs--for-account-soa",
     "generate-ssl-certs--for-database",
+    "generate-ssl-certs--for-account-soa",
+    "generate-ssl-certs--for-account-web",
 ]
 
 
@@ -58,13 +60,14 @@ dependencies = [
 [tasks.generate-ssl-certs--for-database]
 private = true
 workspace = false
-condition = { files_not_exist = ["${TEST_CERTS_DIR}/database.key", "${TEST_CERTS_DIR}/database.crt"] }
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/database.key.pem", "${TEST_CERTS_DIR}/database.crt.pem"] }
 command = "openssl"
 args = [
     "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "30",
     "-nodes",
-    "-keyout", "${TEST_CERTS_DIR}/database.key",
-    "-out", "${TEST_CERTS_DIR}/database.crt", "-subj", "/CN=database",
+    "-keyout", "${TEST_CERTS_DIR}/database.key.pem",
+    "-outform", "PEM",
+    "-out", "${TEST_CERTS_DIR}/database.crt.pem", "-subj", "/CN=database",
     "-addext", "subjectAltName=DNS:database-0,DNS:database_0,DNS:database-1,DNS:database_1",
 ]
 dependencies = ["generate-ssl-certs-prepare"]
@@ -74,13 +77,14 @@ dependencies = ["generate-ssl-certs-prepare"]
 [tasks.generate-ssl-certs--for-account-soa]
 private = true
 workspace = false
-condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-soa.key", "${TEST_CERTS_DIR}/rust-account-soa.crt"] }
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-soa.key.pem", "${TEST_CERTS_DIR}/rust-account-soa.crt.pem"] }
 command = "openssl"
 args = [
     "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "30",
     "-nodes",
-    "-keyout", "${TEST_CERTS_DIR}/rust-account-soa.key",
-    "-out", "${TEST_CERTS_DIR}/rust-account-soa.crt", "-subj", "/CN=rust-account-soa",
+    "-keyout", "${TEST_CERTS_DIR}/rust-account-soa.key.pem",
+    "-outform", "PEM",
+    "-out", "${TEST_CERTS_DIR}/rust-account-soa.crt.pem", "-subj", "/CN=rust-account-soa",
     "-addext", "subjectAltName=DNS:rust-account-soa-0,DNS:rust-account-soa_0,DNS:rust-account-soa-1,DNS:rust-account-soa_1,DNS:rust-account-soa-2,DNS:rust-account-soa_2",
     # "-addext", "subjectAltName=DNS:rust-account-soa-0,DNS:*.example.com,IP:10.0.0.1",
 
@@ -109,13 +113,14 @@ dependencies = ["generate-ssl-certs-prepare"]
 [tasks.generate-ssl-certs--for-account-web]
 private = true
 workspace = false
-condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-web.key", "${TEST_CERTS_DIR}/rust-account-web.crt"] }
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-web.key", "${TEST_CERTS_DIR}/rust-account-web.crt.pem"] }
 command = "openssl"
 args = [
     "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "30",
     "-nodes",
-    "-keyout", "${TEST_CERTS_DIR}/rust-account-web.key",
-    "-out", "${TEST_CERTS_DIR}/rust-account-web.crt", "-subj", "/CN=rust-account-web",
+    "-keyout", "${TEST_CERTS_DIR}/rust-account-web.key.pem",
+    "-outform", "PEM",
+    "-out", "${TEST_CERTS_DIR}/rust-account-web.crt.pem", "-subj", "/CN=rust-account-web",
     "-addext", "subjectAltName=DNS:rust-account-web-0,DNS:rust-account-web_0,DNS:rust-account-web-1,DNS:rust-account-web_1,DNS:rust-account-web-2,DNS:rust-account-web_2",
     # "-addext", "subjectAltName=DNS:rust-account-web-0,DNS:*.example.com,IP:10.0.0.1",
 

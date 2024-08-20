@@ -2,11 +2,22 @@
 
 
 
+# Third-party
+
+ - Cargo make
+   - https://github.com/sagiegurari/cargo-make
+   - https://github.com/sagiegurari/cargo-make/tree/master/src/lib/descriptor/makefiles
+   - https://github.com/sagiegurari/cargo-make/tree/master/src/lib/descriptor/makefiles
+
+
+
 Investigate
 
  - crate typewit
  - crate derivative
    - try to replace manual written Debug/Display by macros
+
+
 # Build
 
  - `cargo build`

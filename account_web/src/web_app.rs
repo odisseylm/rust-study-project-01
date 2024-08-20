@@ -32,7 +32,7 @@ use crate::service::account_service::{AccountSoaConnectCfg, create_account_servi
 
 fn create_prod_dependencies() -> Result<Arc<Dependencies<AccountServiceImpl>>, anyhow::Error> {
 
-    let db = Arc::new(mvv_common::db::pg::pg_db_connection() ?);
+    let db = Arc::new(mvv_common::db::pg::pg_db_connection("account_web") ?);
 
     let account_soa_cfg = AccountSoaConnectCfg::load_from_env() ?;
 

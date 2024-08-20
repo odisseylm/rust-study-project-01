@@ -1,3 +1,9 @@
+use std::path::PathBuf;
+use crate::env::env_var;
+use crate::exe::current_exe_dir;
+use crate::secure::SecureString;
+//--------------------------------------------------------------------------------------------------
+
 
 pub fn load_url_from_env_var(var_name: &'static str) -> anyhow::Result<String> {
     let first_url = load_urls_from_env_var(var_name) ?
@@ -19,4 +25,28 @@ pub fn load_urls_from_env_var(var_name: &'static str) -> anyhow::Result<Vec<Stri
             .map_err(|_|anyhow::anyhow!("Env var [{var_name}] has bad formed URL [{url}]."))?;
     }
     Ok(urls)
+}
+
+
+pub fn load_path_from_env_var(var_name: &'static str) -> anyhow::Result<PathBuf> {
+    let path = env_var(var_name) ?;
+    let path = path.ok_or_else(|| anyhow::anyhow!("Var name [{var_name}] is empty.")) ?;
+
+    let path =
+        if path.contains("${EXE_PATH_DIR}") {
+            let exe_path_dir = current_exe_dir() ?;
+            let exe_path_dir = exe_path_dir.to_string_lossy();
+            path.replace("${EXE_PATH_DIR}", exe_path_dir.as_ref())
+        } else {
+            path
+        };
+
+    Ok(PathBuf::from(&path))
+}
+
+
+#[derive(Clone, Debug)]
+pub enum SslConfValue {
+    Path(PathBuf), // Path(SecureString),
+    Value(SecureString),
 }

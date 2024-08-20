@@ -64,6 +64,7 @@ impl SqlUserProvider {
     }
 
     #[allow(dead_code)]
+    //noinspection DuplicatedCode
     async fn get_cached(&self, user_id: &String) -> Result<Option<Option<AuthUser>>,AuthUserProviderError> {
         if let Some(ref cache) = self.0.cache {
             // Can we use 'read' there

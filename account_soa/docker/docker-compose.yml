@@ -19,7 +19,7 @@ services:
       # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
 
       - SERVER_PORT=8080
-      - SERVER_SERVLET_CONTEXTPATH=/account-soa
+      # - SERVER_SERVLET_CONTEXTPATH=/account-soa
 
       # - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/mvvbank
       # - SPRING_DATASOURCE_USERNAME=mvvbank
@@ -33,15 +33,19 @@ services:
       - POSTGRES_USER=rust_mvvbank
       - POSTGRES_PASSWORD=psw
 
-      - SERVER_SSL_KEYALIAS=account-soa
-      - SERVER_SSL_KEYSTORE
-      - SERVER_SSL_KEYSTORETYPE
-      - SERVER_SSL_KEYSTOREPASSWORD
-      - SERVER_SSL_KEYPASSWORD
-      - SERVER_SSL_TRUSTSTORE
-      - SERVER_SSL_TRUSTSTOREPASSWORD
-    # volumes:
-    #   - ./target/generated-test-resources/certs/:/certs/:readonly
+      - DATABASE_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
+      - ACCOUNT_SOA_SSL_KEY_PATH=/certs/rust-account-soa.key.pem
+      - ACCOUNT_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
+
+      # - SERVER_SSL_KEYALIAS=account-soa
+      # - SERVER_SSL_KEYSTORE
+      # - SERVER_SSL_KEYSTORETYPE
+      # - SERVER_SSL_KEYSTOREPASSWORD
+      # - SERVER_SSL_KEYPASSWORD
+      # - SERVER_SSL_TRUSTSTORE
+      # - SERVER_SSL_TRUSTSTOREPASSWORD
+    volumes:
+      - ../target/generated-test-resources/ssl/:/certs/:readonly
     ports:
       # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:
       # - 8095:8080
@@ -68,6 +72,10 @@ services:
     networks:
       - rust-account-soa-net
     hostname: database # required only for fabricio8 plugin
+    # -l - enable SSL connections
+    # TODO: how disable plain TCP connection; `-c listen_addresses=''` blocks everything.
+    # entrypoint: docker-entrypoint.sh postgres -l -c ssl=on -c ssl_cert_file=/certs/database.crt.pem -c ssl_key_file=/certs/database.key.pem -c listen_addresses=''
+    entrypoint: docker-entrypoint.sh postgres -l -c ssl=on -c ssl_cert_file=/certs/database.crt.pem -c ssl_key_file=/certs/database.key.pem
     environment:
       POSTGRES_DB: rust_mvvbank
       POSTGRES_USER: rust_mvvbank
@@ -76,9 +84,22 @@ services:
       # - ${DOCKER_HOST_POSTGRES_DB_PORT_WITH_COLON}5432
       - 5432:5432
     volumes:
-      # - ./../src/test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
-      # - ./../test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
       - ./test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
+      # other system certificates /usr/lib/ssl/
+      #
+      # /var/lib/postgresql/data/postgresql.auto.conf
+      # /var/lib/postgresql/data/pg_ident.conf
+      # /var/lib/postgresql/data/postgresql.conf
+      # /var/lib/postgresql/data/pg_hba.conf
+      #
+      - ../target/generated-test-resources/ssl/:/certs/:readonly
+      #
+      # - ../target/generated-test-resources/ssl/database.crt.pem:/var/lib/postgresql/data/server.crt:readonly
+      # - ../target/generated-test-resources/ssl/database.key.pem:/var/lib/postgresql/data/server.key:readonly
+      # - ../target/generated-test-resources/ssl/database.crt.pem:/var/lib/postgresql/data/server.crt:readonly
+      # - ../target/generated-test-resources/ssl/database.key.pem:/var/lib/postgresql/data/server.key:readonly
+      # - ../target/generated-test-resources/ssl/database.crt.pem:/usr/lib/ssl/server.crt:readonly
+      # - ../target/generated-test-resources/ssl/database.key.pem:/usr/lib/ssl/server.key:readonly
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s

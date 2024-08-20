@@ -1,15 +1,27 @@
 use anyhow::anyhow;
-use sqlx_postgres::PgConnectOptions;
+use sqlx_postgres::{PgConnectOptions, PgSslMode};
 use crate::env::{ env_var, EnvVarOps };
 //--------------------------------------------------------------------------------------------------
 
+#[derive(Debug, Clone, Copy, strum::Display)]
+pub enum ConnectionType {
+    Plain,
+    Ssl
+}
 
-pub fn pg_db_connection_options() -> Result<Option<PgConnectOptions>, anyhow::Error> {
 
-    let postgres_host = env_var("POSTGRES_HOST") ?;
-    let postgres_db = env_var("POSTGRES_DB") ?;
-    let postgres_user = env_var("POSTGRES_USER") ?;
-    let postgres_password = env_var("POSTGRES_PASSWORD") ?;
+pub fn pg_db_connection_options(connection_type: ConnectionType, app_name: &str) -> Result<Option<PgConnectOptions>, anyhow::Error> {
+    const POSTGRES_HOST: &'static str = "POSTGRES_HOST";
+    const POSTGRES_DB: &'static str = "POSTGRES_DB";
+    const POSTGRES_USER: &'static str = "POSTGRES_USER";
+    const POSTGRES_PASSWORD: &'static str = "POSTGRES_PASSWORD";
+    const POSTGRES_SSL_CERT_PATH: &'static str = "POSTGRES_SSL_CERT_PATH";
+
+    let postgres_host = env_var(POSTGRES_HOST) ?;
+    let postgres_db = env_var(POSTGRES_DB) ?;
+    let postgres_user = env_var(POSTGRES_USER) ?;
+    let postgres_password = env_var(POSTGRES_PASSWORD) ?;
+    let postgres_ssl_cert = env_var(POSTGRES_SSL_CERT_PATH) ?;
 
     // if (&postgres_db, &postgres_user, &postgres_password).all_are_none() {
     if postgres_host.is_none() && postgres_db.is_none() &&
@@ -18,24 +30,42 @@ pub fn pg_db_connection_options() -> Result<Option<PgConnectOptions>, anyhow::Er
         return Ok(None);
     }
 
-    let postgres_host = postgres_host.val_or_not_found_err("POSTGRES_HOST") ?;
-    let postgres_db = postgres_db.val_or_not_found_err("POSTGRES_DB") ?;
-    let postgres_user = postgres_user.val_or_not_found_err("POSTGRES_USER") ?;
-    let postgres_password = postgres_password.val_or_not_found_err("POSTGRES_PASSWORD") ?;
+    let postgres_host = postgres_host.val_or_not_found_err(POSTGRES_HOST) ?;
+    let postgres_db = postgres_db.val_or_not_found_err(POSTGRES_DB) ?;
+    let postgres_user = postgres_user.val_or_not_found_err(POSTGRES_USER) ?;
+    let postgres_password = postgres_password.val_or_not_found_err(POSTGRES_PASSWORD) ?;
 
-    let options = PgConnectOptions::new()
+    let mut options = PgConnectOptions::new()
         .host(postgres_host.as_str())
         .database(postgres_db.as_str())
-        .application_name("rust-account-soa")
+        .application_name(app_name)
         .username(postgres_user.as_str())
         .password(postgres_password.as_str())
         ;
+
+    if let ConnectionType::Ssl = connection_type {
+        let postgres_ssl_cert = postgres_ssl_cert
+            .and_then(|s| if s.is_empty() { None } else { Some(s) } )
+            .val_or_not_found_err(POSTGRES_SSL_CERT_PATH) ?;
+        options = options
+            .ssl_mode(PgSslMode::Require)
+            // ? Why not 'server' cert ?
+            .ssl_root_cert(postgres_ssl_cert);
+    }
+
     Ok(Some(options))
 }
 
 
-pub fn pg_db_connection() -> Result<sqlx_postgres::PgPool, anyhow::Error> {
-    let options = pg_db_connection_options() ?;
+pub fn pg_db_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, anyhow::Error> {
+    let options = pg_db_connection_options(ConnectionType::Plain, app_name) ?;
+    let options = options.ok_or_else(||anyhow!("No Postgres DB connection options.")) ?;
+    Ok(sqlx_postgres::PgPool::connect_lazy_with(options))
+}
+
+
+pub fn pg_db_ssl_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, anyhow::Error> {
+    let options = pg_db_connection_options(ConnectionType::Ssl, app_name) ?;
     let options = options.ok_or_else(||anyhow!("No Postgres DB connection options.")) ?;
     Ok(sqlx_postgres::PgPool::connect_lazy_with(options))
 }

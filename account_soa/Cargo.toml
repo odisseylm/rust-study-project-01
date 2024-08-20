@@ -133,6 +133,8 @@ time.workspace = true
 type-rules.workspace = true
 
 axum.workspace = true
+# !! 'axum-server' is maintained by community independently from axum !!
+axum-server = { workspace = true, features = [ "tls-rustls" ] }
 #axum-handle-error-extract.workspace = true
 async-trait.workspace = true
 tower.workspace = true
