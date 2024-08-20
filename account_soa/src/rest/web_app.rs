@@ -191,7 +191,6 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     let app_router = create_app_route(create_prod_dependencies() ?).await ?;
 
     use axum_server::tls_rustls::RustlsConfig;
-
     let ssl_conf = SslConfig::load_from_env() ?;
 
     let rust_tls_config: RustlsConfig =

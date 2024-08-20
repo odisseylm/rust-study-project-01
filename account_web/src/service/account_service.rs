@@ -1,8 +1,11 @@
 use http::HeaderMap;
+use reqwest::Certificate;
 use mvv_common::{
     cfg::load_url_from_env_var,
     soa::RestCallError,
 };
+use mvv_common::cfg::SslConfValue;
+use crate::cfg::SslConfig;
 use crate::rest_dependencies::account_soa_client::{
     Client as AccountSoaRestClient,
     types::{
@@ -76,9 +79,12 @@ pub struct AccountSoaConnectCfg {
     pub base_url: String,
     pub user: String,
     pub psw: String,
+    pub server_cert: SslConfValue,
 }
 impl AccountSoaConnectCfg {
     pub fn load_from_env() -> anyhow::Result<Self> {
+        let conf = SslConfig::load_from_env() ?;
+
         Ok(AccountSoaConnectCfg {
             // In general there may be several URLs with client balancing,
             // but now we use only 1st url
@@ -88,6 +94,8 @@ impl AccountSoaConnectCfg {
                 mvv_common::env::required_env_var("DEPENDENCIES_ACCOUNTSOA_USER") ?,
             psw:
                 mvv_common::env::required_env_var("DEPENDENCIES_ACCOUNTSOA_PSW") ?,
+            server_cert:
+                conf.account_soa_cert,
         })
     }
 }
@@ -98,6 +106,15 @@ pub fn create_account_service(cfg: &AccountSoaConnectCfg) -> anyhow::Result<Acco
 
     let auth = Authorization::basic(&cfg.user, &cfg.psw);
 
+    let cert: Certificate = match cfg.server_cert {
+        SslConfValue::Path(ref cert_path) =>{
+            let pem = std::io::read_to_string(cert_path) ?;
+            Certificate::from_pem(pem.as_bytes()) ?
+        }
+        SslConfValue::Value(ref value) =>
+            Certificate::from_pem(value.as_bytes()) ?,
+    };
+
     let client = reqwest::Client::builder()
         .default_headers({
             let mut headers = HeaderMap::new();
@@ -105,6 +122,7 @@ pub fn create_account_service(cfg: &AccountSoaConnectCfg) -> anyhow::Result<Acco
             headers.insert("Authorization", auth.0.encode());
             headers
         })
+        .add_root_certificate(cert)
         .build() ?;
 
     // let client = AccountSoaRestClient::new(&cfg.base_url);

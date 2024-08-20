@@ -5,13 +5,14 @@ networks:
 
 services:
   rust-account-soa:
-    # 'extends' is not supported yet by io.fabric8 plugin
+    # We can use 'extends' if we use docker-compose (swarm) in production
+    # and want just inherit prod docker compose file.
+    #
     # extends:
     #  service: account-soa
     #  file: ${BASE_DIR}/../account-soa/src/main/docker/docker-compose.yml
     #
     # image: ${DOCKER_IMAGE_PREFIX}rust-mvv-webapp-debug # mvv-registry/mvv.bank/pseudo2-account-soa
-    # image: mvv_rust_account_soa-debug-local # mvv-registry/mvv.bank/pseudo2-account-soa
     image: mvv_rust_account_soa${DOCKER_IMAGE_PROFILE_SUFFIX}
     networks:
       - rust-account-soa-net
@@ -19,37 +20,23 @@ services:
       # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
 
       - SERVER_PORT=8080
-      # - SERVER_SERVLET_CONTEXTPATH=/account-soa
-
-      # - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/mvvbank
-      # - SPRING_DATASOURCE_USERNAME=mvvbank
-      # - SPRING_DATASOURCE_PASSWORD=psw
-      # - ACCOUNT_DATASOURCE_URL=jdbc:postgresql://database:5432/rust_mvvbank
-      # - ACCOUNT_DATASOURCE_USERNAME=rust_mvvbank
-      # - ACCOUNT_DATASOURCE_PASSWORD=psw
+      # - SERVER_CONTEXTPATH=/account-soa
 
       - POSTGRES_HOST=database
       - POSTGRES_DB=rust_mvvbank
       - POSTGRES_USER=rust_mvvbank
       - POSTGRES_PASSWORD=psw
+      - POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem
 
-      - DATABASE_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
+      - DATABASE_SSL_CERT_PATH=/certs/database.crt.pem # TODO: remove DATABASE_SSL_CERT_PATH key
       - ACCOUNT_SOA_SSL_KEY_PATH=/certs/rust-account-soa.key.pem
       - ACCOUNT_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
-
-      # - SERVER_SSL_KEYALIAS=account-soa
-      # - SERVER_SSL_KEYSTORE
-      # - SERVER_SSL_KEYSTORETYPE
-      # - SERVER_SSL_KEYSTOREPASSWORD
-      # - SERVER_SSL_KEYPASSWORD
-      # - SERVER_SSL_TRUSTSTORE
-      # - SERVER_SSL_TRUSTSTOREPASSWORD
     volumes:
       - ../target/generated-test-resources/ssl/:/certs/:readonly
     ports:
       # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:
-      # - 8095:8080
       - 8101:8080
+      # Remote debug
       # - ${DOCKER_HOST_DEBUG_ACCOUNT_SOA_PORT_WITH_COLON}8000
     links:
       - database:db_postgres
@@ -61,14 +48,7 @@ services:
 
 
   database:
-    # 'extends' is not supported yet by io.fabric8 plugin
-    # extends:
-    #  service: database
-    #  file: ${BASE_DIR}/../account-soa/src/main/docker/docker-compose.yml
-    #
     image: postgres:16
-    #container_name: database
-    #restart: no
     networks:
       - rust-account-soa-net
     hostname: database # required only for fabricio8 plugin
@@ -81,11 +61,14 @@ services:
       POSTGRES_USER: rust_mvvbank
       POSTGRES_PASSWORD: psw
     ports:
-      # - ${DOCKER_HOST_POSTGRES_DB_PORT_WITH_COLON}5432
-      - 5432:5432
+      - 5432:5432  # - ${DOCKER_HOST_POSTGRES_DB_PORT_WITH_COLON}5432
     volumes:
       - ./test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
-      # other system certificates /usr/lib/ssl/
+      #
+      # Other system certificates /usr/lib/ssl/
+      #
+      # !! Just for investigation !! Remember, '/var/lib/postgresql/data/' is auto-generated
+      # and we cannot put/map our files (SSL certs, for example) to there.
       #
       # /var/lib/postgresql/data/postgresql.auto.conf
       # /var/lib/postgresql/data/pg_ident.conf
@@ -93,13 +76,6 @@ services:
       # /var/lib/postgresql/data/pg_hba.conf
       #
       - ../target/generated-test-resources/ssl/:/certs/:readonly
-      #
-      # - ../target/generated-test-resources/ssl/database.crt.pem:/var/lib/postgresql/data/server.crt:readonly
-      # - ../target/generated-test-resources/ssl/database.key.pem:/var/lib/postgresql/data/server.key:readonly
-      # - ../target/generated-test-resources/ssl/database.crt.pem:/var/lib/postgresql/data/server.crt:readonly
-      # - ../target/generated-test-resources/ssl/database.key.pem:/var/lib/postgresql/data/server.key:readonly
-      # - ../target/generated-test-resources/ssl/database.crt.pem:/usr/lib/ssl/server.crt:readonly
-      # - ../target/generated-test-resources/ssl/database.key.pem:/usr/lib/ssl/server.key:readonly
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s

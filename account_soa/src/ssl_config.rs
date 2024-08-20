@@ -10,7 +10,7 @@ pub struct SslConfig {
 
 impl SslConfig {
     pub fn load_from_env() -> Result<Self, anyhow::Error> {
-        Ok(SslConfig {
+        Ok(Self {
             database_cert:
                 SslConfValue::Path(load_path_from_env_var("DATABASE_SSL_CERT_PATH") ?),
             account_soa_key:
