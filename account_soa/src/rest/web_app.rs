@@ -207,15 +207,15 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
             anyhow::bail!("Both account_soa_cert/account_soa_key should have the same type")
         };
 
-    // run our app with hyper, listening globally on port 3000
-    // let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await ?;
-    // axum::serve(listener, app_router).await ?;
-
     use std::net::SocketAddr;
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     axum_server::bind_rustls(addr, rust_tls_config)
         .serve(app_router.into_make_service())
         .await ?;
+
+    // // run our app with hyper, listening globally on port 3000
+    // let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await ?;
+    // axum::serve(listener, app_router).await ?;
 
     Ok(())
 }

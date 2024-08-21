@@ -49,8 +49,11 @@ pub fn pg_db_connection_options(connection_type: ConnectionType, app_name: &str)
             .val_or_not_found_err(POSTGRES_SSL_CERT_PATH) ?;
         options = options
             .ssl_mode(PgSslMode::Require)
+            // .ssl_mode(PgSslMode::VerifyCa)
             // ? Why not 'server' cert ?
-            .ssl_root_cert(postgres_ssl_cert);
+            .ssl_root_cert(postgres_ssl_cert)
+            //.ssl_root_cert_from_pem(std::fs::read_to_string(postgres_ssl_cert) ?.into_bytes())
+            ;
     }
 
     Ok(Some(options))
