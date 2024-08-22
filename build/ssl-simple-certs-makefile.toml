@@ -1,5 +1,5 @@
 
-[tasks.generate-ssl-simple-certs-prepare]
+[tasks.gen-ssl-simple-certs-prepare]
 private = true
 workspace = false
 env = { TEST_CERTS_DIR = "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl-simple" }
@@ -7,35 +7,35 @@ script = ''' mkdir -p "${TEST_CERTS_DIR}" '''
 
 
 
-[tasks.delete-ssl-simple-certs]
+[tasks.del-ssl-simple-certs]
 private = true
 workspace = false
 cwd = "${TEST_CERTS_DIR}"
 script = [ "rm -f *.key *.crt *.cert *.pem *.csr *.srl" ]
-dependencies = [ "generate-ssl-simple-certs-prepare" ]
+dependencies = [ "gen-ssl-simple-certs-prepare" ]
 
 
 
 [tasks.generate-ssl-simple-certs]
 workspace = false
 dependencies = [
-    "generate-ssl-simple-certs-prepare",
-    "generate-ssl-simple-certs--for-database",
-    "generate-ssl-simple-certs--for-account-soa",
-    "generate-ssl-simple-certs--for-account-web",
+    "gen-ssl-simple-certs-prepare",
+    "gen-ssl-simple-certs--for-database",
+    "gen-ssl-simple-certs--for-account-soa",
+    "gen-ssl-simple-certs--for-account-web",
 ]
 
 [tasks.regenerate-ssl-simple-certs]
 workspace = false
 dependencies = [
-    "generate-ssl-simple-certs-prepare",
-    "delete-ssl-simple-certs",
+    "gen-ssl-simple-certs-prepare",
+    "del-ssl-simple-certs",
     "generate-ssl-simple-certs",
 ]
 
 
 
-[tasks.generate-ssl-simple-certs-impl]
+[tasks.gen-ssl-simple-serv-cert]
 private = true
 workspace = false
 script = '''
@@ -66,48 +66,34 @@ script = '''
     # mvv-bank_1 mvv-bank-1 bank-plugin-mvv-bank_1 bank-plugin-mvv-bank-1 bank-plugin-tests-1661111370-mvv-bank_1 bank-plugin-tests-1661111370-mvv-bank-1
     # mvv-bank_2 mvv-bank-2 bank-plugin-mvv-bank_2 bank-plugin-mvv-bank-2 bank-plugin-tests-1661111370-mvv-bank_2 bank-plugin-tests-1661111370-mvv-bank-2
 '''
-dependencies = ["generate-ssl-simple-certs-prepare"]
+dependencies = ["gen-ssl-simple-certs-prepare"]
 
 
 
-[tasks.generate-ssl-simple-certs--for-database]
+[tasks.gen-ssl-simple-certs--for-database]
 private = true
 workspace = false
 condition = { files_not_exist = ["${TEST_CERTS_DIR}/database.key.pem", "${TEST_CERTS_DIR}/database.crt.pem"] }
-extend = "generate-ssl-simple-certs-impl"
+extend = "gen-ssl-simple-serv-cert"
 env = { SERV_NAME = "database" }
-dependencies = ["generate-ssl-simple-certs-prepare"]
+dependencies = ["gen-ssl-simple-certs-prepare"]
 
-[tasks.generate-ssl-simple-certs--for-account-soa]
+[tasks.gen-ssl-simple-certs--for-account-soa]
 private = true
 workspace = false
 condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-soa.key.pem", "${TEST_CERTS_DIR}/rust-account-soa.crt.pem"] }
-extend = "generate-ssl-simple-certs-impl"
+extend = "gen-ssl-simple-serv-cert"
 env = { SERV_NAME = "rust-account-soa" }
-dependencies = ["generate-ssl-simple-certs-prepare"]
+dependencies = ["gen-ssl-simple-certs-prepare"]
 
-[tasks.generate-ssl-simple-certs--for-account-web]
+[tasks.gen-ssl-simple-certs--for-account-web]
 private = true
 workspace = false
 condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-web.key.pem", "${TEST_CERTS_DIR}/rust-account-web.crt.pem"] }
-extend = "generate-ssl-simple-certs-impl"
+extend = "gen-ssl-simple-serv-cert"
 env = { SERV_NAME = "rust-account-web" }
-dependencies = ["generate-ssl-simple-certs-prepare"]
+dependencies = ["gen-ssl-simple-certs-prepare"]
 
-
-#[tasks.generate-ssl-simple-certs]
-#workspace = false
-#script = '''
-#    chmod ugo+r "${TEST_CERTS_DIR}/database.key.pem"
-#    chmod ugo+r "${TEST_CERTS_DIR}/rust-account-soa.key.pem"
-#    chmod ugo+r "${TEST_CERTS_DIR}/rust-account-web.key.pem"
-#'''
-#dependencies = [
-#    "generate-ssl-simple-certs-prepare",
-#    "generate-ssl-simple-certs--for-database",
-#    "generate-ssl-simple-certs--for-account-soa",
-#    "generate-ssl-simple-certs--for-account-web",
-#]
 
 
 
@@ -117,17 +103,17 @@ dependencies = ["generate-ssl-simple-certs-prepare"]
 
 [tasks.generate-simple-certs]
 workspace = false
-alias = "generate-ssl-simple-certs"
+alias = "gen-ssl-simple-certs"
 [tasks.gen-simple-certs]
 workspace = false
-alias = "generate-ssl-simple-certs"
+alias = "gen-ssl-simple-certs"
 
 [tasks.regen-ssl-simple-certs]
 workspace = false
-alias = "regenerate-ssl-simple-certs"
+alias = "regen-ssl-simple-certs"
 [tasks.regenerate-simple-certs]
 workspace = false
-alias = "regenerate-ssl-simple-certs"
+alias = "regen-ssl-simple-certs"
 [tasks.regen-simple-certs]
 workspace = false
-alias = "regenerate-ssl-simple-certs"
+alias = "regen-ssl-simple-certs"

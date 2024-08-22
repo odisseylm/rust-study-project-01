@@ -1,67 +1,80 @@
 
 
-[tasks.generate-ca-ssl-3-certs-prepare]
+[tasks.gen-openssl3-ssl-ca-certs-prepare]
 private = true
 workspace = false
 script = '''
     #!@duckscript
-    echo first env script...
 
-    set_env TEST_CERTS_DIR "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl-ca-openssl3"
-    set_env openssl3 "/home/vmelnykov/projects/rust/rust-study-project-01/temp/openssl-3.3.1/apps/openssl"
-    set_env LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:/home/vmelnykov/projects/rust/rust-study-project-01/temp/openssl-3.3.1"
+    TEST_CERTS_DIR = set "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl-ca-openssl3"
+    set_env TEST_CERTS_DIR "${TEST_CERTS_DIR}"
+
+    mkdir "${TEST_CERTS_DIR}"    # since it is 'duckscript' paran '-p' is not needed
+
+    set_env openssl3 openssl
+
+    # For testing openssl3 on system with openssl11
+    set_env openssl3 "${HOME}/projects/rust/rust-study-project-01/temp/openssl-3.3.1/apps/openssl"
+    set_env LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:${HOME}/projects/rust/rust-study-project-01/temp/openssl-3.3.1"
+
     set_env OPEN_SSL3_CONF "${ROOT_PROJECT_DIR}/conf/openssl3/openssl.cnf"
-
-    mkdir -p "${TEST_CERTS_DIR}"
-
-    # conf/openssl3/openssl.cnf
 '''
 
 
 
-[tasks.delete-ca-ssl-3-certs]
+[tasks.del-openssl3-ssl-ca-certs]
 private = true
 workspace = false
 cwd = "${TEST_CERTS_DIR}"
 script = [ "rm -f *.key *.crt *.cert *.pem *.csr *.srl *index.txt *index.txt.attr *index.txt.old *serial.txt *serial.txt.old" ]
-dependencies = ["generate-ca-ssl-3-certs-prepare"]
+dependencies = ["gen-openssl3-ssl-ca-certs-prepare"]
 
 
 
-[tasks.gen-ca-root-ssl3]
+[tasks.gen-openssl3-ssl-ca-root]
 private = true
 workspace = false
 condition = { files_not_exist = ["${TEST_CERTS_DIR}/ca.key.pem", "${TEST_CERTS_DIR}/ca.crt.pem"] }
 cwd = "${TEST_CERTS_DIR}"
 script = '''
     echo " ### generating root CA (openssl3) "
-    ${openssl3} req -x509 -new -nodes -newkey rsa:2048 -keyout "${TEST_CERTS_DIR}/ca.key.pem" \
-        -config "${OPEN_SSL3_CONF}" \
-        -sha256 -days 1825 \
-        -out "${TEST_CERTS_DIR}/ca.crt.pem" \
+    ${openssl3} req -x509 -new -nodes -newkey rsa:2048                   \
+        -keyout "${TEST_CERTS_DIR}/ca.key.pem"                           \
+        -config "${OPEN_SSL3_CONF}"                                      \
+        -sha256 -days 1825                                               \
+        -out "${TEST_CERTS_DIR}/ca.crt.pem"                              \
         -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=rust-study-project-01 CA"
+
+    echo " ### generated root CA ca.key.pem/ca.crt.pem "
+    openssl x509 -in "${TEST_CERTS_DIR}/ca.crt.pem" -text -noout
 '''
 dependencies = [
-    "generate-ca-ssl-3-certs-prepare",
+    "gen-openssl3-ssl-ca-certs-prepare",
 ]
 
 
 
-[tasks.gen-ca-serv-cert-ssl3]
+[tasks.gen-openssl3-ssl-ca-serv-cert]
 private = true
 workspace = false
 cwd = "${TEST_CERTS_DIR}"
 script = '''
     echo " ### generating cert request ${SERV_NAME}.crt.csr (openssl3) "
-    ${openssl3} req -newkey rsa:2048 -nodes -keyout ${TEST_CERTS_DIR}/${SERV_NAME}.key.pem -out "${TEST_CERTS_DIR}/${SERV_NAME}.crt.csr" \
-        -config "${OPEN_SSL3_CONF}" \
-        -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=${SERV_NAME}-CN" \
+    ${openssl3} req -newkey rsa:2048 -nodes                             \
+        -keyout "${TEST_CERTS_DIR}/${SERV_NAME}.key.pem"                \
+        -out "${TEST_CERTS_DIR}/${SERV_NAME}.crt.csr"                   \
+        -config "${OPEN_SSL3_CONF}"                                     \
+        -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=${SERV_NAME}-CN"            \
         -addext subjectAltName=DNS:${SERV_NAME},DNS:localhost,DNS:${SERV_NAME}-0,DNS:${SERV_NAME}_0,DNS:${SERV_NAME}-1,DNS:${SERV_NAME}_1,DNS:${SERV_NAME}-2,DNS:${SERV_NAME}_2
 
     echo " ### generating cert request ${SERV_NAME}.crt.csr (openssl3) "
-    ${openssl3} x509 -req -in "${TEST_CERTS_DIR}/${SERV_NAME}.crt.csr" -copy_extensions copy \
-        -CA "${TEST_CERTS_DIR}/ca.crt.pem" -CAkey "${TEST_CERTS_DIR}/ca.key.pem" \
-        -CAcreateserial -out ${TEST_CERTS_DIR}/${SERV_NAME}.crt.pem -days 365 -sha256
+    ${openssl3} x509 -req                                               \
+        -in "${TEST_CERTS_DIR}/${SERV_NAME}.crt.csr"                    \
+        -copy_extensions copy                                           \
+        -CA "${TEST_CERTS_DIR}/ca.crt.pem"                              \
+        -CAkey "${TEST_CERTS_DIR}/ca.key.pem"                           \
+        -CAcreateserial -out "${TEST_CERTS_DIR}/${SERV_NAME}.crt.pem"   \
+        -days 30 -sha256
 
     chmod ugo+r "${TEST_CERTS_DIR}/${SERV_NAME}.key.pem"
 
@@ -70,63 +83,60 @@ script = '''
     # sudo update-ca-trust
 '''
 dependencies = [
-    "generate-ca-ssl-3-certs-prepare",
-    "gen-ca-root-ssl3",
+    "gen-openssl3-ssl-ca-certs-prepare",
+    "gen-openssl3-ssl-ca-root",
 ]
 
 
-[tasks.gen-ca-cert-ssl3--for-database]
+[tasks.gen-openssl3-ssl-ca-cert--for-database]
 condition = { files_not_exist = ["${TEST_CERTS_DIR}/database.key.pem", "${TEST_CERTS_DIR}/database.crt.pem"] }
 env = { SERV_NAME = "database" }
-extend = "gen-ca-serv-cert-ssl3"
+extend = "gen-openssl3-ssl-ca-serv-cert"
 dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
-    "generate-ca-ssl-3-certs-prepare",
-    "gen-ca-root-ssl3",
+    "gen-openssl3-ssl-ca-certs-prepare",
+    "gen-openssl3-ssl-ca-root",
 ]
 
 
-[tasks.gen-ca-cert-ssl3--for-account-soa]
+[tasks.gen-openssl3-ssl-ca-cert--for-account-soa]
 condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-soa.key.pem", "${TEST_CERTS_DIR}/rust-account-soa.crt.pem"] }
 env = { SERV_NAME = "rust-account-soa" }
-extend = "gen-ca-serv-cert-ssl3"
+extend = "gen-openssl3-ssl-ca-serv-cert"
 dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
-    "generate-ca-ssl-3-certs-prepare",
-    "gen-ca-root-ssl3",
+    "gen-openssl3-ssl-ca-certs-prepare",
+    "gen-openssl3-ssl-ca-root",
 ]
 
 
-[tasks.gen-ca-cert-ssl3--for-account-web]
+[tasks.gen-openssl3-ssl-ca-cert--for-account-web]
 condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-web.key.pem", "${TEST_CERTS_DIR}/rust-account-web.crt.pem"] }
 env = { SERV_NAME = "rust-account-web" }
-extend = "gen-ca-serv-cert-ssl3"
+extend = "gen-openssl3-ssl-ca-serv-cert"
 dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
-    "generate-ca-ssl-3-certs-prepare",
-    "gen-ca-root-ssl3",
+    "gen-openssl3-ssl-ca-certs-prepare",
+    "gen-openssl3-ssl-ca-root",
 ]
 
 
 
-[tasks.generate-ca-cert-ssl3]
+[tasks.generate-openssl3-ssl-ca-certs]
 workspace = false
 dependencies = [
-    "generate-ca-ssl-3-certs-prepare",
-    "gen-ca-root-ssl3",
-    "gen-ca-cert-ssl3--for-database",
-    "gen-ca-cert-ssl3--for-account-soa",
-    "gen-ca-cert-ssl3--for-account-web",
+    "gen-openssl3-ssl-ca-certs-prepare",
+    "gen-openssl3-ssl-ca-root",
+    "gen-openssl3-ssl-ca-cert--for-database",
+    "gen-openssl3-ssl-ca-cert--for-account-soa",
+    "gen-openssl3-ssl-ca-cert--for-account-web",
 ]
 
 
 
-[tasks.regenerate-ca-cert-ssl3]
+[tasks.regenerate-openssl3-ssl-ca-certs]
 workspace = false
 dependencies = [
-    "generate-ca-ssl-3-certs-prepare",
-    "delete-ca-ssl-3-certs",
-    "gen-ca-root-ssl3",
-    "gen-ca-cert-ssl3--for-database",
-    "gen-ca-cert-ssl3--for-account-soa",
-    "gen-ca-cert-ssl3--for-account-web",
+    "gen-openssl3-ssl-ca-certs-prepare",
+    "del-openssl3-ssl-ca-certs",
+    "generate-ssl-ca-certs-openssl3",
 ]
 
 
@@ -135,16 +145,22 @@ dependencies = [
 #                                         Optional aliases                                                             #
 ########################################################################################################################
 
+[tasks.generate-ssl-ca-certs-openssl3]
+alias = "generate-openssl3-ssl-ca-certs"
 [tasks.generate-ca3-certs]
-alias = "generate-ca-cert-ssl3"
+alias = "generate-openssl3-ssl-ca-certs"
 [tasks.gen-ca3-certs]
-alias = "generate-ca-cert-ssl3"
+alias = "generate-openssl3-ssl-ca-certs"
+[tasks.gen-ca-certs-openssl3]
+alias = "generate-openssl3-ssl-ca-certs"
 
-[tasks.regenerate-ca3-certs]
-alias = "regenerate-ca-cert-ssl3"
+[tasks.regenerate-ssl-ca-certs-openssl3]
+alias = "regenerate-openssl3-ssl-ca-certs"
+[tasks.regen-ssl-ca-certs-openssl3]
+alias = "regenerate-openssl3-ssl-ca-certs"
+[tasks.regen-ca-certs-openssl3]
+alias = "regenerate-openssl3-ssl-ca-certs"
 [tasks.regen-ssl3-ca-certs]
-alias = "regenerate-ca-cert-ssl3"
-[tasks.regen-ca-ssl3-certs]
-alias = "regenerate-ca-cert-ssl3"
+alias = "regenerate-openssl3-ssl-ca-certs"
 [tasks.regen-ca3-certs]
-alias = "regenerate-ca-cert-ssl3"
+alias = "regenerate-openssl3-ssl-ca-certs"

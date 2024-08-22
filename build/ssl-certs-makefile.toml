@@ -1,17 +1,23 @@
 
+extend = [
+    { path = "ssl-simple-certs-makefile.toml" },
+    { path = "ssl-ca-certs-openssl11-makefile.toml" },
+    { path = "ssl-ca-certs-openssl3-makefile.toml" },
+]
+
 
 # Simple approach: cert + key (without CA)
 #
-#[tasks.generate-ssl-certs]
-#private  = false
-#env = { SSL_CERTS_SUBDIR = "ssl-simple" }
-#extend = "copy-ssl-certs"
-#dependencies = [ "generate-ssl-simple-certs" ]
-#[tasks.regenerate-ssl-certs]
-#private  = false
-#env = { SSL_CERTS_SUBDIR = "ssl-simple" }
-#extend = "copy-ssl-certs"
-#dependencies = [ "regenerate-ssl-simple-certs" ]
+[tasks.generate-ssl-certs]
+private  = false
+env = { SSL_CERTS_SUBDIR = "ssl-simple" }
+extend = "copy-ssl-certs"
+dependencies = [ "generate-ssl-simple-certs" ]
+[tasks.regenerate-ssl-certs]
+private  = false
+env = { SSL_CERTS_SUBDIR = "ssl-simple" }
+extend = "copy-ssl-certs"
+dependencies = [ "regenerate-ssl-simple-certs" ]
 
 
 ## CA approach: CA + cert + key
@@ -20,40 +26,49 @@
 #private  = false
 #env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl11" }
 #extend = "copy-ssl-certs"
-#dependencies = [ "generate-ca-ssl-certs" ]
+#dependencies = [ "generate-openssl11-ssl-ca-certs" ]
+#
 #[tasks.regenerate-ssl-certs]
 #private  = false
 #env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl11" }
 #extend = "copy-ssl-certs"
-#dependencies = [ "regenerate-ca-ssl-certs" ]
+#dependencies = [ "regenerate-openssl11-ssl-ca-certs" ]
 
 
 # CA approach: CA + cert + key (by openssl3)
 #
-[tasks.generate-ssl-certs]
-private  = false
-env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
-extend = "copy-ssl-certs"
-dependencies = [ "generate-ca-cert-ssl3" ]
-[tasks.regenerate-ssl-certs]
-private  = false
-env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
-extend = "copy-ssl-certs"
-dependencies = [ "regenerate-ca-cert-ssl3" ]
+#[tasks.generate-ssl-certs]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "generate-openssl3-ssl-ca-certs" ]
+#
+#[tasks.regenerate-ssl-certs]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "regenerate-openssl3-ssl-ca-certs" ]
 
 
 [tasks.copy-ssl-certs]
 private = true
 script = '''
-    echo " ### copy-ssl-certs "
-    mkdir -p "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl"
+    ### I ried to use ducksript... but it does not support file masks :-(
 
-    cd "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl"
+    echo " ### copy-ssl-certs "
+
+    # !!! Its /bin/sh and SPACES around '=' NOT ALLOWED !!!
+    SSL_RES_COMMON_SUBDIR=ssl
+    SSL_RES_COMMON_DIR="${ROOT_PROJECT_DIR}/target/generated-test-resources/${SSL_RES_COMMON_SUBDIR}"
+
+    mkdir -p "${SSL_RES_COMMON_DIR}"
+
+    cd "${SSL_RES_COMMON_DIR}"
     echo " ### cleaning [generated-test-resources/ssl] dir "
     rm -f *.key *.crt *.cert *.pem *.csr *.srl *index.txt *index.txt.attr *.attr.old openssl*.cnf *index.txt.old *serial.txt *serial.txt.old
 
-    echo " ### copy files from 'ssl-ca-openssl3' to 'ssl' "
-    cp -a "${ROOT_PROJECT_DIR}/target/generated-test-resources/${SSL_CERTS_SUBDIR}/." "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl/"
+    echo " ### copy files from '${SSL_CERTS_SUBDIR}' to '${SSL_RES_COMMON_SUBDIR}' "
+    cp -a "${ROOT_PROJECT_DIR}/target/generated-test-resources/${SSL_CERTS_SUBDIR}/." "${SSL_RES_COMMON_DIR}"
 '''
 
 
