@@ -12,7 +12,7 @@ script = ''' mkdir -p "${TEST_CERTS_DIR}" '''
 private = true
 workspace = false
 cwd = "${TEST_CERTS_DIR}"
-script = [ "rm -f *.key *.crt *.cert *.pem *.csr *index.txt *index.txt.attr *index.txt.old *serial.txt *serial.txt.old" ]
+script = [ "rm -f *.key *.crt *.cert *.pem *.csr *.srl *index.txt *index.txt.attr *index.txt.old *serial.txt *serial.txt.old" ]
 dependencies = ["generate-ca-ssl-certs-prepare"]
 
 
@@ -24,7 +24,7 @@ condition = { files_not_exist = ["${TEST_CERTS_DIR}/ca.key.pem", "${TEST_CERTS_D
 cwd = "${TEST_CERTS_DIR}"
 script = '''
     echo " ### generating root CA ca.key.pem/ca.crt.pem "
-    openssl req -x509 -config ${SSL_CONF_DIR}/openssl-ca.cnf -days 365 -newkey rsa:4096 -sha256 -keyout ${TEST_CERTS_DIR}/ca.key.pem -nodes -out ${TEST_CERTS_DIR}/ca.crt.pem -outform PEM -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=localhost ca"
+    openssl req -x509 -config ${SSL_CONF_DIR}/openssl-ca.cnf -days 365 -newkey rsa:4096 -sha256 -keyout ${TEST_CERTS_DIR}/ca.key.pem -nodes -out ${TEST_CERTS_DIR}/ca.crt.pem -outform PEM -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=rust-study-project-01 CA"
 
     echo " ### generated root CA ca.key.pem/ca.crt.pem "
     openssl x509 -in ${TEST_CERTS_DIR}/ca.crt.pem -text -noout

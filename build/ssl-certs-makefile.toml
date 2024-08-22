@@ -3,33 +3,57 @@
 # Simple approach: cert + key (without CA)
 #
 #[tasks.generate-ssl-certs]
-#dependencies = [ "generate-ssl-simple-certs", "copy-ssl-certs" ]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-simple" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "generate-ssl-simple-certs" ]
 #[tasks.regenerate-ssl-certs]
-#dependencies = [ "regenerate-ssl-simple-certs", "copy-ssl-certs" ]
-#
-#[tasks.copy-ssl-certs]
-#private = true
-#script = '''
-#    mkdir -p "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl"
-#    rm -f *.key *.crt *.cert *.pem *.csr *index.txt *index.txt.attr *index.txt.old *serial.txt *serial.txt.old
-#    cp -a "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl-simple/." "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl/"
-#'''
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-simple" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "regenerate-ssl-simple-certs" ]
 
 
-# CA approach: CA + cert + key
+## CA approach: CA + cert + key
+##
+#[tasks.generate-ssl-certs]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl11" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "generate-ca-ssl-certs" ]
+#[tasks.regenerate-ssl-certs]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl11" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "regenerate-ca-ssl-certs" ]
+
+
+# CA approach: CA + cert + key (by openssl3)
 #
 [tasks.generate-ssl-certs]
-dependencies = [ "generate-ca-ssl-certs", "copy-ssl-certs" ]
+private  = false
+env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
+extend = "copy-ssl-certs"
+dependencies = [ "generate-ca-cert-ssl3" ]
 [tasks.regenerate-ssl-certs]
-dependencies = [ "regenerate-ca-ssl-certs", "copy-ssl-certs" ]
+private  = false
+env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
+extend = "copy-ssl-certs"
+dependencies = [ "regenerate-ca-cert-ssl3" ]
 
 
 [tasks.copy-ssl-certs]
 private = true
 script = '''
+    echo " ### copy-ssl-certs "
     mkdir -p "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl"
-    rm -f *.key *.crt *.cert *.pem *.csr *index.txt *index.txt.attr *index.txt.old *serial.txt *serial.txt.old
-    cp -a "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl-ca-openssl11/." "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl/"
+
+    cd "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl"
+    echo " ### cleaning [generated-test-resources/ssl] dir "
+    rm -f *.key *.crt *.cert *.pem *.csr *.srl *index.txt *index.txt.attr *.attr.old openssl*.cnf *index.txt.old *serial.txt *serial.txt.old
+
+    echo " ### copy files from 'ssl-ca-openssl3' to 'ssl' "
+    cp -a "${ROOT_PROJECT_DIR}/target/generated-test-resources/${SSL_CERTS_SUBDIR}/." "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl/"
 '''
 
 

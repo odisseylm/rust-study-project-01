@@ -11,7 +11,7 @@ script = ''' mkdir -p "${TEST_CERTS_DIR}" '''
 private = true
 workspace = false
 cwd = "${TEST_CERTS_DIR}"
-script = [ "rm -f *.key *.crt *.cert *.pem *.csr" ]
+script = [ "rm -f *.key *.crt *.cert *.pem *.csr *.srl" ]
 dependencies = [ "generate-ssl-simple-certs-prepare" ]
 
 
