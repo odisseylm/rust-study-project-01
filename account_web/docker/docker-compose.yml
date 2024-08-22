@@ -5,12 +5,14 @@ networks:
 
 services:
   rust-account-soa:
-    # 'extends' is not supported yet by io.fabric8 plugin
+    # We can use 'extends' if we use docker-compose (swarm) in production
+    # and want just inherit prod docker compose file.
+    #
     # extends:
     #  service: account-soa
     #  file: ${BASE_DIR}/../account-soa/src/main/docker/docker-compose.yml
     #
-    #image: ${DOCKER_IMAGE_PREFIX}rust-mvv-webapp-debug # mvv-registry/mvv.bank/pseudo2-account-soa
+    # image: ${DOCKER_IMAGE_PREFIX}rust-mvv-webapp-debug # mvv-registry/mvv.bank/pseudo2-account-soa
     image: mvv_rust_account_soa${DOCKER_IMAGE_PROFILE_SUFFIX}
     networks:
       - rust-account-soa-net
@@ -18,33 +20,23 @@ services:
       # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
 
       - SERVER_PORT=8080
-      # - SERVER_SERVLET_CONTEXTPATH=/account-soa
-
-      # - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/mvvbank
-      # - SPRING_DATASOURCE_USERNAME=mvvbank
-      # - SPRING_DATASOURCE_PASSWORD=psw
-      # - ACCOUNT_DATASOURCE_URL=jdbc:postgresql://database:5432/rust_mvvbank
-      # - ACCOUNT_DATASOURCE_USERNAME=rust_mvvbank
-      # - ACCOUNT_DATASOURCE_PASSWORD=psw
+      # - SERVER_CONTEXTPATH=/account-soa
 
       - POSTGRES_HOST=database
       - POSTGRES_DB=rust_mvvbank
       - POSTGRES_USER=rust_mvvbank
       - POSTGRES_PASSWORD=psw
+      #- POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem  # database.crt.pem can be used with PgSslMode::Require
+      - POSTGRES_SSL_CERT_PATH=/certs/ca.crt.pem  # CA should be used if PgSslMode::VerifyCa or PgSslMode::VerifyFull is used
 
-      # - SERVER_SSL_KEYALIAS=account-soa
-      # - SERVER_SSL_KEYSTORE
-      # - SERVER_SSL_KEYSTORETYPE
-      # - SERVER_SSL_KEYSTOREPASSWORD
-      # - SERVER_SSL_KEYPASSWORD
-      # - SERVER_SSL_TRUSTSTORE
-      # - SERVER_SSL_TRUSTSTOREPASSWORD
-    # volumes:
-    #   - ./target/generated-test-resources/certs/:/certs/:readonly
+      - ACCOUNT_SOA_SSL_KEY_PATH=/certs/rust-account-soa.key.pem
+      - ACCOUNT_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
+    volumes:
+      - ../target/generated-test-resources/ssl/:/certs/:ro
     ports:
       # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:
-      # - 8095:8080
       - 8101:8080
+      # Remote debug
       # - ${DOCKER_HOST_DEBUG_ACCOUNT_SOA_PORT_WITH_COLON}8000
     links:
       - database:db_postgres
@@ -56,7 +48,9 @@ services:
 
 
   rust-account-web:
-    # 'extends' is not supported yet by io.fabric8 plugin
+    # We can use 'extends' if we use docker-compose (swarm) in production
+    # and want just inherit prod docker compose file.
+    #
     # extends:
     #  service: account-soa
     #  file: ${BASE_DIR}/../account-soa/src/main/docker/docker-compose.yml
@@ -69,37 +63,27 @@ services:
       # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
 
       - SERVER_PORT=8080
-      # - SERVER_SERVLET_CONTEXTPATH=/account-web
-
-      # - SPRING_DATASOURCE_URL=jdbc:postgresql://database:5432/mvvbank
-      # - SPRING_DATASOURCE_USERNAME=mvvbank
-      # - SPRING_DATASOURCE_PASSWORD=psw
-      # - ACCOUNT_DATASOURCE_URL=jdbc:postgresql://database:5432/rust_mvvbank
-      # - ACCOUNT_DATASOURCE_USERNAME=rust_mvvbank
-      # - ACCOUNT_DATASOURCE_PASSWORD=psw
+      # - SERVER_CONTEXTPATH=/account-web
 
       - POSTGRES_HOST=database
       - POSTGRES_DB=rust_mvvbank
       - POSTGRES_USER=rust_mvvbank
       - POSTGRES_PASSWORD=psw
+      #- POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem  # database.crt.pem can be used with PgSslMode::Require
+      - POSTGRES_SSL_CERT_PATH=/certs/ca.crt.pem  # CA should be used if PgSslMode::VerifyCa/VerifyFull is used
 
-      - DEPENDENCIES_ACCOUNTSOA_REST_BASEURLS=http://rust-account-soa:8080
+      #- ACCOUNT_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem  # use it in simple self-signed key/cert generated
+      - ACCOUNT_SOA_SSL_CERT_PATH=/certs/ca.crt.pem  # use CA if CA was used for generated server key/cert
+      - ACCOUNT_WEB_SSL_KEY_PATH=/certs/rust-account-web.key.pem
+      - ACCOUNT_WEB_SSL_CERT_PATH=/certs/rust-account-web.crt.pem
+
+      - DEPENDENCIES_ACCOUNTSOA_REST_BASEURLS=https://rust-account-soa:8080
       - DEPENDENCIES_ACCOUNTSOA_USER=vovan-read
       - DEPENDENCIES_ACCOUNTSOA_PSW=qwerty
-
-      # - SERVER_SSL_KEYALIAS=account-soa
-      # - SERVER_SSL_KEYSTORE
-      # - SERVER_SSL_KEYSTORETYPE
-      # - SERVER_SSL_KEYSTOREPASSWORD
-      # - SERVER_SSL_KEYPASSWORD
-      # - SERVER_SSL_TRUSTSTORE
-      # - SERVER_SSL_TRUSTSTOREPASSWORD
-    # volumes:
-    #   - ./target/generated-test-resources/certs/:/certs/:readonly
+    volumes:
+      - ../target/generated-test-resources/ssl/:/certs/:ro
     ports:
-      # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:
-      # - 8095:8080
-      - 8102:8080
+      - 8102:8080  # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:
       # - ${DOCKER_HOST_DEBUG_ACCOUNT_SOA_PORT_WITH_COLON}8000
     links:
       - database:db_postgres
@@ -112,26 +96,28 @@ services:
 
 
   database:
-    # 'extends' is not supported yet by io.fabric8 plugin
-    # extends:
-    #  service: database
-    #  file: ${BASE_DIR}/../account-soa/src/main/docker/docker-compose.yml
-    #
     image: postgres:16
-    #container_name: database
-    #restart: no
     networks:
       - rust-account-soa-net
     hostname: database # required only for fabricio8 plugin
+    # -l - enable SSL connections
+    # TODO: how disable plain TCP connection; `-c listen_addresses=''` blocks everything.
+    # entrypoint: docker-entrypoint.sh postgres -l -c ssl=on -c ssl_cert_file=/certs/database.crt.pem -c ssl_key_file=/certs/database.key.pem -c listen_addresses=''
+    command: sh -c "
+         cp /certs/database.key.pem /usr/lib/ssl/database-test.key.pem &&
+         chown postgres /usr/lib/ssl/database-test.key.pem &&
+         chmod go-r /usr/lib/ssl/database-test.key.pem &&
+         docker-entrypoint.sh postgres -l -c ssl=on -c ssl_cert_file=/certs/database.crt.pem -c ssl_key_file=/usr/lib/ssl/database-test.key.pem
+      "
     environment:
       POSTGRES_DB: rust_mvvbank
       POSTGRES_USER: rust_mvvbank
       POSTGRES_PASSWORD: psw
     ports:
-      # - ${DOCKER_HOST_POSTGRES_DB_PORT_WITH_COLON}5432
-      - 5432:5432
+      - 5432:5432  # - ${DOCKER_HOST_POSTGRES_DB_PORT_WITH_COLON}5432
     volumes:
-      - ./../account_soa/test_resources/postgres/init/:/docker-entrypoint-initdb.d/:readonly
+      - ./../account_soa/test_resources/postgres/init/:/docker-entrypoint-initdb.d/:ro
+      - ../target/generated-test-resources/ssl/:/certs/:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s

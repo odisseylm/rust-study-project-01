@@ -2866,6 +2866,7 @@ dependencies = [
  "axum-ctx",
  "axum-extra",
  "axum-login",
+ "axum-server",
  "axum-typed-routing",
  "axum-valid",
  "axum_session_auth",

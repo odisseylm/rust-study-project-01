@@ -1,0 +1,193 @@
+
+
+[tasks.gen-openssl11-ssl-ca-certs-prepare]
+private = true
+workspace = false
+script = '''
+    #!@duckscript
+
+    TEST_CERTS_DIR = set "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl-ca-openssl11"
+    set_env TEST_CERTS_DIR "${TEST_CERTS_DIR}"
+
+    mkdir "${TEST_CERTS_DIR}"    # since it is 'duckscript' paran '-p' is not needed
+
+    set_env SSL_CONF_DIR "${ROOT_PROJECT_DIR}/conf/openssl"
+'''
+
+
+
+[tasks.del-openssl11-ssl-ca-certs]
+private = true
+workspace = false
+cwd = "${TEST_CERTS_DIR}"
+script = [ "rm -f *.key *.crt *.cert *.pem *.csr *.srl *index.txt *index.txt.attr *index.txt.old *serial.txt *serial.txt.old" ]
+dependencies = ["gen-openssl11-ssl-ca-certs-prepare"]
+
+
+
+[tasks.gen-openssl11-ssl-ca-root]
+private = true
+workspace = false
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/ca.key.pem", "${TEST_CERTS_DIR}/ca.crt.pem"] }
+cwd = "${TEST_CERTS_DIR}"
+script = '''
+    echo " ### generating root CA ca.key.pem/ca.crt.pem (openssl11) "
+    openssl req -x509 -config "${SSL_CONF_DIR}/openssl-ca.cnf" -days 30 -newkey rsa:4096 -sha256 \
+        -keyout "${TEST_CERTS_DIR}/ca.key.pem" -nodes -out "${TEST_CERTS_DIR}/ca.crt.pem" -outform PEM \
+        -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=rust-study-project-01 CA"
+
+    echo " ### generated root CA ca.key.pem/ca.crt.pem "
+    openssl x509 -in "${TEST_CERTS_DIR}/ca.crt.pem" -text -noout
+
+    echo " ### init index.txt & serial.txt "
+    touch "${TEST_CERTS_DIR}/index.txt"
+    echo '01' > "${TEST_CERTS_DIR}/serial.txt"
+'''
+dependencies = ["gen-openssl11-ssl-ca-certs-prepare"]
+
+
+
+[tasks.gen-openssl11-ssl-ca-serv-cert]
+private = true
+workspace = false
+cwd = "${TEST_CERTS_DIR}"
+script = '''
+    echo " ### generating openssl-${SERV_NAME}.cnf "
+    cat "${SSL_CONF_DIR}/openssl-serv.cnf"    > "${TEST_CERTS_DIR}/openssl-${SERV_NAME}.cnf"
+    echo "\n[ alternate_names ]\n"           >> "${TEST_CERTS_DIR}/openssl-${SERV_NAME}.cnf"
+    echo "DNS.1 = ${SERV_NAME}\n"            >> "${TEST_CERTS_DIR}/openssl-${SERV_NAME}.cnf"
+    echo "DNS.2 = localhost\n"               >> "${TEST_CERTS_DIR}/openssl-${SERV_NAME}.cnf"
+    echo "DNS.3 = ${SERV_NAME}-0\n"          >> "${TEST_CERTS_DIR}/openssl-${SERV_NAME}.cnf"
+    echo "DNS.4 = ${SERV_NAME}_0\n"          >> "${TEST_CERTS_DIR}/openssl-${SERV_NAME}.cnf"
+    echo "DNS.5 = ${SERV_NAME}-1\n"          >> "${TEST_CERTS_DIR}/openssl-${SERV_NAME}.cnf"
+    echo "DNS.6 = ${SERV_NAME}_1\n"          >> "${TEST_CERTS_DIR}/openssl-${SERV_NAME}.cnf"
+    echo "DNS.7 = ${SERV_NAME}-2\n"          >> "${TEST_CERTS_DIR}/openssl-${SERV_NAME}.cnf"
+    echo "DNS.8 = ${SERV_NAME}_2\n"          >> "${TEST_CERTS_DIR}/openssl-${SERV_NAME}.cnf"
+
+    echo " ### generating cert request ${SERV_NAME}.crt.csr "
+    openssl req -config "${TEST_CERTS_DIR}/openssl-${SERV_NAME}.cnf" -newkey rsa:2048 -sha256           \
+        -keyout "${TEST_CERTS_DIR}/${SERV_NAME}.key.pem" -nodes                                         \
+        -out "${TEST_CERTS_DIR}/${SERV_NAME}.crt.csr" -outform PEM                                      \
+        -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=${SERV_NAME}-CN"
+
+    echo " ### generated cert request ${SERV_NAME}.crt.csr "
+    openssl req -text -noout -verify -in "${TEST_CERTS_DIR}/${SERV_NAME}.crt.csr"
+
+    echo " ### open-ssl => signing to index.txt/ "
+    openssl ca -batch -config "${SSL_CONF_DIR}/openssl-ca.cnf"                                          \
+        -cert "${TEST_CERTS_DIR}/ca.crt.pem"                                                            \
+        -keyfile "${TEST_CERTS_DIR}/ca.key.pem"                                                         \
+        -policy signing_policy -extensions signing_req                                                  \
+        -out "${TEST_CERTS_DIR}/${SERV_NAME}.crt.pem"                                                   \
+        -infiles "${TEST_CERTS_DIR}/${SERV_NAME}.crt.csr"
+
+    echo " ### resulting ${SERV_NAME}.crt.pem "
+    openssl x509 -in "${TEST_CERTS_DIR}/${SERV_NAME}.crt.pem" -text -noout
+
+    chmod ugo+r "${TEST_CERTS_DIR}/${SERV_NAME}.key.pem"
+
+
+    #openssl req -x509 -new -nodes -newkey rsa:2048 -keyout myCA.key \
+    #    -sha256 -days 1825 -out myCA.crt -subj /CN='localhost ca'
+
+    #openssl req -newkey rsa:2048 -nodes -keyout localhost.key -out localhost.csr \
+    #    -subj /CN=localhost -addext subjectAltName=DNS:localhost
+
+    #openssl x509 -req -in localhost.csr -copy_extensions copy \
+    #    -CA myCA.crt -CAkey myCA.key -CAcreateserial -out localhost.crt -days 365 -sha256
+
+    # sudo cp myCA.crt /etc/pki/ca-trust/source/anchors/
+    # sudo update-ca-trust
+'''
+dependencies = [
+    "gen-openssl11-ssl-ca-certs-prepare",
+    "gen-openssl11-ssl-ca-root",
+]
+
+
+[tasks.gen-openssl11-ssl-ca-cert--for-database]
+extend = "gen-openssl11-ssl-ca-serv-cert"
+private = true
+workspace = false
+# We cannot use ${SERV_NAME} in condition because env is applied after condition
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/database.key.pem", "${TEST_CERTS_DIR}/database.crt.pem"] }
+env = { SERV_NAME = "database" }
+dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
+    "gen-openssl11-ssl-ca-certs-prepare",
+    "gen-openssl11-ssl-ca-root",
+]
+
+[tasks.gen-openssl11-ssl-ca-cert--for-account-soa]
+extend = "gen-openssl11-ssl-ca-serv-cert"
+private = true
+workspace = false
+# We cannot use ${SERV_NAME} in condition because env is applied after condition
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-soa.key.pem", "${TEST_CERTS_DIR}/rust-account-soa.crt.pem"] }
+env = { SERV_NAME = "rust-account-soa" }
+dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
+    "gen-openssl11-ssl-ca-certs-prepare",
+    "gen-openssl11-ssl-ca-root",
+]
+
+[tasks.gen-openssl11-ssl-ca-cert--for-account-web]
+extend = "gen-openssl11-ssl-ca-serv-cert"
+private = true
+workspace = false
+# We cannot use ${SERV_NAME} in condition because env is applied after condition
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-web.key.pem", "${TEST_CERTS_DIR}/rust-account-web.crt.pem"] }
+env = { SERV_NAME = "rust-account-web" }
+dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
+    "gen-openssl11-ssl-ca-certs-prepare",
+    "gen-openssl11-ssl-ca-root",
+]
+
+
+
+[tasks.generate-openssl11-ssl-ca-certs]
+workspace = false
+dependencies = [
+    "gen-openssl11-ssl-ca-certs-prepare",
+    "gen-openssl11-ssl-ca-root",
+    "gen-openssl11-ssl-ca-cert--for-database",
+    "gen-openssl11-ssl-ca-cert--for-account-soa",
+    "gen-openssl11-ssl-ca-cert--for-account-web",
+]
+
+
+
+[tasks.regenerate-openssl11-ssl-ca-certs]
+workspace = false
+dependencies = [
+    "gen-openssl11-ssl-ca-certs-prepare",
+    "del-openssl11-ssl-ca-certs",
+    "generate-openssl11-ssl-ca-certs",
+]
+
+
+
+########################################################################################################################
+#                                         Optional aliases                                                             #
+########################################################################################################################
+
+
+[tasks.gen-openssl11-ssl-ca-certs]
+alias = "generate-openssl11-ssl-ca-certs"
+[tasks.gen-ssl-ca-certs-openssl11]
+alias = "generate-openssl11-ssl-ca-certs"
+[tasks.generate-ca11-certs]
+alias = "generate-openssl11-ssl-ca-certs"
+[tasks.gen-ca11-certs]
+alias = "generate-openssl11-ssl-ca-certs"
+[tasks.gen-ca-certs-openssl11]
+alias = "generate-openssl11-ssl-ca-certs"
+
+[tasks.regen-openssl11-ssl-ca-certs]
+alias = "regenerate-openssl11-ssl-ca-certs"
+[tasks.regen-ssl-ca-certs-openssl11]
+alias = "regenerate-openssl11-ssl-ca-certs"
+[tasks.regen-ca-certs-openssl11]
+alias = "regenerate-openssl11-ssl-ca-certs"
+[tasks.regen-ssl11-ca-certs]
+alias = "regenerate-openssl11-ssl-ca-certs"
+[tasks.regen-ca11-certs]
+alias = "regenerate-openssl11-ssl-ca-certs"

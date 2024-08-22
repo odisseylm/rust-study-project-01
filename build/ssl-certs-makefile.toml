@@ -1,142 +1,161 @@
 
-[tasks.generate-ssl-certs-prepare]
-private = true
-workspace = false
-env = { "TEST_CERTS_DIR" = "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl" }
-command = "mkdir"
-args = ["-p", "${TEST_CERTS_DIR}"]
-
-
-
-[tasks.delete-ssl-certs-prepare]
-private = true
-workspace = false
-command = "/bin/sh"
-cwd = "${TEST_CERTS_DIR}"
-args = [
-    "-c",
-    # " rm -f ${TEST_CERTS_DIR}/*.key ${TEST_CERTS_DIR}/*.crt ${TEST_CERTS_DIR}/*.cert ",
-    " rm -f *.key *.crt *.cert ",
+extend = [
+    { path = "ssl-simple-certs-makefile.toml" },
+    { path = "ssl-ca-certs-openssl11-makefile.toml" },
+    { path = "ssl-ca-certs-openssl3-makefile.toml" },
 ]
-dependencies = ["generate-ssl-certs-prepare"]
 
 
 
-### Does NOT work
-#[tasks.delete-ssl-certs-prepare]
-#workspace = false
-#command = "rm"
-#cwd = "${TEST_CERTS_DIR}"
-#args = [
-#    "-f", "*.key", "*.crt", "*.cert ",
-#]
-#dependencies = ["generate-ssl-certs-prepare"]
+[tasks.determine-openssl-ver]
+script = '''
+    #!@duckscript
 
+    openssl_str_ver_out = exec openssl version -v
+    openssl_str_ver = set ${openssl_str_ver_out.stdout}
+    openssl_str_ver = trim ${openssl_str_ver}
+
+    echo " ### OpenSSL full ver string: ${openssl_str_ver} "    # output: OpenSSL 1.1.1f  31 Mar 2020
+
+    openssl_str_ver = replace ${openssl_str_ver} "OpenSSL" ""
+    openssl_str_ver = trim ${openssl_str_ver}
+
+    if starts_with ${openssl_str_ver} "1.1.1"
+        OPENSSL_VERSION = set "OpenSSL_11"
+    elseif starts_with ${openssl_str_ver} "3."
+        OPENSSL_VERSION = set "OpenSSL_3X"
+    else
+        echo " ### Unexpected OpenSSL version [${openssl_str_ver}]"
+        error "Unexpected OpenSSL version [${openssl_str_ver}]"
+    end
+
+    echo " ### Current OpenSSL version type: ${OPENSSL_VERSION} "
+    set_env OPENSSL_VERSION "${OPENSSL_VERSION}"
+'''
+
+
+
+
+## Simple approach: cert + key (without CA)
+##
+#[tasks.generate-ssl-certs]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-simple" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "generate-ssl-simple-certs" ]
+#[tasks.regenerate-ssl-certs]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-simple" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "regenerate-ssl-simple-certs" ]
+
+
+## CA approach: CA + cert + key
+##
+#[tasks.generate-ssl-certs]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl11" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "generate-openssl11-ssl-ca-certs" ]
+#
+#[tasks.regenerate-ssl-certs]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl11" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "regenerate-openssl11-ssl-ca-certs" ]
+
+
+# CA approach: CA + cert + key (by openssl3)
+#
+#[tasks.generate-ssl-certs]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "generate-openssl3-ssl-ca-certs" ]
+#
+#[tasks.regenerate-ssl-certs]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "regenerate-openssl3-ssl-ca-certs" ]
+
+
+
+## CA approach: CA + cert + key
+##
+#[tasks.generate-ssl-certs]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl11" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "generate-openssl11-ssl-ca-certs" ]
+#
+#[tasks.regenerate-ssl-certs]
+#private  = false
+#env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl11" }
+#extend = "copy-ssl-certs"
+#dependencies = [ "regenerate-openssl11-ssl-ca-certs" ]
+
+
+
+# CA approach: CA + cert + key (by openssl3)
+#
+[tasks.generate-ssl-certs-openssl11-auto-delegate]
+private  = true
+condition = { env = { "OPENSSL_VERSION" = "OpenSSL_11" } }
+env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl11" }
+run_task = { name = [ "generate-openssl11-ssl-ca-certs", "copy-ssl-certs" ] }
+dependencies = [ "determine-openssl-ver" ]
+
+[tasks.regenerate-ssl-certs-openssl11-auto-delegate]
+private  = true
+condition = { env = { "OPENSSL_VERSION" = "OpenSSL_11" } }
+env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl11" }
+run_task = { name = [ "regenerate-openssl11-ssl-ca-certs", "copy-ssl-certs" ] }
+dependencies = [ "determine-openssl-ver" ]
+
+[tasks.generate-ssl-certs-openssl3-auto-delegate]
+private  = false
+condition = { env = { "OPENSSL_VERSION" = "OpenSSL_3X" } }
+env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
+run_task = { name = [ "generate-openssl11-ssl-ca-certs", "copy-ssl-certs" ] }
+dependencies = [ "determine-openssl-ver" ]
+
+[tasks.regenerate-ssl-certs-openssl3-auto-delegate]
+private  = false
+condition = { env = { "OPENSSL_VERSION" = "OpenSSL_3X" } }
+env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
+run_task = { name = [ "generate-openssl11-ssl-ca-certs", "copy-ssl-certs" ] }
+dependencies = [ "determine-openssl-ver" ]
 
 
 [tasks.generate-ssl-certs]
-workspace = false
-dependencies = [
-    "generate-ssl-certs-prepare",
-    "generate-ssl-certs--for-database",
-    "generate-ssl-certs--for-account-soa",
-    "generate-ssl-certs--for-account-web",
-]
-
-
-
+dependencies = [ "generate-ssl-certs-openssl11-auto-delegate", "generate-ssl-certs-openssl3-auto-delegate" ]
 [tasks.regenerate-ssl-certs]
-workspace = false
-dependencies = [
-    "generate-ssl-certs-prepare",
-    "delete-ssl-certs-prepare",
-    "generate-ssl-certs--for-database",
-    "generate-ssl-certs--for-account-soa",
-    "generate-ssl-certs--for-account-web",
-]
+dependencies = [ "regenerate-ssl-certs-openssl11-auto-delegate", "regenerate-ssl-certs-openssl3-auto-delegate" ]
 
 
 
-[tasks.generate-ssl-certs--for-database]
+
+[tasks.copy-ssl-certs]
 private = true
-workspace = false
-condition = { files_not_exist = ["${TEST_CERTS_DIR}/database.key.pem", "${TEST_CERTS_DIR}/database.crt.pem"] }
-command = "openssl"
-args = [
-    "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "30",
-    "-nodes",
-    "-keyout", "${TEST_CERTS_DIR}/database.key.pem",
-    "-outform", "PEM",
-    "-out", "${TEST_CERTS_DIR}/database.crt.pem", "-subj", "/CN=database",
-    "-addext", "subjectAltName=DNS:database-0,DNS:database_0,DNS:database-1,DNS:database_1",
-]
-dependencies = ["generate-ssl-certs-prepare"]
+script = '''
+    ### I ried to use ducksript... but it does not support file masks :-(
 
+    echo " ### copy-ssl-certs "
 
+    # !!! Its /bin/sh and SPACES around '=' NOT ALLOWED !!!
+    SSL_RES_COMMON_SUBDIR=ssl
+    SSL_RES_COMMON_DIR="${ROOT_PROJECT_DIR}/target/generated-test-resources/${SSL_RES_COMMON_SUBDIR}"
 
-[tasks.generate-ssl-certs--for-account-soa]
-private = true
-workspace = false
-condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-soa.key.pem", "${TEST_CERTS_DIR}/rust-account-soa.crt.pem"] }
-command = "openssl"
-args = [
-    "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "30",
-    "-nodes",
-    "-keyout", "${TEST_CERTS_DIR}/rust-account-soa.key.pem",
-    "-outform", "PEM",
-    "-out", "${TEST_CERTS_DIR}/rust-account-soa.crt.pem", "-subj", "/CN=rust-account-soa",
-    "-addext", "subjectAltName=DNS:rust-account-soa-0,DNS:rust-account-soa_0,DNS:rust-account-soa-1,DNS:rust-account-soa_1,DNS:rust-account-soa-2,DNS:rust-account-soa_2",
-    # "-addext", "subjectAltName=DNS:rust-account-soa-0,DNS:*.example.com,IP:10.0.0.1",
+    mkdir -p "${SSL_RES_COMMON_DIR}"
 
-    # account-soa_0
-    # account-soa-0 bank-plugin-account-soa_0
-    # bank-plugin-account-soa-0 bank-plugin-tests-1661111370-account-soa_0 bank-plugin-tests-1661111370-account-soa-0
-    # account-soa_1
-    # account-soa-1 bank-plugin-account-soa_1
-    # bank-plugin-account-soa-1 bank-plugin-tests-1661111370-account-soa_1 bank-plugin-tests-1661111370-account-soa-1
-    # account-soa_2
-    # account-soa-2 bank-plugin-account-soa_2
-    # bank-plugin-account-soa-2 bank-plugin-tests-1661111370-account-soa_2 bank-plugin-tests-1661111370-account-soa-2
+    cd "${SSL_RES_COMMON_DIR}"
+    echo " ### cleaning [generated-test-resources/ssl] dir "
+    rm -f *.key *.crt *.cert *.pem *.csr *.srl *index.txt *index.txt.attr *.attr.old openssl*.cnf *index.txt.old *serial.txt *serial.txt.old
 
-    #
-    # mvv-bank localhost
-    # mvv-bank_0 mvv-bank-0 bank-plugin-mvv-bank_0 bank-plugin-mvv-bank-0 bank-plugin-tests-1661111370-mvv-bank_0 bank-plugin-tests-1661111370-mvv-bank-0
-    # mvv-bank_1 mvv-bank-1 bank-plugin-mvv-bank_1 bank-plugin-mvv-bank-1 bank-plugin-tests-1661111370-mvv-bank_1 bank-plugin-tests-1661111370-mvv-bank-1
-    # mvv-bank_2 mvv-bank-2 bank-plugin-mvv-bank_2 bank-plugin-mvv-bank-2 bank-plugin-tests-1661111370-mvv-bank_2 bank-plugin-tests-1661111370-mvv-bank-2
-]
-# <hosts>${generated-dev-certs-hosts}</hosts>
-# <generated-dev-certs-hosts>localhost,database,${project.build.finalName}</generated-dev-certs-hosts>
-dependencies = ["generate-ssl-certs-prepare"]
-
-
-
-[tasks.generate-ssl-certs--for-account-web]
-private = true
-workspace = false
-condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-web.key", "${TEST_CERTS_DIR}/rust-account-web.crt.pem"] }
-command = "openssl"
-args = [
-    "req", "-x509", "-newkey", "rsa:4096", "-sha256", "-days", "30",
-    "-nodes",
-    "-keyout", "${TEST_CERTS_DIR}/rust-account-web.key.pem",
-    "-outform", "PEM",
-    "-out", "${TEST_CERTS_DIR}/rust-account-web.crt.pem", "-subj", "/CN=rust-account-web",
-    "-addext", "subjectAltName=DNS:rust-account-web-0,DNS:rust-account-web_0,DNS:rust-account-web-1,DNS:rust-account-web_1,DNS:rust-account-web-2,DNS:rust-account-web_2",
-    # "-addext", "subjectAltName=DNS:rust-account-web-0,DNS:*.example.com,IP:10.0.0.1",
-
-    # account-web_0
-    # account-web-0 bank-plugin-account-web_0
-    # bank-plugin-account-web-0 bank-plugin-tests-1661111370-account-web_0 bank-plugin-tests-1661111370-account-web-0
-    # account-web_1
-    # account-web-1 bank-plugin-account-web_1
-    # bank-plugin-account-web-1 bank-plugin-tests-1661111370-account-web_1 bank-plugin-tests-1661111370-account-web-1
-    # account-web_2
-    # account-web-2 bank-plugin-account-web_2
-    # bank-plugin-account-web-2 bank-plugin-tests-1661111370-account-web_2 bank-plugin-tests-1661111370-account-web-2
-]
-# <hosts>${generated-dev-certs-hosts}</hosts>
-# <generated-dev-certs-hosts>localhost,database,${project.build.finalName}</generated-dev-certs-hosts>
-dependencies = ["generate-ssl-certs-prepare"]
+    echo " ### copy files from '${SSL_CERTS_SUBDIR}' to '${SSL_RES_COMMON_SUBDIR}' "
+    cp -a "${ROOT_PROJECT_DIR}/target/generated-test-resources/${SSL_CERTS_SUBDIR}/." "${SSL_RES_COMMON_DIR}"
+'''
 
 
 
@@ -145,15 +164,15 @@ dependencies = ["generate-ssl-certs-prepare"]
 ########################################################################################################################
 
 [tasks.generate-certs]
-workspace = false
+alias = "generate-ssl-certs"
+[tasks.gen-ssl-certs]
 alias = "generate-ssl-certs"
 [tasks.gen-certs]
-workspace = false
 alias = "generate-ssl-certs"
 
 [tasks.regenerate-certs]
-workspace = false
+alias = "regenerate-ssl-certs"
+[tasks.regen-ssl-certs]
 alias = "regenerate-ssl-certs"
 [tasks.regen-certs]
-workspace = false
 alias = "regenerate-ssl-certs"

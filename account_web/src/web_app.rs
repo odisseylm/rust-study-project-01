@@ -14,6 +14,8 @@ use mvv_common::{
     server_conf::get_server_port,
     // utoipa::{ generate_open_api, nest_open_api, to_generate_open_api, UpdateApiFile },
 };
+use mvv_common::cfg::SslConfValue;
+use mvv_common::exe::current_exe_dir;
 use mvv_common::utoipa::to_generate_open_api;
 use crate::{
     app_dependencies::{ Dependencies, DependenciesState },
@@ -21,6 +23,7 @@ use crate::{
     // auth::in_mem_client_auth_user_provider,
 };
 use crate::auth::SqlClientAuthUserProvider;
+use crate::cfg::SslConfig;
 use crate::service::account_service::{AccountSoaConnectCfg, create_account_service};
 // use crate::web::{
 //     auth::composite_login_router,
@@ -32,7 +35,7 @@ use crate::service::account_service::{AccountSoaConnectCfg, create_account_servi
 
 fn create_prod_dependencies() -> Result<Arc<Dependencies<AccountServiceImpl>>, anyhow::Error> {
 
-    let db = Arc::new(mvv_common::db::pg::pg_db_connection("account_web") ?);
+    let db = Arc::new(mvv_common::db::pg::pg_db_ssl_connection("account_web") ?);
 
     let account_soa_cfg = AccountSoaConnectCfg::load_from_env() ?;
 
@@ -177,6 +180,8 @@ async fn create_app_route <
 pub async fn web_app_main() -> Result<(), anyhow::Error> {
 
     let env_filename = format!(".{}.env", current_exe_name() ?);
+
+    std::env::set_var("EXE_PATH_DIR", current_exe_dir() ?);
     let dotenv_res = dotenv::from_filename(&env_filename);
 
     init_logger();
@@ -193,10 +198,34 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     let port = get_server_port("ACCOUNT_WEB") ?;
     let app_router = create_app_route(create_prod_dependencies() ?).await ?;
 
-    // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await ?;
-    info!("Web server started on port [{port}]");
-    axum::serve(listener, app_router).await ?;
+    use axum_server::tls_rustls::RustlsConfig;
+    let ssl_conf = SslConfig::load_from_env() ?;
+
+    let rust_tls_config: RustlsConfig =
+        if let (SslConfValue::Path(account_web_cert), SslConfValue::Path(account_web_key)) =
+                                   (&ssl_conf.account_web_cert, &ssl_conf.account_web_key) {
+            RustlsConfig::from_pem_file(account_web_cert, account_web_key).await ?
+        } else if let (SslConfValue::Value(account_web_cert), SslConfValue::Value(account_web_key)) =
+                                   (&ssl_conf.account_web_cert, &ssl_conf.account_web_key) {
+            RustlsConfig::from_pem(
+                Vec::from(account_web_cert.as_bytes()),
+                Vec::from(account_web_key.as_bytes()),
+            ).await ?
+        } else {
+            anyhow::bail!("Both account_soa_cert/account_soa_key should have the same type")
+        };
+
+    // // run our app with hyper, listening globally on port 3001
+    // let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await ?;
+    // info!("Web server started on port [{port}]");
+    // axum::serve(listener, app_router).await ?;
+
+    use std::net::SocketAddr;
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    axum_server::bind_rustls(addr, rust_tls_config)
+        .serve(app_router.into_make_service())
+        .await ?;
+
     Ok(())
 }
 

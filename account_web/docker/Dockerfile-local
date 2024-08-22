@@ -13,7 +13,9 @@ EXPOSE 80 8080 443 8443 8000 2735 3000
 LABEL rust-test-label-03=value-3
 
 RUN apt-get -qq update &&                       \
-    # apt-get -qq install openssl
+    # apt-get -qq install openssl               \
+    # apt-get -qq install iputils-ping &&       \
+    # apt-get -qq install curl &&               \
     apt-get -qq update && apt-get -qq install libssl-dev
 
 RUN adduser \
