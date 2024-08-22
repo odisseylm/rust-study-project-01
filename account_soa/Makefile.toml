@@ -2,6 +2,8 @@
 extend = [
     { path = "../build/common-makefile.toml" },
     { path = "../build/ssl-simple-certs-makefile.toml" },
+    { path = "../build/ssl-ca-certs-makefile.toml" },
+    { path = "../build/ssl-certs-makefile.toml" },
     { path = "../build/docker-build-makefile.toml" },
     { path = "../build/docker-compose-makefile.toml" },
 ]
@@ -27,6 +29,15 @@ dependencies = [
     "rs-compile",
     "generate-open-api",
     "post-build",
+]
+
+
+
+[tasks.test]
+extend = "cargo-test"
+dependencies = [
+    "build",
+    "generate-ssl-certs",
 ]
 
 

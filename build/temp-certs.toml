@@ -1,0 +1,126 @@
+
+
+[tasks.generate-ssl-certs-prepare]
+private = true
+workspace = false
+env = { "TEST_CERTS_DIR" = "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl", PROJECT_NAME = "rust-study-project" }
+command = "mkdir"
+args = ["-p", "${TEST_CERTS_DIR}"]
+
+
+## Country Name (2 letter code) [AU]:UA
+## State or Province Name (full name) [Some-State]:AAA
+## Locality Name (eg, city) []:KK
+## Organization Name (eg, company) [Internet Widgits Pty Ltd]:LL
+## Organizational Unit Name (eg, section) []:LLM
+## Common Name (e.g. server FQDN or YOUR name) []:MyName
+## Email Address []:aaaaa@aaa.com
+## Can't open /home/vmelnykov/projects/rust/rust-study-project-01/target/generated-test-resources/ssl/accountservice-domain.csr for reading, No such file or directory
+## 139878598874432:error:02001002:system library:fopen:No such file or directory:../crypto/bio/bss_file.c:69:fopen('/home/vmelnykov/projects/rust/rust-study-project-01/target/generated-test-resources/ssl/accountservice-domain.csr','r')
+## 139878598874432:error:2006D080:BIO routines:BIO_new_file:no such file:../crypto/bio/bss_file.c:76:
+
+[tasks.generate-cert-impl-345]
+private = true
+script = [
+    "echo \" ### generate ${SERV_NAME}-rootCA.crt and ${SERV_NAME}-rootCA.key \" ",
+    "openssl req -x509 -sha256 -days 30 -newkey rsa:2048 -keyout ${TEST_CERTS_DIR}/${SERV_NAME}-rootCA.key -out ${TEST_CERTS_DIR}/${SERV_NAME}-rootCA.crt -subj \"/C=US/ST=CA/O=MyOrg, Inc./CN=${SERV_NAME}.xyz\" ", #  -out ${TEST_CERTS_DIR}/${SERV_NAME}-domain.csr
+
+    "echo \" ### generate ${SERV_NAME}-domain.crt \" ",
+    "openssl x509 -req -CA ${TEST_CERTS_DIR}/${SERV_NAME}-rootCA.crt -CAkey ${TEST_CERTS_DIR}/${SERV_NAME}-rootCA.key -in ${TEST_CERTS_DIR}/${SERV_NAME}-domain.csr -out ${TEST_CERTS_DIR}/${SERV_NAME}-domain.crt -days 30 -CAcreateserial",
+
+    "echo \" ### generate ${SERV_NAME}-domain.ext \" ",
+    "authorityKeyIdentifier=keyid,issuer\n    > ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "basicConstraints=CA:FALSE\n             >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "subjectAltName=@alt_names\n             >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "[alt_names]\n                           >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "DNS.1 = ${SERV_NAME}\n                  >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "DNS.2 = localhost\n                     >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "DNS.3 = ${SERV_NAME}-0\n                  >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "DNS.4 = ${SERV_NAME}_0\n                  >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "DNS.5 = ${SERV_NAME}-1\n                  >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "DNS.6 = ${SERV_NAME}_1\n                  >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "DNS.7 = ${SERV_NAME}-2\n                  >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "DNS.8 = ${SERV_NAME}_2\n                  >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "DNS.9 = ${SERV_NAME}-3\n                  >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+    "DNS.10 = ${SERV_NAME}_3\n                 >> ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+
+    "openssl x509 -req -CA ${TEST_CERTS_DIR}/${SERV_NAME}-rootCA.crt -CAkey ${TEST_CERTS_DIR}/${SERV_NAME}-rootCA.key -in ${TEST_CERTS_DIR}/${SERV_NAME}-domain.csr -out ${TEST_CERTS_DIR}/${SERV_NAME}-domain.crt -days 30 -CAcreateserial -extfile ${TEST_CERTS_DIR}/${SERV_NAME}-domain.ext",
+]
+
+
+[tasks.generate-root-cert-impl]
+private = true
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/${PROJECT_NAME}-rootCA.key", "${TEST_CERTS_DIR}/${PROJECT_NAME}-rootCA.crt"] }
+script = [
+    "echo \" ### generate ${PROJECT_NAME}-rootCA.key \" ",
+    # With password ('-des3')
+    # "openssl genrsa -des3 -out ${TEST_CERTS_DIR}/${PROJECT_NAME}-rootCA.key 4096",
+    # Without password
+    "openssl genrsa -out ${TEST_CERTS_DIR}/${PROJECT_NAME}-rootCA.key 4096",
+
+    "echo \" ### generate ${PROJECT_NAME}-rootCA.crt \" ",
+    "openssl req -x509 -new -nodes -key ${TEST_CERTS_DIR}/${PROJECT_NAME}-rootCA.key -sha256 -days 1024 -out ${TEST_CERTS_DIR}/${PROJECT_NAME}-rootCA.crt -subj \"/C=US/ST=CA/O=MyOrg, Inc./CN=mydomain.com\" ",
+]
+
+
+[tasks.generate-cert-impl]
+private = true
+script = '''
+    echo " ### generate ${SERV_NAME}.xyz.com.key "
+    openssl genrsa -out ${TEST_CERTS_DIR}/${SERV_NAME}.xyz.key 2048
+
+    echo " ### generate ${SERV_NAME}.xyz.csr (01) "
+    openssl req -new -sha256 -key ${TEST_CERTS_DIR}/${SERV_NAME}.xyz.key -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=mydomain.com" -out ${TEST_CERTS_DIR}/${SERV_NAME}.xyz.csr
+
+    echo " ### generate open-sll conf file "
+    cat /etc/ssl/openssl.cnf > ${TEST_CERTS_DIR}/${SERV_NAME}-openssl.conf
+    # echo "\nauthorityKeyIdentifier=keyid,issuer" >> ${TEST_CERTS_DIR}/${SERV_NAME}-openssl.conf
+    # echo "\nbasicConstraints=CA:FALSE" >> ${TEST_CERTS_DIR}/${SERV_NAME}-openssl.conf
+    echo "\n[SAN]\nsubjectAltName=DNS:${SERV_NAME},DNS:localhost,DNS:${SERV_NAME}-0,DNS:${SERV_NAME}_0,DNS:${SERV_NAME}-1,DNS:${SERV_NAME}_1,DNS:${SERV_NAME}-2,DNS:${SERV_NAME}_2" >> ${TEST_CERTS_DIR}/${SERV_NAME}-openssl.conf
+
+    echo " ### generate ${SERV_NAME}.xyz.csr (02) "
+    # -reqexts SAN -config ${TEST_CERTS_DIR}/${SERV_NAME}-openssl.conf \
+    openssl req -new -sha256 -key ${TEST_CERTS_DIR}/${SERV_NAME}.xyz.key \
+        -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=mydomain.com" \
+        -out ${TEST_CERTS_DIR}/${SERV_NAME}.xyz.csr \
+        -reqexts SAN -config ${TEST_CERTS_DIR}/${SERV_NAME}-openssl.conf
+        # -addext "subjectAltName=DNS:${SERV_NAME},DNS:localhost,DNS:${SERV_NAME}-0,DNS:${SERV_NAME}_0,DNS:${SERV_NAME}-1,DNS:${SERV_NAME}_1,DNS:${SERV_NAME}-2,DNS:${SERV_NAME}_2"
+
+    openssl req -in ${TEST_CERTS_DIR}/${SERV_NAME}.xyz.csr -noout -text
+
+    openssl x509 -req -in ${TEST_CERTS_DIR}/${SERV_NAME}.xyz.csr -CA ${TEST_CERTS_DIR}/${PROJECT_NAME}-rootCA.crt -CAkey ${TEST_CERTS_DIR}/${PROJECT_NAME}-rootCA.key -CAcreateserial -out ${TEST_CERTS_DIR}/${SERV_NAME}.xyz.crt -days 30 -sha256
+
+    openssl x509 -in ${TEST_CERTS_DIR}/${SERV_NAME}.xyz.crt -text -noout
+'''
+dependencies = [
+    "generate-root-cert-impl",
+]
+
+
+[tasks.generate-cert--database]
+private = false
+extend = "generate-cert-impl"
+env = { SERV_NAME = "database" }
+dependencies = [
+    "generate-ssl-certs-prepare",
+    "generate-root-cert-impl",
+]
+
+[tasks.generate-cert--account-soa]
+private = false
+extend = "generate-cert-impl"
+env = { SERV_NAME = "rust-account-soa" }
+dependencies = [
+    "generate-ssl-certs-prepare",
+    "generate-root-cert-impl",
+]
+
+[tasks.generate-certs-2]
+workspace = false
+dependencies = [
+    "generate-ssl-certs-prepare",
+    "delete-ssl-certs-prepare", # T O D O: temp
+    "generate-root-cert-impl",
+    "generate-cert--database",
+    "generate-cert--account-soa",
+]

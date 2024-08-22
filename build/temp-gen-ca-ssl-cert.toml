@@ -1,0 +1,78 @@
+
+### Temp for history
+
+
+[tasks.generate-ca-ssl-certs-prepare]
+private = true
+workspace = false
+env = { TEST_CERTS_DIR = "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl34", SSL_CONF_DIR = "${ROOT_PROJECT_DIR}/conf/openssl" }
+script = ''' mkdir -p "${TEST_CERTS_DIR}" '''
+
+
+
+[tasks.delete-ca-ssl-certs]
+private = true
+workspace = false
+cwd = "${TEST_CERTS_DIR}"
+script = [ "rm -f *.key *.crt *.cert *.pem *.csr *index.txt *index.txt.attr *index.txt.old *serial.txt *serial.txt.old" ]
+dependencies = ["generate-ca-ssl-certs-prepare"]
+
+
+
+[tasks.gen-ca-ssl-certs]
+#private = true
+workspace = false
+cwd = "${TEST_CERTS_DIR}"
+script = '''
+
+    echo " ### 01 "
+    openssl req -x509 -config ${SSL_CONF_DIR}/openssl-ca.cnf -days 365 -newkey rsa:4096 -sha256 -keyout ${TEST_CERTS_DIR}/ca.key.pem -nodes -out ${TEST_CERTS_DIR}/ca.crt.pem -outform PEM -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=localhost ca"
+
+    echo " ### 02 "
+    openssl x509 -in ${TEST_CERTS_DIR}/ca.crt.pem -text -noout
+
+    echo " ### 03 "
+    openssl req -config ${SSL_CONF_DIR}/openssl-server.cnf -newkey rsa:2048 -sha256 -keyout ${TEST_CERTS_DIR}/server.key.pem -nodes -out ${TEST_CERTS_DIR}/server.crt.csr -outform PEM -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=database-CN"
+
+    echo " ### 04 "
+    openssl req -text -noout -verify -in ${TEST_CERTS_DIR}/server.crt.csr
+
+    touch ${TEST_CERTS_DIR}/index.txt
+    echo '01' > ${TEST_CERTS_DIR}/serial.txt
+
+    echo " ### open-ssl => signing to index.txt/ "
+    openssl ca -batch -config ${SSL_CONF_DIR}/openssl-ca-2.cnf -cert ${TEST_CERTS_DIR}/ca.crt.pem     \
+        -keyfile ${TEST_CERTS_DIR}/ca.key.pem -policy signing_policy -extensions signing_req   \
+        -out ${TEST_CERTS_DIR}/server.crt.pem -infiles ${TEST_CERTS_DIR}/server.crt.csr
+
+    #echo " ### 06 "
+    #openssl x509 -in ${TEST_CERTS_DIR}/server.crt.pem -text -noout
+
+
+
+
+    #openssl req -x509 -new -nodes -newkey rsa:2048 -keyout myCA.key \
+    #    -sha256 -days 1825 -out myCA.crt -subj /CN='localhost ca'
+
+    #openssl req -newkey rsa:2048 -nodes -keyout localhost.key -out localhost.csr \
+    #    -subj /CN=localhost -addext subjectAltName=DNS:localhost
+
+    #openssl x509 -req -in localhost.csr -copy_extensions copy \
+    #    -CA myCA.crt -CAkey myCA.key -CAcreateserial -out localhost.crt -days 365 -sha256
+
+    # sudo cp myCA.crt /etc/pki/ca-trust/source/anchors/
+    # sudo update-ca-trust
+'''
+dependencies = ["generate-ca-ssl-certs-prepare"]
+
+
+
+
+
+[tasks.regen-ca-ssl-certs]
+#private = true
+workspace = false
+dependencies = [
+    "delete-ca-ssl-certs",
+    "gen-ca-ssl-certs",
+]

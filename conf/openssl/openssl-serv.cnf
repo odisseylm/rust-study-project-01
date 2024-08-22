@@ -1,0 +1,56 @@
+
+HOME            = .
+RANDFILE        = $ENV::HOME/.rnd
+
+####################################################################
+[ req ]
+default_bits       = 2048
+#default_keyfile    = server.key.pem
+distinguished_name = server_distinguished_name
+req_extensions     = server_req_extensions
+string_mask        = utf8only
+
+####################################################################
+[ server_distinguished_name ]
+countryName         = Country Name (2 letter code)
+countryName_default = US
+
+stateOrProvinceName         = State or Province Name (full name)
+stateOrProvinceName_default = MD
+
+localityName         = Locality Name (eg, city)
+localityName_default = Baltimore
+
+organizationName            = Organization Name (eg, company)
+organizationName_default    = Test Server, Limited
+
+commonName           = Common Name (e.g. server FQDN or YOUR name)
+commonName_default   = Test Server
+
+emailAddress         = Email Address
+emailAddress_default = test@example.com
+
+####################################################################
+[ server_req_extensions ]
+
+subjectKeyIdentifier = hash
+basicConstraints     = CA:FALSE
+keyUsage             = digitalSignature, keyEncipherment
+subjectAltName       = @alternate_names
+nsComment            = "OpenSSL Generated Certificate"
+
+
+####################################################################
+###             It should be filled/added by script              ###
+####################################################################
+
+# [ alternate_names ]
+#
+# DNS.1  = database
+# DNS.2  = localhost
+# DNS.3  = database-0
+# DNS.4  = database_0
+# DNS.5  = database-1
+# DNS.6  = database_1
+# DNS.7  = database-2
+# DNS.8  = database_3

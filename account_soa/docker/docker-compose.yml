@@ -26,9 +26,9 @@ services:
       - POSTGRES_DB=rust_mvvbank
       - POSTGRES_USER=rust_mvvbank
       - POSTGRES_PASSWORD=psw
-      - POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem
+      #- POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem  # database.crt.pem can be used with PgSslMode::Require
+      - POSTGRES_SSL_CERT_PATH=/certs/ca.crt.pem  # CA should be used if PgSslMode::VerifyCa/VerifyFull is used
 
-      - DATABASE_SSL_CERT_PATH=/certs/database.crt.pem # TODO: remove DATABASE_SSL_CERT_PATH key
       - ACCOUNT_SOA_SSL_KEY_PATH=/certs/rust-account-soa.key.pem
       - ACCOUNT_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
     volumes:
@@ -51,15 +51,16 @@ services:
     image: postgres:16
     networks:
       - rust-account-soa-net
-    hostname: database # required only for fabricio8 plugin
-    # -l - enable SSL connections
-    # TODO: how disable plain TCP connection; `-c listen_addresses=''` blocks everything.
-    # entrypoint: docker-entrypoint.sh postgres -l -c ssl=on -c ssl_cert_file=/certs/database.crt.pem -c ssl_key_file=/certs/database.key.pem -c listen_addresses=''
+    # hostname: database # required only for fabricio8 plugin
+    # -l - enables SSL connections
+    # T O D O: how disable plain TCP connection; `-c listen_addresses=''` blocks everything.
+    # Seems ` -c listen_addresses=''` or ` -c listen_addresses=` blocks ALL external connections ?
+    # Seems param `-c ssl_ca_file=/certs/ca.crt.pem` is optional
     command: sh -c "
          cp /certs/database.key.pem /usr/lib/ssl/database-test.key.pem &&
          chown postgres /usr/lib/ssl/database-test.key.pem &&
          chmod go-r /usr/lib/ssl/database-test.key.pem &&
-         docker-entrypoint.sh postgres -l -c ssl=on -c ssl_cert_file=/certs/database.crt.pem -c ssl_key_file=/usr/lib/ssl/database-test.key.pem
+         docker-entrypoint.sh postgres -l -c ssl=on -c ssl_cert_file=/certs/database.crt.pem -c ssl_key_file=/usr/lib/ssl/database-test.key.pem 
       "
     environment:
       POSTGRES_DB: rust_mvvbank

@@ -26,9 +26,9 @@ services:
       - POSTGRES_DB=rust_mvvbank
       - POSTGRES_USER=rust_mvvbank
       - POSTGRES_PASSWORD=psw
-      - POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem
+      #- POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem  # database.crt.pem can be used with PgSslMode::Require
+      - POSTGRES_SSL_CERT_PATH=/certs/ca.crt.pem  # CA should be used if PgSslMode::VerifyCa or PgSslMode::VerifyFull is used
 
-      - DATABASE_SSL_CERT_PATH=/certs/database.crt.pem
       - ACCOUNT_SOA_SSL_KEY_PATH=/certs/rust-account-soa.key.pem
       - ACCOUNT_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
     volumes:
@@ -69,10 +69,11 @@ services:
       - POSTGRES_DB=rust_mvvbank
       - POSTGRES_USER=rust_mvvbank
       - POSTGRES_PASSWORD=psw
-      - POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem
+      #- POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem  # database.crt.pem can be used with PgSslMode::Require
+      - POSTGRES_SSL_CERT_PATH=/certs/ca.crt.pem  # CA should be used if PgSslMode::VerifyCa/VerifyFull is used
 
-      - DATABASE_SSL_CERT_PATH=/certs/database.crt.pem
-      - ACCOUNT_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
+      #- ACCOUNT_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem  # use it in simple self-signed key/cert generated
+      - ACCOUNT_SOA_SSL_CERT_PATH=/certs/ca.crt.pem  # use CA if CA was used for generated server key/cert
       - ACCOUNT_WEB_SSL_KEY_PATH=/certs/rust-account-web.key.pem
       - ACCOUNT_WEB_SSL_CERT_PATH=/certs/rust-account-web.crt.pem
 

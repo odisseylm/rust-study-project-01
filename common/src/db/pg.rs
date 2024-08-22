@@ -48,9 +48,13 @@ pub fn pg_db_connection_options(connection_type: ConnectionType, app_name: &str)
             .and_then(|s| if s.is_empty() { None } else { Some(s) } )
             .val_or_not_found_err(POSTGRES_SSL_CERT_PATH) ?;
         options = options
-            .ssl_mode(PgSslMode::Require)
-            // .ssl_mode(PgSslMode::VerifyCa)
+            // .ssl_mode(PgSslMode::Require)   // database.crt.pem can be used (or ca.crt.pem)
+            //.ssl_mode(PgSslMode::VerifyCa)     // requires usage ca.crt.pem
+            .ssl_mode(PgSslMode::VerifyFull)   // requires usage ca.crt.pem
             // ? Why not 'server' cert ?
+            //
+            // In case of PgSslMode::Require database.crt.pem can be used.
+            // In case of PgSslMode::VerifyXXX ca.crt.pem must be used.
             .ssl_root_cert(postgres_ssl_cert)
             //.ssl_root_cert_from_pem(std::fs::read_to_string(postgres_ssl_cert) ?.into_bytes())
             ;

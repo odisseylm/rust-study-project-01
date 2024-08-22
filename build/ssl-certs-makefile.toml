@@ -1,0 +1,53 @@
+
+
+# Simple approach: cert + key (without CA)
+#
+#[tasks.generate-ssl-certs]
+#dependencies = [ "generate-ssl-simple-certs", "copy-ssl-certs" ]
+#[tasks.regenerate-ssl-certs]
+#dependencies = [ "regenerate-ssl-simple-certs", "copy-ssl-certs" ]
+#
+#[tasks.copy-ssl-certs]
+#private = true
+#script = '''
+#    mkdir -p "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl"
+#    rm -f *.key *.crt *.cert *.pem *.csr *index.txt *index.txt.attr *index.txt.old *serial.txt *serial.txt.old
+#    cp -a "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl-simple/." "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl/"
+#'''
+
+
+# CA approach: CA + cert + key
+#
+[tasks.generate-ssl-certs]
+dependencies = [ "generate-ca-ssl-certs", "copy-ssl-certs" ]
+[tasks.regenerate-ssl-certs]
+dependencies = [ "regenerate-ca-ssl-certs", "copy-ssl-certs" ]
+
+
+[tasks.copy-ssl-certs]
+private = true
+script = '''
+    mkdir -p "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl"
+    rm -f *.key *.crt *.cert *.pem *.csr *index.txt *index.txt.attr *index.txt.old *serial.txt *serial.txt.old
+    cp -a "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl-ca-openssl11/." "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl/"
+'''
+
+
+
+########################################################################################################################
+#                                         Optional aliases                                                             #
+########################################################################################################################
+
+[tasks.generate-certs]
+alias = "generate-ssl-certs"
+[tasks.gen-ssl-certs]
+alias = "generate-ssl-certs"
+[tasks.gen-certs]
+alias = "generate-ssl-certs"
+
+[tasks.regenerate-certs]
+alias = "regenerate-ssl-certs"
+[tasks.regen-ssl-certs]
+alias = "regenerate-ssl-certs"
+[tasks.regen-certs]
+alias = "regenerate-ssl-certs"
