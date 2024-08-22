@@ -6,6 +6,7 @@ extend = [
     { path = "../build/ssl-certs-makefile.toml" },
     { path = "../build/docker-build-makefile.toml" },
     { path = "../build/docker-compose-makefile.toml" },
+    { path = "../build/ssl-ca-certs-openssl3-makefile.toml" },
 ]
 
 [env]

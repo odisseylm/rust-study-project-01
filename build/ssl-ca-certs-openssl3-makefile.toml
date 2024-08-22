@@ -1,0 +1,57 @@
+
+
+[tasks.generate-ca-ssl-3-certs-prepare]
+private = true
+workspace = false
+env = { TEST_CERTS_DIR = "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl-ca-openssl3", openssl3 = "/home/vmelnykov/projects/rust/rust-study-project-01/temp/openssl-3.3.1/apps/openssl", LD_LIBRARY_PATH = "${LD_LIBRARY_PATH}:/home/vmelnykov/projects/rust/rust-study-project-01/temp/openssl-3.3.1" }
+env_script = '''
+    #!@duckscript
+    echo first env script...
+
+    set_env TEST_CERTS_DIR "${ROOT_PROJECT_DIR}/target/generated-test-resources/ssl-ca-openssl3"
+    set_env openssl3 "/home/vmelnykov/projects/rust/rust-study-project-01/temp/openssl-3.3.1/apps/openssl"
+    set_env LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:/home/vmelnykov/projects/rust/rust-study-project-01/temp/openssl-3.3.1"
+'''
+script = ''' mkdir -p "${TEST_CERTS_DIR}" '''
+
+
+
+[tasks.delete-ca-ssl-3-certs]
+private = true
+workspace = false
+cwd = "${TEST_CERTS_DIR}"
+script = [ "rm -f *.key *.crt *.cert *.pem *.csr *index.txt *index.txt.attr *index.txt.old *serial.txt *serial.txt.old" ]
+dependencies = ["generate-ca-ssl-3-certs-prepare"]
+
+
+
+[tasks.gen-ca-ssl-3-certs]
+#private = true
+workspace = false
+cwd = "${TEST_CERTS_DIR}"
+env = { SERV_NAME = "database" }
+script = '''
+    echo " ### 01 "
+    ${openssl3} req -x509 -new -nodes -newkey rsa:2048 -keyout myCA.key \
+        -config /home/vmelnykov/projects/rust/rust-study-project-01/temp/openssl-3.3.1/apps/openssl.cnf \
+        -sha256 -days 1825 -out myCA.crt \
+        -subj /CN='localhost ca'
+
+    echo " ### 02 "
+    ${openssl3} req -newkey rsa:2048 -nodes -keyout localhost.key -out localhost.csr \
+        -config /home/vmelnykov/projects/rust/rust-study-project-01/temp/openssl-3.3.1/apps/openssl.cnf \
+        -subj "/CN=localhost" \
+        -addext subjectAltName=DNS:${SERV_NAME},DNS:localhost,DNS:${SERV_NAME}-0,DNS:${SERV_NAME}_0,DNS:${SERV_NAME}-1,DNS:${SERV_NAME}_1,DNS:${SERV_NAME}-2,DNS:${SERV_NAME}_2
+
+    echo " ### 03 "
+    ${openssl3} x509 -req -in localhost.csr -copy_extensions copy \
+        -CA myCA.crt -CAkey myCA.key -CAcreateserial -out localhost.crt -days 365 -sha256
+
+    echo " ### 04 "
+    # sudo cp myCA.crt /etc/pki/ca-trust/source/anchors/
+    # sudo update-ca-trust
+'''
+dependencies = [
+    "generate-ca-ssl-3-certs-prepare",
+    "delete-ca-ssl-3-certs", # TODO: temp
+]
