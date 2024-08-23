@@ -14,8 +14,8 @@ script = '''
     set_env openssl3 openssl
 
     # For testing openssl3 on system with openssl11
-    set_env openssl3 "${HOME}/projects/rust/rust-study-project-01/temp/openssl-3.3.1/apps/openssl"
-    set_env LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:${HOME}/projects/rust/rust-study-project-01/temp/openssl-3.3.1"
+    # set_env openssl3 "${HOME}/projects/rust/rust-study-project-01/temp/openssl-3.3.1/apps/openssl"
+    # set_env LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:${HOME}/projects/rust/rust-study-project-01/temp/openssl-3.3.1"
 
     set_env OPEN_SSL3_CONF "${ROOT_PROJECT_DIR}/conf/openssl3/openssl.cnf"
 '''

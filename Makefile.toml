@@ -17,8 +17,7 @@ condition = { files_not_exist = ["target/patch-override-sub-dep"] }
 
 [env]
 
-#DOCKER_MODULES = [ "account_soa", "account_web" ]
-DOCKER_MODULES = [ "account_soa" ]
+DOCKER_MODULES = [ "account_soa", "account_web" ]
 
 # short alias
 #ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"

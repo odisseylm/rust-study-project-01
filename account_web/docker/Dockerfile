@@ -154,5 +154,6 @@ ENTRYPOINT ["/bin/mvv_account_web", "arg1", "arg2"]
 
 # interval=1m
 #HEALTHCHECK --interval=5s --timeout=3s CMD wget --quiet --no-check-certificate --tries=1 --spider https://localhost:${SERVER_PORT}/healthcheck || exit 1
-HEALTHCHECK CMD health_checker https://localhost:${SERVER_PORT}/healthcheck || exit 1
+# good param  --start-interval=2s is unstable ?!
+HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD health_checker https://localhost:${SERVER_PORT}/healthcheck || exit 1
 

@@ -117,14 +117,14 @@ dependencies = [ "determine-openssl-ver" ]
 private  = false
 condition = { env = { "OPENSSL_VERSION" = "OpenSSL_3X" } }
 env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
-run_task = { name = [ "generate-openssl11-ssl-ca-certs", "copy-ssl-certs" ] }
+run_task = { name = [ "generate-openssl3-ssl-ca-certs", "copy-ssl-certs" ] }
 dependencies = [ "determine-openssl-ver" ]
 
 [tasks.regenerate-ssl-certs-openssl3-auto-delegate]
 private  = false
 condition = { env = { "OPENSSL_VERSION" = "OpenSSL_3X" } }
 env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
-run_task = { name = [ "generate-openssl11-ssl-ca-certs", "copy-ssl-certs" ] }
+run_task = { name = [ "generate-openssl3-ssl-ca-certs", "copy-ssl-certs" ] }
 dependencies = [ "determine-openssl-ver" ]
 
 
