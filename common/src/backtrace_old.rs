@@ -565,7 +565,7 @@ pub fn disable_backtrace() {
 #[allow(dead_code)]
 static INITIAL_RUST_BACKTRACE_ENABLED_OLD: once_cell::sync::Lazy<bool> = once_cell::sync::Lazy::new(|| {
     let enabled = is_anyhow_backtrace_enabled_impl();
-    println!("### Initializing of INITIAL_RUST_BACKTRACE_ENABLED!!! OLD ({})", enabled);
+    // println!("### Initializing of INITIAL_RUST_BACKTRACE_ENABLED!!! OLD ({})", enabled);
     enabled
 });
 
@@ -573,12 +573,12 @@ static INITIAL_RUST_BACKTRACE_ENABLED_OLD: once_cell::sync::Lazy<bool> = once_ce
 static INITIAL_RUST_BACKTRACE_ENABLED: bool = {
     use crate::obj_ext::ValExt;
 
-    print!("### TEMP std::env::var(\"RUST_BACKTRACE\") = {:?}", std::env::var("RUST_BACKTRACE"));
+    // print!("### TEMP std::env::var(\"RUST_BACKTRACE\") = {:?}", std::env::var("RUST_BACKTRACE"));
 
     std::env::var("RUST_BACKTRACE")
         .map(|rust_bt_val| rust_bt_val.as_str().is_one_of3("1", "full", "short"))
         .unwrap_or(false)
-        .also(|enabled| println!("### Initializing of INITIAL_RUST_BACKTRACE_ENABLED!!! ({})", enabled))
+        // .also(|enabled| println!("### Initializing of INITIAL_RUST_BACKTRACE_ENABLED!!! ({})", enabled))
 };
 
 // The same using 'ctor' crate

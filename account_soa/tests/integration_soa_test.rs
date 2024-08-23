@@ -3,8 +3,9 @@ use std::time::Duration;
 use anyhow::anyhow;
 use assert_json_diff::{assert_json_eq};
 use assertables::{assert_ge, assert_ge_as_result};
+use itertools::Itertools;
 use log::{debug, error, info};
-use reqwest::Response;
+use reqwest::{Certificate, Response};
 use rustainers::compose::{
     ComposeContainers, ComposeError, ComposeRunOption,
     RunnableComposeContainers, RunnableComposeContainersBuilder,
@@ -62,11 +63,14 @@ impl ToRunnableComposeContainers for AccountSoaTestContainers {
                 (POSTGRES_SERVICE, self.postgres_port.clone()),
             ])
             .with_wait_strategies([
+                (ACCOUNT_SOA_SERVICE, WaitStrategy::HealthCheck),
+                /*
                 (ACCOUNT_SOA_SERVICE, WaitStrategy::HttpSuccess {
-                    https: false,
+                    https: true, // rustainers does not support ignoring certificate
                     path: "/health-check".to_owned(),
                     container_port: ACCOUNT_SOA_HTTP_PORT.clone(),
                 }),
+                */
                 (POSTGRES_SERVICE, WaitStrategy::stdout_match(
                     regex::Regex::new("PostgreSQL init process complete; ready for start up")
                         .expect("Incorrect RegEx for PostgreSQL."))),
@@ -85,6 +89,9 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
     // OUT_DIR = /home/.../target/debug/build/mvv_account_soa-a02bfbee150dfc8f/out
 
     let tests_session_id = chrono::Local::now().timestamp();
+
+    let docker_image_profile = get_docker_image_profile();
+    let docker_image_profile_suffix: &str = docker_image_profile.as_docker_tag_suffix();
 
     let sub_project_dir = std::env::var("CARGO_MANIFEST_DIR").test_unwrap();
     let sub_project_dir: PathBuf = sub_project_dir.into();
@@ -105,6 +112,7 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
             Copy { from: p("docker/docker-compose.env"), to: p("docker-compose.env") },
             Copy { from: p("docker/docker-compose.yml"), to: p("docker-compose.yml") },
             Copy { from: p("test_resources/postgres"), to: p("test_resources/postgres") },
+            Copy { from: p("../target/generated-test-resources/ssl"), to: p("generated-test-resources/ssl") },
         ),
         replace_file_content: vec!(
             /*
@@ -122,6 +130,16 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
                     "name:\taccount-soa-it-tests",
                 ],
                 [&format!("name: {new_network}")],
+            ),
+            Replace::by_str(
+                p("docker-compose.yml"),
+                ["../target/generated-test-resources/ssl/"],
+                ["./generated-test-resources/ssl/"],
+            ),
+            Replace::by_str(
+                p("docker-compose.yml"),
+                ["${DOCKER_IMAGE_PROFILE_SUFFIX}"],
+                [docker_image_profile_suffix],
             ),
             //
             // Disable port's publishing to specific/hardcoded ports because they can be used already
@@ -146,8 +164,8 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
 
     let temp_docker_compose_dir = prepare_docker_compose(&project_dir, &cfg) ?;
 
-    let docker_image_profile = get_docker_image_profile();
-    let docker_image_profile_suffix: &str = docker_image_profile.as_docker_tag_suffix();
+    // let docker_image_profile = get_docker_image_profile();
+    // let docker_image_profile_suffix: &str = docker_image_profile.as_docker_tag_suffix();
     std::env::set_var("DOCKER_IMAGE_PROFILE_SUFFIX", docker_image_profile_suffix);
 
     let option: ComposeRunOption = ComposeRunOption::builder()
@@ -205,6 +223,9 @@ async fn integration_test_run_account_soa_docker_compose() {
         .filter(None, log::LevelFilter::Info)
         .init();
 
+    // let vars =  std::env::vars().map(|(k,v)|format!("{k:?} = {v:?}")).sorted().join("\n");
+    // println!("vars: {vars}");
+
     if !is_integration_tests_enabled() {
         info!("Integration test [{}] is SKIPPED/IGNORED", fn_name!());
         return;
@@ -242,10 +263,22 @@ async fn integration_test_run_account_soa_docker_compose() {
 
 async fn test_get_all_client_accounts(account_soa_port: u16) {
 
-    let base_url = format!("http://localhost:{account_soa_port}");
+    let base_url = format!("https://localhost:{account_soa_port}");
     let url = format!("{base_url}/api/client/00000000-0000-0000-0000-000000000001/account/all");
 
-    let client = reqwest::Client::new();
+    // "CARGO_MANIFEST_DIR" = "/home/vmelnykov/projects/rust/rust-study-project-01/account_soa"
+    let project_dir: PathBuf = std::env::var("CARGO_MANIFEST_DIR").test_unwrap().into();
+    let root_dir: &Path = project_dir.parent().test_unwrap();
+    let cert_path = root_dir.join("target/generated-test-resources/ssl/ca.crt.pem");
+
+    let pem: String = std::fs::read_to_string(&cert_path)
+        .map_err(|err| anyhow!("Error of reading from [{cert_path:?}] ({err:?})")).test_unwrap();
+
+    let client = reqwest::Client::builder()
+        // .danger_accept_invalid_certs(true)
+        .add_root_certificate(Certificate::from_pem(pem.as_bytes()).test_unwrap())
+        .build().test_unwrap();
+
     let resp: Response = client.get(url)
         .basic_auth("vovan-read", Some("qwerty"))
         .send()

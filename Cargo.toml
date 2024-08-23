@@ -243,7 +243,7 @@ regress = "0.10.0"
 http = "1.1.0"
 # http library
 hyper = "1.3.1"
-reqwest = { version = "0.12.4", features = ["default", "json", "stream"] }
+reqwest = { version = "0.12.4", features = ["default", "json", "stream", "blocking"] }
 url = "2.5.1"
 
 #sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "tls-rustls", "runtime-tokio-rustls"] }

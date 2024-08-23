@@ -145,6 +145,7 @@ RUN adduser                   \
 USER appuser
 
 COPY --from=build /bin/mvv_account_web /bin/
+COPY --from=build /bin/health_checker  /bin/
 #ENV ROCKET_ADDRESS=0.0.0.0
 #CMD ["/bin/server"]
 
@@ -152,4 +153,6 @@ ENV RUST_BACKTRACE=$RUN_RUST_BACKTRACE
 ENTRYPOINT ["/bin/mvv_account_web", "arg1", "arg2"]
 
 # interval=1m
-#HEALTHCHECK --interval=5s --timeout=3s CMD wget --quiet --no-check-certificate --tries=1 --spider https://localhost/${PROJECT_CONTEXT_PATH}/api/ping || exit 1
+#HEALTHCHECK --interval=5s --timeout=3s CMD wget --quiet --no-check-certificate --tries=1 --spider https://localhost:${SERVER_PORT}/healthcheck || exit 1
+HEALTHCHECK CMD health_checker https://localhost:${SERVER_PORT}/healthcheck || exit 1
+

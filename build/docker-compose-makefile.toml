@@ -82,6 +82,23 @@ dependencies = [
 
 
 
+[tasks.docker-compose-ps]
+command = "docker-compose"
+args = [
+    "--file", "${PROJECT_DIR}/docker/docker-compose.yml",      # "${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose.env",  # "${docker-env-file}",
+    "--project-directory", "${PROJECT_DIR}",
+    "--project-name", "${DOCKER_COMPOSE_PROJECT_NAME}",        # "${project.artifactId}",
+    "ps",
+]
+workspace = false
+dependencies = [
+    "init_docker_vars",
+    "init-docker-compose-env-vars",
+]
+
+
+
 [tasks.docker-compose-rerun]
 workspace = false
 dependencies = [
