@@ -1,10 +1,22 @@
 pub mod integration;
+pub mod files;
+pub mod docker_compose;
+pub mod docker_compose_util;
+
 
 use core::fmt::Debug;
 use std::ffi::OsString;
 use std::fmt::Display;
+use std::path::{Path, PathBuf};
+use anyhow::anyhow;
 use itertools::Itertools;
-use crate::string::is_os_str_true;
+use crate::{
+    string::is_os_str_true,
+    test::integration::NamePolicy,
+};
+//--------------------------------------------------------------------------------------------------
+
+
 // Actually this code is designed for unit test only,
 // but in that case due to strange rust project tests build approach
 // it causes showing 'unused code'.
@@ -27,6 +39,7 @@ pub trait TestOptionUnwrap <Ok> {
     fn test_unwrap(self) -> Ok;
 }
 
+//noinspection DuplicatedCode
 impl<Ok,Err: Debug> TestResultUnwrap<Ok,Err> for Result<Ok,Err> {
     #[inline]
     #[track_caller]
@@ -139,6 +152,7 @@ pub impl<T> TestOps for T where T: Clone {
 }
 
 #[extension_trait::extension_trait]
+//noinspection DuplicatedCode
 pub impl<V,E> TestResultDebugErrOps for Result<V,E> where E: Debug {
     // #[inline] // warning: `#[inline]` is ignored on function prototypes
     #[track_caller]
@@ -148,7 +162,7 @@ pub impl<V,E> TestResultDebugErrOps for Result<V,E> where E: Debug {
 }
 
 #[extension_trait::extension_trait]
-pub impl<V,E> TestResultDisplayErrOps for Result<V,E> where E: core::fmt::Display {
+pub impl<V,E> TestResultDisplayErrOps for Result<V,E> where E: Display {
     // #[inline] // warning: `#[inline]` is ignored on function prototypes
     #[track_caller]
     fn err_to_test_display_string(self) -> String {
@@ -178,3 +192,102 @@ pub fn is_CI_build() -> bool {
         Some(ref v) => is_os_str_true(v),
     }
 }
+
+
+pub fn current_sub_project_dir() -> anyhow::Result<PathBuf> {
+    let sub_project_dir = crate::env::required_env_var("CARGO_MANIFEST_DIR") ?;
+    let sub_project_dir: PathBuf = sub_project_dir.into();
+    Ok(sub_project_dir)
+}
+
+
+pub fn current_project_target_dir() -> anyhow::Result<PathBuf> {
+    let out_dir_str = crate::env::required_env_var("OUT_DIR") ?;
+    let out_dir: PathBuf = out_dir_str.into();
+
+    let target_dir = find_target_dir(&out_dir) ?;
+    Ok(target_dir)
+}
+
+
+pub fn current_root_project_dir() -> anyhow::Result<PathBuf> {
+    let target_dir = current_project_target_dir() ?;
+    let root_project_dir = target_dir.parent().ok_or_else(||anyhow!("No parent directory if {target_dir:?}")) ?;
+    Ok(root_project_dir.to_path_buf())
+}
+
+
+pub fn build_id() -> anyhow::Result<i64> {
+    let target_dir = current_project_target_dir() ?;
+    let build_id_file = target_dir.join("buildId");
+
+    let build_id = if build_id_file.exists() {
+        let str_build_id = std::fs::read_to_string(&build_id_file) ?;
+        let str_build_id = str_build_id.trim();
+
+        let build_id: i64 = core::str::FromStr::from_str(str_build_id) ?;
+        build_id
+    } else {
+        let build_id: i64 = chrono::Local::now().timestamp();
+        std::fs::write(&build_id_file, format!("{build_id}")) ?;
+        build_id
+    };
+    Ok(build_id)
+}
+
+
+pub fn find_target_dir(dir: &Path) -> anyhow::Result<PathBuf> {
+
+    let orig_dir = dir;
+    let dir = dir.canonicalize().map_err(|_err|anyhow!("Seems no dir [{dir:?}].")) ?;
+    let mut dir = dir.as_path();
+    let mut iter_count = 0;
+
+    loop {
+        let target_dir = dir.join("target");
+        if target_dir.exists() {
+            return Ok(target_dir);
+        }
+
+        let parent_dir = dir.parent();
+        match parent_dir {
+            None =>
+                anyhow::bail!("'target' dir for [{orig_dir:?}] is not found."),
+            Some(parent_dir) => {
+                dir = parent_dir;
+            }
+        }
+
+        iter_count += 1;
+        if iter_count > 20 {
+            anyhow::bail!("Too many recursion in finding 'target' dir for [{orig_dir:?}]")
+        }
+    }
+}
+
+
+fn change_name_by_policy(base_name: &str, network_name_policy: &NamePolicy, test_session_id: i64) -> anyhow::Result<String> {
+    match network_name_policy {
+        NamePolicy::Original =>
+            Ok(base_name.to_owned()),
+        NamePolicy::Custom(ref new_network_name) =>
+            Ok(new_network_name.to_string()),
+        NamePolicy::WithSuffix(ref suffix) =>
+            Ok(format!("{base_name}{suffix}")),
+        NamePolicy::WithRandomSuffix => {
+            let rnd: i64 = chrono::Local::now().timestamp();
+            Ok(format!("{base_name}-{rnd}"))
+        }
+        NamePolicy::WithBuildIdSuffix => {
+            let build_id: i64 = build_id() ?;
+            Ok(format!("{base_name}-{build_id}"))
+        }
+        NamePolicy::WithTestSessionIdSuffix =>
+            Ok(format!("{base_name}-{test_session_id}")),
+        NamePolicy::WithStringAndBuildIdSuffix(ref suffix) => {
+            let build_id: i64 = build_id() ?;
+            Ok(format!("{base_name}{suffix}-{build_id}"))
+        }
+    }
+}
+

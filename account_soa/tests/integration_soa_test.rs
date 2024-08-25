@@ -12,10 +12,12 @@ use rustainers::compose::{
     ToRunnableComposeContainers,
 };
 use rustainers::{ExposedPort, Port, WaitStrategy};
-use mvv_common::test::integration::{AutoDockerComposeDown, docker_compose_down_silent as docker_compose_down, is_integration_tests_enabled, prepare_docker_compose, PrepareDockerComposeCfg, current_sub_project_dir, wait_containers, current_project_target_dir};
-use mvv_common::test::{TestOptionUnwrap, TestResultUnwrap};
+use mvv_common::test::integration::{AutoDockerComposeDown, is_integration_tests_enabled, prepare_docker_compose, PrepareDockerComposeCfg, wait_containers, };
+use mvv_common::test::{current_project_target_dir, current_sub_project_dir, TestOptionUnwrap, TestResultUnwrap};
 use serde_json::json;
 use mvv_common::fn_name;
+use mvv_common::test::docker_compose::docker_compose_down;
+use mvv_common::test::files::CopyCfg;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -83,16 +85,18 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
 
     let cfg = PrepareDockerComposeCfg {
         tests_session_id,
-        base_from_dir: sub_project_dir.clone(),
-        copy: vec!(
-            /*
-            Copy { from: p("docker/docker-compose.env"), to: p("docker-compose.env") },
-            Copy { from: p("docker/docker-compose.yml"), to: p("docker-compose.yml") },
-            Copy { from: p("test_resources/postgres"), to: p("test_resources/postgres") },
-            Copy { from: p("../target/generated-test-resources/ssl"), to: p("generated-test-resources/ssl") },
-            */
-        ),
-        replace_file_content: vec!(
+        copy: CopyCfg {
+            base_from_dir: "".into(), // sub_project_dir.clone(),
+            copy: vec!(
+                /*
+                Copy { from: p("docker/docker-compose.env"), to: p("docker-compose.env") },
+                Copy { from: p("docker/docker-compose.yml"), to: p("docker-compose.yml") },
+                Copy { from: p("test_resources/postgres"), to: p("test_resources/postgres") },
+                Copy { from: p("../target/generated-test-resources/ssl"), to: p("generated-test-resources/ssl") },
+                */
+            ),
+        },
+        replace: vec!(
             /*
             // It is mainly example. Just exactly this substitution is done automatically.
             Replace::by_str(
@@ -118,15 +122,15 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
     info!("### Attempt to run docker compose for [account_soa]", );
 
     // to make sure - clean up previous session
-    info!("#### Clean previous docker compose session");
-    docker_compose_down(&temp_docker_compose_dir);
+    info!("### Clean previous docker compose session");
+    let _ = docker_compose_down(&temp_docker_compose_dir);
 
     let compose_containers_fut = runner.compose_start_with_options(
         AccountSoaTestContainers::new(&temp_docker_compose_dir).await ?,
         option,
     );
 
-    wait_containers(temp_docker_compose_dir, compose_containers_fut, Duration::from_secs(15)).await
+    wait_containers(temp_docker_compose_dir, "Account SOA", compose_containers_fut, Duration::from_secs(15)).await
 }
 
 
@@ -182,7 +186,6 @@ async fn test_get_all_client_accounts(account_soa_port: u16) {
     let url = format!("{base_url}/api/client/00000000-0000-0000-0000-000000000001/account/all");
 
     let build_target_dir = current_project_target_dir().test_unwrap();
-    println!("### build_target_dir: {build_target_dir:?}");
     let cert_path = build_target_dir.join("generated-test-resources/ssl/ca.crt.pem");
 
     let pem: String = std::fs::read_to_string(&cert_path)
@@ -252,17 +255,3 @@ async fn test_get_all_client_accounts(account_soa_port: u16) {
     */
 }
 
-
-/*
-/// We use this special function wrapper to avoid missed clean up
-/// due to panic by assert (or unwrap in test code)
-/// We also could use `AssertUnwindSafe(our_test_method_future).catch_unwind().await`
-/// but this approach is easier and works enough properly (at least in our tests).
-async fn run_test<>(f: impl Future<Output=()> + Send + Sync + 'static) -> anyhow::Result<()> {
-    let res = tokio::spawn(f).await;
-    match res {
-        Ok(res) => Ok(res),
-        Err(err) => Err(anyhow!(err)),
-    }
-}
-*/
