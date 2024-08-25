@@ -318,6 +318,8 @@ rustainers = { version = "0.12.0", features = ["default", "regex"]}
 
 macro_rules_attribute = "0.2.0"
 
+#[dev-dependencies]
+yaml-rust2 = { version = "0.8.1" }
 
 
 # With changed reqwest from version 11 to 12. Otherwise, project is not compiled :-(

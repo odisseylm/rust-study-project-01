@@ -201,6 +201,9 @@ progenitor-client = { workspace = true, features = [] }
 
 fs_extra.workspace = true
 
+yaml-rust2.workspace = true
+rustainers.workspace = true
+
 [dev-dependencies]
 #mockall.workspace = true
 test-case.workspace = true

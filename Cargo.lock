@@ -201,6 +201,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arraydeque"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d902e3d592a523def97af8f317b08ce16b7ab854c1985a0c671e6f15cebc236"
+
+[[package]]
 name = "arrayvec"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2848,6 +2854,7 @@ dependencies = [
  "uuid",
  "validator",
  "validify",
+ "yaml-rust2",
 ]
 
 [[package]]
@@ -3093,6 +3100,7 @@ dependencies = [
  "readonly",
  "regex",
  "reqwest 0.12.5",
+ "rustainers",
  "seq-macro",
  "serde",
  "serde_json",
@@ -3123,6 +3131,7 @@ dependencies = [
  "uuid",
  "validator",
  "validify",
+ "yaml-rust2",
 ]
 
 [[package]]
@@ -6864,6 +6873,17 @@ name = "xtask"
 version = "0.1.0"
 dependencies = [
  "walkdir",
+]
+
+[[package]]
+name = "yaml-rust2"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8902160c4e6f2fb145dbe9d6760a75e3c9522d8bf796ed7047c85919ac7115f8"
+dependencies = [
+ "arraydeque",
+ "encoding_rs",
+ "hashlink",
 ]
 
 [[package]]

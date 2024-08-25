@@ -1,10 +1,10 @@
+use std::fmt::Debug;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 use anyhow::anyhow;
 use assert_json_diff::{assert_json_eq};
 use assertables::{assert_ge, assert_ge_as_result};
-use itertools::Itertools;
-use log::{debug, error, info};
+use log::{debug, info};
 use reqwest::{Certificate, Response};
 use rustainers::compose::{
     ComposeContainers, ComposeError, ComposeRunOption,
@@ -12,11 +12,7 @@ use rustainers::compose::{
     ToRunnableComposeContainers,
 };
 use rustainers::{ExposedPort, Port, WaitStrategy};
-use mvv_common::test::integration::{
-    AutoDockerComposeDown, docker_compose_down_silent as docker_compose_down,
-    is_integration_tests_enabled, prepare_docker_compose,
-    PrepareDockerComposeCfg, Replace, get_docker_image_profile,
-};
+use mvv_common::test::integration::{AutoDockerComposeDown, docker_compose_down_silent as docker_compose_down, is_integration_tests_enabled, prepare_docker_compose, PrepareDockerComposeCfg, current_sub_project_dir, wait_containers, current_project_target_dir};
 use mvv_common::test::{TestOptionUnwrap, TestResultUnwrap};
 use serde_json::json;
 use mvv_common::fn_name;
@@ -82,91 +78,33 @@ impl ToRunnableComposeContainers for AccountSoaTestContainers {
 
 async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, ComposeContainers<AccountSoaTestContainers>)> {
 
-    fn p(path: &str) -> PathBuf { PathBuf::from(path) }
-
-    // CARGO_MANIFEST_DIR = /home/.../rust-study-project-01/account_soa
-    // CARGO_PKG_NAME = mvv_account_soa
-    // OUT_DIR = /home/.../target/debug/build/mvv_account_soa-a02bfbee150dfc8f/out
-
     let tests_session_id = chrono::Local::now().timestamp();
-
-    let docker_image_profile = get_docker_image_profile();
-    let docker_image_profile_suffix: &str = docker_image_profile.as_docker_tag_suffix();
-
-    let sub_project_dir = std::env::var("CARGO_MANIFEST_DIR").test_unwrap();
-    let sub_project_dir: PathBuf = sub_project_dir.into();
-    let project_dir = sub_project_dir.join("..").canonicalize().test_unwrap();
-    let new_network = format!("it-tests-rust-account-soa-{tests_session_id}");
-
-    use mvv_common::test::integration::Copy;
+    let sub_project_dir = current_sub_project_dir().test_unwrap();
 
     let cfg = PrepareDockerComposeCfg {
         tests_session_id,
-        // Project names must contain only lowercase letters, decimal digits, dashes,
-        // and underscores, and must begin with a lowercase letter or decimal digit.
-        // See https://github.com/compose-spec/compose-spec/blob/main/spec.md
-        //
-        name: "rust_account_soa".to_owned(),
-        base_from_dir: sub_project_dir,
+        base_from_dir: sub_project_dir.clone(),
         copy: vec!(
+            /*
             Copy { from: p("docker/docker-compose.env"), to: p("docker-compose.env") },
             Copy { from: p("docker/docker-compose.yml"), to: p("docker-compose.yml") },
             Copy { from: p("test_resources/postgres"), to: p("test_resources/postgres") },
             Copy { from: p("../target/generated-test-resources/ssl"), to: p("generated-test-resources/ssl") },
+            */
         ),
         replace_file_content: vec!(
             /*
-            Replace {
-                file: p("docker-compose.yml"),
-                from: vec!("./test_resources/postgres/init/".to_owned()),
-                to: vec!("SomeMyCustomPath".to_owned()),
-            },
+            // It is mainly example. Just exactly this substitution is done automatically.
+            Replace::by_str(
+                p("docker-compose.yml"),
+                ["${DOCKER_IMAGE_PROFILE_SUFFIX}"], [docker_image_profile_suffix],
+            ),
             */
-            Replace::by_str(
-                p("docker-compose.yml"),
-                [
-                    "name: account-soa-it-tests",
-                    "name:account-soa-it-tests",
-                    "name:\taccount-soa-it-tests",
-                ],
-                [&format!("name: {new_network}")],
-            ),
-            Replace::by_str(
-                p("docker-compose.yml"),
-                ["../target/generated-test-resources/ssl/"],
-                ["./generated-test-resources/ssl/"],
-            ),
-            Replace::by_str(
-                p("docker-compose.yml"),
-                ["${DOCKER_IMAGE_PROFILE_SUFFIX}"],
-                [docker_image_profile_suffix],
-            ),
-            //
-            // Disable port's publishing to specific/hardcoded ports because they can be used already
-            // and test will fail.
-            // It is needed
-            // * to have possibility to run integration tests without stopping
-            //   already launched testing docker-compose environment
-            // * to safe launch integration tests on build server
-            //
-            Replace::by_str(
-                p("docker-compose.yml"),
-                [ "- 5432:5432", "-5432:5432", "-\t5432:5432", ],
-                ["- 5432"],
-            ),
-            Replace::by_str(
-                p("docker-compose.yml"),
-                [ "- 8101:8080", "-8101:8080", "-\t8101:8080", ],
-                ["- 8080"],
-            ),
         ),
+        ..Default::default()
     };
 
-    let temp_docker_compose_dir = prepare_docker_compose(&project_dir, &cfg) ?;
-
-    // let docker_image_profile = get_docker_image_profile();
-    // let docker_image_profile_suffix: &str = docker_image_profile.as_docker_tag_suffix();
-    std::env::set_var("DOCKER_IMAGE_PROFILE_SUFFIX", docker_image_profile_suffix);
+    let temp_docker_compose_dir = prepare_docker_compose(&sub_project_dir, &cfg) ?;
 
     let option: ComposeRunOption = ComposeRunOption::builder()
         // Wait interval for service health check
@@ -188,30 +126,7 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
         option,
     );
 
-    let pause_duration = Duration::from_secs(15); // 120
-    let compose_containers = tokio::time::timeout(pause_duration, compose_containers_fut).await;
-
-    match compose_containers {
-        Ok(res) => {
-            match res {
-                Ok(res) => {
-                    info!("SUCCESS of Account SOA launch => {res:?}");
-                    Ok( (temp_docker_compose_dir, res) )
-                },
-                Err(err) => {
-                    error!("FAILURE of Account SOA launch => Error {{ {err:?} }}");
-                    docker_compose_down(&temp_docker_compose_dir);
-                    Err(anyhow!(err))
-                },
-            }
-        },
-        Err(err) => {
-            error!("FAILURE of Account SOA launch => Error {{ {err:?} }}");
-            info!("Shut down docker compose manually...");
-            docker_compose_down(&temp_docker_compose_dir);
-            Err(anyhow!(err))
-        },
-    }
+    wait_containers(temp_docker_compose_dir, compose_containers_fut, Duration::from_secs(15)).await
 }
 
 
@@ -266,10 +181,9 @@ async fn test_get_all_client_accounts(account_soa_port: u16) {
     let base_url = format!("https://localhost:{account_soa_port}");
     let url = format!("{base_url}/api/client/00000000-0000-0000-0000-000000000001/account/all");
 
-    // "CARGO_MANIFEST_DIR" = "/home/vmelnykov/projects/rust/rust-study-project-01/account_soa"
-    let project_dir: PathBuf = std::env::var("CARGO_MANIFEST_DIR").test_unwrap().into();
-    let root_dir: &Path = project_dir.parent().test_unwrap();
-    let cert_path = root_dir.join("target/generated-test-resources/ssl/ca.crt.pem");
+    let build_target_dir = current_project_target_dir().test_unwrap();
+    println!("### build_target_dir: {build_target_dir:?}");
+    let cert_path = build_target_dir.join("generated-test-resources/ssl/ca.crt.pem");
 
     let pem: String = std::fs::read_to_string(&cert_path)
         .map_err(|err| anyhow!("Error of reading from [{cert_path:?}] ({err:?})")).test_unwrap();

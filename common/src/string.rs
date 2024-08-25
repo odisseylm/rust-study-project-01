@@ -140,3 +140,8 @@ pub fn is_os_str_true(str: &OsStr) -> bool {
     // str == OS_STR_1 || str.eq_ignore_ascii_case(OS_STR_1)
     str == OsStr::new("1") || str.eq_ignore_ascii_case(OsStr::new("true"))
 }
+
+#[inline]
+pub fn str_vec<const N: usize>(strings: [&str;N]) -> Vec<String> {
+    strings.map(|s|s.to_owned()).to_vec()
+}
