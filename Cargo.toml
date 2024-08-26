@@ -315,6 +315,10 @@ assert-json-diff = "2.0.2"
 # ctor = "0.2.8"
 
 rustainers = { version = "0.12.0", features = ["default", "regex"]}
+## See https://www.zenrows.com/blog/rust-html-parser
+# # Heavy dependency (probably very nice, but I need something simple for tests)
+# html2text = { version = "0.12.5", features = ["default"] }
+nanohtml2text = { version = "0.1.4" }
 
 macro_rules_attribute = "0.2.0"
 

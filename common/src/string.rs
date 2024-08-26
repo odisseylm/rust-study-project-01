@@ -1,4 +1,3 @@
-// use const_format::ascii_str;
 use core::fmt::{ self, Debug };
 use std::ffi::OsStr;
 use log::error;
@@ -10,7 +9,7 @@ pub enum FormatMode {
     Debug,
 }
 
-pub trait DisplayValueExample : core::fmt::Display {
+pub trait DisplayValueExample : fmt::Display {
     fn display_value_example() -> &'static str;
 }
 
@@ -144,4 +143,23 @@ pub fn is_os_str_true(str: &OsStr) -> bool {
 #[inline]
 pub fn str_vec<const N: usize>(strings: [&str;N]) -> Vec<String> {
     strings.map(|s|s.to_owned()).to_vec()
+}
+
+
+pub fn remove_repeated_spaces(str: &str) -> String {
+    let mut out_str = String::with_capacity(str.len());
+    let mut prev_is_space = false;
+
+    for ch in str.chars() {
+        if ch == ' ' {
+            if !prev_is_space {
+                out_str.push(ch);
+            }
+            prev_is_space = true;
+        } else {
+            prev_is_space = false;
+            out_str.push(ch);
+        }
+    }
+    out_str
 }

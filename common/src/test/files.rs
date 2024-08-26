@@ -32,6 +32,14 @@ pub struct CopyCfg {
     pub base_from_dir: PathBuf,
     pub copy: Vec<Copy>,
 }
+impl Default for CopyCfg {
+    fn default() -> Self {
+        Self {
+            base_from_dir: PathBuf::new(),
+            copy: Vec::new(),
+        }
+    }
+}
 
 
 pub fn do_replacements(replace_file_content: &Vec<Replace>, test_res_dir: &Path) -> anyhow::Result<()> {

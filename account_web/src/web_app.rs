@@ -16,6 +16,7 @@ use mvv_common::{
 };
 use mvv_common::cfg::SslConfValue;
 use mvv_common::exe::current_exe_dir;
+use mvv_common::rest::health_check_router;
 use mvv_common::utoipa::to_generate_open_api;
 use crate::{
     app_dependencies::{ Dependencies, DependenciesState },
@@ -122,6 +123,7 @@ async fn create_app_route <
     let login_route = composite_login_router();
 
     let app_router = Router::new()
+        .merge(health_check_router())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", create_open_api()))
         .merge(login_route)
         // .merge(protected_page_01_router())

@@ -221,3 +221,7 @@ assert-json-diff.workspace = true
 # color-backtrace.workspace = true
 
 macro_rules_attribute.workspace = true
+
+rustainers.workspace = true
+#html2text.workspace = true    # heavy dependency, better no to use it for simple scenarious
+nanohtml2text.workspace = true

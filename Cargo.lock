@@ -2917,6 +2917,7 @@ dependencies = [
  "mvv_proc_macro",
  "mvv_tuple_heter_iter",
  "mvv_tuple_heter_iter_macro",
+ "nanohtml2text",
  "nonzero_lit",
  "num",
  "nutype",
@@ -2935,6 +2936,7 @@ dependencies = [
  "regex",
  "regress 0.10.0",
  "reqwest 0.12.5",
+ "rustainers",
  "seq-macro",
  "serde",
  "serde_json",
@@ -3186,6 +3188,12 @@ dependencies = [
  "quote",
  "syn 2.0.72",
 ]
+
+[[package]]
+name = "nanohtml2text"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "999681fe3c0524336e98ece1c25ee4278607f25cc1e361ad0f9201c8bf56dc2c"
 
 [[package]]
 name = "native-tls"
