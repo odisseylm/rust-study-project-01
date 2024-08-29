@@ -42,6 +42,8 @@ mvv_common = { version = "0.1.0", path = "../common" }
 mvv_auth = { version = "0.1.0", path = "../auth" }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
+# It is not used a lib, but we need it for docker image.
+mvv_health_check = { version = "0.1.0", path = "../health_check", optional = true  }
 
 # -------------------------------------------------------------------------
 if_chain.workspace = true
@@ -134,7 +136,8 @@ type-rules.workspace = true
 
 axum.workspace = true
 # !! 'axum-server' is maintained by community independently from axum !!
-axum-server = { workspace = true, features = [ "tls-rustls" ] }
+axum-server = { workspace = true, features = [ "tls-rustls-no-provider" ] }
+rustls = { workspace = true }
 #axum-handle-error-extract.workspace = true
 async-trait.workspace = true
 tower.workspace = true

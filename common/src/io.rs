@@ -18,3 +18,9 @@ pub fn get_existent<const N: usize>(files: [&Path;N]) -> anyhow::Result<&Path> {
         .find(|f|f.exists())
         .ok_or_else(||anyhow!("None of files [{files:?}] exists"))
 }
+
+
+// ???
+// TODO: add EASY error mapping functions
+//  * for not found
+//  * others

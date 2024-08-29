@@ -23,7 +23,7 @@ use mvv_common::test::files::CopyCfg;
 
 
 const ACCOUNT_SOA_SERVICE: &'static str = "rust-account-soa";
-const ACCOUNT_SOA_HTTP_PORT: Port = Port::new(8080);
+const ACCOUNT_SOA_HTTP_PORT: Port = Port::new(8443);
 
 const POSTGRES_SERVICE: &'static str = "database";
 const POSTGRES_PORT: Port = Port::new(5432);

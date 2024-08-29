@@ -1,0 +1,34 @@
+[package]
+name = "mvv_health_check"
+version = "0.1.0"
+edition = "2021"
+
+
+#[profile.dev] # make it equal to release
+#opt-level = 3
+#strip = "none" # ??? Why 'none' ???
+##strip = true
+#debug = false
+#overflow-checks = false
+#debug-assertions = false
+#panic = "abort"  #'unwind'
+##lto = false
+##incremental = false
+##codegen-units = 16
+##rpath = false
+#
+#
+#[profile.release]
+#strip = true
+#overflow-checks = false
+#panic = "abort"
+
+
+[dependencies]
+reqwest = { workspace = true, features = ["blocking", "__rustls-ring"] }
+http = { workspace = true }
+#rustls = { workspace = true, default-features = false, features = ["ring", "logging", "std", "tls12" ] }
+rustls = { workspace = true }
+
+#const_format = { workspace = true }
+#const-str = { workspace = true }

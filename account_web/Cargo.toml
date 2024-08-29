@@ -30,6 +30,8 @@ mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_ma
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
 # It is not used a lib, but we need its 'bin' to generate OpenAPI spec and corresponding stubs.
 mvv_account_soa = { version = "0.1.0", path = "../account_soa", optional = true }
+# It is not used a lib, but we need it for docker image.
+mvv_health_check = { version = "0.1.0", path = "../health_check", optional = true  }
 
 # -------------------------------------------------------------------------
 if_chain.workspace = true
@@ -121,7 +123,8 @@ type-rules.workspace = true
 
 axum.workspace = true
 # !! 'axum-server' is maintained by community independently from axum !!
-axum-server = { workspace = true, features = [ "tls-rustls" ] }
+axum-server = { workspace = true, features = [ "tls-rustls-no-provider" ] }
+rustls = { workspace = true }
 #axum-handle-error-extract.workspace = true
 async-trait.workspace = true
 tower.workspace = true

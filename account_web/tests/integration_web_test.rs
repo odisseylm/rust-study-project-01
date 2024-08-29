@@ -23,10 +23,10 @@ use mvv_common::test::docker_compose::docker_compose_down;
 
 
 const ACCOUNT_SOA_SERVICE: &'static str = "rust-account-soa";
-const ACCOUNT_SOA_HTTP_PORT: Port = Port::new(8080);
+const ACCOUNT_SOA_HTTP_PORT: Port = Port::new(8443);
 
 const ACCOUNT_WEB_SERVICE: &'static str = "rust-account-web";
-const ACCOUNT_WEB_HTTP_PORT: Port = Port::new(8080);
+const ACCOUNT_WEB_HTTP_PORT: Port = Port::new(8443);
 
 const POSTGRES_SERVICE: &'static str = "database";
 const POSTGRES_PORT: Port = Port::new(5432);

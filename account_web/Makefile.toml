@@ -17,3 +17,15 @@ PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/account_web"
 
 
 # -----------------------------------------------------------------------------
+
+
+
+
+[tasks.package] # It is named just according to 'java'
+command = "echo" # overriding/disabling predefined build command
+args = [ "package flow" ]
+dependencies = [
+    "build",
+    "build-docker",
+    "integration-tests",
+]

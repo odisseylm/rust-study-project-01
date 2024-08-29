@@ -32,6 +32,28 @@ pub fn load_path_from_env_var(var_name: &'static str) -> anyhow::Result<PathBuf>
     let path = env_var(var_name) ?;
     let path = path.ok_or_else(|| anyhow::anyhow!("Var name [{var_name}] is empty.")) ?;
 
+    let path = fix_path(path) ?;
+    Ok(PathBuf::from(&path))
+}
+
+
+pub fn load_path_from_env_vars<const N: usize>(var_names: [&'static str; N]) -> anyhow::Result<PathBuf> {
+
+    for var_name in var_names {
+        let path = env_var(var_name) ?;
+        let path = match path {
+            None => continue,
+            Some(path) => path,
+        };
+
+        let path = fix_path(path)?;
+        return Ok(PathBuf::from(&path))
+    }
+
+    anyhow::bail!("No path found in env vars [{var_names:?}]")
+}
+
+fn fix_path(path: String) -> anyhow::Result<String> {
     let path =
         if path.contains("${EXE_PATH_DIR}") {
             let exe_path_dir = current_exe_dir() ?;
@@ -40,10 +62,8 @@ pub fn load_path_from_env_var(var_name: &'static str) -> anyhow::Result<PathBuf>
         } else {
             path
         };
-
-    Ok(PathBuf::from(&path))
+    Ok(path)
 }
-
 
 #[derive(Clone, Debug)]
 pub enum SslConfValue {

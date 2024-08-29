@@ -111,7 +111,7 @@ dependencies = [
 workspace = false
 dependencies = [
     "build-docker-prod",  # will be called only in prod/release profile
-    "build-debug-docker", # for DEV profile
+    "build-docker-debug-local", # for DEV profile
 ]
 
 # Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')

@@ -29,8 +29,9 @@ RUN adduser \
 USER appuser
 
 
-COPY target/debug/mvv_account_web  ./bin/
-COPY target/debug/health_checker   ./bin/
+COPY target/debug/mvv_account_web      ./bin/
+COPY target/debug/health_checker       ./bin/
+COPY target/debug/http_health_checker  ./bin/
 
 ENV RUST_BACKTRACE=$RUN_RUST_BACKTRACE
 ENTRYPOINT ["/bin/mvv_account_web", "arg1", "arg2"]

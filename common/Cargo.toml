@@ -9,6 +9,12 @@ edition = "2021"
 #[profile.release]
 #strip = "symbols"  # possible: "none", "debuginfo", "symbols" (default "none")
 
+#[[bin]]
+#name = "health_checker"
+#path = "../healthcheck/src/bin/health_checker"
+#profile = "release"
+#fdfd = "fdfd"
+
 
 [features]
 # Defines a feature named `webp` that does not enable any other features.

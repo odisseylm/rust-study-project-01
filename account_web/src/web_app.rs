@@ -17,6 +17,7 @@ use mvv_common::{
 use mvv_common::cfg::SslConfValue;
 use mvv_common::exe::current_exe_dir;
 use mvv_common::rest::health_check_router;
+use mvv_common::server_conf::{get_server_connection_type, ConnectionType};
 use mvv_common::utoipa::to_generate_open_api;
 use crate::{
     app_dependencies::{ Dependencies, DependenciesState },
@@ -203,30 +204,38 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     use axum_server::tls_rustls::RustlsConfig;
     let ssl_conf = SslConfig::load_from_env() ?;
 
-    let rust_tls_config: RustlsConfig =
-        if let (SslConfValue::Path(account_web_cert), SslConfValue::Path(account_web_key)) =
-                                   (&ssl_conf.account_web_cert, &ssl_conf.account_web_key) {
-            RustlsConfig::from_pem_file(account_web_cert, account_web_key).await ?
-        } else if let (SslConfValue::Value(account_web_cert), SslConfValue::Value(account_web_key)) =
-                                   (&ssl_conf.account_web_cert, &ssl_conf.account_web_key) {
-            RustlsConfig::from_pem(
-                Vec::from(account_web_cert.as_bytes()),
-                Vec::from(account_web_key.as_bytes()),
-            ).await ?
-        } else {
-            anyhow::bail!("Both account_soa_cert/account_soa_key should have the same type")
-        };
+    let connection_type = get_server_connection_type("ACCOUNT_WEB") ?;
 
-    // // run our app with hyper, listening globally on port 3001
-    // let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await ?;
-    // info!("Web server started on port [{port}]");
-    // axum::serve(listener, app_router).await ?;
+    match connection_type {
+        ConnectionType::Plain => {
+            // run our app with hyper, listening globally on port 3001
+            let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await ?;
+            info!("Web server started on port [{port}]");
+            axum::serve(listener, app_router).await ?;
+        }
 
-    use std::net::SocketAddr;
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    axum_server::bind_rustls(addr, rust_tls_config)
-        .serve(app_router.into_make_service())
-        .await ?;
+        ConnectionType::Ssl => {
+            let rust_tls_config: RustlsConfig =
+                if let (SslConfValue::Path(server_cert), SslConfValue::Path(server_key)) =
+                    (&ssl_conf.server_ssl_cert, &ssl_conf.server_ssl_key) {
+                    RustlsConfig::from_pem_file(server_cert, server_key).await ?
+                } else if let (SslConfValue::Value(server_cert), SslConfValue::Value(server_key)) =
+                    (&ssl_conf.server_ssl_cert, &ssl_conf.server_ssl_key) {
+                    RustlsConfig::from_pem(
+                        Vec::from(server_cert.as_bytes()),
+                        Vec::from(server_key.as_bytes()),
+                    ).await ?
+                } else {
+                    anyhow::bail!("Both account_soa_cert/account_soa_key should have the same type")
+                };
+
+            use std::net::SocketAddr;
+            let addr = SocketAddr::from(([0, 0, 0, 0], port));
+            axum_server::bind_rustls(addr, rust_tls_config)
+                .serve(app_router.into_make_service())
+                .await ?;
+        }
+    }
 
     Ok(())
 }

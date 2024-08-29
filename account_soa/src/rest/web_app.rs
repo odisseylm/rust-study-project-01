@@ -193,12 +193,12 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     use axum_server::tls_rustls::RustlsConfig;
     let ssl_conf = SslConfig::load_from_env() ?;
 
-    let rust_tls_config: RustlsConfig =
+    let rust_tls_config: RustlsConfig = // TODO: move to 'common'
         if let (SslConfValue::Path(account_soa_cert), SslConfValue::Path(account_soa_key)) =
-                                   (&ssl_conf.account_soa_cert, &ssl_conf.account_soa_key) {
+                                   (&ssl_conf.server_ssl_cert, &ssl_conf.server_ssl_key) {
             RustlsConfig::from_pem_file(account_soa_cert, account_soa_key).await ?
         } else if let (SslConfValue::Value(account_soa_cert), SslConfValue::Value(account_soa_key)) =
-                                   (&ssl_conf.account_soa_cert, &ssl_conf.account_soa_key) {
+                                   (&ssl_conf.server_ssl_cert, &ssl_conf.server_ssl_key) {
             RustlsConfig::from_pem(
                 Vec::from(account_soa_cert.as_bytes()),
                 Vec::from(account_soa_key.as_bytes()),

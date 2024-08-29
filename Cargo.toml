@@ -8,6 +8,7 @@ members = [
     "error_macro",
     "auth",
     "common",
+    "health_check",
     "account_soa",
     "account_web",
 ]
@@ -44,6 +45,19 @@ resolver = "2"
 #cargo-progenitor = "0.7.0"
 #syn = "2.0.72"
 #prettyplease = "0.2.20"
+
+
+[profile.dev.package.mvv_health_check] # make it equal to release
+opt-level = 3
+strip = true
+debug = false
+overflow-checks = false
+debug-assertions = false
+incremental = false
+#panic = "abort"  #'unwind'    ??? `panic` may not be specified in a `package` profile ???
+
+[profile.release.package.mvv_health_check] # make it equal to release
+strip = true
 
 
 
@@ -215,6 +229,8 @@ futures = "0.3.30"
 tokio-test = "0.4.4"
 #tokio-async-await-test = "0.1.0"
 #bytes = "1.6.0"
+
+rustls = { version = "0.23.12", default-features = false, features = ["ring", "logging", "std", "tls12" ] }
 
 askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.4.0"

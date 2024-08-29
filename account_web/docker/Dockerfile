@@ -43,6 +43,8 @@ RUN    mkdir ./src                                                 \
     && mkdir ./proc_macro/src                                      \
     && mkdir ./error_macro                                         \
     && mkdir ./error_macro/src                                     \
+    && mkdir ./health_check                                        \
+    && mkdir ./health_check/src                                    \
     && mkdir ./tuple_heter_iter                                    \
     && mkdir ./tuple_heter_iter/src                                \
     && mkdir ./tuple_heter_iter_macro                              \
@@ -57,19 +59,20 @@ RUN    mkdir ./src                                                 \
     && echo "// dummy file" > ./common/src/lib.rs                  \
     && echo "// dummy file" > ./proc_macro/src/lib.rs              \
     && echo "// dummy file" > ./error_macro/src/lib.rs             \
+    && echo "// dummy file" > ./health_check/src/lib.rs            \
     && echo "// dummy file" > ./tuple_heter_iter/src/lib.rs        \
     && echo "// dummy file" > ./tuple_heter_iter_macro/src/lib.rs  \
     && echo "fn main() { }" > ./xtask/src/main.rs
 
 COPY target/externals/cargo-patch-subdep-ver  /usr/local/cargo/bin/cargo-patch-subdep-ver/
 
-# COPY error_macro/Cargo.lock error_macro/Cargo.toml ./error_macro/
 COPY account_soa/Cargo.toml             ./account_soa/
 COPY account_web/Cargo.toml             ./account_web/
 COPY auth/Cargo.toml                    ./auth/
 COPY common/Cargo.toml                  ./common/
 COPY proc_macro/Cargo.toml              ./proc_macro/
 COPY error_macro/Cargo.toml             ./error_macro/
+COPY health_check/Cargo.toml            ./health_check/
 COPY tuple_heter_iter/Cargo.toml        ./tuple_heter_iter/
 COPY tuple_heter_iter_macro/Cargo.toml  ./tuple_heter_iter_macro/
 COPY xtask/Cargo.toml                   ./xtask/
@@ -90,6 +93,7 @@ RUN    rm ./account_soa/src/*.rs                  \
     && rm ./common/src/*.rs                       \
     && rm ./proc_macro/src/*.rs                   \
     && rm ./error_macro/src/*.rs                  \
+    && rm ./health_check/src/*.rs                 \
     && rm ./tuple_heter_iter/src/*.rs             \
     && rm ./tuple_heter_iter_macro/src/*.rs       \
     && rm ./xtask/src/*.rs
@@ -104,6 +108,7 @@ COPY auth/templates/              ./auth/templates/
 COPY common/src/                  ./common/src/
 COPY proc_macro/src/              ./proc_macro/src/
 COPY error_macro/src/             ./error_macro/src/
+COPY health_check/src/            ./health_check/src/
 COPY tuple_heter_iter/src/        ./tuple_heter_iter/src/
 COPY tuple_heter_iter_macro/src/  ./tuple_heter_iter_macro/src/
 COPY xtask/src/                   ./xtask/src/
@@ -114,13 +119,16 @@ RUN    touch ./account_soa/src/lib.rs             \
     && touch ./common/src/lib.rs                  \
     && touch ./proc_macro/src/lib.rs              \
     && touch ./error_macro/src/lib.rs             \
+    && touch ./health_check/src/lib.rs             \
     && touch ./tuple_heter_iter/src/lib.rs        \
     && touch ./tuple_heter_iter_macro/src/lib.rs  \
     && touch ./xtask/src/main.rs
 
 
 RUN cargo build $RELEASE_OR_DEBUG_BUILD_PARAM --workspace
-RUN cp $RELEASE_OR_DEBUG_TARGET_DIR/mvv_account_web /bin/mvv_account_web
+RUN cp $RELEASE_OR_DEBUG_TARGET_DIR/mvv_account_web      /bin/ \
+ && cp $RELEASE_OR_DEBUG_TARGET_DIR/health_checker       /bin/ \
+ && cp $RELEASE_OR_DEBUG_TARGET_DIR/http_health_checker  /bin/
 
 ##ENV ROCKET_ADDRESS=0.0.0.0
 #CMD ["/bin/mvv_account_web"]
@@ -133,6 +141,8 @@ FROM debian:bullseye-slim AS final
 
 ARG RUN_RUST_BACKTRACE=full
 
+EXPOSE 80 8080 443 8443 8000 2735 3000
+
 
 RUN adduser                   \
     --disabled-password       \
@@ -144,8 +154,9 @@ RUN adduser                   \
     appuser
 USER appuser
 
-COPY --from=build /bin/mvv_account_web /bin/
-COPY --from=build /bin/health_checker  /bin/
+COPY --from=build /bin/mvv_account_web      /bin/
+COPY --from=build /bin/health_checker       /bin/
+COPY --from=build /bin/http_health_checker  /bin/
 #ENV ROCKET_ADDRESS=0.0.0.0
 #CMD ["/bin/server"]
 

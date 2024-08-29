@@ -6,7 +6,7 @@
    - `curl --verbose -H "Authorization: Basic dm92YW4tcmVhZDpxd2VydHk=" "http://localhost:3000/api/client/00000000-0000-0000-0000-000000000001/account/all" `
    - `curl --verbose --insecure -H "Authorization: Basic dm92YW4tcmVhZDpxd2VydHk=" "https://localhost:3000/api/client/00000000-0000-0000-0000-000000000001/account/all" `
    - `curl --verbose --cert /home/vmelnykov/projects/rust/rust-study-project-01/target/generated-test-resources/ssl/rust-account-soa.crt.pem -H "Authorization: Basic dm92YW4tcmVhZDpxd2VydHk=" "https://localhost:3000/api/client/00000000-0000-0000-0000-000000000001/account/all" `
-   - `curl --verbose --insecure -H "Authorization: Basic dm92YW4tcmVhZDpxd2VydHk=" "https://localhost:8080/api/client/00000000-0000-0000-0000-000000000001/account/all" `
+   - `curl --verbose --insecure -H "Authorization: Basic dm92YW4tcmVhZDpxd2VydHk=" "https://localhost:8443/api/client/00000000-0000-0000-0000-000000000001/account/all" `
    - `curl --verbose --insecure -H "Authorization: Basic dm92YW4tcmVhZDpxd2VydHk=" "https://localhost:8101/api/client/00000000-0000-0000-0000-000000000001/account/all" `
    - Using cert
      - `curl --verbose --cacert ../target/generated-test-resources/ssl/rust-account-soa.crt.pem -H "Authorization: Basic dm92YW4tcmVhZDpxd2VydHk=" "https://localhost:8101/api/client/00000000-0000-0000-0000-000000000001/account/all" `

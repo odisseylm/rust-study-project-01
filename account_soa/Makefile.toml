@@ -40,6 +40,16 @@ dependencies = [
 
 
 
+[tasks.package] # It is named just according to 'java'
+command = "echo" # overriding/disabling predefined build command
+args = [ "package flow" ]
+dependencies = [
+    "build",
+    "build-docker",
+    "integration-tests",
+]
+
+
 ########################################################################################################################
 #                                         Optional aliases                                                             #
 ########################################################################################################################

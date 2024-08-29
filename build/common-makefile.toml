@@ -234,6 +234,15 @@ alias = "integration-tests"
 
 
 
+[tasks.package] # It is named just according to 'java'
+command = "echo" # overriding/disabling predefined build command
+args = [ "package flow" ]
+dependencies = [
+    "build",
+]
+
+
+
 ########################################################################################################################
 #                                         Optional aliases                                                             #
 ########################################################################################################################
