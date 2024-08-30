@@ -1,4 +1,6 @@
 
+extend = { path = "build/docker-build-makefile.toml" }
+
 [config]
 init_task = "init"
 end_task = "end"
@@ -17,6 +19,9 @@ condition = { files_not_exist = ["target/patch-override-sub-dep"] }
 
 [env]
 
+ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
+ROOT_PROJECT_NAME = "${CARGO_MAKE_WORKSPACE_PACKAGE_NAME}"
+ROOT_PROJECT_VERSION = "${CARGO_MAKE_WORKSPACE_PACKAGE_VERSION}"
 DOCKER_MODULES = [ "account_soa", "account_web" ]
 
 # short alias
@@ -131,13 +136,31 @@ condition_script = [" 0 "]
 #dependencies = ["test"]
 
 
+[tasks.build-members]
+workspace = false
+private = true
+# overriding/disabling predefined build command
+# member defined build tasks are really used
+#command = {unset = true}
+run_task = { name = "build-member", fork = true }
+
+
+[tasks.test-members]
+workspace = false
+private = true
+# overriding/disabling predefined build command
+# member defined build tasks are really used
+#command = {unset = true}
+run_task = { name = "test-member", fork = true }
+
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 [tasks.integration-tests]
 category = "Test"
 workspace = false
-env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = ["account_soa"] }
+env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
 # I do not understand why, but member-subtask should have another name?!
 run_task = { name = "integration-tests-member", fork = true }
 
@@ -145,19 +168,73 @@ run_task = { name = "integration-tests-member", fork = true }
 
 #-----------------------------------------------------------------------------------------------------------------------
 
-[tasks.build-docker]
+[tasks.build-docker-prod]
 workspace = false
-env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
-# I do not understand why, but member-subtask should have another name?!
-run_task = { name = "build-docker-member", fork = true }
+condition = { profiles = [ "prod", "release" ] }
+# !!! SINGLE docker build task for ALL modules with SINGLE multi-stage dockerfile,
+# !!! since it is very time/disk-space expensive.
+dependencies = [
+    "build-members",
+    "test-members",
+    "build-docker-prod-account-soa",
+    "build-docker-prod-account-web",
+]
+
+
+[tasks.build-docker-prod-account-soa]
+workspace = false
+condition = { profiles = [ "prod", "release" ] }
+# TODO: how to get exactly 'account_soa' version
+env = { DOCKER_IMAGE_TARGET = "mvv_account_soa", DOCKER_IMAGE_TAG = "mvv_rust_account_soa", DOCKER_PROJECT_NAME = "mvv_account_soa", DOCKER_PROJECT_VERSION = "${ROOT_PROJECT_VERSION}" }
+run_task = { name = "build-docker-multistage-prod-impl", fork = false }
+
+[tasks.build-docker-prod-account-web]
+workspace = false
+condition = { profiles = [ "prod", "release" ] }
+# TODO: how to get exactly 'account_web' version
+env = { DOCKER_IMAGE_TARGET = "mvv_account_web", DOCKER_IMAGE_TAG = "mvv_rust_account_web", DOCKER_PROJECT_NAME = "mvv_account_web", DOCKER_PROJECT_VERSION = "${ROOT_PROJECT_VERSION}" }
+run_task = { name = "build-docker-multistage-prod-impl", fork = false }
 
 
 [tasks.build-docker-debug-local]
 category = "Test"
-workspace = false
+workspace = false  # memeber tasks are called manually in 'run_task'
+condition = { profiles = [ "dev", "development", "debug" ] }
 env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
 # I do not understand why, but member-subtask should have another name?!
 run_task = { name = "build-docker-debug-local-member", fork = true }
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+[tasks.package-prod]
+workspace = true
+condition = { profiles = [ "prod", "release" ] }
+dependencies = [
+    # "clean", T O D O: clean our packages or clean ALL??? (after full clean (with dependencies) the rebuild is too expensive)
+    "build-members",
+    "test-members",
+    "build-docker-prod",
+    "integration-tests"
+]
+
+
+[tasks.package-debug]
+workspace = true
+condition = { profiles = [ "dev", "development", "debug" ] }
+run_task = { name = "package-member", fork = true }
+
+
+[tasks.package]
+workspace = false
+command = "echo"
+args = [ "workspace package flow" ]
+dependencies = [
+    "package-debug",
+    "package-prod",
+]
+
 
 
 

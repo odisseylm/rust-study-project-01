@@ -38,24 +38,24 @@ env = { DOCKER_IMAGE_LABELS = [
 
 
 
-[tasks.build-docker-prod]
-private = true
+[tasks.build-docker-multistage-prod-impl]
+#private = true
 condition = { profiles = [ "prod", "production", "release" ] }
 cwd = "${ROOT_PROJECT_DIR}"
 command = "docker"
 args = [
     "build",
-    "--file", "${PROJECT_DIR}/docker/Dockerfile",
+    "--file", "${ROOT_PROJECT_DIR}/docker/Dockerfile-multistage-manually-optimized",
+
+    "--target", "${DOCKER_IMAGE_TARGET}",
     "--tag", "${DOCKER_IMAGE_TAG}",
+
     "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
 
-    # ?? How to reuse it?
-    #    ${DOCKER_IMAGE_LABELS},
-
-    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
-    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
-    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
-    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "ROOT_PROJECT_NAME=${ROOT_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${DOCKER_PROJECT_NAME}", # package name
+    "--label", "PROJECT_VERSION=${DOCKER_PROJECT_VERSION}", # package version
+    "--label", "PACKAGE_VERSION=${DOCKER_PROJECT_VERSION}", # package version
     "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
     "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
     "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
@@ -63,60 +63,67 @@ args = [
     ".",]
 workspace = false
 dependencies = [
-    "build",
-    "test",
+    # Use it on higher level since if we put it there unpredicted/default
+    # build/test tasks are called instead of our customized ones.
+    #
+    # "build", "test",
+
     "init_docker_vars",
     "init_docker_external",
     "private_docker_build_prepare_labels",
 ]
 
 
+# It is not used now since it is very expensive and time and disk space consuming task.
+# This approach is used for preod/release,
+# but for debug cheap task 'build-docker-debug-local' is used now.
+#
+#[tasks.build-docker-multistage-debug]
+#private = true
+#condition = { profiles = [ "dev", "develop", "development", "debug" ] }
+#cwd = "${ROOT_PROJECT_DIR}"
+#command = "docker"
+#args = ["build",
+#    "--file", "${PROJECT_DIR}/docker/Dockerfile",
+#    "--tag", "${DOCKER_IMAGE_TAG}-debug",
+#
+#    "--build-arg", "RELEASE_OR_DEBUG_BUILD_PARAM=",
+#    "--build-arg", "RELEASE_OR_DEBUG_TARGET_DIR=./target/debug",
+#    "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
+#
+#    # ?? How to reuse it?
+#    #${DOCKER_IMAGE_LABELS},
+#
+#    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+#    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+#    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+#    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+#    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+#    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+#    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+#    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+#    ".",]
+#workspace = false
+#dependencies = [
+#    "build",
+#    "test",
+#    "init_docker_vars",
+#    "init_docker_external",
+#    "private_docker_build_prepare_labels",
+#]
 
-[tasks.build-docker-debug]
-private = true
-condition = { profiles = [ "dev", "develop", "development", "debug" ] }
-cwd = "${ROOT_PROJECT_DIR}"
-command = "docker"
-args = ["build",
-    "--file", "${PROJECT_DIR}/docker/Dockerfile",
-    "--tag", "${DOCKER_IMAGE_TAG}-debug",
-    "--build-arg", "RELEASE_OR_DEBUG_BUILD_PARAM=",
-    "--build-arg", "RELEASE_OR_DEBUG_TARGET_DIR=./target/debug",
-    "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
-
-    # ?? How to reuse it?
-    #${DOCKER_IMAGE_LABELS},
-
-    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
-    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
-    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
-    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
-    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
-    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
-    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
-    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
-    ".",]
-workspace = false
-dependencies = [
-    "build",
-    "test",
-    "init_docker_vars",
-    "init_docker_external",
-    "private_docker_build_prepare_labels",
-]
 
 
-
-[tasks.build-docker]
-workspace = false
-dependencies = [
-    "build-docker-prod",  # will be called only in prod/release profile
-    "build-docker-debug-local", # for DEV profile
-]
+#[tasks.build-docker]
+#workspace = false
+#dependencies = [
+#    "build-docker-prod",  # will be called only in prod/release profile
+#    "build-docker-debug-local", # for DEV profile
+#]
 
 # Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
-[tasks.build-docker-member]
-alias = "build-docker"
+#[tasks.build-docker-member]
+#alias = "build-docker"
 
 
 
@@ -135,6 +142,7 @@ args = [
     "build",
     "--file", "${PROJECT_DIR}/docker/Dockerfile-local",
     "--tag", "${DOCKER_IMAGE_TAG}-debug-local",
+
     "--build-arg", "UBUNTU_VERSION=${UBUNTU_VERSION}",
     "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
 

@@ -80,6 +80,10 @@ condition_script = [" 0 "]
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+[tasks.printenv]
+command = "printenv"
+
+
 # Actually there are predefined pre-build/post-build tasks,
 # BUT they are not executed by default as pre/post when you call `cargo make build`
 # only when you use `cargo make build-flow`.
@@ -134,10 +138,15 @@ dependencies = [
     "post-build",
 ]
 
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
+[tasks.build-member]
+alias = "build"
+
 
 
 [tasks.cargo-test]
 category = "Test"
+condition = { env_not_set = [ "CARGO_SKIP_TEST", "CARGO_SKIP_TESTS", "CARGO_MAKE_SKIP_TEST", "CARGO_MAKE_SKIP_TESTS" ] }
 # toolchain = "${CARGO_MAKE_RUST_DEFAULT_TOOLCHAIN}"
 env = { RUST_BACKTRACE = "${RUST_BACKTRACE}" }
 command = "cargo"
@@ -158,9 +167,14 @@ dependencies = [
 
 [tasks.test]
 extend = "cargo-test"
+condition = { env_not_set = [ "CARGO_SKIP_TEST", "CARGO_SKIP_TESTS", "CARGO_MAKE_SKIP_TEST", "CARGO_MAKE_SKIP_TESTS" ] }
 dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
     "build",
 ]
+
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
+[tasks.test-member]
+alias = "test"
 
 
 
@@ -173,11 +187,12 @@ dependencies = [
 ]
 
 
-[tasks.integration-tests]
+[tasks.integration-tests-impl]
 command = "cargo"
 # Using 'cfg' causes FULL recompilation of ALL dependencies (and proejct files)
 # when we switch on/off it :-(
 #env = { RUSTFLAGS="--cfg integration_tests", CARGO_BUILD_RUSTFLAGS="--cfg integration_tests", RUST_TEST_THREADS = 1 }
+condition = { env_not_set = [ "CARGO_SKIP_ITTEST", "CARGO_SKIP_ITTESTS", "CARGO_MAKE_SKIP_ITTEST", "CARGO_MAKE_SKIP_ITTESTS" ] }
 env = { INTEGRATION_TESTS = "true", RUST_TEST_THREADS = "1", RUST_BACKTRACE = "${RUST_BACKTRACE}" }
 args = [
     "@@remove-empty(CARGO_VERB_P_0)",
@@ -223,10 +238,43 @@ args = [
     # --timings[=<FMTS>]        Timing output formats (unstable) (comma separated): html, json
 ]
 dependencies = [
+    "pre-build",
     "init-integration-tests",
     "build",
     # "build-docker",
 ]
+
+
+
+[tasks.integration-tests-debug]
+extend = "integration-tests-impl"
+condition = { profiles = ["dev", "develop", "development", "debug"], env_not_set = [
+    "CARGO_SKIP_ITTEST", "CARGO_SKIP_ITTESTS", "CARGO_MAKE_SKIP_ITTEST", "CARGO_MAKE_SKIP_ITTESTS" ] }
+dependencies = [ # dependencies are not inherited (bug or feature)
+    "pre-build",
+    "init-integration-tests",
+    "build",
+    # "build-docker-debug-local",
+]
+
+[tasks.integration-tests-release]
+extend = "integration-tests-impl"
+condition = { profiles = ["prod", "release"], env_not_set = [
+    "CARGO_SKIP_ITTEST", "CARGO_SKIP_ITTESTS", "CARGO_MAKE_SKIP_ITTEST", "CARGO_MAKE_SKIP_ITTESTS" ] }
+dependencies = [ # dependencies are not inherited (bug or feature)
+    "pre-build",
+    "init-integration-tests",
+    "build",
+]
+
+
+[tasks.integration-tests]
+dependencies = [
+    "init-integration-tests",
+    "integration-tests-debug",
+    "integration-tests-release",
+]
+
 
 # Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
 [tasks.integration-tests-member]
@@ -234,12 +282,17 @@ alias = "integration-tests"
 
 
 
-[tasks.package] # It is named just according to 'java'
+[tasks.package] # It is named just according to 'java/maven'
 command = "echo" # overriding/disabling predefined build command
 args = [ "package flow" ]
 dependencies = [
     "build",
+    "test",
 ]
+
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
+[tasks.package-member]
+alias = "package"
 
 
 

@@ -45,8 +45,12 @@ command = "echo" # overriding/disabling predefined build command
 args = [ "package flow" ]
 dependencies = [
     "build",
-    "build-docker",
-    "integration-tests",
+    "test",
+    # only if 'dev/debug' build
+    "build-docker-debug-local",
+    # only if 'dev/debug' build
+    # (no sense for 'release' due to 'docker-build' task for multi-soa project are put into workspace/root to save time)
+    "integration-tests-debug",
 ]
 
 

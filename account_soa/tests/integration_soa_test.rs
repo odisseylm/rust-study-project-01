@@ -130,6 +130,7 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<(PathBuf, Compose
         option,
     );
 
+    // TODO: use long timeout if third-party docker images are not loaded from net yet
     wait_containers(temp_docker_compose_dir, "Account SOA", compose_containers_fut, Duration::from_secs(15)).await
 }
 
