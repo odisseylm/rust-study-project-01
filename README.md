@@ -20,6 +20,17 @@ Investigate
 
 # Build
 
+ - !!! FIRST - you need to patch 'progenitor' third-party crate (for generating REST client stubs using OpenAPI definitions)
+   - `cargo install cargo-patch-subdep-ver`
+     - or `cargo install --git https://github.com/odisseylm/cargo_patch_subdep`
+     - or `cargo install --path cargo-patch-subdep-ver`
+   - Apply cargo command (in project dir)
+     - `cargo patch-subdep-ver`
+   - Full project build
+     - `cargo make --profile release package` (prod/release)
+     - `cargo make package` (dev/debug)
+
+
  - `cargo build`
  - See step by step https://medium.com/@hmquan08011996/dockerfile-for-rust-6d13dadca84d
    - `docker build --file docker/Dockerfile_01 .`
@@ -78,13 +89,6 @@ Investigate
    - https://github.com/sagiegurari/cargo-make/blob/master/docs/cargo_make_task_list.md
 
 # Build notes
-
- - To patch 'progenitor'
-   - `cargo install cargo-patch-subdep-ver`
-     - or `cargo install --git https://github.com/odisseylm/cargo_patch_subdep`
-     - or `cargo install --path cargo-patch-subdep-ver`
-   - Apply cargo command (in project dir)
-     - `cargo patch-subdep-ver`
 
  ??? - Libraries should ignore Cargo.lock but binaries/applications should check-in Cargo.lock.
    - https://doc.rust-lang.org/cargo/guide/cargo-toml-vs-cargo-lock.html

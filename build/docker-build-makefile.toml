@@ -36,7 +36,7 @@ env = { DOCKER_IMAGE_LABELS = [
 
 
 
-[tasks.build-docker-multistage-prod-impl]
+[tasks.build-docker-multistage-release-impl]
 #private = true
 condition = { profiles = [ "prod", "production", "release" ] }
 # We use SINGLE docker-file to cache full build result and just copy resulting 'exe' files
@@ -84,8 +84,8 @@ dependencies = [
 ]
 
 
-[tasks.build-docker-prod]
-alias = "build-docker-multistage-prod-impl"
+[tasks.build-docker-release]
+alias = "build-docker-multistage-release-impl"
 
 
 # It is not used now since it is very expensive and time and disk space consuming task.
@@ -130,7 +130,7 @@ alias = "build-docker-multistage-prod-impl"
 [tasks.build-docker]
 workspace = false
 dependencies = [
-    "build-docker-prod",        # will be called only for prod/release profile
+    "build-docker-release",        # will be called only for prod/release profile
     "build-docker-debug-local", # will be called only for dev/debug profile
 ]
 
@@ -199,5 +199,9 @@ alias = "build-docker-debug-local"
 
 [tasks.build-debug-docker]
 alias = "build-docker-debug"
+[tasks.build-release-docker]
+alias = "build-docker-release"
 [tasks.build-prod-docker]
-alias = "build-docker-prod"
+alias = "build-docker-release"
+[tasks.build-docker-prod]
+alias = "build-docker-release"
