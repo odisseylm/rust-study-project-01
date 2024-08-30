@@ -10,8 +10,6 @@ dependencies = [ "init_docker_vars_0" ]
 command = "mkdir"
 args = [ "-p", "${ROOT_PROJECT_DIR}/target/externals" ]
 
-[tasks.init_docker_external]
-
 
 [tasks.printenv]
 command = "printenv"
@@ -41,6 +39,8 @@ env = { DOCKER_IMAGE_LABELS = [
 [tasks.build-docker-multistage-prod-impl]
 #private = true
 condition = { profiles = [ "prod", "production", "release" ] }
+# We use SINGLE docker-file to cache full build result and just copy resulting 'exe' files
+# into prod/release docker images
 cwd = "${ROOT_PROJECT_DIR}"
 command = "docker"
 args = [
@@ -52,10 +52,13 @@ args = [
 
     "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
 
-    "--label", "ROOT_PROJECT_NAME=${ROOT_PROJECT_NAME}",
-    "--label", "PACKAGE_NAME=${DOCKER_PROJECT_NAME}", # package name
-    "--label", "PROJECT_VERSION=${DOCKER_PROJECT_VERSION}", # package version
-    "--label", "PACKAGE_VERSION=${DOCKER_PROJECT_VERSION}", # package version
+    # Now no root package (pure workspace)
+    # "--label", "ROOT_PROJECT_NAME=${ROOT_PROJECT_NAME}",
+
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+
     "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
     "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
     "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
@@ -63,15 +66,26 @@ args = [
     ".",]
 workspace = false
 dependencies = [
+    ### -----------------------------------------------------------------------
+    ### This comment was added for 'root' task
+    #
     # Use it on higher level since if we put it there unpredicted/default
     # build/test tasks are called instead of our customized ones.
     #
     # "build", "test",
+    ### -----------------------------------------------------------------------
 
+    "build",
+    # Disabled now to avoid 'test' phase when 'docker-build is called directly'.
+    # 'package'/'install' tasks have 'test' task.
+    # "test",
     "init_docker_vars",
-    "init_docker_external",
     "private_docker_build_prepare_labels",
 ]
+
+
+[tasks.build-docker-prod]
+alias = "build-docker-multistage-prod-impl"
 
 
 # It is not used now since it is very expensive and time and disk space consuming task.
@@ -108,18 +122,17 @@ dependencies = [
 #    "build",
 #    "test",
 #    "init_docker_vars",
-#    "init_docker_external",
 #    "private_docker_build_prepare_labels",
 #]
 
 
 
-#[tasks.build-docker]
-#workspace = false
-#dependencies = [
-#    "build-docker-prod",  # will be called only in prod/release profile
-#    "build-docker-debug-local", # for DEV profile
-#]
+[tasks.build-docker]
+workspace = false
+dependencies = [
+    "build-docker-prod",        # will be called only for prod/release profile
+    "build-docker-debug-local", # will be called only for dev/debug profile
+]
 
 # Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
 #[tasks.build-docker-member]
@@ -161,11 +174,10 @@ args = [
 workspace = false
 dependencies = [
     "init_docker_vars",
-    "init_docker_external",
     "get-ubuntu-info-vars",
-    "init_docker_vars",
-    "init_docker_external",
     "build",
+    # Disabled now to avoid 'test' phase when 'docker-build is called directly'.
+    # 'package'/'install' tasks have 'test' task.
     # "test",
     "private_docker_build_prepare_labels",
 ]

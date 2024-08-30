@@ -9,6 +9,7 @@ extend = [
 [env]
 SOA_EXECUTABLE = "mvv_account_soa"
 DOCKER_IMAGE_TAG = "mvv_rust_account_soa"
+DOCKER_IMAGE_TARGET = "mvv_rust_account_soa"
 DOCKER_COMPOSE_PROJECT_NAME = "rust-account-soa-project"
 
 #ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
@@ -46,11 +47,8 @@ args = [ "package flow" ]
 dependencies = [
     "build",
     "test",
-    # only if 'dev/debug' build
-    "build-docker-debug-local",
-    # only if 'dev/debug' build
-    # (no sense for 'release' due to 'docker-build' task for multi-soa project are put into workspace/root to save time)
-    "integration-tests-debug",
+    "build-docker",
+    "integration-tests",
 ]
 
 
