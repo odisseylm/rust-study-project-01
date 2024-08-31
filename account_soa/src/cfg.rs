@@ -6,7 +6,7 @@ use mvv_common::{
 //--------------------------------------------------------------------------------------------------
 
 
-pub struct AccountWebServerConfig {
+pub struct AccountSoaServerConfig {
     server_name: StaticRefOrString,
     server_env_name: StaticRefOrString,
     server_port: u16,
@@ -14,34 +14,35 @@ pub struct AccountWebServerConfig {
     server_ssl_key: Option<SslConfValue>,
     server_ssl_cert: Option<SslConfValue>,
     #[allow(dead_code)]
-    pub account_soa_cert: Option<SslConfValue>,
+    database_cert: Option<SslConfValue>,
 }
 
-impl AccountWebServerConfig {
-    pub fn load_from_env() -> anyhow::Result<AccountWebServerConfig> {
-        let conf = BaseServerConf::load_from_env("account_web".into(), "ACCOUNT_WEB".into())?;
+impl AccountSoaServerConfig {
+    pub fn load_from_env(server_name: StaticRefOrString, server_env_name: StaticRefOrString)
+        -> anyhow::Result<Self> where Self: Sized {
+
+        let conf = BaseServerConf::load_from_env(server_name, server_env_name)?;
         let BaseServerConf {
             server_name, server_env_name, server_port,
             connection_type, server_ssl_key, server_ssl_cert,
         } = conf;
 
-        let account_soa_cert = load_optional_path_from_env_vars([
-            "DEPENDENCIES_ACCOUNT_SOA_SSL_CERT_PATH", "ACCOUNT_SOA_SSL_CERT_PATH"])
-            ?.map(SslConfValue::Path);
+        let database_cert = load_optional_path_from_env_vars([
+            "POSTGRES_SSL_CERT_PATH", "DATABASE_SSL_CERT_PATH"])?.map(SslConfValue::Path);
 
-        Ok(AccountWebServerConfig {
+        Ok(Self {
             server_name,
             server_env_name,
             server_port,
             connection_type,
             server_ssl_key,
             server_ssl_cert,
-            account_soa_cert,
+            database_cert,
         })
     }
 }
 
-impl ServerConf for AccountWebServerConfig {
+impl ServerConf for AccountSoaServerConfig {
     fn server_name(&self) -> &StaticRefOrString { &self.server_name }
     fn server_env_name(&self) -> &StaticRefOrString { &self.server_env_name }
     fn connection_type(&self) -> ConnectionType { self.connection_type }

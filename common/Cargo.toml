@@ -130,6 +130,7 @@ async-trait.workspace = true
 trait-variant.workspace = true # similaer to 'async-trait'
 
 axum = { workspace = true, features = ["default", "macros"] }
+axum-server = { workspace = true, features = [ "tls-rustls-no-provider" ] }
 #axum-handle-error-extract.workspace = true
 tower = { workspace = true, features = ["full"] }
 tower-http.workspace = true
