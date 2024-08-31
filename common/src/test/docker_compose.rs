@@ -1,8 +1,12 @@
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 use anyhow::anyhow;
 use log::warn;
-use crate::test::{is_CI_build, is_manually_launched_task};
+use yaml_rust2::Yaml;
+use crate::test::{
+    is_CI_build, is_manually_launched_task,
+    integration::load_yaml,
+};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -99,4 +103,73 @@ pub fn get_docker_image_profile() -> DockerImageProfile {
         };
 
     docker_image_profile
+}
+
+
+pub fn load_images(docker_compose_file: &Path) -> anyhow::Result<()> {
+    let images = get_images(docker_compose_file) ?;
+
+    for image in images {
+        if !is_image_present(&image) ? {
+            pull_image(&image) ?;
+        }
+    }
+
+    Ok(())
+}
+
+fn is_image_present(image: &str) -> anyhow::Result<bool> {
+    let mut cmd = Command::new("docker");
+    cmd.args(["image", "inspect", image].into_iter())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+
+    let status = cmd.status() ?;
+    Ok(status.success())
+}
+
+fn pull_image(image: &str) -> anyhow::Result<()> {
+    let mut cmd = Command::new("docker");
+    cmd.args(["image", "pull", image].into_iter())
+        // I think it makes sense to show that image was loaded
+        // .stdout(Stdio::null())
+        // .stderr(Stdio::null())
+        ;
+
+    let status = cmd.status() ?;
+
+    if status.success() { Ok(()) }
+    else { anyhow::bail!("'docker pull {image}' failed (exit code: {status:?})") }
+}
+
+fn get_images(docker_compose_file: &Path) -> anyhow::Result<Vec<String>> {
+    let yaml_docs = load_yaml(docker_compose_file) ?;
+
+    let images = yaml_docs.into_iter()
+        .flat_map(|yaml| get_yaml_images(&yaml))
+        .collect::<Vec<String>>();
+
+    Ok(images)
+}
+
+fn get_yaml_images(yaml: &Yaml) -> Vec<String> {
+
+    let services = &yaml["services"];
+    let mut images = Vec::<String>::new();
+
+    match services {
+        Yaml::Hash(ref services) => {
+            for (ref _serv_name, ref serv_doc) in services {
+                match &serv_doc["image"] {
+                    Yaml::String(image) => {
+                        images.push(image.to_string());
+                    }
+                    _ => {}
+                }
+            }
+        }
+        _ => {}
+    };
+
+    images
 }
