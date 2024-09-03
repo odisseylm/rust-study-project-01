@@ -1,0 +1,105 @@
+
+networks:
+  rust-client-search-soa-net:
+    name: client-search-soa-it-tests
+
+services:
+  rust-client-search-soa:
+    # We can use 'extends' if we use docker-compose (swarm) in production
+    # and want just inherit prod docker compose file.
+    #
+    # extends:
+    #  service: account-soa
+    #  file: ${BASE_DIR}/../account-soa/src/main/docker/docker-compose.yml
+    #
+    # image: ${DOCKER_IMAGE_PREFIX}rust-mvv-webapp-debug # mvv-registry/mvv.bank/pseudo2-account-soa
+    image: mvv_rust_client_search_soa${DOCKER_IMAGE_PROFILE_SUFFIX}
+    networks:
+      - rust-client-search-soa-net
+    environment:
+      # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
+
+      - SERVER_PORT=8080
+      # - SERVER_CONTEXTPATH=/account-soa
+
+      - POSTGRES_HOST=database
+      - POSTGRES_DB=rust_mvvbank
+      - POSTGRES_USER=rust_mvvbank
+      - POSTGRES_PASSWORD=psw
+      #- POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem  # database.crt.pem can be used with PgSslMode::Require
+      - POSTGRES_SSL_CERT_PATH=/certs/ca.crt.pem  # CA should be used if PgSslMode::VerifyCa/VerifyFull is used
+
+      - CLIENT_SEARCH_SOA_SSL_KEY_PATH=/certs/rust-account-soa.key.pem
+      - CLIENT_SEARCH_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
+    volumes:
+      - ../target/generated-test-resources/ssl/:/certs/:ro
+    ports:
+      # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:
+      - 8103:8080
+      # Remote debug
+      # - ${DOCKER_HOST_DEBUG_ACCOUNT_SOA_PORT_WITH_COLON}8000
+    links:
+      - database:db_postgres
+    depends_on:
+      - database
+    deploy:
+      #replicas: ${DOCKER_COMPOSE_SCALE_REPLICA_COUNT}
+      replicas: 1
+
+
+  database:
+    image: postgres:16
+    networks:
+      - rust-client-search-soa-net
+    # hostname: database # required only for fabricio8 plugin
+    # -l - enables SSL connections
+    # T O D O: how disable plain TCP connection; `-c listen_addresses=''` blocks everything.
+    # Seems ` -c listen_addresses=''` or ` -c listen_addresses=` blocks ALL external connections ?
+    # Seems param `-c ssl_ca_file=/certs/ca.crt.pem` is optional
+    command: sh -c "
+         cp /certs/database.key.pem /usr/lib/ssl/database-test.key.pem &&
+         chown postgres /usr/lib/ssl/database-test.key.pem &&
+         chmod go-r /usr/lib/ssl/database-test.key.pem &&
+         docker-entrypoint.sh postgres -l -c ssl=on -c ssl_cert_file=/certs/database.crt.pem -c ssl_key_file=/usr/lib/ssl/database-test.key.pem 
+      "
+    environment:
+      POSTGRES_DB: rust_mvvbank
+      POSTGRES_USER: rust_mvvbank
+      POSTGRES_PASSWORD: psw
+    ports:
+      - 5432:5432  # - ${DOCKER_HOST_POSTGRES_DB_PORT_WITH_COLON}5432
+    volumes:
+      - ../account_soa/test_resources/postgres/init/:/docker-entrypoint-initdb.d/:ro
+      #
+      # Other system certificates /usr/lib/ssl/
+      #
+      # !! Just for investigation !! Remember, '/var/lib/postgresql/data/' is auto-generated
+      # and we cannot put/map our files (SSL certs, for example) to there.
+      #
+      # /var/lib/postgresql/data/postgresql.auto.conf
+      # /var/lib/postgresql/data/pg_ident.conf
+      # /var/lib/postgresql/data/postgresql.conf
+      # /var/lib/postgresql/data/pg_hba.conf
+      #
+      - ../target/generated-test-resources/ssl/:/certs/:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    deploy:
+      replicas: 1
+
+
+#  apache-proxy:
+#    image: httpd:2.4.51-alpine3.15
+#    networks:
+#      - rust-account-soa-net
+#    ports:
+#      - ${DOCKER_HOST_APACHE_PROXY_PORT_WITH_COLON}443
+#    volumes:
+#      - ./src/main/docker/apache/httpd.conf:/usr/local/apache2/conf/httpd.conf
+#      - ./src/main/docker/apache/extra/httpd-ssl-mvv-root-bank.conf:/usr/local/apache2/conf/extra/httpd-ssl-mvv-root-bank.conf
+#      - ./target/generated-test-resources/certs/dev-self-signed/:/certs/
+#    deploy:
+#      replicas: 1

@@ -9,6 +9,7 @@ members = [
     "auth",
     "common",
     "account_soa",
+    "client_search_grpc_soa",
     "account_web",
 ]
 #resolver = "1"
@@ -251,6 +252,9 @@ url = "2.5.1"
 sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "tls-rustls"] }
 # Hm... Why I had to duplicate all options?
 sqlx-postgres = { version = "0.7.4", features = ["bigdecimal", "chrono", "uuid"] }
+
+diesel = { version = "2.2.3", features = ["default", "chrono", "postgres", "r2d2"] }
+diesel-async = { version = "0.5.0", features = ["default", "deadpool", "postgres"] }
 
 quick_cache = "0.6.0"
 #lru-cache = "0.1.2"

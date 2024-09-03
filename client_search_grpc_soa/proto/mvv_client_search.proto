@@ -1,0 +1,188 @@
+syntax = "proto3";
+package mvv_client_search_api_v1;
+
+//import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+//import "https://github.com/googleapis/googleapis/blob/master/google/type/date.proto";
+import "google/protobuf/any.proto";
+
+import "google/protobuf/wrappers.proto";
+
+//import "google/rpc/status.proto";
+//import "google/rpc/error_details.proto";
+
+//import "google/rpc/ErrorInfo.proto";
+
+//option java_package = "com.mvv.client.search.grpc.v1";
+//option java_multiple_files = true;
+//option java_generic_services = true;
+
+// NO rus support?!
+//option rust_package = "client_search_grpc_v1";
+
+// Due to very nice ProtoBuffers design we have to put everything into single file.
+// (it even does not support importing file from the same directory)
+// (to avoid a lot of configuration problems for our clients)
+
+//------------------------------------------------------------------------------------------
+//                                     Entities
+//------------------------------------------------------------------------------------------
+
+message Client {
+  // optional string id = 1;
+//  google.protobuf.StringValue id = 1;
+  string id = 1;
+  // google.protobuf.StringValue name = 2;
+//  oneof option {
+//    string name = 2;
+//  }
+  reserved 3; // reserved for the future
+  // as experimental, another optional approach
+  oneof email {
+    string email_value = 5;
+  };
+
+  repeated PhoneNumber phones = 6;
+
+  string first_name = 7;
+  string last_name = 8;
+  // google.type.Date birthday = 9; // TODO: !!! Do NOT change BASE package, use some generation options !!!
+  google_type.Date birthday = 9;
+  bool active = 10;
+  // TODO: use enum
+  bool business_user = 11;
+  bool super_business_user = 12;
+}
+
+message PhoneNumber {
+  // optional string number = 1;
+  google.protobuf.StringValue number = 1;
+  PhoneType type = 2;
+
+  enum PhoneType {
+    // we have to use undefined/unknown/etc shit placeholder since 0 is default value :-(
+    UNSPECIFIED = 0;
+
+    MOBILE = 1;
+    HOME = 2;
+    WORK = 3;
+  }
+}
+
+/*
+message Password { // Only as namespace because grpc does not support top-level enums in good way.
+  enum PasswordType {
+    // we have to use undefined/unknown/etc shit placeholder since 0 is default value :-(
+    UNSPECIFIED = 0;
+
+    RAW = 1;
+    SHA_HASH = 2;
+  }
+}
+*/
+
+
+//------------------------------------------------------------------------------------------
+//                                     Authentication Service
+//------------------------------------------------------------------------------------------
+service ClientSearchService {
+  rpc Search (ClientSearchRequest) returns (ClientSearchResponse) {}
+  rpc GetClientById (GetClientByIdRequest) returns (GetClientByIdResponse) {}
+}
+
+message ClientSearchRequest {
+  google.protobuf.StringValue user_email = 1;
+  google.protobuf.StringValue first_name = 2;
+  google.protobuf.StringValue last_name  = 3;
+
+  // google.protobuf.StringValue user_email2 = 4;
+  google.protobuf.Int32Value age = 5;
+}
+
+message ClientSearchResponse {
+  bool success = 1;
+  google.protobuf.StringValue message = 2;
+  repeated Client clients = 3;
+}
+
+
+////------------------------------------------------------------------------------------------
+////                                     Person Service
+////------------------------------------------------------------------------------------------
+//service PersonService {
+//  rpc GetPersonById (GetPersonByIdRequest) returns (GetPersonByIdResponse) {}
+//}
+
+message GetClientByIdRequest {
+  int64 clientId = 1;
+}
+
+message GetClientByIdResponse {
+  Client person = 1;
+}
+
+
+// TODO: how to remove ACCOUNT_STATUS_ prefix for java?
+enum AccountStatus {
+  ACCOUNT_STATUS_UNKNOWN   = 0;
+  ACCOUNT_STATUS_PENDING   = 1;
+  ACCOUNT_STATUS_ACTIVE    = 2;
+  ACCOUNT_STATUS_SUSPENDED = 3;
+  ACCOUNT_STATUS_CLOSED    = 4;
+}
+
+//------------------------------------------------------------------------------------------
+//                                     Errors
+//------------------------------------------------------------------------------------------
+message ErrorInfo {
+  google.protobuf.StringValue errorCode = 1;
+
+  // similar to standard spring error
+  /*optional*/ google.protobuf.Timestamp timestamp = 2;
+  google.protobuf.Int32Value status = 3;     // http status code (like, 500, 400, so on)
+  google.protobuf.StringValue error = 4;     // human error type (for example, 'Internal Server Error', 'Not Found')
+  google.protobuf.StringValue message = 5;   // exception message
+  google.protobuf.StringValue localizedMessage = 6; // not like to spring, optional (since only some kind of errors can be localized)
+  google.protobuf.StringValue exception = 7; // name of exception
+  /*optional*/ google.protobuf.Any details = 9;      // not like to spring, can be used for constraint validation details, so on
+  google.protobuf.StringValue path = 10;     // URI path part (for example, '/bank-plugin/errorSample')
+  google.protobuf.StringValue trace = 11;    // Stack trace (it should be present only in dev mode)
+}
+
+message ConstraintError {
+  google.protobuf.StringValue propertyPath = 1;
+  google.protobuf.StringValue errorMessage = 2;
+  /*optional*/ google.protobuf.Any invalidValue = 3;
+}
+
+//message ValidationErrorResponse {
+//  optional string commodity_name = 1;
+//  optional string access_token = 2;
+//  optional string expected_token = 3;
+//  optional string expected_value = 4;
+//}
+
+
+
+//---------------------------------------------------------------------------------
+//                      Streaming error processing sample
+//                      https://www.baeldung.com/grpcs-error-handling
+//---------------------------------------------------------------------------------
+//service CommodityPriceProvider {
+//  rpc bidirectionalListOfPrices(stream CommodityRequest) returns (stream StreamingCommodityQuoteResponse) {}
+//}
+//
+//message CommodityRequest {
+//  string access_token = 1;
+//  string commodity_name = 2;
+//}
+//message CommodityQuote {
+//  // ...
+//}
+//message StreamingCommodityQuoteResponse {
+//  oneof message{
+//    CommodityQuote commodity_quote = 1;
+//    google.rpc.Status status = 2;
+//  }
+//}

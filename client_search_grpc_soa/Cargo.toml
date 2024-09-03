@@ -1,0 +1,41 @@
+[package]
+name = "mvv_client_search_soa"
+version = "0.1.0"
+edition = "2021"
+
+
+
+[dependencies]
+mvv_common = { version = "0.1.0", path = "../common" }
+
+tonic = {  version = "0.12.2", features = ["default", "prost", "server"] }
+tonic-types = {  version = "0.12.2", features = [] }
+googleapis-tonic-google-type = { version = "0.6.0", features = ["default"]}
+#googleapis-tonic-google-api = {  version = "0.7.0", features = ["default"] }
+#googleapis-tonic = {  version = "0.7.0", features = ["default"] }
+prost = { version = "0.13.1", features = ["default", "std", "prost-derive"] }
+prost-types = { version = "0.13.1" , features = ["default", "std"] }
+
+#googleapis = { git = "https://github.com/googleapis/googleapis.git" }
+
+
+chrono.workspace = true
+tokio.workspace = true
+env_logger.workspace = true
+dotenv.workspace = true
+log = "0.4.22"  # Loading env vars from .env file
+
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-futures.workspace = true
+tracing-timing.workspace = true
+#tracing-log.workspace = true
+#tracing-attributes.workspace = true
+
+anyhow.workspace = true
+diesel.workspace = true
+#diesel-async.workspace = true
+
+
+[build-dependencies]
+tonic-build = "0.12.2"

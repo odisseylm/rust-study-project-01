@@ -1,0 +1,17 @@
+
+extend = [
+    { path = "../build/common-makefile.toml" },
+    { path = "../build/ssl-certs-makefile.toml" },
+    { path = "../build/docker-build-makefile.toml" },
+    { path = "../build/docker-compose-makefile.toml" },
+]
+
+
+[env]
+SOA_EXECUTABLE = "mvv_client_search_soa"
+DOCKER_IMAGE_TAG = "mvv_rust_client_search_soa"
+# Used mainly for dev testing and as base-name for integration tests
+DOCKER_COMPOSE_PROJECT_NAME = "rust-client-search-soa-project"
+
+#ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
+PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/client_search_grpc_soa"
