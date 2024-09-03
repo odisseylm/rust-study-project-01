@@ -6,7 +6,7 @@ use std::time::Duration;
 use anyhow::anyhow;
 use itertools::Itertools;
 use log::{error, info, warn};
-use yaml_rust2::{Yaml, YamlEmitter};
+use yaml_rust2::{Yaml, YamlEmitter, YamlLoader};
 use crate::io::find_existent_buf;
 use crate::string::str_vec;
 use crate::test::docker_compose::{
@@ -333,4 +333,15 @@ pub fn save_yaml(yaml_docs: &Vec<Yaml>, to_file: &Path) -> anyhow::Result<()> {
     out_str.push_str("\n\n");
     let _ = std::fs::write(to_file, out_str) ?;
     Ok(())
+}
+
+
+pub fn load_yaml(yaml_file: &Path) -> anyhow::Result<Vec<Yaml>> {
+
+    let yaml_str = std::fs::read_to_string(yaml_file)
+        .map_err(|err| anyhow!("Error of opening [{yaml_file:?}] ({err:?})")) ?;
+
+    // Multi document support, doc is a yaml::Yaml
+    let yaml_docs = YamlLoader::load_from_str(&yaml_str) ?;
+    Ok(yaml_docs)
 }

@@ -10,8 +10,6 @@ dependencies = [ "init_docker_vars_0" ]
 command = "mkdir"
 args = [ "-p", "${ROOT_PROJECT_DIR}/target/externals" ]
 
-[tasks.init_docker_external]
-
 
 [tasks.printenv]
 command = "printenv"
@@ -38,24 +36,29 @@ env = { DOCKER_IMAGE_LABELS = [
 
 
 
-[tasks.build-docker-prod]
-private = true
+[tasks.build-docker-multistage-release-impl]
+#private = true
 condition = { profiles = [ "prod", "production", "release" ] }
+# We use SINGLE docker-file to cache full build result and just copy resulting 'exe' files
+# into prod/release docker images
 cwd = "${ROOT_PROJECT_DIR}"
 command = "docker"
 args = [
     "build",
-    "--file", "${PROJECT_DIR}/docker/Dockerfile",
+    "--file", "${ROOT_PROJECT_DIR}/docker/Dockerfile-multistage-manually-optimized",
+
+    "--target", "${DOCKER_IMAGE_TARGET}",
     "--tag", "${DOCKER_IMAGE_TAG}",
+
     "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
 
-    # ?? How to reuse it?
-    #    ${DOCKER_IMAGE_LABELS},
+    # Now no root package (pure workspace)
+    # "--label", "ROOT_PROJECT_NAME=${ROOT_PROJECT_NAME}",
 
-    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
     "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
     "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
     "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+
     "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
     "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
     "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
@@ -63,60 +66,77 @@ args = [
     ".",]
 workspace = false
 dependencies = [
+    ### -----------------------------------------------------------------------
+    ### This comment was added for 'root' task
+    #
+    # Use it on higher level since if we put it there unpredicted/default
+    # build/test tasks are called instead of our customized ones.
+    #
+    # "build", "test",
+    ### -----------------------------------------------------------------------
+
     "build",
-    "test",
+    # Disabled now to avoid 'test' phase when 'docker-build is called directly'.
+    # 'package'/'install' tasks have 'test' task.
+    # "test",
     "init_docker_vars",
-    "init_docker_external",
     "private_docker_build_prepare_labels",
 ]
 
 
+[tasks.build-docker-release]
+alias = "build-docker-multistage-release-impl"
 
-[tasks.build-docker-debug]
-private = true
-condition = { profiles = [ "dev", "develop", "development", "debug" ] }
-cwd = "${ROOT_PROJECT_DIR}"
-command = "docker"
-args = ["build",
-    "--file", "${PROJECT_DIR}/docker/Dockerfile",
-    "--tag", "${DOCKER_IMAGE_TAG}-debug",
-    "--build-arg", "RELEASE_OR_DEBUG_BUILD_PARAM=",
-    "--build-arg", "RELEASE_OR_DEBUG_TARGET_DIR=./target/debug",
-    "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
 
-    # ?? How to reuse it?
-    #${DOCKER_IMAGE_LABELS},
-
-    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
-    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
-    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
-    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
-    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
-    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
-    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
-    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
-    ".",]
-workspace = false
-dependencies = [
-    "build",
-    "test",
-    "init_docker_vars",
-    "init_docker_external",
-    "private_docker_build_prepare_labels",
-]
+# It is not used now since it is very expensive and time and disk space consuming task.
+# This approach is used for preod/release,
+# but for debug cheap task 'build-docker-debug-local' is used now.
+#
+#[tasks.build-docker-multistage-debug]
+#private = true
+#condition = { profiles = [ "dev", "develop", "development", "debug" ] }
+#cwd = "${ROOT_PROJECT_DIR}"
+#command = "docker"
+#args = ["build",
+#    "--file", "${PROJECT_DIR}/docker/Dockerfile",
+#    "--tag", "${DOCKER_IMAGE_TAG}-debug",
+#
+#    "--build-arg", "RELEASE_OR_DEBUG_BUILD_PARAM=",
+#    "--build-arg", "RELEASE_OR_DEBUG_TARGET_DIR=./target/debug",
+#    "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
+#
+#    # ?? How to reuse it?
+#    #${DOCKER_IMAGE_LABELS},
+#
+#    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+#    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+#    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+#    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+#    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+#    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+#    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+#    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+#    ".",]
+#workspace = false
+#dependencies = [
+#    "build",
+#    "test",
+#    "init_docker_vars",
+#    "private_docker_build_prepare_labels",
+#]
 
 
 
 [tasks.build-docker]
 workspace = false
 dependencies = [
-    "build-docker-prod",  # will be called only in prod/release profile
-    "build-debug-docker", # for DEV profile
+    "build-docker-release",        # will be called only for prod/release profile
+    "build-docker-debug-local", # will be called only for dev/debug profile
 ]
 
 # Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
-[tasks.build-docker-member]
-alias = "build-docker"
+#[tasks.build-docker-member]
+#alias = "build-docker"
 
 
 
@@ -135,6 +155,7 @@ args = [
     "build",
     "--file", "${PROJECT_DIR}/docker/Dockerfile-local",
     "--tag", "${DOCKER_IMAGE_TAG}-debug-local",
+
     "--build-arg", "UBUNTU_VERSION=${UBUNTU_VERSION}",
     "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
 
@@ -153,11 +174,10 @@ args = [
 workspace = false
 dependencies = [
     "init_docker_vars",
-    "init_docker_external",
     "get-ubuntu-info-vars",
-    "init_docker_vars",
-    "init_docker_external",
     "build",
+    # Disabled now to avoid 'test' phase when 'docker-build is called directly'.
+    # 'package'/'install' tasks have 'test' task.
     # "test",
     "private_docker_build_prepare_labels",
 ]
@@ -179,5 +199,9 @@ alias = "build-docker-debug-local"
 
 [tasks.build-debug-docker]
 alias = "build-docker-debug"
+[tasks.build-release-docker]
+alias = "build-docker-release"
 [tasks.build-prod-docker]
-alias = "build-docker-prod"
+alias = "build-docker-release"
+[tasks.build-docker-prod]
+alias = "build-docker-release"

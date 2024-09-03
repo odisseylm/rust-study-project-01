@@ -17,16 +17,16 @@ use mvv_common::test::{current_project_target_dir, current_sub_project_dir, Test
 use serde_json::json;
 use mvv_common::fn_name;
 use mvv_common::string::remove_repeated_spaces;
-use mvv_common::test::docker_compose::docker_compose_down;
+use mvv_common::test::docker_compose::{docker_compose_down, get_docker_compose, load_images};
 //--------------------------------------------------------------------------------------------------
 
 
 
 const ACCOUNT_SOA_SERVICE: &'static str = "rust-account-soa";
-const ACCOUNT_SOA_HTTP_PORT: Port = Port::new(8080);
+const ACCOUNT_SOA_HTTP_PORT: Port = Port::new(8443);
 
 const ACCOUNT_WEB_SERVICE: &'static str = "rust-account-web";
-const ACCOUNT_WEB_HTTP_PORT: Port = Port::new(8080);
+const ACCOUNT_WEB_HTTP_PORT: Port = Port::new(8443);
 
 const POSTGRES_SERVICE: &'static str = "database";
 const POSTGRES_PORT: Port = Port::new(5432);
@@ -89,6 +89,8 @@ async fn launch_account_web_docker_compose() -> anyhow::Result<(PathBuf, Compose
     };
 
     let temp_docker_compose_dir = prepare_docker_compose(&sub_project_dir, &cfg) ?;
+
+    load_images(&get_docker_compose(&temp_docker_compose_dir) ?) ?;
 
     let option: ComposeRunOption = ComposeRunOption::builder()
         // Wait interval for service health check

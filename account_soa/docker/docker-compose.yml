@@ -19,7 +19,7 @@ services:
     environment:
       # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
 
-      - SERVER_PORT=8080
+      - SERVER_PORT=8443
       # - SERVER_CONTEXTPATH=/account-soa
 
       - POSTGRES_HOST=database
@@ -29,13 +29,13 @@ services:
       #- POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem  # database.crt.pem can be used with PgSslMode::Require
       - POSTGRES_SSL_CERT_PATH=/certs/ca.crt.pem  # CA should be used if PgSslMode::VerifyCa/VerifyFull is used
 
-      - ACCOUNT_SOA_SSL_KEY_PATH=/certs/rust-account-soa.key.pem
-      - ACCOUNT_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
+      - SERVER_SSL_KEY_PATH=/certs/rust-account-soa.key.pem
+      - SERVER_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
     volumes:
       - ../target/generated-test-resources/ssl/:/certs/:ro
     ports:
       # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:
-      - 8101:8080
+      - 8101:8443
       # Remote debug
       # - ${DOCKER_HOST_DEBUG_ACCOUNT_SOA_PORT_WITH_COLON}8000
     links:

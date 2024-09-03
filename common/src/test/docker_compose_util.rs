@@ -2,13 +2,14 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::str::FromStr;
 use anyhow::anyhow;
-use yaml_rust2::{Yaml, YamlLoader};
+use yaml_rust2::Yaml;
 use crate::test::{
     change_name_by_policy,
     docker_compose::get_docker_image_profile,
     files::{do_replacements, Replace},
     integration::{save_yaml, NamePolicy},
 };
+use crate::test::integration::load_yaml;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -31,11 +32,8 @@ pub fn set_docker_image_profile_suffix_var(new_docker_compose_file: &Path, test_
 
 pub fn remove_host_ports(docker_compose_file: &Path) -> anyhow::Result<()> {
 
-    let yaml_str = std::fs::read_to_string(docker_compose_file)
-        .map_err(|err| anyhow!("Error of opening [{docker_compose_file:?}] ({err:?})")) ?;
-
     // Multi document support, doc is a yaml::Yaml
-    let mut yaml_docs = YamlLoader::load_from_str(&yaml_str) ?;
+    let mut yaml_docs = load_yaml(docker_compose_file) ?;
 
     let mut changed = false;
     for yaml in &mut yaml_docs {
@@ -91,11 +89,8 @@ pub fn remove_host_ports_in_docker_compose_yaml(yaml: &mut Yaml) -> anyhow::Resu
 
 pub fn change_network(docker_compose_file: &Path, network_name_policy: &NamePolicy, test_session_id: i64) -> anyhow::Result<()> {
 
-    let yaml_str = std::fs::read_to_string(docker_compose_file)
-        .map_err(|err| anyhow!("Error of opening [{docker_compose_file:?}] ({err:?})")) ?;
-
     // Multi document support, doc is a yaml::Yaml
-    let mut yaml_docs = YamlLoader::load_from_str(&yaml_str) ?;
+    let mut yaml_docs = load_yaml(docker_compose_file) ?;
 
     let mut changed = false;
     for yaml in &mut yaml_docs {
@@ -151,11 +146,9 @@ pub fn gather_host_volumes_src(docker_compose_file: &Path) -> anyhow::Result<Has
 }
 
 fn gather_volumes(docker_compose_file: &Path) -> anyhow::Result<Vec<String>> {
-    let yaml_str = std::fs::read_to_string(docker_compose_file)
-        .map_err(|err| anyhow!("Error of opening [{docker_compose_file:?}] ({err:?})")) ?;
 
     // Multi document support, doc is a yaml::Yaml
-    let mut yaml_docs = YamlLoader::load_from_str(&yaml_str) ?;
+    let mut yaml_docs = load_yaml(docker_compose_file) ?;
 
     let mut volumes = Vec::<String>::new();
     for yaml in &mut yaml_docs {

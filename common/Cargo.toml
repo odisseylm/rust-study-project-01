@@ -9,6 +9,12 @@ edition = "2021"
 #[profile.release]
 #strip = "symbols"  # possible: "none", "debuginfo", "symbols" (default "none")
 
+#[[bin]]
+#name = "health_checker"
+#path = "../healthcheck/src/bin/health_checker"
+#profile = "release"
+#fdfd = "fdfd"
+
 
 [features]
 # Defines a feature named `webp` that does not enable any other features.
@@ -124,6 +130,7 @@ async-trait.workspace = true
 trait-variant.workspace = true # similaer to 'async-trait'
 
 axum = { workspace = true, features = ["default", "macros"] }
+axum-server = { workspace = true, features = [ "tls-rustls-no-provider" ] }
 #axum-handle-error-extract.workspace = true
 tower = { workspace = true, features = ["full"] }
 tower-http.workspace = true

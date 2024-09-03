@@ -6,7 +6,7 @@ use mvv_common::{
     soa::RestCallError,
 };
 use mvv_common::cfg::SslConfValue;
-use crate::cfg::SslConfig;
+use crate::cfg::AccountWebServerConfig;
 use crate::rest_dependencies::account_soa_client::{
     Client as AccountSoaRestClient,
     types::{
@@ -80,11 +80,11 @@ pub struct AccountSoaConnectCfg {
     pub base_url: String,
     pub user: String,
     pub psw: String,
-    pub server_cert: SslConfValue,
+    pub server_cert: Option<SslConfValue>,
 }
 impl AccountSoaConnectCfg {
     pub fn load_from_env() -> anyhow::Result<Self> {
-        let conf = SslConfig::load_from_env() ?;
+        let conf = AccountWebServerConfig::load_from_env() ?;
 
         Ok(AccountSoaConnectCfg {
             // In general there may be several URLs with client balancing,
@@ -107,27 +107,30 @@ pub fn create_account_service(cfg: &AccountSoaConnectCfg) -> anyhow::Result<Acco
 
     let auth = Authorization::basic(&cfg.user, &cfg.psw);
 
-    let cert: Certificate = match cfg.server_cert {
-        SslConfValue::Path(ref cert_path) =>{
+    let cert: Option<Certificate> = match cfg.server_cert {
+        Some(SslConfValue::Path(ref cert_path)) =>{
             let pem = std::fs::read_to_string(cert_path)
                 .map_err(|err| anyhow!("Error of reading from [{cert_path:?}] ({err:?})")) ?;
-            Certificate::from_pem(pem.as_bytes()) ?
+            Some(Certificate::from_pem(pem.as_bytes()) ?)
         }
-        SslConfValue::Value(ref value) =>
-            Certificate::from_pem(value.as_bytes()) ?,
+        Some(SslConfValue::Value(ref value)) =>
+            Some(Certificate::from_pem(value.as_bytes()) ?),
+        None => None,
     };
 
-    let client = reqwest::Client::builder()
+    let mut client = reqwest::Client::builder()
         .default_headers({
             let mut headers = HeaderMap::new();
             // headers.insert("Authorization", HeaderValue::from_str(&basic_auth_creds.as_http_header()) ?);
             headers.insert("Authorization", auth.0.encode());
             headers
-        })
-        .add_root_certificate(cert)
-        .build() ?;
+        });
 
-    // let client = AccountSoaRestClient::new(&cfg.base_url);
+    if let Some(cert) = cert {
+        client = client.add_root_certificate(cert);
+    }
+    let client = client.build() ?;
+
     let client = AccountSoaRestClient::new_with_client(&cfg.base_url, client);
     let account_service = AccountServiceImpl { client };
     Ok(account_service)

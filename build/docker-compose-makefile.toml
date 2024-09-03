@@ -11,12 +11,12 @@
 private = true
 workspace = false
 dependencies = [
-    "init-prod-DOCKER_IMAGE_PROFILE_SUFFIX",
+    "init-release-DOCKER_IMAGE_PROFILE_SUFFIX",
     # "init-debug-DOCKER_IMAGE_PROFILE_SUFFIX",
     "init-debug-local-DOCKER_IMAGE_PROFILE_SUFFIX",
 ]
 
-[tasks.init-prod-DOCKER_IMAGE_PROFILE_SUFFIX]
+[tasks.init-release-DOCKER_IMAGE_PROFILE_SUFFIX]
 private = true
 workspace = false
 condition = { profiles = [ "prod", "production", "release" ] }

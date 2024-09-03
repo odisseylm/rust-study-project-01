@@ -1,4 +1,6 @@
 
+extend = { path = "build/docker-build-makefile.toml" }
+
 [config]
 init_task = "init"
 end_task = "end"
@@ -16,6 +18,12 @@ condition = { files_not_exist = ["target/patch-override-sub-dep"] }
 
 
 [env]
+
+ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
+
+# Now no root package (pure workspace)
+#ROOT_PROJECT_NAME = "${CARGO_MAKE_WORKSPACE_PACKAGE_NAME}"
+#ROOT_PROJECT_VERSION = "${CARGO_MAKE_WORKSPACE_PACKAGE_VERSION}"
 
 DOCKER_MODULES = [ "account_soa", "account_web" ]
 
@@ -49,12 +57,6 @@ condition_script = [" 0 "]
 #[tasks.clean]
 #command = "cargo"
 #args = ["clean"]
-
-#[tasks.build]
-#command = "cargo"
-#args = ["build"]
-##dependencies = ["clean"]
-#dependencies = []
 
 
 #[tasks.test-condition]
@@ -131,33 +133,40 @@ condition_script = [" 0 "]
 #dependencies = ["test"]
 
 
+[tasks.build-members]
+workspace = false
+private = true
+# overriding/disabling predefined build command
+# member defined build tasks are really used
+#command = {unset = true}
+run_task = { name = "build-member", fork = true }
+
+
+[tasks.test-members]
+workspace = false
+private = true
+# overriding/disabling predefined build command
+# member defined build tasks are really used
+#command = {unset = true}
+run_task = { name = "test-member", fork = true }
+
+
 
 #-----------------------------------------------------------------------------------------------------------------------
 
 [tasks.integration-tests]
 category = "Test"
 workspace = false
-env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = ["account_soa"] }
-# I do not understand why, but member-subtask should have another name?!
+env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
+# I do not understand why, but member-subtask should have another name?! For this purpose suffix '-member' is used.
 run_task = { name = "integration-tests-member", fork = true }
 
 
 
-#-----------------------------------------------------------------------------------------------------------------------
-
-[tasks.build-docker]
-workspace = false
-env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
-# I do not understand why, but member-subtask should have another name?!
-run_task = { name = "build-docker-member", fork = true }
-
-
-[tasks.build-docker-debug-local]
-category = "Test"
-workspace = false
-env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
-# I do not understand why, but member-subtask should have another name?!
-run_task = { name = "build-docker-debug-local-member", fork = true }
+[tasks.package]
+workspace = true
+# I do not understand why, but member-subtask should have another name?! For this purpose suffix '-member' is used.
+run_task = { name = "package-member", fork = true }
 
 
 

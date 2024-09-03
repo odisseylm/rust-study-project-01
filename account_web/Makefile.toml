@@ -9,6 +9,7 @@ extend = [
 [env]
 SOA_EXECUTABLE = "mvv_account_web"
 DOCKER_IMAGE_TAG = "mvv_rust_account_web"
+DOCKER_IMAGE_TARGET = "mvv_rust_account_web"
 DOCKER_COMPOSE_PROJECT_NAME = "rust-account-web-project"
 
 #ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
@@ -17,3 +18,22 @@ PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/account_web"
 
 
 # -----------------------------------------------------------------------------
+
+[tasks.test]
+extend = "cargo-test"
+dependencies = [
+    "build",
+    "generate-ssl-certs",
+]
+
+
+
+[tasks.package] # It is named just according to 'java'
+command = "echo" # overriding/disabling predefined build command
+args = [ "package flow" ]
+dependencies = [
+    "build",
+    "test",
+    "build-docker",
+    "integration-tests",
+]

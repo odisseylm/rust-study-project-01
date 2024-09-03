@@ -1,13 +1,8 @@
 use anyhow::anyhow;
 use sqlx_postgres::{PgConnectOptions, PgSslMode};
 use crate::env::{ env_var, EnvVarOps };
+use crate::net::ConnectionType;
 //--------------------------------------------------------------------------------------------------
-
-#[derive(Debug, Clone, Copy, strum::Display)]
-pub enum ConnectionType {
-    Plain,
-    Ssl
-}
 
 
 pub fn pg_db_connection_options(connection_type: ConnectionType, app_name: &str) -> Result<Option<PgConnectOptions>, anyhow::Error> {
