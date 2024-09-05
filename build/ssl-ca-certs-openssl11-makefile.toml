@@ -129,6 +129,18 @@ dependencies = [ # seems dependencies are not inherited in current 'cargo make' 
     "gen-openssl11-ssl-ca-root",
 ]
 
+[tasks.gen-openssl11-ssl-ca-cert--for-client-search-soa]
+extend = "gen-openssl11-ssl-ca-serv-cert"
+private = true
+workspace = false
+# We cannot use ${SERV_NAME} in condition because env is applied after condition
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-client-search-soa.key.pem", "${TEST_CERTS_DIR}/rust-client-search-soa.crt.pem"] }
+env = { SERV_NAME = "rust-client-search-soa" }
+dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
+    "gen-openssl11-ssl-ca-certs-prepare",
+    "gen-openssl11-ssl-ca-root",
+]
+
 [tasks.gen-openssl11-ssl-ca-cert--for-account-web]
 extend = "gen-openssl11-ssl-ca-serv-cert"
 private = true
@@ -150,6 +162,7 @@ dependencies = [
     "gen-openssl11-ssl-ca-root",
     "gen-openssl11-ssl-ca-cert--for-database",
     "gen-openssl11-ssl-ca-cert--for-account-soa",
+    "gen-openssl11-ssl-ca-cert--for-client-search-soa",
     "gen-openssl11-ssl-ca-cert--for-account-web",
 ]
 

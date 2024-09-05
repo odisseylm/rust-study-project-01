@@ -15,3 +15,26 @@ DOCKER_COMPOSE_PROJECT_NAME = "rust-client-search-soa-project"
 
 #ROOT_PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"
 PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/client_search_grpc_soa"
+
+
+
+# -----------------------------------------------------------------------------
+
+[tasks.test]
+extend = "cargo-test"
+dependencies = [
+    "build",
+    "generate-ssl-certs",
+]
+
+
+
+[tasks.package] # It is named just according to 'java'
+command = "echo" # overriding/disabling predefined build command
+args = [ "package flow" ]
+dependencies = [
+    "build",
+    "test",
+    "build-docker",
+    # "integration-tests",
+]

@@ -29,8 +29,8 @@ services:
       #- POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem  # database.crt.pem can be used with PgSslMode::Require
       - POSTGRES_SSL_CERT_PATH=/certs/ca.crt.pem  # CA should be used if PgSslMode::VerifyCa/VerifyFull is used
 
-      - CLIENT_SEARCH_SOA_SSL_KEY_PATH=/certs/rust-account-soa.key.pem
-      - CLIENT_SEARCH_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
+      - SERVER_SSL_KEY_PATH=/certs/rust-client-search-soa.key.pem
+      - SERVER_SSL_CERT_PATH=/certs/rust-client-search-soa.crt.pem
     volumes:
       - ../target/generated-test-resources/ssl/:/certs/:ro
     ports:

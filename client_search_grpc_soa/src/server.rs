@@ -4,6 +4,8 @@ use chrono::Datelike;
 use diesel::{Connection, PgConnection};
 use tonic::{Code, Request, Response, Status};
 use log::{error};
+// use tonic::codegen::tokio_stream::Stream;
+// use tonic::codegen::tokio_stream::wrappers::IntervalStream;
 // use tonic::codegen::tokio_stream::StreamExt;
 // use tonic::transport::Server;
 use crate::client::ClientInfo;
@@ -17,6 +19,7 @@ use crate::generated::mvv_client_search_api_v1::{
 
 
 
+#[allow(dead_code)]
 pub fn establish_connection() -> anyhow::Result<PgConnection> {
     // dotenv().ok();
 

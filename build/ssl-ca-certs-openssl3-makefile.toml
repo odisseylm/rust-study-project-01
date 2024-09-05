@@ -108,6 +108,16 @@ dependencies = [ # seems dependencies are not inherited in current 'cargo make' 
 ]
 
 
+[tasks.gen-openssl3-ssl-ca-cert--for-client-search-soa]
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-client-search-soa.key.pem", "${TEST_CERTS_DIR}/rust-client-search-soa.crt.pem"] }
+env = { SERV_NAME = "rust-client-search-soa" }
+extend = "gen-openssl3-ssl-ca-serv-cert"
+dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
+    "gen-openssl3-ssl-ca-certs-prepare",
+    "gen-openssl3-ssl-ca-root",
+]
+
+
 [tasks.gen-openssl3-ssl-ca-cert--for-account-web]
 condition = { files_not_exist = ["${TEST_CERTS_DIR}/rust-account-web.key.pem", "${TEST_CERTS_DIR}/rust-account-web.crt.pem"] }
 env = { SERV_NAME = "rust-account-web" }
@@ -126,6 +136,7 @@ dependencies = [
     "gen-openssl3-ssl-ca-root",
     "gen-openssl3-ssl-ca-cert--for-database",
     "gen-openssl3-ssl-ca-cert--for-account-soa",
+    "gen-openssl3-ssl-ca-cert--for-client-search-soa",
     "gen-openssl3-ssl-ca-cert--for-account-web",
 ]
 

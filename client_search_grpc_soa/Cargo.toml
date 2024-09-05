@@ -4,12 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 
+[lib]
+# We need it because some genious rust designer decided to consider any text in comments after 4 spaces as rust test !!!
+# Geniuos !! Geniuos !! Geniuos !! Geniuos !! Geniuos !! Geniuos !! Geniuos !! Geniuos !! Geniuos !!
+#
+# doctest = false
+
 
 [dependencies]
 mvv_common = { version = "0.1.0", path = "../common" }
 
 tonic = {  version = "0.12.2", features = ["default", "prost", "server"] }
 tonic-types = {  version = "0.12.2", features = [] }
+tonic-reflection = { version = "0.12.2", features = ["default", "server", "prost-types"]}
 googleapis-tonic-google-type = { version = "0.6.0", features = ["default"]}
 #googleapis-tonic-google-api = {  version = "0.7.0", features = ["default"] }
 #googleapis-tonic = {  version = "0.7.0", features = ["default"] }
@@ -36,6 +43,21 @@ anyhow.workspace = true
 diesel.workspace = true
 #diesel-async.workspace = true
 
+#future-utils = "0.12.1"
+#futures-util = "0.3.30"
+tokio-stream = { version = "0.1.15", features = ["default", ] }
+futures-util = { version = "0.3.30", features = ["default", "std", ] }
+async-stream = { version = "0.3.5", features = [] }
+
+#futures = { version = "0.3.30", features = ["default", ] }
+##pin-project = {version = "1.1.5", features = []}
+pin-project-lite = { version = "0.2.14", features = [] }
+
+#tonic-health = { version = "0.12.2", features = ["default"]}
+#grpcio = { version = "0.13.0", features = ["default", ] }
+#grpcio-health = { version = "0.13.0", features = ["default"]}
+
 
 [build-dependencies]
-tonic-build = "0.12.2"
+tonic-build = { version = "0.12.2", features = ["default", "cleanup-markdown"] }
+prost-build = { version = "0.13.2", features = ["default", "cleanup-markdown"] }

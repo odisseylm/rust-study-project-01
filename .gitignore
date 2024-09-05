@@ -13,3 +13,4 @@
 
 # Generated sources
 /account_web/src/rest_dependencies/account_soa_client.rs
+/client_search_grpc_soa/src/generated/*

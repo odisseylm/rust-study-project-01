@@ -31,7 +31,7 @@ impl StaticRefOrString {
 }
 impl fmt::Display for StaticRefOrString {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(self.as_str(), f)
+        fmt::Display::fmt(self.as_str(), f)
     }
 }
 impl From<String> for StaticRefOrString {

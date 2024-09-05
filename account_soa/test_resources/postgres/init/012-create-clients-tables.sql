@@ -7,10 +7,12 @@ create table CLIENTS (
     -- main phone
     -- TODO: use strict format to avoid duplicates due to different format
     PHONE         PHONE      collate ENGLISH_CI not null unique,
-    BIRTHDAY      DATE       not null,
     ACTIVE        BOOL       not null default 'n',
     BUSINESS_USER BOOL       not null default 'n',
-    SUPER_BUSINESS_USER BOOL not null default 'n'
+    SUPER_BUSINESS_USER BOOL not null default 'n',
+    BIRTHDAY      DATE       not null,
+    FIRST_NAME    VARCHAR(100) not null,
+    LAST_NAME     VARCHAR(100) not null
 );
 
 -- It should have more restricted access
