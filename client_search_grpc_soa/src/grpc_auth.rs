@@ -41,6 +41,19 @@ pub struct GrpcAuthzInterceptor <
 }
 
 
+#[inline]
+pub fn public_access_permissions<PermSet: PermissionSet>() -> PermSet { PermSet::new() }
+
+// Feel free to add any other standard PUBLIC services.
+// !!! But make sure that it is unsafe in context of your application/company !!!
+#[inline]
+pub fn predefined_public_endpoints_roles <PermSet: PermissionSet>() -> HashMap<StaticRefOrString, PermSet> {
+    HashMap::from([
+        ("/grpc.reflection.v1.ServerReflection".into(), public_access_permissions()),
+        ("/grpc.health.v1.Health".into(), public_access_permissions()),
+    ])
+}
+
 fn get_end_point_path<T>(req: &Request<T>) -> anyhow::Result<String> {
     let url = get_grpc_req_url(req) ?;
     Ok(url.path().to_owned())

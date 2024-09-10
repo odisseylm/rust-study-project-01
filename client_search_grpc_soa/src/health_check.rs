@@ -1,20 +1,27 @@
+use std::collections::HashMap;
 use std::pin::Pin;
-// use std::sync::Arc;
-// use std::task::{Context, Poll};
-// use async_stream::__private::AsyncStream;
-// use futures_util::StreamExt;
-// use tokio::sync::{mpsc, watch};
 use tokio_stream::Stream;
 use tonic::{Request, Response, Status};
+use mvv_auth::permission::PermissionSet;
+use mvv_common::string::StaticRefOrString;
 use crate::grpc::health::v1::{
     health_server::Health,
     HealthCheckRequest, HealthCheckResponse,
     health_check_response::ServingStatus,
 };
+use crate::grpc_auth::public_access_permissions;
 //--------------------------------------------------------------------------------------------------
 
 
 pub struct HealthCheckService;
+
+impl HealthCheckService {
+    #[inline]
+    #[allow(dead_code)]
+    pub fn endpoints_roles <PermSet: PermissionSet>() -> HashMap<StaticRefOrString, PermSet> {
+        HashMap::from([("/grpc.health.v1.Health".into(), public_access_permissions())])
+    }
+}
 
 // use tonic::{transport::server::ServiceName};
 // type Stream22 = VecDeque<Result<HealthCheckResponse, Status>>;

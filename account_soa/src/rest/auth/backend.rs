@@ -159,7 +159,7 @@ impl RequestAuthenticated for CompositeAuthBackend {
     async fn do_authenticate_request <
         RootBackend: axum_login::AuthnBackend + 'static,
         S: Send + Sync,
-    > (&self, auth_session: axum_login::AuthSession<RootBackend>, req: Request)
+    > (&self, auth_session: Option<axum_login::AuthSession<RootBackend>>, req: Request)
        -> (Request, Result<Option<Self::User>, Self::Error>)
         where Self: 'static,
         RootBackend: axum_login::AuthnBackend<User = Self::User>,
@@ -189,7 +189,7 @@ impl RequestAuthenticated for CompositeAuthBackend {
     async fn do_authenticate_request_parts <
         RootBackend: axum_login::AuthnBackend + 'static,
         S: Send + Sync,
-    > (&self, auth_session: axum_login::AuthSession<RootBackend>, req: &http::request::Parts)
+    > (&self, auth_session: Option<axum_login::AuthSession<RootBackend>>, req: &http::request::Parts)
        -> Result<Option<Self::User>, Self::Error>
         where Self: 'static,
         RootBackend: axum_login::AuthnBackend<User = Self::User>,

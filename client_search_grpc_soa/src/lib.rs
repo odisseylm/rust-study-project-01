@@ -1,5 +1,5 @@
 
-mod server;
+mod client_search_service;
 mod client;
 mod dependencies;
 mod schema;

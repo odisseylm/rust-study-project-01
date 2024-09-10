@@ -143,14 +143,15 @@ mod tests {
         // println!("\n------------------------------------------\n");
         // println!("err as display: {err}");
         let display_str = err.to_test_display_string();
-        assert_contains!(display_str, r#"Env var ["var_name_1"] is not found."#);
+        // assert_contains!(display_str, r#"Env var ["var_name_1"] is not found."#);
+        assert_contains!(display_str, "Env var [var_name_1] is not found.");
         assert_not_contains!(display_str, "mvv_common::env::EnvVarError::new");
         assert_not_contains!(display_str, "env.rs:");
 
         // println!("\n------------------------------------------\n");
         // println!("err as debug: {err:?}");
         let debug_str = err.to_test_debug_string();
-        println!("### EnvVarError (debug): {debug_str}");
+        println!("## EnvVarError (debug): {debug_str}");
         assert_contains!(debug_str, r#"EnvVarError { var_name: Ref("var_name_1"), source: NotPresent, backtrace:"#);
         assert_contains!(debug_str, "mvv_common::env::EnvVarError::new");
         assert_contains!(debug_str, "env.rs:");

@@ -1,9 +1,14 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 use anyhow::anyhow;
 use chrono::Datelike;
 use diesel::{Connection, PgConnection};
+use implicit_clone::ImplicitClone;
 use tonic::{Code, Request, Response, Status};
 use log::{error};
+use mvv_auth::permission::PermissionSet;
+use mvv_common::string::StaticRefOrString;
+use crate::auth::{Role, RolePermissionsSet};
 use crate::client::ClientInfo;
 use crate::dependencies::{Dependencies};
 use crate::grpc::mvv::client::search::api::v1::{
@@ -34,6 +39,24 @@ pub fn establish_connection() -> anyhow::Result<PgConnection> {
 pub struct ClientSearchService {
     pub dependencies: Arc<Dependencies>,
 }
+
+impl ClientSearchService {
+    pub fn endpoints_roles() -> HashMap<StaticRefOrString, RolePermissionsSet> {
+        let read_permissions = RolePermissionsSet::from_permission(Role::Read);
+        let read_write_permissions = RolePermissionsSet::from_permissions([Role::Read, Role::Write]);
+        HashMap::from([
+            ("/mvv.client.search.api.v1.ClientSearchService/Search".into(), read_permissions.implicit_clone()),
+            ("/mvv.client.search.api.v1.ClientSearchService/GetClientById".into(), read_permissions.implicit_clone()),
+            ("/mvv.client.search.api.v1.ClientSearchService/UpdateClient".into(), read_write_permissions.implicit_clone()),
+        ])
+    }
+}
+
+/*
+("/mvv.client.search.api.v1.ClientSearchService/Search".into(), read_permissions.implicit_clone()),
+("/mvv.client.search.api.v1.ClientSearchService/GetClientById".into(), read_permissions.implicit_clone()),
+("/mvv.client.search.api.v1.ClientSearchService/UpdateClient".into(), read_write_permissions.implicit_clone()),
+*/
 
 
 impl ClientSearchService {

@@ -1,16 +1,11 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use implicit_clone::ImplicitClone;
 use log::info;
 use tonic::{
-    Request, Status,
     transport::Server,
 };
 use tonic_types::pb;
-use mvv_auth::{
-    PlainPasswordComparator,
-    permission::PermissionSet,
-};
+use mvv_auth::PlainPasswordComparator;
 use mvv_common::{
     cfg::ServerConf,
     env::process_env_load_res,
@@ -18,14 +13,15 @@ use mvv_common::{
 };
 // use mvv_common::rest::health_check_router;
 use crate::{
-    auth::{AuthUser, CompositeAuthBackend, Role, RolePermissionsSet},
+    auth::{AuthUser, CompositeAuthBackend},
     cfg::ClientSearchSoaServerConfig,
     dependencies::{create_dependencies},
     grpc_auth::{GrpcAuthzInterceptor, TonicServerGrpcReqEnrichExt},
-    server::ClientSearchService,
+    client_search_service::ClientSearchService,
     health_check::HealthCheckService,
 };
 use crate::grpc::mvv::client::search::api::v1::client_search_service_server::ClientSearchServiceServer;
+use crate::grpc_auth::predefined_public_endpoints_roles;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -63,7 +59,7 @@ fn init_logger() {
 }
 
 // pub const FILE_DESCRIPTOR_SET_333: &[u8] = include_bytes!("generated/types.bin");
-pub const FILE_DESCRIPTOR_SET_334: &[u8] = tonic::include_file_descriptor_set!("mvv_client_search_descriptor");
+pub const APP_SERVICES_FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("mvv_client_search_descriptor");
 
 
 /*
@@ -115,20 +111,13 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
 
     use tonic_async_interceptor::async_interceptor;
 
-    let no_permissions = RolePermissionsSet::new();
-    let read_permissions = RolePermissionsSet::from_permission(Role::Read);
-    let read_write_permissions = RolePermissionsSet::from_permissions([Role::Read, Role::Write]);
-
     let grpc_auth_interceptor = GrpcAuthzInterceptor::<AuthUser, /*Role, RolePermissionsSet,*/ CompositeAuthBackend> {
-        endpoints_roles: Arc::new(HashMap::from([
-            // TODO: move to 'predefined'
-            ("/grpc.reflection.v1.ServerReflection".into(), no_permissions.implicit_clone()),
-            ("/grpc.health.v1.Health".into(), no_permissions.implicit_clone()),
-            // TODO: move to Search source file
-            ("/mvv.client.search.api.v1.ClientSearchService/Search".into(), read_permissions.implicit_clone()),
-            ("/mvv.client.search.api.v1.ClientSearchService/GetClientById".into(), read_permissions.implicit_clone()),
-            ("/mvv.client.search.api.v1.ClientSearchService/UpdateClient".into(), read_write_permissions.implicit_clone()),
-        ])),
+        endpoints_roles: Arc::new({
+            let mut roles = HashMap::new();
+            roles.extend(predefined_public_endpoints_roles());
+            roles.extend(ClientSearchService::endpoints_roles());
+            roles
+        }),
         auth: Arc::new(CompositeAuthBackend::new_2(
             Arc::new(PlainPasswordComparator::new()),
             dependencies.user_provider.clone(),
@@ -161,7 +150,7 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
 
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(pb::FILE_DESCRIPTOR_SET)
-        .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET_334)
+        .register_encoded_file_descriptor_set(APP_SERVICES_FILE_DESCRIPTOR_SET)
         .build_v1() ?;
 
     Server::builder()
