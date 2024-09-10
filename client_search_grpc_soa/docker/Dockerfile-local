@@ -42,4 +42,4 @@ ENTRYPOINT ["/bin/mvv_client_search_soa", "arg1", "arg2"]
 
 # good param  --start-interval=2s is unstable ?!
 #HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD health_checker http://localhost:${SERVER_PORT}/healthcheck || exit 1
-HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD grpcurl -d '{ "service": "" }' -plaintext localhost:${SERVER_PORT} grpc_health_v1.Health/Check || exit 1
+HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD grpcurl -d '{ "service": "" }' -plaintext localhost:${SERVER_PORT} grpc.health.v1.Health/Check || exit 1

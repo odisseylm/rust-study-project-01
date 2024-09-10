@@ -6,7 +6,7 @@ use tonic::{Code, Request, Response, Status};
 use log::{error};
 use crate::client::ClientInfo;
 use crate::dependencies::{Dependencies};
-use crate::generated::mvv::client::search::api::v1::{
+use crate::grpc::mvv::client::search::api::v1::{
     {Client, ClientSearchRequest, ClientSearchResponse, GetClientByIdRequest, GetClientByIdResponse},
     client_search_service_server::ClientSearchService as ClientSearchServiceTrait,
 };

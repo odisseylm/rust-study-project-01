@@ -5,7 +5,7 @@ mod dependencies;
 mod schema;
 pub mod app;
 pub mod cfg;
-pub mod generated;
+pub mod grpc;
 mod health_check;
 mod stream_static_wrapper;
 mod grpc_auth;

@@ -1,6 +1,6 @@
 use chrono::Datelike;
 use diesel::prelude::*;
-use crate::generated::{
+use crate::grpc::{
     mvv::client::search::api::v1::{
         {Client, PhoneNumber},
         client::Email,

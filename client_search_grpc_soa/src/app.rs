@@ -16,7 +16,7 @@ use mvv_common::exe::{current_exe_dir, current_exe_name};
 use crate::auth::{AuthUser, CompositeAuthBackend, /*Role, RolePermissionsSet*/};
 use crate::cfg::ClientSearchSoaServerConfig;
 use crate::dependencies::{create_dependencies};
-use crate::generated::mvv::client::search::api::v1::client_search_service_server::ClientSearchServiceServer;
+use crate::grpc::mvv::client::search::api::v1::client_search_service_server::ClientSearchServiceServer;
 use crate::grpc_auth::{grpc_req_enrich, GrpcAuthInterceptor};
 use crate::server::ClientSearchService;
 use crate::health_check::HealthCheckService;
@@ -159,7 +159,7 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
         ClientSearchServiceServer::with_interceptor(ClientSearchService { dependencies: dependencies.clone() }, intercept)
         ;
 
-    use crate::generated::grpc::health::v1::health_server::HealthServer;
+    use crate::grpc::health::v1::health_server::HealthServer;
     let health_check_serv = HealthServer::new(HealthCheckService);
 
     let reflection_service = tonic_reflection::server::Builder::configure()

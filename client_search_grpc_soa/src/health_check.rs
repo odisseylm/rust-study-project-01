@@ -6,7 +6,7 @@ use std::pin::Pin;
 // use tokio::sync::{mpsc, watch};
 use tokio_stream::Stream;
 use tonic::{Request, Response, Status};
-use crate::generated::grpc::health::v1::{
+use crate::grpc::health::v1::{
     health_server::Health,
     HealthCheckRequest, HealthCheckResponse,
     health_check_response::ServingStatus,
