@@ -1,13 +1,18 @@
-use core::fmt::Debug;
-use core::str::FromStr;
-use std::collections::HashSet;
-use std::future::Future;
-use std::pin::Pin;
+use core::{
+    fmt::Debug,
+    str::FromStr,
+};
+use std::{
+    collections::HashMap,
+    future::Future,
+    pin::Pin,
+    sync::Arc,
+};
 use http::{
     HeaderName, HeaderValue,
     // request::Builder,
 };
-use log::{debug, error};
+use log::{debug, error, warn};
 use tonic::{
     Request, Status,
     // codegen::BoxFuture,
@@ -18,32 +23,35 @@ use tonic_async_interceptor::AsyncInterceptor;
 use tower::BoxError;
 use mvv_auth::{
     //AuthUserProvider,
-    backend::{RequestAuthenticated, authz_backend::AuthorizeBackend},
-    //permission::{PermissionProvider, PermissionSet},
+    backend::{RequestAuthenticated, authz_backend::AuthorizeBackend, UserContext},
+    permission::PermissionSet,
 };
-use mvv_auth::backend::UserContext;
 use mvv_common::string::StaticRefOrString;
 //--------------------------------------------------------------------------------------------------
 
 
 
 #[derive(Debug, Clone)]
-pub struct GrpcAuthInterceptor <
+pub struct GrpcAuthzInterceptor <
     Usr: axum_login::AuthUser + Clone + 'static,
-    // Perm: Debug + Clone + Send + Sync + 'static,
-    // PermSet: PermissionSet + Clone + 'static,
     AuthB: AuthorizeBackend<User=Usr> + RequestAuthenticated<User=Usr> + Debug + 'static,
 > {
-    pub public_endpoints: HashSet<StaticRefOrString>,
-    // pub user_provider: Arc<dyn AuthUserProvider<User=Usr> + Send + Sync + 'static>,
-    // pub permission_provider: Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Send + Sync + 'static>,
-    pub auth: AuthB
+    pub endpoints_roles: Arc<HashMap<StaticRefOrString, AuthB::PermissionSet>>,
+    pub auth: Arc<AuthB>,
 }
 
 
 fn get_end_point_path<T>(req: &Request<T>) -> anyhow::Result<String> {
     let url = get_grpc_req_url(req) ?;
     Ok(url.path().to_owned())
+}
+fn get_end_point_path_with_grpc_err<T>(req: &Request<T>) -> Result<String, Status> {
+    let endpoint_path = get_end_point_path(&req)
+        .map_err(|err|{
+            error!("Error of getting endpoint url: {err:?}");
+            Status::internal("No endpoint url")
+        }) ?;
+    Ok(endpoint_path)
 }
 
 pub fn get_grpc_req_url<T>(req: &Request<T>) -> anyhow::Result<http::uri::Uri> {
@@ -56,56 +64,81 @@ pub fn get_grpc_req_url<T>(req: &Request<T>) -> anyhow::Result<http::uri::Uri> {
 
 impl <
     Usr: axum_login::AuthUser + Clone + 'static,
-    // Perm: Debug + Clone + Send + Sync + 'static,
-    // PermSet: PermissionSet + Clone + 'static,
     AuthB: AuthorizeBackend<User=Usr> + RequestAuthenticated<User=Usr> + Debug + 'static,
-> AsyncInterceptor for GrpcAuthInterceptor<Usr, /*Perm, PermSet,*/ AuthB> {
+> GrpcAuthzInterceptor<Usr, /*Perm, PermSet,*/ AuthB> {
+
+    fn find_end_point_path_roles(&self, req: &Request<()>) -> Result<Option<&AuthB::PermissionSet>, Status> {
+
+        let end_point_path = get_end_point_path_with_grpc_err(&req) ?;
+
+        let full_end_point_path: &str = end_point_path.as_str();
+        let end_point_path_roles = self.endpoints_roles.get(full_end_point_path);
+        if end_point_path_roles.is_some() {
+            return Ok(end_point_path_roles);
+        }
+
+        let end_point_service_path = full_end_point_path.rsplit_once('/');
+        let roles =
+            if let Some((serv_path, _method)) = end_point_service_path {
+                self.endpoints_roles.get(serv_path)
+            } else {
+                None
+            };
+
+        Ok(roles)
+    }
+}
+
+impl <
+    Usr: axum_login::AuthUser + Clone + 'static,
+    AuthB: AuthorizeBackend<User=Usr> + RequestAuthenticated<User=Usr> + Debug + 'static,
+> AsyncInterceptor for GrpcAuthzInterceptor<Usr, /*Perm, PermSet,*/ AuthB> {
     type Future = Pin<Box<dyn Future<Output=Result<Request<()>, Status>> + Send + 'static >>;
     // type Future = tonic::codegen::BoxFuture<Request<()>, Status>;
     // type Future = futures_util::future::BoxFuture<Request<()>, Status>;
 
     fn call(&mut self, request: Request<()>) -> Self::Future {
-        Box::pin(authenticate_req::<Usr, /*Perm, PermSet,*/ AuthB>(self.clone(), request))
+        Box::pin(authorize_req::<Usr, /*Perm, PermSet,*/ AuthB>(self.clone(), request))
     }
 }
 
 
 
-async fn authenticate_req <
+async fn authorize_req <
     Usr: axum_login::AuthUser + Clone + 'static,
-    // Perm: Debug + Clone + Send + Sync + 'static,
-    // PermSet: PermissionSet + Clone + 'static,
     AuthB: AuthorizeBackend<User=Usr> + RequestAuthenticated<User=Usr> + Debug + 'static,
 > (
-    state: GrpcAuthInterceptor<Usr,/*Perm,PermSet,*/AuthB>,
+    state: GrpcAuthzInterceptor<Usr,/*Perm,PermSet,*/AuthB>,
     req: Request<()>,
     ) -> Result<Request<()>, Status> {
 
-    let end_point_path = get_end_point_path(&req)
-        .map_err(|err|{
-            error!("No end-point URL in grpc request [{err:?}]");
-            Status::internal("Auth error")
-        }) ?;
+    let required_roles = state.find_end_point_path_roles(&req) ?;
+    let required_roles = match required_roles {
+        None => {
+            let endpoint_path = get_end_point_path_with_grpc_err(&req) ?;
+            warn!("Authorization configuration error for [{endpoint_path}]");
+            return Err(Status::permission_denied("Unauthorized"));
+        }
+        Some(required_roles) =>
+            required_roles.clone(),
+    };
 
-    let full_end_point_path: &str = end_point_path.as_str();
-    if state.public_endpoints.contains(full_end_point_path) {
+    if required_roles.is_empty() {
         return Ok(req);
     }
 
-    let end_point_service_path = full_end_point_path.rsplit_once('/');
-    if let Some((serv_path, _method)) = end_point_service_path {
-        if state.public_endpoints.contains(serv_path) {
-            return Ok(req);
-        }
-    }
-
-    let res = auth_req_impl::<Usr, /*Perm, PermSet,*/ AuthB>(state, req).await;
+    let res = authz_req_impl::<Usr, /*Perm, PermSet,*/ AuthB>(state, req, required_roles.clone()).await;
     match res {
-        Ok(Some(user)) => {
-            debug!("User [{user:?}] is authenticated.");
+        Ok(AuthorizeResult::Authorized { user }) => {
+            debug!("User [{user:?}] is authorized.");
             Ok(Request::new(()))
         }
-        Ok(None) => {
+        Ok(AuthorizeResult::Unauthorized { user }) => {
+            debug!("User [{user:?}] is unauthorized.");
+            Err(Status::permission_denied("Unauthorized"))
+        }
+        Ok(AuthorizeResult::Unauthenticated) => {
+            debug!("User is authorized.");
             Err(Status::unauthenticated("Unauthenticated"))
         }
         Err(err) => {
@@ -115,15 +148,23 @@ async fn authenticate_req <
     }
 }
 
-async fn auth_req_impl <
+enum AuthorizeResult <
     Usr: axum_login::AuthUser + Clone + 'static,
-    // Perm: Debug + Clone + Send + Sync + 'static,
-    // PermSet: PermissionSet + Clone + 'static,
+> {
+    Authorized { user: Usr },
+    Unauthorized { user: Usr },
+    Unauthenticated,
+}
+
+
+async fn authz_req_impl <
+    Usr: axum_login::AuthUser + Clone + 'static,
     AuthB: AuthorizeBackend<User=Usr> + RequestAuthenticated<User=Usr> + Debug + 'static,
 > (
-    auth_state: GrpcAuthInterceptor<Usr,/*Perm,PermSet,*/AuthB>,
+    auth_state: GrpcAuthzInterceptor<Usr,/*Perm,PermSet,*/AuthB>,
     mut grpc_req: Request<()>,
-) -> anyhow::Result<Option<Usr>> {
+    required_roles: AuthB::PermissionSet,
+) -> anyhow::Result<AuthorizeResult<Usr>> {
 
     let axum_req= grpc_req_to_axum_req(&grpc_req) ?;
 
@@ -132,11 +173,16 @@ async fn auth_req_impl <
 
     match res {
         Ok(Some(user)) => {
-            grpc_req.extensions_mut().insert(UserContext::new(user.clone()));
-            Ok(Some(user))
+            let has_permissions = auth_state.auth.has_permissions(&user, required_roles).await ?;
+            if has_permissions {
+                grpc_req.extensions_mut().insert(UserContext::new(user.clone()));
+                Ok(AuthorizeResult::Authorized {user })
+            } else {
+                Ok(AuthorizeResult::Unauthorized { user })
+            }
         }
         Ok(None) =>
-            Ok(None),
+            Ok(AuthorizeResult::Unauthenticated),
         Err(err) => {
             error!("Grpc AuthBackend error: {err:?}");
             Err(err.into())
@@ -144,30 +190,21 @@ async fn auth_req_impl <
     }
 }
 
-/*
-fn grpc_req_to_http_req_parts<T>(grpc_req: &Request<T>) -> anyhow::Result<http::request::Parts> {
-    let mut parts_b = Builder::default()
-        // .method(request.metadata().url)
-        ;
-    let mut req: http::Request<()> = parts_b.body(()) ?;
-    let (mut parts, ()) = req.into_parts();
-
-    for ref k_v_ref in grpc_req.metadata().iter() {
-        let (header_name, header_value) = to_http_header(k_v_ref) ?;
-        parts.headers.insert(header_name, header_value);
-    }
-
-    Ok(parts)
-}
-*/
 
 fn grpc_req_to_axum_req<T>(grpc_req: &Request<T>) -> anyhow::Result<axum::extract::Request<axum::body::Body>> {
     let mut axum_req: axum::extract::Request<axum::body::Body> =
         axum::extract::Request::new(axum::body::Body::empty());
 
     for ref k_v_ref in grpc_req.metadata().iter() {
-        let (header_name, header_value) = to_http_header(k_v_ref) ?;
-        axum_req.headers_mut().insert(header_name, header_value);
+        let header_name_value = to_http_header(k_v_ref);
+        match header_name_value {
+            Ok((header_name, header_value)) => {
+                axum_req.headers_mut().insert(header_name, header_value);
+            }
+            Err(err) => {
+                warn!("Error converting header [{k_v_ref:?}]: {err:?}");
+            }
+        }
     }
 
     Ok(axum_req)
@@ -176,17 +213,13 @@ fn grpc_req_to_axum_req<T>(grpc_req: &Request<T>) -> anyhow::Result<axum::extrac
 fn to_http_header(kv_ref: &KeyAndValueRef) -> anyhow::Result<(HeaderName, HeaderValue)> {
     let (header_name, header_value) = match kv_ref {
         KeyAndValueRef::Ascii(k, v) => {
-            let header_name = HeaderName::from_str(k.as_str())
-                /*.map_err(|_|Status::internal("???"))*/ ?; // TODO: log warn and ignore it?
-            let header_value: HeaderValue = HeaderValue::from_bytes(v.as_bytes())
-                /*.map_err(|_|Status::internal("Bla-bla"))*/ ?;
+            let header_name = HeaderName::from_str(k.as_str()) ?;
+            let header_value: HeaderValue = HeaderValue::from_bytes(v.as_bytes()) ?;
             (header_name, header_value)
         }
         KeyAndValueRef::Binary(k, v) => {
-            let header_name = HeaderName::from_str(k.as_str())
-                /*.map_err(|_|Status::internal("???"))*/ ?; // TODO: log warn and ignore it?
-            let header_value: HeaderValue = HeaderValue::from_bytes(v.as_encoded_bytes())
-                /*.map_err(|_|Status::internal("Bla-bla"))*/ ?;
+            let header_name = HeaderName::from_str(k.as_str()) ?;
+            let header_value: HeaderValue = HeaderValue::from_bytes(v.as_encoded_bytes()) ?;
             (header_name, header_value)
         }
     };
@@ -197,29 +230,39 @@ fn to_http_header(kv_ref: &KeyAndValueRef) -> anyhow::Result<(HeaderName, Header
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-struct GrpcReqEnrichPredicate;
+pub struct GrpcReqEnrichPredicate;
 
 impl <Body> tower::filter::Predicate<http::request::Request<Body>> for GrpcReqEnrichPredicate {
     type Request = http::request::Request<Body>;
 
-    fn check(&mut self, mut req: Self::Request) -> Result<Self::Request, BoxError> {
-
-        let ext_uri = req.extensions().get::<axum::extract::OriginalUri>();
-        if ext_uri.is_none() {
-            let uri = req.uri().clone();
-            req.extensions_mut().insert(axum::extract::OriginalUri(uri));
-        }
-        Ok(req)
+    fn check(&mut self, req: Self::Request) -> Result<Self::Request, BoxError> {
+        grpc_req_enrich(req)
     }
 }
 
-// TODO: temporary pub, add extension trait for installing it
+
+/// It can be used if you do not need real/specific type (in trait declaration)
+/// For example: tonic::transport::Server.layer(FilterLayer::new(grpc_req_enrich))
+///
 pub fn grpc_req_enrich<Body>(mut req: http::request::Request<Body>)
-                         -> Result<http::request::Request<Body>, BoxError> {
+    -> Result<http::request::Request<Body>, BoxError> {
+
     let ext_uri = req.extensions().get::<axum::extract::OriginalUri>();
     if ext_uri.is_none() {
         let uri = req.uri().clone();
         req.extensions_mut().insert(axum::extract::OriginalUri(uri));
     }
     Ok(req)
+}
+
+
+#[extension_trait::extension_trait]
+pub impl<L> TonicServerGrpcReqEnrichExt<L> for tonic::transport::Server<L> {
+    fn add_grpc_req_enrich_layer(self)
+        -> tonic::transport::Server<tower_layer::Stack<
+            tower::filter::FilterLayer<GrpcReqEnrichPredicate>, L>> {
+
+        use tower::filter::FilterLayer;
+        self.layer(FilterLayer::new(GrpcReqEnrichPredicate))
+    }
 }

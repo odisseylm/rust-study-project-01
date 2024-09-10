@@ -83,6 +83,7 @@ strum_macros.workspace = true
 const_format.workspace = true
 const-str.workspace = true
 implicit-clone.workspace = true
+extension-trait.workspace = true
 
 
 [build-dependencies]

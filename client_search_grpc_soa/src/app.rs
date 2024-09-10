@@ -1,25 +1,31 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::sync::Arc;
+use implicit_clone::ImplicitClone;
 use log::info;
-use tonic::{Request, Status};
-// use tonic::service::interceptor::InterceptorLayer;
-use tonic::transport::Server;
-// use tonic_async_interceptor::AsyncInterceptedService;
+use tonic::{
+    Request, Status,
+    transport::Server,
+};
 use tonic_types::pb;
-// use tower::BoxError;
-use tower::filter::FilterLayer;
-use mvv_auth::{PlainPasswordComparator};
-use mvv_common::cfg::ServerConf;
-use mvv_common::env::process_env_load_res;
-use mvv_common::exe::{current_exe_dir, current_exe_name};
+use mvv_auth::{
+    PlainPasswordComparator,
+    permission::PermissionSet,
+};
+use mvv_common::{
+    cfg::ServerConf,
+    env::process_env_load_res,
+    exe::{current_exe_dir, current_exe_name},
+};
 // use mvv_common::rest::health_check_router;
-use crate::auth::{AuthUser, CompositeAuthBackend, /*Role, RolePermissionsSet*/};
-use crate::cfg::ClientSearchSoaServerConfig;
-use crate::dependencies::{create_dependencies};
+use crate::{
+    auth::{AuthUser, CompositeAuthBackend, Role, RolePermissionsSet},
+    cfg::ClientSearchSoaServerConfig,
+    dependencies::{create_dependencies},
+    grpc_auth::{GrpcAuthzInterceptor, TonicServerGrpcReqEnrichExt},
+    server::ClientSearchService,
+    health_check::HealthCheckService,
+};
 use crate::grpc::mvv::client::search::api::v1::client_search_service_server::ClientSearchServiceServer;
-use crate::grpc_auth::{grpc_req_enrich, GrpcAuthInterceptor};
-use crate::server::ClientSearchService;
-use crate::health_check::HealthCheckService;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -59,20 +65,6 @@ fn init_logger() {
 // pub const FILE_DESCRIPTOR_SET_333: &[u8] = include_bytes!("generated/types.bin");
 pub const FILE_DESCRIPTOR_SET_334: &[u8] = tonic::include_file_descriptor_set!("mvv_client_search_descriptor");
 
-
-/// This function will get called on each inbound request, if a `Status`
-/// is returned, it will cancel the request and return that status to the
-/// client.
-fn intercept(req: Request<()>) -> Result<Request<()>, Status> {
-    println!("Intercepting request: {:?}", req);
-
-    // // Set an extension that can be retrieved by `say_hello`
-    // req.extensions_mut().insert(MyExtension {
-    //     some_piece_of_data: "foo".to_string(),
-    // });
-
-    Ok(req)
-}
 
 /*
 #[derive(Debug, Clone)]
@@ -123,24 +115,25 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
 
     use tonic_async_interceptor::async_interceptor;
 
-    let grpc_auth_interceptor = GrpcAuthInterceptor::<AuthUser, /*Role, RolePermissionsSet,*/ CompositeAuthBackend> {
-        public_endpoints: HashSet::from([
-            // Using full endpoint names including method
-            // "/grpc.reflection.v1.ServerReflection/ServerReflectionInfo".into(),
-            // "/grpc.health.v1.Health/Check".into(),
-            // "/grpc_health_v1.Health/Check".into(),
-            // Or using full endpoint service names (without method)
-            "/grpc.reflection.v1.ServerReflection".into(),
-            "/grpc.health.v1.Health".into(),
-            "/grpc_health_v1.Health".into(),
-        ]),
-        // user_provider: dependencies.user_provider.clone(),
-        // permission_provider: dependencies.permission_provider.clone(),
-        auth: CompositeAuthBackend::new_2(
+    let no_permissions = RolePermissionsSet::new();
+    let read_permissions = RolePermissionsSet::from_permission(Role::Read);
+    let read_write_permissions = RolePermissionsSet::from_permissions([Role::Read, Role::Write]);
+
+    let grpc_auth_interceptor = GrpcAuthzInterceptor::<AuthUser, /*Role, RolePermissionsSet,*/ CompositeAuthBackend> {
+        endpoints_roles: Arc::new(HashMap::from([
+            // TODO: move to 'predefined'
+            ("/grpc.reflection.v1.ServerReflection".into(), no_permissions.implicit_clone()),
+            ("/grpc.health.v1.Health".into(), no_permissions.implicit_clone()),
+            // TODO: move to Search source file
+            ("/mvv.client.search.api.v1.ClientSearchService/Search".into(), read_permissions.implicit_clone()),
+            ("/mvv.client.search.api.v1.ClientSearchService/GetClientById".into(), read_permissions.implicit_clone()),
+            ("/mvv.client.search.api.v1.ClientSearchService/UpdateClient".into(), read_write_permissions.implicit_clone()),
+        ])),
+        auth: Arc::new(CompositeAuthBackend::new_2(
             Arc::new(PlainPasswordComparator::new()),
             dependencies.user_provider.clone(),
             dependencies.permission_provider.clone(),
-        ) ?,
+        ) ?),
     };
 
     /*
@@ -155,9 +148,13 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
     );
     */
 
+    // With interceptor
+    // let client_search_serv =
+    //     ClientSearchServiceServer::with_interceptor(ClientSearchService { dependencies: dependencies.clone() }, intercept)
+    //     ;
+
     let client_search_serv =
-        ClientSearchServiceServer::with_interceptor(ClientSearchService { dependencies: dependencies.clone() }, intercept)
-        ;
+        ClientSearchServiceServer::new(ClientSearchService { dependencies: dependencies.clone() });
 
     use crate::grpc::health::v1::health_server::HealthServer;
     let health_check_serv = HealthServer::new(HealthCheckService);
@@ -167,26 +164,8 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
         .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET_334)
         .build_v1() ?;
 
-    /*
-    let rest_route = tonic::service::Routes::from(health_check_router());
-    use tower::timeout::TimeoutLayer;
-    use std::time::Duration;
-
-    use tower::ServiceBuilder;
-    use tonic::{Request, Status, service::interceptor};
-
-    let layer = ServiceBuilder::new()
-        .load_shed()
-        .timeout(Duration::from_secs(30))
-        .layer(interceptor(auth_interceptor))
-        .layer(interceptor(some_other_interceptor))
-        // .layer(interceptor(some_other_interceptor_22))
-        .into_inner();
-    */
-
-    // TODO: add authentication/authorization
     Server::builder()
-        .layer(FilterLayer::new(grpc_req_enrich))
+        .add_grpc_req_enrich_layer() // similar to `.layer(FilterLayer::new(grpc_req_enrich))`
         // As example
         // .layer(tonic::service::interceptor(DependenciesSetInterceptor { dependencies: dependencies.clone() }))
         //
