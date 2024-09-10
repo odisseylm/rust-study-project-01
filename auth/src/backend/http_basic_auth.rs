@@ -27,7 +27,7 @@ use crate::backend::{
 // -------------------------------------------------------------------------------------------------
 
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "ambassador", derive(ambassador::Delegate))]
 #[readonly::make] // should be after 'derive'
 #[cfg_attr(feature = "ambassador", delegate(axum_login::AuthnBackend, target = "psw_backend"))]
@@ -190,7 +190,7 @@ impl <
     async fn do_authenticate_request <
         RootBackend: AuthnBackend + 'static,
         S: Send + Sync,
-    > (&self, _auth_session: axum_login::AuthSession<RootBackend>, req: Request)
+    > (&self, _auth_session: Option<axum_login::AuthSession<RootBackend>>, req: Request)
     -> (Request, Result<Option<Self::User>, Self::Error>)
     where Self: 'static
     {
@@ -201,7 +201,7 @@ impl <
     async fn do_authenticate_request_parts <
         RootBackend: AuthnBackend + 'static,
         S: Send + Sync,
-    > (&self, _auth_session: axum_login::AuthSession<RootBackend>, req: &http::request::Parts)
+    > (&self, _auth_session: Option<axum_login::AuthSession<RootBackend>>, req: &http::request::Parts)
     -> Result<Option<Self::User>, Self::Error>
     where Self: 'static {
         self.do_authenticate_impl::<RootBackend, S>(&req.headers).await

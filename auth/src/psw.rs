@@ -1,6 +1,6 @@
+use core::fmt;
 
-
-pub trait PasswordComparator {
+pub trait PasswordComparator : fmt::Debug {
     fn passwords_equal(&self, user_psw_or_psw_hash: &str, credentials_password: &str) -> bool;
 }
 

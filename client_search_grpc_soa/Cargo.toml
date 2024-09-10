@@ -13,10 +13,15 @@ edition = "2021"
 
 [dependencies]
 mvv_common = { version = "0.1.0", path = "../common" }
+mvv_auth = { version = "0.1.0", path = "../auth" }
+mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
+mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
 
 tonic = {  version = "0.12.2", features = ["default", "prost", "server"] }
 tonic-types = {  version = "0.12.2", features = [] }
 tonic-reflection = { version = "0.12.2", features = ["default", "server", "prost-types"]}
+tonic-async-interceptor = { version = "0.12.0", features = []}
+
 googleapis-tonic-google-type = { version = "0.6.0", features = ["default"]}
 #googleapis-tonic-google-api = {  version = "0.7.0", features = ["default"] }
 #googleapis-tonic = {  version = "0.7.0", features = ["default"] }
@@ -24,6 +29,11 @@ prost = { version = "0.13.1", features = ["default", "std", "prost-derive"] }
 prost-types = { version = "0.13.1" , features = ["default", "std"] }
 
 #googleapis = { git = "https://github.com/googleapis/googleapis.git" }
+
+serde.workspace = true
+#serde_json.workspace = true
+#serde_as.workspace = true
+#serde_with.workspace = true
 
 
 chrono.workspace = true
@@ -56,6 +66,23 @@ pin-project-lite = { version = "0.2.14", features = [] }
 #tonic-health = { version = "0.12.2", features = ["default"]}
 #grpcio = { version = "0.13.0", features = ["default", ] }
 #grpcio-health = { version = "0.13.0", features = ["default"]}
+
+axum-login.workspace = true
+http.workspace = true
+axum.workspace = true
+tower = { version = "0.5.0", features = ["full"] }
+tower-service = { version = "0.3.3", features = [] }
+hyper = { version = "1.4.1", features = ["default", "server"] }
+tower-layer = { version = "0.3.3"} # TODO: move to root Cargo.toml
+
+sqlx.workspace = true
+sqlx-postgres.workspace = true
+associative-cache.workspace = true
+
+strum_macros.workspace = true
+const_format.workspace = true
+const-str.workspace = true
+implicit-clone.workspace = true
 
 
 [build-dependencies]

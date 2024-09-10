@@ -1,5 +1,7 @@
 use core::fmt::{ self, Debug };
+use std::borrow::Borrow;
 use std::ffi::OsStr;
+use std::hash::{Hash, Hasher};
 use log::error;
 //--------------------------------------------------------------------------------------------------
 
@@ -29,6 +31,12 @@ impl StaticRefOrString {
         }
     }
 }
+impl Borrow<str> for StaticRefOrString {
+    #[inline]
+    fn borrow(&self) -> &str {
+        self.as_str()
+    }
+}
 impl fmt::Display for StaticRefOrString {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self.as_str(), f)
@@ -43,6 +51,19 @@ impl From<&'static str> for StaticRefOrString {
     fn from(value: &'static str) -> Self {
         StaticRefOrString::Ref(value)
     }
+}
+impl Hash for StaticRefOrString {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.as_str().hash(state)
+    }
+}
+
+impl PartialEq<Self> for StaticRefOrString {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_str().eq(other.as_str())
+    }
+}
+impl Eq for StaticRefOrString {
 }
 
 

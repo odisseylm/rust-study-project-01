@@ -5,9 +5,12 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
     PgConnection,
 };
+use mvv_auth::AuthUserProvider;
+use mvv_auth::permission::PermissionProvider;
+use crate::auth::{AuthUser, Role, RolePermissionsSet};
 
 // set an alias, so we don't have to keep writing out this long type
-pub type PgDbPool = Pool<ConnectionManager<PgConnection>>;
+pub type DieselPgDbPool = Pool<ConnectionManager<PgConnection>>;
 
 // a real-world app would have more fields in the server state like
 // CORS options, environment values needed for external APIs, etc.
@@ -16,18 +19,29 @@ pub type PgDbPool = Pool<ConnectionManager<PgConnection>>;
 // }
 
 
+#[derive(Debug, Clone)]
 pub struct Dependencies {
-    pub db_pool: Arc<PgDbPool>,
+    pub diesel_db_pool: Arc<DieselPgDbPool>,
+    // pub sqlx_db_pool: Arc<sqlx_postgres::PgPool>,
+    pub user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Send + Sync + 'static>,
+    pub permission_provider: Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet> + Send + Sync + 'static>,
 }
 
 
 pub fn create_dependencies() -> anyhow::Result<Dependencies> {
-    // let con = establish_pooled_connection() ?;
-    let db_pool = establish_pooled_connection() ?;
-    Ok(Dependencies { db_pool: Arc::new(db_pool) })
+    let diesel_db_pool = Arc::new(create_diesel_pooled_connection() ?);
+    let sqlx_db_pool = Arc::new(mvv_common::db::pg::pg_db_connection("client_search_soa") ?);
+    let user_provider = Arc::new(crate::auth::AuthUserProvider::with_cache(sqlx_db_pool.clone()) ?);
+
+    Ok(Dependencies {
+        diesel_db_pool,
+        //sqlx_db_pool,
+        permission_provider: user_provider.clone(),
+        user_provider,
+    })
 }
 
-pub fn establish_pooled_connection()
+pub fn create_diesel_pooled_connection()
     -> anyhow::Result<Pool<ConnectionManager<PgConnection>>> {
 
     let postgres_host = std::env::var("POSTGRES_HOST") ?;

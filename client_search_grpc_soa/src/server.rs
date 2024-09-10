@@ -4,14 +4,9 @@ use chrono::Datelike;
 use diesel::{Connection, PgConnection};
 use tonic::{Code, Request, Response, Status};
 use log::{error};
-// use tonic::codegen::tokio_stream::Stream;
-// use tonic::codegen::tokio_stream::wrappers::IntervalStream;
-// use tonic::codegen::tokio_stream::StreamExt;
-// use tonic::transport::Server;
 use crate::client::ClientInfo;
 use crate::dependencies::{Dependencies};
 use crate::generated::mvv_client_search_api_v1::{
-    // client_search_service_server::{ClientSearchServiceServer},
     {Client, ClientSearchRequest, ClientSearchResponse, GetClientByIdRequest, GetClientByIdResponse},
     client_search_service_server::ClientSearchService as ClientSearchServiceTrait,
 };
@@ -45,7 +40,7 @@ impl ClientSearchService {
     async fn do_search(&self, request: Request<ClientSearchRequest>) -> anyhow::Result<ClientSearchResponse> {
 
         // let mut con = establish_connection() ?;
-        let mut con = self.dependencies.db_pool.get() ?;
+        let mut con = self.dependencies.diesel_db_pool.get() ?;
 
         let request = request.get_ref();
 

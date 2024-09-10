@@ -133,7 +133,7 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for AuthUser {
         let mut roles = RolePermissionsSet::new();
         set_role(&mut roles, Role::Read, row, col_name!("read_role")) ?;
         set_role(&mut roles, Role::Write, row, col_name!("write_role")) ?;
-        set_role(&mut roles, Role::Write, row, col_name!("user_role")) ?;
+        set_role(&mut roles, Role::User, row, col_name!("user_role")) ?;
         set_role(&mut roles, Role::SuperUser, row, col_name!("super_user_role")) ?;
         set_role(&mut roles, Role::Admin, row, col_name!("admin_role")) ?;
 

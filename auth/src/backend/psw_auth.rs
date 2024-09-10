@@ -1,7 +1,7 @@
 use core::fmt;
 use core::fmt::Debug;
 use std::sync::Arc;
-use log::error;
+use log::{error, warn};
 use crate::{
     SecureString,
     error::AuthBackendError,
@@ -28,6 +28,7 @@ pub trait PswUser {
 
 
 // #[derive(Clone)]
+#[derive(Debug)]
 pub struct PswAuthBackendImpl <
     User: axum_login::AuthUser + PswUser,
     PermSet: PermissionSet + Clone = AlwaysAllowedPermSet<EmptyPerm>,
@@ -107,6 +108,7 @@ impl<
                 if !usr_psw.is_empty() && self.psw_comparator.passwords_equal(usr_psw, creds.password.as_str()) {
                     Ok(Some(usr.clone()))
                 } else {
+                    warn!("User [{}] is not authenticated", usr.id());
                     Ok(None)
                 }
             }

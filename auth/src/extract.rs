@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 use log::error;
-use crate::backend::RequestAuthenticated;
+use crate::backend::{RequestAuthenticated, UserContext};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -35,9 +35,14 @@ async fn extract_current_user_from_request_parts <
 > (parts: &mut http::request::Parts)
     -> Result<ExtractCurrentUser<Usr, Backend>, (http::StatusCode, &'static str)> {
 
-    let user: Option<&Usr> = parts.extensions.get();
+    let user: Option<&Usr> = parts.extensions.get::<Usr>();
     if let Some(user) = user {
         return Ok(ExtractCurrentUser::<Usr, Backend> { user: user.clone(), _pd: PhantomData })
+    }
+
+    let user_ctx: Option<&UserContext<Usr>> = parts.extensions.get::<UserContext<Usr>>();
+    if let Some(user_ctx) = user_ctx {
+        return Ok(ExtractCurrentUser::<Usr, Backend> { user: user_ctx.user().clone(), _pd: PhantomData })
     }
 
     let auth_session: Option<&axum_login::AuthSession<Backend>> = parts.extensions.get();
@@ -58,7 +63,7 @@ async fn extract_current_user_from_request_parts <
                     let backend = auth_session.backend.clone();
 
                     let res = backend.do_authenticate_request_parts::<Backend, S>(
-                        auth_session, parts).await;
+                        Some(auth_session), parts).await;
                     match res {
                         Err(ref _err) =>
                             Err("Error of getting auth session"),
@@ -75,6 +80,7 @@ async fn extract_current_user_from_request_parts <
     match user_res {
         Ok(user) => {
             parts.extensions.insert(user.clone());
+            parts.extensions.insert(UserContext::new(user.clone()));
             Ok(ExtractCurrentUser::<Usr, Backend> { user, _pd: PhantomData })
         }
         Err(err_msg) => {

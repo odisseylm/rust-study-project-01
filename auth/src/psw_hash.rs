@@ -294,6 +294,7 @@ pub struct Pepper {
 }
 
 
+#[derive(Debug)]
 pub struct PswHashComparator {
     // https://stackoverflow.com/questions/16891729/best-practices-salting-peppering-passwords
     #[allow(dead_code)]
