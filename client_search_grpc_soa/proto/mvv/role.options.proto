@@ -1,0 +1,58 @@
+
+import "google/protobuf/descriptor.proto";
+
+package mvv.roles.v1;
+
+
+//-----------------------------------------------------------------------------
+extend google.protobuf.MessageOptions {
+  optional string my_test_option = 51234;
+}
+message MyTestMessage {
+  option (my_test_option) = "Hello world!";
+}
+//-----------------------------------------------------------------------------
+
+
+
+
+extend google.protobuf.FileOptions {
+  optional string rust_package = 50000;
+}
+
+
+message Roles {
+  repeated string role = 1;
+}
+
+extend google.protobuf.ServiceOptions {
+  optional Roles service_roles = 50006;
+}
+extend google.protobuf.MethodOptions {
+  optional Roles method_roles = 50007;
+}
+
+
+message MyTestRequestType {}
+message MyTestResponseType {}
+
+service MyTestService1 {
+  option (service_roles).role = "read";
+
+  rpc MyMethod(MyTestRequestType) returns(MyTestResponseType) {
+    // Note:  my_method_option has type MyMessage.  We can set each field
+    //   within it using a separate "option" line.
+    option (method_roles).role = "read";
+    option (method_roles).role = "write";
+  }
+}
+
+service MyTestService2 {
+  option (service_roles).role = "read";
+  option (service_roles).role = "write";
+
+  rpc MyMethod(MyTestRequestType) returns(MyTestResponseType) {
+    option (method_roles).role = "read";
+    option (method_roles).role = "write";
+  }
+}

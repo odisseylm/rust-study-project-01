@@ -6,7 +6,7 @@ use tonic::{Code, Request, Response, Status};
 use log::{error};
 use crate::client::ClientInfo;
 use crate::dependencies::{Dependencies};
-use crate::generated::mvv_client_search_api_v1::{
+use crate::generated::mvv::client::search::api::v1::{
     {Client, ClientSearchRequest, ClientSearchResponse, GetClientByIdRequest, GetClientByIdResponse},
     client_search_service_server::ClientSearchService as ClientSearchServiceTrait,
 };
@@ -116,6 +116,10 @@ impl ClientSearchServiceTrait for ClientSearchService {
     }
 
     async fn get_client_by_id(&self, _request: Request<GetClientByIdRequest>) -> Result<Response<GetClientByIdResponse>, Status> {
+        todo!()
+    }
+
+    async fn update_client(&self, _request: Request<ClientSearchRequest>) -> Result<Response<ClientSearchResponse>, Status> {
         todo!()
     }
 }

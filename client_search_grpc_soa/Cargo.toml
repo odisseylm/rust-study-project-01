@@ -17,7 +17,7 @@ mvv_auth = { version = "0.1.0", path = "../auth" }
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
 
-tonic = {  version = "0.12.2", features = ["default", "prost", "server"] }
+tonic = {  version = "0.12.2", features = ["default", "prost", "server", "codegen", "router"] }
 tonic-types = {  version = "0.12.2", features = [] }
 tonic-reflection = { version = "0.12.2", features = ["default", "server", "prost-types"]}
 tonic-async-interceptor = { version = "0.12.0", features = []}
@@ -25,7 +25,7 @@ tonic-async-interceptor = { version = "0.12.0", features = []}
 googleapis-tonic-google-type = { version = "0.6.0", features = ["default"]}
 #googleapis-tonic-google-api = {  version = "0.7.0", features = ["default"] }
 #googleapis-tonic = {  version = "0.7.0", features = ["default"] }
-prost = { version = "0.13.1", features = ["default", "std", "prost-derive"] }
+prost = { version = "0.13.1", features = ["default", "std", "prost-derive", "derive"] }
 prost-types = { version = "0.13.1" , features = ["default", "std"] }
 
 #googleapis = { git = "https://github.com/googleapis/googleapis.git" }
@@ -86,5 +86,5 @@ implicit-clone.workspace = true
 
 
 [build-dependencies]
-tonic-build = { version = "0.12.2", features = ["default", "cleanup-markdown"] }
+tonic-build = { version = "0.12.2", features = ["default", "cleanup-markdown", "prost", "prost-build"] }
 prost-build = { version = "0.13.2", features = ["default", "cleanup-markdown"] }

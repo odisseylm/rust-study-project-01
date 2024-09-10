@@ -6,8 +6,11 @@ use std::pin::Pin;
 // use tokio::sync::{mpsc, watch};
 use tokio_stream::Stream;
 use tonic::{Request, Response, Status};
-use crate::generated::grpc_health_v1::{HealthCheckRequest, HealthCheckResponse};
-use crate::generated::grpc_health_v1::health_check_response::ServingStatus;
+use crate::generated::grpc::health::v1::{
+    health_server::Health,
+    HealthCheckRequest, HealthCheckResponse,
+    health_check_response::ServingStatus,
+};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -17,12 +20,9 @@ pub struct HealthCheckService;
 // type Stream22 = VecDeque<Result<HealthCheckResponse, Status>>;
 
 #[tonic::async_trait]
-impl crate::generated::grpc_health_v1::health_server::Health for HealthCheckService {
+impl Health for HealthCheckService {
 
     async fn check(&self, _request: Request<HealthCheckRequest>) -> Result<Response<HealthCheckResponse>, Status> {
-        use crate::generated::grpc_health_v1::HealthCheckResponse;
-        use crate::generated::grpc_health_v1::health_check_response::ServingStatus;
-
         Ok(Response::new(HealthCheckResponse { status: ServingStatus::Serving as i32 }))
     }
 

@@ -1,11 +1,11 @@
 use chrono::Datelike;
 use diesel::prelude::*;
 use crate::generated::{
-    mvv_client_search_api_v1::{
+    mvv::client::search::api::v1::{
         {Client, PhoneNumber},
         client::Email,
     },
-    google_type::Date as ProtoDate,
+    google::r#type::Date as ProtoDate,
 };
 //--------------------------------------------------------------------------------------------------
 

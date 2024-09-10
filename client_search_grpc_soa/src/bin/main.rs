@@ -6,10 +6,10 @@ fn main()  {
     //
     // tonic_build::configure()
     //     .file_descriptor_set_path(out_dir.join("mvv_client_search_descriptor.bin"))
-    //     .compile(&["proto/mvv_client_search.proto"], &["/proto"])
+    //     .compile(&["proto/mvv.client.search.proto"], &["/proto"])
     //     .unwrap();
 
-    // let proto_file = "./proto/mvv_client_search.proto";
+    // let proto_file = "./proto/mvv.client.search.proto";
     // let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     //
     // tonic_build::configure()

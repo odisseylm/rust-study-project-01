@@ -1,5 +1,5 @@
 syntax = "proto3";
-package mvv_client_search_api_v1;
+package mvv.client.search.api.v1;
 
 //import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
@@ -8,6 +8,8 @@ import "google/type/date.proto";
 import "google/protobuf/any.proto";
 
 import "google/protobuf/wrappers.proto";
+
+import "mvv/role.options.proto";
 
 //import "google/rpc/status.proto";
 //import "google/rpc/error_details.proto";
@@ -47,8 +49,7 @@ message Client {
 
   string first_name = 7;
   string last_name = 8;
-  // google.type.Date birthday = 9; // TODO: !!! Do NOT change BASE package, use some generation options !!!
-  google_type.Date birthday = 9;
+  google.type.Date birthday = 9;
   bool active = 10;
   // TODO: use enum
   bool business_user = 11;
@@ -87,8 +88,20 @@ message Password { // Only as namespace because grpc does not support top-level 
 //                                     Authentication Service
 //------------------------------------------------------------------------------------------
 service ClientSearchService {
-  rpc Search (ClientSearchRequest) returns (ClientSearchResponse) {}
+  option (mvv.roles.v1.service_roles).role = "read"; // [retention = RETENTION_SOURCE];
+  rpc Search (ClientSearchRequest) returns (ClientSearchResponse) {
+    option (mvv.roles.v1.method_roles).role = "read"; // [targets = TARGET_TYPE_FILE];
+    option (mvv.roles.v1.method_roles).role = "read678unique_value";  // [targets = TARGET_TYPE_FILE];
+    option (mvv.roles.v1.method_roles).role = "read678unique_value2"; // [targets = TARGET_TYPE_FILE];
+    option (mvv.roles.v1.method_roles).role = "read678unique_value3"; // [targets = TARGET_TYPE_FILE];
+    option (mvv.roles.v1.method_roles).role = "read678unique_value4"; // [targets = TARGET_TYPE_FILE];
+  }
   rpc GetClientById (GetClientByIdRequest) returns (GetClientByIdResponse) {}
+
+  // Test proto roles methods. Really this soa does not change client info.
+  rpc UpdateClient (ClientSearchRequest) returns (ClientSearchResponse) {
+    option (mvv.roles.v1.method_roles).role = "write";
+  }
 }
 
 message ClientSearchRequest {

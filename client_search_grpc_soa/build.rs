@@ -5,9 +5,9 @@ use std::path::PathBuf;
 
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // tonic_build::compile_protos("proto/mvv_client_search.proto") ?;
+    // tonic_build::compile_protos("proto/mvv.client.search.proto") ?;
 
-    // let proto_file = "./proto/mvv_client_search.proto";
+    // let proto_file = "./proto/mvv.client.search.proto";
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     /*
@@ -34,8 +34,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // .type_attribute("proto/google/type/date.proto", )
         //.compile_well_known_types(true)
         // .disable_package_emission()
-        // .compile(&[proto_file], &["proto/mvv_client_search.proto"])?;
-        // .disable_comments("proto/mvv_client_search.proto")
+        // .compile(&[proto_file], &["proto/mvv.client.search.proto"])?;
+        // .disable_comments("proto/mvv.client.search.proto")
 
         // Seems it does not work !?
         // Now it is disabled by feature "cleanup-markdown"
@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // .compile(&[proto_file], &["proto"])?;
         .compile(&[
-            "./proto/mvv_client_search.proto",
+            "./proto/mvv.client.search.proto",
             "./proto/health/v1/health.proto",
         ], &["proto"])?;
         // .compile_with_config(config, &[proto_file], &["proto"])?;

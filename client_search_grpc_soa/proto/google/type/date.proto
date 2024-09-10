@@ -17,8 +17,7 @@
 
 syntax = "proto3";
 
-//package google.type;
-package google_type; // TODO: !!! Do NOT change BASE package, use some generation options !!!
+package google.type;
 
 option cc_enable_arenas = true;
 option go_package = "google.golang.org/genproto/googleapis/type/date;date";
