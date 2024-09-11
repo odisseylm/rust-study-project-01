@@ -13,7 +13,7 @@ use crate::entity::ClientId;
 
 
 #[derive(Debug, Clone, PartialEq, derive_more::Display)] // derive_more::FromStr)]
-#[display(fmt = "{}", _0)]
+#[display("{}", _0)]
 pub struct AccountId( #[allow(dead_code)] uuid::Uuid);
 // pub type AccountIdFormatError = mvv_common::entity::id::parse::IdFormatError;
 pub type AccountIdFormatError = mvv_common::uuid::UuidFormatError;

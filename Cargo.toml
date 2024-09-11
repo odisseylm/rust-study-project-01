@@ -110,7 +110,7 @@ thiserror = "1.0.60"
 indoc = "2.0.5"  # for creating multiline string
 
 derivative = "2.2.0"
-derive_more = "0.99.18"  # (Struct) Display, and so on easy impl
+derive_more = { version = "1.0.0", features = ["full"] }  # (Struct) Display, and so on easy impl
 educe = "0.6.0"
 #derive_more = {  version = "0.99.18", features = ["default", "from_str"] }  # (Struct) Display, and so on easy impl
 strum = "0.26"    # Enum Display, and so on easy impl
@@ -274,9 +274,9 @@ url = "2.5.1"
 
 #sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "tls-rustls", "runtime-tokio-rustls"] }
 #sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "runtime-tokio-rustls"] }
-sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "tls-rustls"] }
+sqlx = { version = "0.8.2", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "tls-rustls"] }
 # Hm... Why I had to duplicate all options?
-sqlx-postgres = { version = "0.7.4", features = ["bigdecimal", "chrono", "uuid"] }
+sqlx-postgres = { version = "0.8.2", features = ["bigdecimal", "chrono", "uuid"] }
 
 diesel = { version = "2.2.3", features = ["default", "chrono", "postgres", "r2d2"] }
 diesel-async = { version = "0.5.0", features = ["default", "deadpool", "postgres"] }

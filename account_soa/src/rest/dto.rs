@@ -35,7 +35,7 @@ fn cur_regex_validate(s: &str) -> Result<(), validator::ValidationError> {
 #[derive(PartialEq, Eq, Serialize, Deserialize)]
 #[derive(educe::Educe)] #[educe(Debug)]
 #[derive(derive_more::Display)]
-#[display(fmt = "{} {}", value, currency)]
+#[display("{} {}", value, currency)]
 // #[derive(validator::Validate)]
 #[derive(validify::Validify)]
 pub struct Amount {
@@ -61,7 +61,7 @@ pub struct Amount {
 #[derive(Debug, PartialEq)]
 #[derive(Serialize, Deserialize)]
 #[derive(derive_more::Display)]
-#[display(fmt = "Account {{ {id}, iban: {iban}, client: {client_id}, amount: {amount}, created/updated at: {created_at}/{updated_at} }}")]
+#[display("Account {{ {id}, iban: {iban}, client: {client_id}, amount: {amount}, created/updated at: {created_at}/{updated_at} }}")]
 #[serde(rename_all = "camelCase")]
 #[derive(validify::Validify)]
 pub struct Account {

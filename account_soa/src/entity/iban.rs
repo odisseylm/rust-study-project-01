@@ -12,7 +12,7 @@ use mvv_common::{
 
 
 #[derive(Debug, derive_more::Display)]
-#[display(fmt = "{}", _0)]
+#[display("{}", _0)]
 pub struct IbanWrapper (
     pub Iban);
 
@@ -24,7 +24,7 @@ generate_pg_delegate_decode_from_str! { IbanWrapper, Iban }
 
 
 #[derive(Debug, derive_more::Display)]
-#[display(fmt = "{}", _0)]
+#[display("{}", _0)]
 pub struct IbanRefWrapper<'a> (
     pub &'a Iban);
 

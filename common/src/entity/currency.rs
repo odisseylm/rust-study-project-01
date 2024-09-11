@@ -11,7 +11,7 @@ pub type InnerCurStr = fixedstr::str4;
 
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, derive_more::Display)]
-#[display(fmt = "{}", _0)]
+#[display("{}", _0)]
 pub struct Currency(InnerCurStr); // ([u8;3]);
 
 json_str_ser_deser_impl! { Currency }

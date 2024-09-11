@@ -12,7 +12,7 @@ use mvv_common::{
 #[derive(Debug, Clone)]
 #[derive(Serialize, Deserialize)]
 #[derive(PartialEq, derive_more::Display)]
-#[display(fmt = "UserId({})", _0)]
+#[display("UserId({})", _0)]
 pub struct UserId( #[allow(dead_code)] Id);
 type UserIdFormatError = mvv_common::entity::id::parse::IdFormatError;
 

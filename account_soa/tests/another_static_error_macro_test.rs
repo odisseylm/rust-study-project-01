@@ -35,7 +35,7 @@ pub mod parse_amount_another_01 {
     use mvv_common::backtrace::BacktraceCell;
 
     #[derive(Debug, derive_more::Display)]
-    #[display(fmt = "Struct123")]
+    #[display("Struct123")]
     pub struct Struct123;
 
     #[derive(Debug, thiserror::Error)]

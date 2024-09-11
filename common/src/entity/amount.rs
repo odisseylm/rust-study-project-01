@@ -8,7 +8,7 @@ pub mod ops;
 #[derive(PartialEq, Eq)]
 #[derive(educe::Educe)] #[educe(Debug)]
 #[derive(derive_more::Display)]
-#[display(fmt = "{} {}", value, currency)]
+#[display("{} {}", value, currency)]
 #[readonly::make]
 pub struct Amount {
     #[educe(Debug(method(crate::entity::bd::bd_dbg_fmt)))]

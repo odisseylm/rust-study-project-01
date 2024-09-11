@@ -136,7 +136,7 @@ pub mod parse_amount_old {
     use mvv_common::entity::currency::parse::CurrencyFormatError;
 
     #[derive(Debug, derive_more::Display)]
-    #[display(fmt = "Struct123")]
+    #[display("Struct123")]
     pub struct Struct123;
 
     //noinspection DuplicatedCode

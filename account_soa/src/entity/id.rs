@@ -10,7 +10,7 @@ use mvv_common::{
 
 
 #[derive(Debug, Clone, PartialEq, derive_more::Display)] // derive_more::FromStr)]
-#[display(fmt = "{}", _0)]
+#[display("{}", _0)]
 pub struct ClientId( #[allow(dead_code)] uuid::Uuid);
 
 generate_into_inner_delegate!   { ClientId, uuid::Uuid }
