@@ -97,6 +97,17 @@ command = "printenv"
 # args = [ "-c", "echo Task post-build 987654321" ]
 
 
+[tasks.install-all-toolchains]
+script = '''
+    rustup install 1.79.0 && \
+    rustup install 1.80.0 && \
+    rustup install 1.80.1 && \
+    rustup install 1.81.0 && \
+    rustup install stable && \
+    rustup install nightly && \
+    echo "All supported toolchains are installed"
+'''
+
 
 [tasks.rs-compile]
 description = "Runs the rust compiler."
@@ -132,6 +143,7 @@ args = [ "--generate-open-api" ]
 command = "echo" # overriding/disabling predefined build command
 args = [ "build flow" ]
 dependencies = [
+    "install-all-toolchains",
     "pre-build",
     "rs-compile",
     # "generate-open-api",

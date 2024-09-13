@@ -1,6 +1,4 @@
 
-extend = { path = "build/docker-build-makefile.toml" }
-
 [config]
 init_task = "init"
 end_task = "end"
@@ -153,6 +151,15 @@ run_task = { name = "test-member", fork = true }
 
 
 #-----------------------------------------------------------------------------------------------------------------------
+
+[tasks.build-docker]
+category = "Docker"
+workspace = false
+env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
+# I do not understand why, but member-subtask should have another name?! For this purpose suffix '-member' is used.
+run_task = { name = "build-docker-member", fork = true }
+
+
 
 [tasks.integration-tests]
 category = "Test"

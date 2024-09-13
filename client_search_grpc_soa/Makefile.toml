@@ -10,6 +10,7 @@ extend = [
 [env]
 SOA_EXECUTABLE = "mvv_client_search_soa"
 DOCKER_IMAGE_TAG = "mvv_rust_client_search_soa"
+DOCKER_IMAGE_TARGET = "mvv_rust_client_search_soa"
 # Used mainly for dev testing and as base-name for integration tests
 DOCKER_COMPOSE_PROJECT_NAME = "rust-client-search-soa-project"
 

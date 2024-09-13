@@ -1,15 +1,18 @@
 use core::str::FromStr;
+use crate::unchecked::UncheckedResultUnwrap;
 // -------------------------------------------------------------------------------------------------
 
 
 // Using separate manual var makes sense if we plan to reuse it (in several validators).
 //
-// lazy_static::lazy_static! {
-//     static ref ID_REGEX: regex::Regex = regex::Regex::new(r#"^[0-9A-Za-z_\-]+$"#).unchecked_unwrap();
-// }
+lazy_static::lazy_static! {
+    static ref ID_REGEX: regex::Regex = regex::Regex::new(r#"^[0-9A-Za-z_\-]+$"#).unchecked_unwrap();
+}
 
 #[nutype::nutype(
-    validate(not_empty, len_char_min = 1, len_char_max = 320, regex = r#"^[0-9A-Za-z_\-]+$"#),
+    // requires 1.80 or later
+    // validate(not_empty, len_char_min = 1, len_char_max = 320, regex = r#"^[0-9A-Za-z_\-]+$"#),
+    validate(not_empty, len_char_min = 1, len_char_max = 320, regex = ID_REGEX),
     derive(Debug, Display, PartialEq, Clone, Serialize, Deserialize),
 )]
 pub struct Id (

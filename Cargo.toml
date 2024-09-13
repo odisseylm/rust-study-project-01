@@ -72,6 +72,8 @@ quote = "1.0.36"
 proc-macro2 = "1.0.82"
 # proc-macro-crate = "3.1.0"
 
+version_check = "0.9"
+rustc_version = "0.4.1"
 
 # dependencies
 if_chain = "1.0.2"

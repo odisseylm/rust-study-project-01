@@ -8,7 +8,9 @@
    - https://github.com/sagiegurari/cargo-make
    - https://github.com/sagiegurari/cargo-make/tree/master/src/lib/descriptor/makefiles
    - https://github.com/sagiegurari/cargo-make/tree/master/src/lib/descriptor/makefiles
-
+ - protoc (for grpc)
+   - https://github.com/protocolbuffers/protobuf#protocol-compiler-installation
+   - `apt-get install protobuf-compiler`
 
 
 Investigate
@@ -24,12 +26,16 @@ Investigate
    - `cargo install cargo-patch-subdep-ver`
      - or `cargo install --git https://github.com/odisseylm/cargo_patch_subdep`
      - or `cargo install --path cargo-patch-subdep-ver`
+     - `cd thirdparty && git clone git@github.com:odisseylm/cargo_patch_subdep.git` for docker release
    - Apply cargo command (in project dir)
      - `cargo patch-subdep-ver`
    - Full project build
      - `cargo make --profile release package` (prod/release)
      - `cargo make package` (dev/debug)
 
+ - Third-party
+   - `sudo apt-get install libpq-dev` (or postgresql-libs) for Diesel postgres
+   - `sudo apt-get install protobuf-compiler`
 
  - `cargo build`
  - See step by step https://medium.com/@hmquan08011996/dockerfile-for-rust-6d13dadca84d
@@ -38,7 +44,24 @@ Investigate
    - `docker build --file docker/Dockerfile_02 --tag rust-mvv-webapp-02 .`
    - `docker build --file docker/Dockerfile_04 --tag rust-mvv-webapp-04 .`
    - `docker run rust-mvv-webapp-04`
+   - 
    - `docker rmi $(docker images -f "dangling=true" -q)`
+   - `docker system prune`
+   - `docker system prune --all`
+   - `docker system prune --volumes`
+
+Toolchain
+ - https://rustup.rs/
+   - https://rust-lang.github.io/rustup/concepts/toolchains.html
+ - `rustup help toolchain` => list, install, uninstall, link
+ - Switch stable/nightly
+   - `rustup override set nightly`
+   - `rustup override set stable`
+ - `rustup toolchain install stable`
+ - `rustup toolchain install nightly`
+ - `rustup install 1.62.0`
+ - `rustup toolchain list`
+ - `rustup default 1.62.0-x86_64-unknown-linux-gnu`
 
  - Docker https://docs.docker.com/language/rust/
    - `docker build -t rust_docker .`

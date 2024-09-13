@@ -28,6 +28,9 @@ serde_json_raw_value = ["serde_json/raw_value"]
 ambassador = [ "dep:ambassador" ]
 default = [ "ambassador", "serde_json_raw_value" ]
 
+#sqlx_07 = [ "dep:sqlx-07", "dep:sqlx-postgres-07", "dep:sqlx-sqlite-07", "dep:libsqlite3-sys-07" ]
+#sqlx_08 = [ "dep:sqlx-08", "dep:sqlx-postgres-08", "dep:sqlx-sqlite-08", "dep:libsqlite3-sys-08" ]
+
 #['cfg(feature = "a")'.lib]
 #crate-type = ["staticlib"]
 #
@@ -38,6 +41,8 @@ default = [ "ambassador", "serde_json_raw_value" ]
 
 [build-dependencies]
 cargo_metadata.workspace = true
+version_check.workspace = true
+rustc_version.workspace = true
 
 
 [dependencies]
@@ -46,6 +51,8 @@ mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_ma
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
 
 # -------------------------------------------------------------------------
+rustc_version.workspace = true
+
 if_chain.workspace = true
 
 static_assertions.workspace = true # 4 years gao
@@ -176,6 +183,25 @@ url.workspace = true
 sqlx = { workspace = true, features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal"] }
 # Hm... Why I had to duplicate all options?
 sqlx-postgres = { workspace = true, features = ["bigdecimal", "chrono", "uuid"] }
+
+
+#sqlx-07 = { package = "sqlx", version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal"], optional = true }
+## Hm... Why I had to duplicate all options?
+#sqlx-postgres-07 = { package = "sqlx", version = "0.7.4", features = ["bigdecimal", "chrono", "uuid"], optional = true }
+#sqlx-sqlite-07 = { package = "sqlx-sqlite", version = "0.7.4", features = ["chrono", "uuid", "serde", ], optional = true }
+#libsqlite3-sys-07 = { package = "libsqlite3-sys", version = "0.27.0", features = ["buildtime_bindgen"], optional = true }
+#
+#sqlx-08 = { package = "sqlx", version = "0.8.2", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal"], optional = true }
+#sqlx-postgres-08 = { package = "sqlx", version = "0.8.2", features = ["bigdecimal", "chrono", "uuid"], optional = true }
+#sqlx-sqlite-08 = { package = "sqlx-sqlite", version = "0.8.2", features = ["chrono", "uuid", "serde", ], optional = true }
+#libsqlite3-sys-08 = { package = "libsqlite3-sys", version = "0.30.1", features = ["buildtime_bindgen"], optional = true }
+#
+##sqlx-sqlite = { version = "0.7.4", features = ["chrono", "uuid", "serde", ]}
+##sqlx-sqlite = { version = "0.8.2", features = ["chrono", "uuid", "serde"]}
+##libsqlite3-sys = { version = "0.30.1", features = ["default"]}
+##sqlx-sqlite
+##libsqlite3-sys = { version = "0.27.0", features = [], optional = true }
+
 
 quick_cache.workspace = true
 #lru-cache.workspace = true

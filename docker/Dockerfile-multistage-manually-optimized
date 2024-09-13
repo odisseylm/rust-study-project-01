@@ -7,13 +7,22 @@ EXPOSE 80 8080 443 8443 8000 2735 3000
 
 LABEL rust-test-label-02=value-2
 
-RUN apt-get -qq update &&                       \
-    apt-get -qq install pkg-config &&           \
-    apt-get -qq install openssl &&              \
-    apt-get -qq update && apt-get -qq install libssl-dev
+RUN apt-get -qq update                       && \
+    apt-get -qq install pkg-config           && \
+    apt-get -qq install openssl              && \
+    apt-get -qq install protobuf-compiler    && \
+    apt-get -qq install libpq-dev            && \
+    apt-get -qq install libssl-dev
 
 # View app name in Cargo.toml
 #ARG APP_NAME=mvv_temp
+
+RUN mkdir /thirdparty
+COPY thirdparty/cargo_patch_subdep/ /thirdparty/cargo_patch_subdep/
+RUN echo "temp 01"
+RUN ls /thirdparty/
+RUN ls /thirdparty/cargo_patch_subdep/
+RUN cargo install mvv_cargo_patch_subdep_ver --path /thirdparty/cargo_patch_subdep
 
 #WORKDIR /app
 WORKDIR /build
@@ -25,7 +34,6 @@ RUN echo "Build mode '${RELEASE_OR_DEBUG_BUILD_PARAM:-debug}'"
 
 #COPY . .
 
-# COPY Cargo.lock Cargo.toml build.rs ./
 COPY Cargo.lock Cargo.toml ./
 
 RUN    mkdir ./src                                                 \
@@ -39,6 +47,9 @@ RUN    mkdir ./src                                                 \
     && mkdir ./auth/src                                            \
     && mkdir ./common                                              \
     && mkdir ./common/src                                          \
+    && mkdir ./client_search_grpc_soa                              \
+    && mkdir ./client_search_grpc_soa/src                          \
+    && mkdir ./client_search_grpc_soa/src/bin                      \
     && mkdir ./proc_macro                                          \
     && mkdir ./proc_macro/src                                      \
     && mkdir ./error_macro                                         \
@@ -56,6 +67,8 @@ RUN    mkdir ./src                                                 \
     && echo "fn main() { }" > ./account_web/src/bin/main.rs        \
     && echo "// dummy file" > ./account_web/src/lib.rs             \
     && echo "// dummy file" > ./auth/src/lib.rs                    \
+    && echo "fn main() { }" > ./client_search_grpc_soa/src/bin/main.rs \
+    && echo "// dummy file" > ./client_search_grpc_soa/src/lib.rs  \
     && echo "// dummy file" > ./common/src/lib.rs                  \
     && echo "// dummy file" > ./proc_macro/src/lib.rs              \
     && echo "// dummy file" > ./error_macro/src/lib.rs             \
@@ -64,11 +77,17 @@ RUN    mkdir ./src                                                 \
     && echo "// dummy file" > ./tuple_heter_iter_macro/src/lib.rs  \
     && echo "fn main() { }" > ./xtask/src/main.rs
 
-COPY target/externals/cargo-patch-subdep-ver  /usr/local/cargo/bin/cargo-patch-subdep-ver/
+#COPY target/externals/cargo-patch-subdep-ver  /usr/local/cargo/bin/cargo-patch-subdep-ver/
+#COPY /usr/lib/x86_64-linux-gnu/libssl.so.3    /usr/lib/x86_64-linux-gnu/
+#COPY thirdparty/openssl3/libssl3.so     /usr/lib/x86_64-linux-gnu/
+#COPY thirdparty/openssl3/libssl.so.3    /usr/lib/x86_64-linux-gnu/
+#COPY thirdparty/openssl3/libcrypto.so.3 /usr/lib/x86_64-linux-gnu/
+#COPY thirdparty/openssl3/libc.so.6      /usr/lib/x86_64-linux-gnu/
 
 COPY account_soa/Cargo.toml             ./account_soa/
 COPY account_web/Cargo.toml             ./account_web/
 COPY auth/Cargo.toml                    ./auth/
+COPY client_search_grpc_soa/Cargo.toml  ./client_search_grpc_soa/
 COPY common/Cargo.toml                  ./common/
 COPY proc_macro/Cargo.toml              ./proc_macro/
 COPY error_macro/Cargo.toml             ./error_macro/
@@ -80,7 +99,8 @@ COPY xtask/Cargo.toml                   ./xtask/
 
 # Build the dependencies without the actual source code to cache dependencies separately
 # RUN cargo patch-subdep-ver
-RUN /usr/local/cargo/bin/cargo-patch-subdep-ver/cargo-patch-subdep-ver
+#RUN /usr/local/cargo/bin/cargo-patch-subdep-ver/cargo-patch-subdep-ver
+RUN cargo patch-subdep-ver
 
 RUN    cargo check $RELEASE_OR_DEBUG_BUILD_PARAM --workspace --all-targets --all-features \
     && cargo build $RELEASE_OR_DEBUG_BUILD_PARAM --workspace
@@ -90,6 +110,8 @@ RUN    rm ./account_soa/src/*.rs                  \
     && rm ./account_web/src/*.rs                  \
     && rm ./account_web/src/bin/*.rs              \
     && rm ./auth/src/*.rs                         \
+    && rm ./client_search_grpc_soa/src/*.rs       \
+    && rm ./client_search_grpc_soa/src/bin/*.rs   \
     && rm ./common/src/*.rs                       \
     && rm ./proc_macro/src/*.rs                   \
     && rm ./error_macro/src/*.rs                  \
@@ -99,12 +121,17 @@ RUN    rm ./account_soa/src/*.rs                  \
     && rm ./xtask/src/*.rs
 
 #RUN ls --recursive ./src/
+COPY account_soa/build.rs         ./account_soa/
 COPY account_soa/src/             ./account_soa/src/
 COPY account_soa/templates/       ./account_soa/templates/
+COPY account_web/build.rs         ./account_web/
 COPY account_web/src/             ./account_web/src/
 COPY account_web/templates/       ./account_web/templates/
 COPY auth/src/                    ./auth/src/
 COPY auth/templates/              ./auth/templates/
+COPY client_search_grpc_soa/build.rs  ./client_search_grpc_soa/
+COPY client_search_grpc_soa/src/      ./client_search_grpc_soa/src/
+COPY client_search_grpc_soa/proto/    ./client_search_grpc_soa/proto/
 COPY common/src/                  ./common/src/
 COPY proc_macro/src/              ./proc_macro/src/
 COPY error_macro/src/             ./error_macro/src/
@@ -116,20 +143,32 @@ COPY xtask/src/                   ./xtask/src/
 RUN    touch ./account_soa/src/lib.rs             \
     && touch ./account_web/src/lib.rs             \
     && touch ./auth/src/lib.rs                    \
+    && touch ./client_search_grpc_soa/src/lib.rs  \
     && touch ./common/src/lib.rs                  \
     && touch ./proc_macro/src/lib.rs              \
     && touch ./error_macro/src/lib.rs             \
-    && touch ./health_check/src/lib.rs             \
+    && touch ./health_check/src/lib.rs            \
     && touch ./tuple_heter_iter/src/lib.rs        \
     && touch ./tuple_heter_iter_macro/src/lib.rs  \
     && touch ./xtask/src/main.rs
 
 
-RUN cargo build $RELEASE_OR_DEBUG_BUILD_PARAM --workspace
-RUN cp $RELEASE_OR_DEBUG_TARGET_DIR/mvv_account_soa      /bin/ \
- && cp $RELEASE_OR_DEBUG_TARGET_DIR/mvv_account_web      /bin/ \
- && cp $RELEASE_OR_DEBUG_TARGET_DIR/health_checker       /bin/ \
- && cp $RELEASE_OR_DEBUG_TARGET_DIR/http_health_checker  /bin/
+# This simple command does not work for me because it causes build of account_web
+# before account_soa executable is ready/linked and it causes error (as expected).
+#
+#RUN cargo build $RELEASE_OR_DEBUG_BUILD_PARAM --workspace
+
+# Workaround to avoid unpredictable order of building
+RUN cd /build/account_soa              && cargo build $RELEASE_OR_DEBUG_BUILD_PARAM --workspace --exclude mvv_account_web --exclude mvv_client_search_soa
+RUN cd /build/client_search_grpc_soa   && cargo build $RELEASE_OR_DEBUG_BUILD_PARAM --workspace --exclude mvv_account_web --exclude mvv_account_soa
+RUN cd /build/account_web              && cargo build $RELEASE_OR_DEBUG_BUILD_PARAM --workspace
+
+
+RUN cp $RELEASE_OR_DEBUG_TARGET_DIR/mvv_account_soa       /bin/ \
+ && cp $RELEASE_OR_DEBUG_TARGET_DIR/mvv_account_web       /bin/ \
+ && cp $RELEASE_OR_DEBUG_TARGET_DIR/mvv_client_search_soa /bin/ \
+ && cp $RELEASE_OR_DEBUG_TARGET_DIR/health_checker        /bin/ \
+ && cp $RELEASE_OR_DEBUG_TARGET_DIR/http_health_checker   /bin/
 
 
 # Start a new stage to create a smaller image without unnecessary build dependencies
@@ -194,3 +233,38 @@ ENTRYPOINT ["/bin/mvv_account_web", "arg1", "arg2"]
 #HEALTHCHECK --interval=5s --timeout=3s CMD wget --quiet --no-check-certificate --tries=1 --spider https://localhost:${SERVER_PORT}/healthcheck || exit 1
 # good param  --start-interval=2s is unstable ?!
 HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD health_checker https://localhost:${SERVER_PORT}/healthcheck || exit 1
+
+
+# Start a new stage to create a smaller image without unnecessary build dependencies
+FROM debian:bullseye-slim AS mvv_rust_client_search_soa
+#FROM debian:buster-slim
+#FROM debian:bookworm-slim
+
+ARG RUN_RUST_BACKTRACE=full
+
+EXPOSE 80 8080 443 8443 8000 2735 3000
+
+RUN adduser                   \
+    --disabled-password       \
+    --gecos ""                \
+    --home "/nonexistent"     \
+    --shell "/sbin/nologin"   \
+    --no-create-home          \
+    --uid "10001"             \
+    appuser
+USER appuser
+
+COPY --from=build /bin/mvv_client_search_soa  /bin/
+# COPY --from=build /bin/health_checker         /bin/
+# COPY --from=build /bin/http_health_checker    /bin/
+COPY thirdparty/grpcurl/grpcurl_1.9.1_linux_x86_64/grpcurl  /bin/
+#ENV ROCKET_ADDRESS=0.0.0.0
+#CMD ["/bin/server"]
+
+ENV RUST_BACKTRACE=$RUN_RUST_BACKTRACE
+ENTRYPOINT ["/bin/mvv_account_web", "arg1", "arg2"]
+
+#HEALTHCHECK --interval=5s --timeout=3s CMD wget --quiet --no-check-certificate --tries=1 --spider https://localhost:${SERVER_PORT}/healthcheck || exit 1
+# good param  --start-interval=2s is unstable ?!
+# HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD health_checker https://localhost:${SERVER_PORT}/healthcheck || exit 1
+HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD grpcurl -d '{ "service": "" }' -plaintext localhost:${SERVER_PORT} grpc.health.v1.Health/Check || exit 1
