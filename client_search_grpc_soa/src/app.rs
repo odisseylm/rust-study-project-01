@@ -10,6 +10,8 @@ use mvv_common::{
     cfg::ServerConf,
     env::process_env_load_res,
     exe::{current_exe_dir, current_exe_name},
+    proto_files::{extract_proto_files, to_extract_proto_files},
+    gen_src::UpdateFile,
 };
 // use mvv_common::rest::health_check_router;
 use crate::{
@@ -83,6 +85,9 @@ impl tonic::service::Interceptor for DependenciesSetInterceptor {
 }
 */
 
+#[derive(rust_embed::Embed)]
+#[folder = "proto"]
+pub struct ProtoFiles;
 
 
 // #[tokio::main]
@@ -98,6 +103,11 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
 
     // !!! After logger initialization !!!
     process_env_load_res(&env_filename, dotenv_res) ?;
+
+    if to_extract_proto_files() {
+        extract_proto_files::<ProtoFiles>( env!("CARGO_PKG_NAME"), UpdateFile::IfModelChanged, None) ?;
+        return Ok(())
+    }
 
     let conf = ClientSearchSoaServerConfig::load_from_env() ?;
 
@@ -152,7 +162,6 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
         .register_encoded_file_descriptor_set(pb::FILE_DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(APP_SERVICES_FILE_DESCRIPTOR_SET)
         .build_v1() ?;
-
     Server::builder()
         .add_grpc_req_enrich_layer() // similar to `.layer(FilterLayer::new(grpc_req_enrich))`
         // As example
@@ -161,10 +170,11 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
         .layer(async_interceptor(grpc_auth_interceptor))
         // .add_routes(rest_route)
         .add_service(reflection_service)
-        .add_service(client_search_serv)
         .add_service(health_check_serv)
+        .add_service(client_search_serv)
         .serve(addr)
         .await ?;
+
 
     Ok(())
 }

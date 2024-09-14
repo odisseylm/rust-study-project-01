@@ -44,6 +44,9 @@ pub async fn start_axum_server<Conf: ServerConf>(server_conf: Conf, app_router: 
                 .serve(app_router.into_make_service())
                 .await ?;
         }
+
+        ConnectionType::Auto =>
+            anyhow::bail!("Server connection type auto detection is not supported"),
     }
 
     Ok(())

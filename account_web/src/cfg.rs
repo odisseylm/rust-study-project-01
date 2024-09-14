@@ -14,7 +14,7 @@ pub struct AccountWebServerConfig {
     server_ssl_key: Option<SslConfValue>,
     server_ssl_cert: Option<SslConfValue>,
     #[allow(dead_code)]
-    pub account_soa_cert: Option<SslConfValue>,
+    pub account_soa_cert: Option<SslConfValue>, // TODO: remove, why do we need it there?
 }
 
 impl AccountWebServerConfig {

@@ -8,6 +8,7 @@ extend = [
 
 
 [tasks.determine-openssl-ver]
+workspace = false
 script = '''
     #!@duckscript
 
@@ -101,6 +102,7 @@ script = '''
 #
 [tasks.generate-ssl-certs-openssl11-auto-delegate]
 private  = true
+workspace = false
 condition = { env = { "OPENSSL_VERSION" = "OpenSSL_11" } }
 env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl11" }
 run_task = { name = [ "generate-openssl11-ssl-ca-certs", "copy-ssl-certs" ] }
@@ -108,6 +110,7 @@ dependencies = [ "determine-openssl-ver" ]
 
 [tasks.regenerate-ssl-certs-openssl11-auto-delegate]
 private  = true
+workspace = false
 condition = { env = { "OPENSSL_VERSION" = "OpenSSL_11" } }
 env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl11" }
 run_task = { name = [ "regenerate-openssl11-ssl-ca-certs", "copy-ssl-certs" ] }
@@ -115,6 +118,7 @@ dependencies = [ "determine-openssl-ver" ]
 
 [tasks.generate-ssl-certs-openssl3-auto-delegate]
 private  = false
+workspace = false
 condition = { env = { "OPENSSL_VERSION" = "OpenSSL_3X" } }
 env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
 run_task = { name = [ "generate-openssl3-ssl-ca-certs", "copy-ssl-certs" ] }
@@ -122,6 +126,7 @@ dependencies = [ "determine-openssl-ver" ]
 
 [tasks.regenerate-ssl-certs-openssl3-auto-delegate]
 private  = false
+workspace = false
 condition = { env = { "OPENSSL_VERSION" = "OpenSSL_3X" } }
 env = { SSL_CERTS_SUBDIR = "ssl-ca-openssl3" }
 run_task = { name = [ "generate-openssl3-ssl-ca-certs", "copy-ssl-certs" ] }
@@ -129,8 +134,10 @@ dependencies = [ "determine-openssl-ver" ]
 
 
 [tasks.generate-ssl-certs]
+workspace = false
 dependencies = [ "generate-ssl-certs-openssl11-auto-delegate", "generate-ssl-certs-openssl3-auto-delegate" ]
 [tasks.regenerate-ssl-certs]
+workspace = false
 dependencies = [ "regenerate-ssl-certs-openssl11-auto-delegate", "regenerate-ssl-certs-openssl3-auto-delegate" ]
 
 

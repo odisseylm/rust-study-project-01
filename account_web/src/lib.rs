@@ -1,3 +1,4 @@
+extern crate core;
 
 pub mod service;
 pub mod rest;
@@ -9,3 +10,4 @@ pub mod auth;
 pub mod web_app;
 pub mod cfg;
 pub mod error;
+pub mod grpc_dependencies;

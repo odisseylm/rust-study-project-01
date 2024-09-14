@@ -3,5 +3,6 @@
 #[derive(Debug, Clone, Copy, strum::Display)]
 pub enum ConnectionType {
     Plain,
-    Ssl
+    Ssl,
+    Auto, // AutoDetect
 }

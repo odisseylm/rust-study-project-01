@@ -75,6 +75,8 @@ proc-macro2 = "1.0.82"
 version_check = "0.9"
 rustc_version = "0.4.1"
 
+rust-embed = "8.5.0"
+
 # dependencies
 if_chain = "1.0.2"
 cfg-if = "1.0.0"
@@ -280,8 +282,8 @@ sqlx = { version = "0.8.2", features = ["runtime-tokio", "sqlite", "postgres", "
 # Hm... Why I had to duplicate all options?
 sqlx-postgres = { version = "0.8.2", features = ["bigdecimal", "chrono", "uuid"] }
 
-diesel = { version = "2.2.3", features = ["default", "chrono", "postgres", "r2d2"] }
-diesel-async = { version = "0.5.0", features = ["default", "deadpool", "postgres"] }
+diesel = { version = "2.2.3", features = ["default", "chrono", "uuid", "postgres", "r2d2"] }
+diesel-async = { version = "0.5.0", features = ["default", "deadpool", "postgres", "r2d2"] }
 
 quick_cache = "0.6.0"
 #lru-cache = "0.1.2"

@@ -9,35 +9,42 @@ use utoipa_swagger_ui::SwaggerUi;
 use mvv_auth::PswHashComparator;
 
 use mvv_common::{
+    db::pg::pg_db_connection,
     env::process_env_load_res,
     exe::{current_exe_name, current_exe_dir},
     rest::health_check_router,
     server::start_axum_server,
     utoipa::to_generate_open_api,
-    // utoipa::{ generate_open_api, nest_open_api, to_generate_open_api, UpdateApiFile },
+    net::ConnectionType,
 };
 use crate::{
     app_dependencies::{ Dependencies, DependenciesState },
     auth::SqlClientAuthUserProvider,
     cfg::{AccountWebServerConfig},
-    service::account_service::{AccountService, AccountServiceImpl, AccountSoaConnectCfg, create_account_service},
+    service::account_service::{AccountServiceImpl, AccountSoaConnectCfg, create_account_service},
+};
+use crate::service::client_search_service::{
+    ClientSearchServiceImpl, ClientSearchSoaCfg, create_client_search_service,
 };
 //--------------------------------------------------------------------------------------------------
 
 
 
-fn create_prod_dependencies() -> Result<Arc<Dependencies<AccountServiceImpl>>, anyhow::Error> {
+fn create_prod_dependencies() -> Result<Arc<Dependencies>, anyhow::Error> {
 
-    let db = Arc::new(mvv_common::db::pg::pg_db_ssl_connection("account_web") ?);
+    let db = Arc::new(pg_db_connection("account_web", ConnectionType::Ssl) ?);
 
     let account_soa_cfg = AccountSoaConnectCfg::load_from_env() ?;
+    let client_search_soa_cfg = ClientSearchSoaCfg::load_from_env() ?;
 
     let account_service: Arc<AccountServiceImpl> = Arc::new(create_account_service(&account_soa_cfg) ?);
+    let client_search_service: Arc<ClientSearchServiceImpl> = Arc::new(create_client_search_service(&client_search_soa_cfg) ?);
 
-    Ok(Arc::new(Dependencies::<AccountServiceImpl> { state: Arc::new(DependenciesState {
+    Ok(Arc::new(Dependencies { state: Arc::new(DependenciesState {
         psw_comp: Arc::new(PswHashComparator::new()), // PlainPasswordComparator::new()),
         database_connection: Arc::clone(&db),
         account_service: Arc::clone(&account_service),
+        client_search_service: Arc::clone(&client_search_service),
         user_perm_provider: Arc::new(SqlClientAuthUserProvider::with_cache(Arc::clone(&db)) ?)
     })}))
 }
@@ -83,10 +90,7 @@ fn create_open_api() -> utoipa::openapi::OpenApi {
 
 
 //noinspection DuplicatedCode
-async fn create_app_route <
-        AccountS: AccountService + Send + Sync + 'static,
-    >
-    (dependencies: Arc<Dependencies<AccountS>>) -> Result<Router<()>, anyhow::Error> {
+async fn create_app_route (dependencies: Arc<Dependencies>) -> Result<Router<()>, anyhow::Error> {
 
     use crate::auth::{ composite_auth_manager_layer, composite_login_router };
 

@@ -5,18 +5,24 @@ fn main() {
 
     generate_account_soa_open_api_doc();
     generate_rest_client();
+
+    generate_client_search_soa_proto_files();
+    generate_client_search_soa_grpc_client();
 }
 
+
+fn get_account_soa_openapi_file() -> std::path::PathBuf {
+    BuildEnv::new().target_dir.join("mvv_account_soa-openapi.json")
+}
 
 fn generate_account_soa_open_api_doc() {
     use std::process::Command;
 
-    let build_env = BuildEnv::new();
-
-    let account_open_api_doc = build_env.target_dir.join("mvv_account_soa-openapi.json");
+    let account_open_api_doc = get_account_soa_openapi_file();
     let account_open_api_doc = account_open_api_doc.as_path();
 
     if !account_open_api_doc.exists() {
+        let build_env = BuildEnv::new();
         let exec_cmd = build_env.target_profile_dir.join("mvv_account_soa");
         let exec_cmd = exec_cmd.as_path();
 
@@ -33,9 +39,7 @@ fn generate_account_soa_open_api_doc() {
 
 fn generate_rest_client() {
 
-    let build_env = BuildEnv::new();
-
-    let account_open_api_doc = build_env.target_dir.join("mvv_account_soa-openapi.json");
+    let account_open_api_doc = get_account_soa_openapi_file();
     let account_open_api_doc = account_open_api_doc.as_path();
     println!("cargo:rerun-if-changed={}", account_open_api_doc.to_string_lossy().as_ref());
 
@@ -57,6 +61,7 @@ fn generate_rest_client() {
         "\n#[allow(unused_imports, unused_qualifications)]\nimpl Client {");
 
     // let mut out_file = std::path::Path::new(&std::env::var("OUT_DIR").unwrap()).to_path_buf();
+    let build_env = BuildEnv::new();
     let generated_file_dir = build_env.project_dir.join("src/rest_dependencies");
     std::fs::create_dir_all(&generated_file_dir)
         .expect(&format!("Dir [{generated_file_dir:?}] is not created."));
@@ -75,6 +80,68 @@ fn generate_rest_client() {
     } else {
         println!("Generated [{generated_file_path:?}] is not changed.");
     }
+}
+
+
+fn get_client_search_soa_api_proto_dir() -> std::path::PathBuf {
+    BuildEnv::new().target_dir.join("proto/mvv_client_search_soa/proto")
+}
+fn get_client_search_soa_api_proto_file() -> std::path::PathBuf {
+    BuildEnv::new().target_dir.join("proto/mvv_client_search_soa/proto/mvv.client.search.proto")
+}
+
+fn generate_client_search_soa_proto_files() {
+    use std::process::Command;
+
+    let client_search_soa_proto = get_client_search_soa_api_proto_file();
+    let client_search_soa_proto = client_search_soa_proto.as_path();
+
+    if !client_search_soa_proto.exists() {
+        let build_env = BuildEnv::new();
+        let exec_cmd = build_env.target_profile_dir.join("mvv_client_search_soa");
+        let exec_cmd = exec_cmd.as_path();
+
+        if !exec_cmd.exists() {
+            panic!("[{exec_cmd:?}] does not exist.");
+        }
+
+        Command::new(exec_cmd)
+            .current_dir(build_env.target_dir)
+            .arg("--extract-proto-files")
+            .status().unwrap();
+    }
+}
+
+fn generate_client_search_soa_grpc_client() {
+
+    let client_search_soa_proto = get_client_search_soa_api_proto_file();
+    let client_search_soa_proto = client_search_soa_proto.as_path();
+    println!("cargo:rerun-if-changed={}", client_search_soa_proto.to_string_lossy().as_ref());
+
+    if !client_search_soa_proto.exists() {
+        panic!("client_search_soa proto [{client_search_soa_proto:?}] does not exist.")
+    }
+
+    let proto_dir = get_client_search_soa_api_proto_dir();
+    let proto_file = get_client_search_soa_api_proto_file();
+
+    let proto_dir_str = proto_dir.to_string_lossy();
+    let proto_dir_str = proto_dir_str.as_ref();
+
+    let proto_file_str = proto_file.to_string_lossy();
+    let proto_file_str = proto_file_str.as_ref();
+
+    tonic_build::configure()
+        // .protoc_arg("--experimental_allow_proto3_optional") // for older systems
+        .build_client(true)
+        .build_server(false)
+        .emit_rerun_if_changed(true)
+        .out_dir("./src/grpc_dependencies")
+        .compile(&[
+            proto_file_str,
+            //"./proto/health/v1/health.proto",
+        ], &[proto_dir_str]).unwrap();
+    // .compile_with_config(config, &[proto_file], &["proto"])?;
 }
 
 
@@ -98,7 +165,6 @@ impl BuildEnv {
 
         let project_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         let project_dir = std::path::PathBuf::from_str(&project_dir).unwrap();
-        // let project_dir = std::path::Path::new(&project_dir);
 
         let target_dir = std::env::var("CARGO_TARGET_DIR")
             .or(std::env::var("CARGO_CRATE_TARGET_DIR")) // not documented ??
@@ -107,7 +173,6 @@ impl BuildEnv {
             .unwrap_or_else(|_err|project_dir.as_path().join("../target").to_string_lossy().to_string());
         let target_dir = std::path::PathBuf::from_str(&target_dir).unwrap();
 
-        // PROFILE
         let profile = std::env::var("PROFILE").unwrap();
         let profile = profile.as_str();
 
@@ -119,7 +184,6 @@ impl BuildEnv {
             panic!("Unexpected value of PROFILE [{profile}]")
         };
         let target_profile_dir = target_dir.join(target_sub_dir);
-
 
         BuildEnv {
             project_dir,

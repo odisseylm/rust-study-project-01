@@ -17,6 +17,8 @@ mvv_auth = { version = "0.1.0", path = "../auth" }
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
 
+rust-embed.workspace = true
+
 tonic.workspace = true
 tonic-types.workspace = true
 tonic-reflection.workspace = true
@@ -52,6 +54,8 @@ anyhow.workspace = true
 diesel.workspace = true
 #diesel-async.workspace = true
 
+uuid.workspace = true
+
 tokio-stream.workspace = true
 futures-util.workspace = true
 async-stream.workspace = true
@@ -80,6 +84,7 @@ const_format.workspace = true
 const-str.workspace = true
 implicit-clone.workspace = true
 extension-trait.workspace = true
+itertools.workspace = true
 
 
 [build-dependencies]

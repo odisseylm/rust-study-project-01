@@ -5,6 +5,7 @@ use itertools::Itertools;
 use log::info;
 use utoipa::openapi::{ OpenApi, PathItem };
 use utoipa::openapi::path::ParameterIn;
+use crate::gen_src::UpdateFile;
 use crate::string::remove_optional_suffix;
 //--------------------------------------------------------------------------------------------------
 
@@ -297,13 +298,8 @@ pub fn to_generate_open_api() -> bool {
     std::env::args_os().contains(&OsString::from("--generate-open-api"))
 }
 
-pub enum UpdateApiFile {
-    Always,
-    /// To avoid regeneration of dependant client stubs.
-    IfModelChanged,
-}
 
-pub fn generate_open_api(open_api: &OpenApi, module_name: &str, update_api_file: UpdateApiFile, dir: Option<&str>) -> Result<(), anyhow::Error> {
+pub fn generate_open_api(open_api: &OpenApi, module_name: &str, update_api_file: UpdateFile, dir: Option<&str>) -> Result<(), anyhow::Error> {
 
     use std::path::Path;
 
@@ -316,8 +312,8 @@ pub fn generate_open_api(open_api: &OpenApi, module_name: &str, update_api_file:
     let open_api_json = open_api.to_pretty_json() ?;
 
     let to_update_file: bool = match update_api_file {
-        UpdateApiFile::Always => true,
-        UpdateApiFile::IfModelChanged => {
+        UpdateFile::Always => true,
+        UpdateFile::IfModelChanged => {
             if !file.exists() { true }
             else {
                 let file_content = std::fs::read_to_string(&file) ?;

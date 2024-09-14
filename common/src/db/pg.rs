@@ -5,12 +5,14 @@ use crate::net::ConnectionType;
 //--------------------------------------------------------------------------------------------------
 
 
+const POSTGRES_SSL_CERT_PATH: &'static str = "POSTGRES_SSL_CERT_PATH";
+
+
 pub fn pg_db_connection_options(connection_type: ConnectionType, app_name: &str) -> Result<Option<PgConnectOptions>, anyhow::Error> {
     const POSTGRES_HOST: &'static str = "POSTGRES_HOST";
     const POSTGRES_DB: &'static str = "POSTGRES_DB";
     const POSTGRES_USER: &'static str = "POSTGRES_USER";
     const POSTGRES_PASSWORD: &'static str = "POSTGRES_PASSWORD";
-    const POSTGRES_SSL_CERT_PATH: &'static str = "POSTGRES_SSL_CERT_PATH";
 
     let postgres_host = env_var(POSTGRES_HOST) ?;
     let postgres_db = env_var(POSTGRES_DB) ?;
@@ -58,18 +60,37 @@ pub fn pg_db_connection_options(connection_type: ConnectionType, app_name: &str)
     Ok(Some(options))
 }
 
+pub fn pg_db_connection(app_name: &str, connection_type: ConnectionType) -> Result<sqlx_postgres::PgPool, anyhow::Error> {
+    match connection_type {
+        ConnectionType::Plain =>
+            pg_db_plain_connection(app_name),
+        ConnectionType::Ssl =>
+            pg_db_ssl_connection(app_name),
+        ConnectionType::Auto =>
+            pg_db_auto_type_connection(app_name),
+    }
+}
 
-pub fn pg_db_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, anyhow::Error> {
+
+fn pg_db_plain_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, anyhow::Error> {
     let options = pg_db_connection_options(ConnectionType::Plain, app_name) ?;
     let options = options.ok_or_else(||anyhow!("No Postgres DB connection options.")) ?;
     Ok(sqlx_postgres::PgPool::connect_lazy_with(options))
 }
 
 
-pub fn pg_db_ssl_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, anyhow::Error> {
+fn pg_db_ssl_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, anyhow::Error> {
     let options = pg_db_connection_options(ConnectionType::Ssl, app_name) ?;
     let options = options.ok_or_else(||anyhow!("No Postgres DB connection options.")) ?;
     Ok(sqlx_postgres::PgPool::connect_lazy_with(options))
+}
+
+
+fn pg_db_auto_type_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, anyhow::Error> {
+    match env_var(POSTGRES_SSL_CERT_PATH) ? {
+        None => pg_db_plain_connection(app_name),
+        Some(_cert_path) => pg_db_ssl_connection(app_name),
+    }
 }
 
 

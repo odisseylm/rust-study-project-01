@@ -232,7 +232,10 @@ by_address.workspace = true
 progenitor = { workspace = true, features = [] }
 progenitor-client = { workspace = true, features = [] }
 
+tonic.workspace = true
+
 fs_extra.workspace = true
+rust-embed.workspace = true
 
 yaml-rust2.workspace = true
 rustainers.workspace = true

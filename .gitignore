@@ -13,6 +13,7 @@
 
 # Generated sources
 /account_web/src/rest_dependencies/account_soa_client.rs
+/account_web/src/grpc_dependencies/**
 /client_search_grpc_soa/src/generated/*
 
 /thirdparty/cargo_patch_subdep

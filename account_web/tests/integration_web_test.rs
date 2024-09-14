@@ -25,6 +25,9 @@ use mvv_common::test::docker_compose::{docker_compose_down, get_docker_compose, 
 const ACCOUNT_SOA_SERVICE: &'static str = "rust-account-soa";
 const ACCOUNT_SOA_HTTP_PORT: Port = Port::new(8443);
 
+const CLIENT_SEARCH_SOA_SERVICE: &'static str = "rust-client-search-soa";
+const CLIENT_SEARCH_SOA_HTTP_PORT: Port = Port::new(8080);
+
 const ACCOUNT_WEB_SERVICE: &'static str = "rust-account-web";
 const ACCOUNT_WEB_HTTP_PORT: Port = Port::new(8443);
 
@@ -37,6 +40,7 @@ const POSTGRES_PORT: Port = Port::new(5432);
 struct AccountWebTestContainers {
     dir: PathBuf,
     account_soa_http_port: ExposedPort,
+    client_search_soa_http_port: ExposedPort,
     account_web_http_port: ExposedPort,
     // debug_port: ExposedPort,
     postgres_port: ExposedPort,
@@ -48,6 +52,7 @@ impl AccountWebTestContainers {
         Ok(Self {
             dir: dir.to_path_buf(),
             account_soa_http_port: ExposedPort::new(ACCOUNT_SOA_HTTP_PORT.clone()),
+            client_search_soa_http_port: ExposedPort::new(CLIENT_SEARCH_SOA_HTTP_PORT.clone()),
             account_web_http_port: ExposedPort::new(ACCOUNT_WEB_HTTP_PORT.clone()),
             postgres_port: ExposedPort::new(POSTGRES_PORT.clone()),
         })
@@ -63,11 +68,13 @@ impl ToRunnableComposeContainers for AccountWebTestContainers {
             .with_compose_path(self.dir.clone())
             .with_port_mappings([
                 (ACCOUNT_SOA_SERVICE, self.account_soa_http_port.clone()),
+                (CLIENT_SEARCH_SOA_SERVICE, self.client_search_soa_http_port.clone()),
                 (ACCOUNT_WEB_SERVICE, self.account_web_http_port.clone()),
                 (POSTGRES_SERVICE, self.postgres_port.clone()),
             ])
             .with_wait_strategies([
                 (ACCOUNT_SOA_SERVICE, WaitStrategy::HealthCheck),
+                (CLIENT_SEARCH_SOA_SERVICE, WaitStrategy::HealthCheck),
                 (ACCOUNT_WEB_SERVICE, WaitStrategy::HealthCheck),
                 (POSTGRES_SERVICE, WaitStrategy::stdout_match(
                     regex::Regex::new("PostgreSQL init process complete; ready for start up")
@@ -203,7 +210,12 @@ async fn test_web_get_all_client_accounts(port: u16) {
 
     let as_text: String = remove_repeated_spaces(&as_text.trim());
 
-    let expected = "Client 00000000-0000-0000-0000-000000000001  Accounts \
+    let expected_top = "Client 00000000-0000-0000-0000-000000000001";
+
+    // Temp easy solution! Probably makes sense to use more complicated solution.
+    assert_contains!(&as_text, &expected_top);
+
+    let expected_accounts_part = "Accounts \
       Account info   UA71 3736 5721 7292 6969 8418 3239 3   \
       Name  USD account 1   Amount  150 USD   \
       Updated at  2021-11-10 15:14:15 UTC   Created at  2021-11-10 15:14:13 UTC     \
@@ -216,10 +228,30 @@ async fn test_web_get_all_client_accounts(port: u16) {
       Account info   UA49 6826 1538 4394 4716 5383 8292 8   \
       Name  UAH account 2   Amount  2000 UAH   \
       Updated at  2021-11-15 15:00:00 UTC   Created at  2021-11-13 10:00:00 UTC";
-    let expected: String = remove_repeated_spaces(expected.trim());
+    let expected: String = normalize_test_substr(expected_accounts_part);
 
     // Temp easy solution! Probably makes sense to use more complicated solution.
     assert_contains!(&as_text, &expected);
+
+    let expected_client_info_part =
+        "Active 	true \
+        First name 	Cheburan \
+        Last name 	Vovan \
+        Email 	cheburan@ukr.net \
+        Phones 	+380671234567 (123) \
+        Birthday 	2000-02-28 \
+        Is business user 	false \
+        Is super business user 	false ";
+    let expected_client_info_part: String = normalize_test_substr(expected_client_info_part);
+
+    // Temp easy solution! Probably makes sense to use more complicated solution.
+    assert_contains!(&as_text, &expected_client_info_part);
+
+    info!("test_web_get_all_client_accounts SUCCEEDED");
+}
+
+fn normalize_test_substr(str: &str) -> String {
+    remove_repeated_spaces(&str.trim().replace('\t', " "))
 }
 
 

@@ -99,12 +99,12 @@ command = "printenv"
 
 [tasks.install-all-toolchains]
 script = '''
-    rustup install 1.79.0 && \
-    rustup install 1.80.0 && \
-    rustup install 1.80.1 && \
-    rustup install 1.81.0 && \
-    rustup install stable && \
-    rustup install nightly && \
+    rustup install 1.79.0  1>/dev/null 2>/dev/null  && \
+    rustup install 1.80.0  1>/dev/null 2>/dev/null  && \
+    rustup install 1.80.1  1>/dev/null 2>/dev/null  && \
+    rustup install 1.81.0  1>/dev/null 2>/dev/null  && \
+    rustup install stable  1>/dev/null 2>/dev/null  && \
+    rustup install nightly 1>/dev/null 2>/dev/null  && \
     echo "All supported toolchains are installed"
 '''
 

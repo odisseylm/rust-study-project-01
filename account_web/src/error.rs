@@ -48,7 +48,10 @@ pub enum WebAppError {
     ValidifyErrors(#[source] #[from_with_bt] validify::ValidationErrors, BacktraceCell),
 
     #[error("RestCallError({0})")]
-    RestCallError(#[from] mvv_common::soa::RestCallError)
+    RestCallError(#[from] mvv_common::soa::RestCallError),
+
+    #[error("GrpcCallError({0})")]
+    GrpcCallError(#[from] mvv_common::grpc::GrpcCallError),
     // ...
     // Add other errors if it is needed.
 }
@@ -70,6 +73,9 @@ impl IntoResponse for WebAppError {
             }
             WebAppError::RestCallError(ref err) => {
                 error!("RestCallError: {err:?}");
+            }
+            WebAppError::GrpcCallError(ref err) => {
+                error!("GrpcCallError: {err:?}");
             }
             WebAppError::IllegalArgument(ref err) => {
                 error!("IllegalArgument error: {err:?}");

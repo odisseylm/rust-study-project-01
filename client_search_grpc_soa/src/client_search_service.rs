@@ -60,7 +60,7 @@ impl ClientSearchService {
 
 
 impl ClientSearchService {
-    async fn do_search(&self, request: Request<ClientSearchRequest>) -> anyhow::Result<ClientSearchResponse> {
+    async fn do_search(&self, request: Request<ClientSearchRequest>) -> anyhow::Result<Vec<Client>> {
 
         // let mut con = establish_connection() ?;
         let mut con = self.dependencies.diesel_db_pool.get() ?;
@@ -105,20 +105,36 @@ impl ClientSearchService {
 
         let results: Vec<ClientInfo> = query
             .limit(5)
-            // .select(ClientInfo::as_select())
             .load(&mut con) ?;
-            // .await;
-            //.expect("Error loading clients");
-            //.map(|_|)
 
         let clients: Vec<Client> = results.into_iter()
             // .map(|clients|clients.map(|client|client.into()))
             .map(|client|{ let cl: Client = client.into(); cl })
             .collect::<Vec<Client>>();
 
-        Ok(ClientSearchResponse { success: true, message: None, clients })
+        Ok(clients)
     }
 
+    fn do_get_client_by_id(&self, client_id_value: &str) -> anyhow::Result<Option<Client>> {
+
+        let mut con = self.dependencies.diesel_db_pool.get() ?;
+
+        use core::str::FromStr;
+        use diesel::prelude::*;
+        use crate::schema::CLIENTS::dsl::*;
+
+        let client_id_uuid = uuid::Uuid::from_str(client_id_value) ?;
+
+        let client = CLIENTS
+            .select(ClientInfo::as_select())
+            .filter(client_id.eq(client_id_uuid))
+            .first(&mut con)
+            .optional()
+            .map(|client_opt|client_opt.map(|client|{ let cl: Client = client.into(); cl }))
+            ?;
+
+        Ok(client)
+    }
 }
 
 
@@ -129,8 +145,8 @@ impl ClientSearchServiceTrait for ClientSearchService {
         let res = self.do_search(request).await;
 
         match res {
-            Ok(client_search_response) =>
-                Ok(Response::new(client_search_response)),
+            Ok(clients) =>
+                Ok(Response::new(ClientSearchResponse { success: true, message: None, clients })),
             Err(err) => {
                 error!("Diesel error: {err:?}");
                 Err(Status::new(Code::Internal, "Internal error"))
@@ -138,8 +154,17 @@ impl ClientSearchServiceTrait for ClientSearchService {
         }
     }
 
-    async fn get_client_by_id(&self, _request: Request<GetClientByIdRequest>) -> Result<Response<GetClientByIdResponse>, Status> {
-        todo!()
+    async fn get_client_by_id(&self, request: Request<GetClientByIdRequest>) -> Result<Response<GetClientByIdResponse>, Status> {
+        let res = self.do_get_client_by_id(request.get_ref().client_id.as_str());
+
+        match res {
+            Ok(client) =>
+                Ok(Response::new(GetClientByIdResponse { client })),
+            Err(err) => {
+                error!("Diesel error: {err:?}");
+                Err(Status::new(Code::Internal, "Internal error"))
+            }
+        }
     }
 
     async fn update_client(&self, _request: Request<ClientSearchRequest>) -> Result<Response<ClientSearchResponse>, Status> {

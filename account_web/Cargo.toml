@@ -13,13 +13,16 @@ edition = "2021"
 
 [build-dependencies]
 cargo_metadata.workspace = true
+syn.workspace = true
+prettyplease.workspace = true
+
 progenitor.workspace = true
 #cargo-progenitor.workspace = true
 openapiv3.workspace = true
 serde_json.workspace = true
-syn.workspace = true
-prettyplease.workspace = true
 
+tonic-build.workspace = true
+prost-build.workspace = true
 
 [dependencies]
 mvv_error_macro = { version = "0.1.0", path = "../error_macro" }
@@ -175,7 +178,6 @@ utoipa.workspace = true
 utoipa-swagger-ui.workspace = true
 
 
-#progenitor.workspace = true
 # for generated code
 futures.workspace = true
 base64.workspace = true
@@ -209,6 +211,11 @@ progenitor-client.workspace = true
 progenitor-impl = { workspace = true, optional = true }
 #http-auth-basic = "0.3.3"
 
+tonic.workspace = true
+tonic-types.workspace = true
+googleapis-tonic-google-type.workspace = true
+prost.workspace = true
+prost-types.workspace = true
 
 
 [dev-dependencies]

@@ -1,4 +1,6 @@
 
+extend = { path = "build/ssl-certs-makefile.toml" }
+
 [config]
 init_task = "init"
 end_task = "end"

@@ -1319,6 +1319,7 @@ dependencies = [
  "itoa",
  "pq-sys",
  "r2d2",
+ "uuid",
 ]
 
 [[package]]
@@ -2853,6 +2854,7 @@ dependencies = [
  "fixedstr",
  "forr",
  "futures",
+ "googleapis-tonic-google-type",
  "http 1.1.0",
  "hyper 1.4.1",
  "iban",
@@ -2888,6 +2890,9 @@ dependencies = [
  "progenitor",
  "progenitor-client",
  "progenitor-impl",
+ "prost",
+ "prost-build",
+ "prost-types",
  "quick_cache",
  "rand",
  "readonly",
@@ -2913,6 +2918,9 @@ dependencies = [
  "time",
  "tokio",
  "tokio-test",
+ "tonic",
+ "tonic-build",
+ "tonic-types",
  "tower 0.5.0",
  "tower-async-http",
  "tower-http",
@@ -3013,6 +3021,7 @@ dependencies = [
  "http 1.1.0",
  "hyper 1.4.1",
  "implicit-clone",
+ "itertools 0.13.0",
  "log",
  "mvv_auth",
  "mvv_common",
@@ -3022,6 +3031,7 @@ dependencies = [
  "prost",
  "prost-build",
  "prost-types",
+ "rust-embed",
  "serde",
  "sqlx",
  "sqlx-postgres",
@@ -3040,6 +3050,7 @@ dependencies = [
  "tracing-futures",
  "tracing-subscriber",
  "tracing-timing",
+ "uuid",
 ]
 
 [[package]]
@@ -3112,6 +3123,7 @@ dependencies = [
  "readonly",
  "regex",
  "reqwest 0.12.5",
+ "rust-embed",
  "rustainers",
  "rustc_version",
  "seq-macro",
@@ -3130,6 +3142,7 @@ dependencies = [
  "time",
  "tokio",
  "tokio-test",
+ "tonic",
  "tower 0.5.0",
  "tower-async-http",
  "tower-http",

@@ -2,37 +2,31 @@ use std::sync::Arc;
 use mvv_auth::{PasswordComparator};
 use crate::{
     auth::AuthUserProvider,
-    service::account_service::AccountService,
+};
+use crate::service::{
+    account_service::AccountServiceImpl,
+    client_search_service::ClientSearchServiceImpl,
 };
 //--------------------------------------------------------------------------------------------------
 
 
 
-pub struct DependenciesState <
-    AccountS: AccountService + Send + Sync + 'static,
-    // AccountR: AccountRest<AccountS> + Send + Sync,
-> {
+pub struct DependenciesState {
     pub database_connection: Arc<sqlx_postgres::PgPool>,
-    pub account_service: Arc<AccountS>,
-    //pub account_rest: Arc<AccountRest<AccountS>>,
+    pub account_service: Arc<AccountServiceImpl>,
+    pub client_search_service: Arc<ClientSearchServiceImpl>,
     pub psw_comp: Arc<dyn PasswordComparator + Send + Sync>,
     pub user_perm_provider: Arc<AuthUserProvider>,
 }
 
-pub struct Dependencies <
-    AccountS: AccountService + Send + Sync + 'static,
-    // AccountR: AccountRest<AccountS> + Send + Sync,
-> {
-    pub state: Arc<DependenciesState<AccountS>>,
+pub struct Dependencies {
+    pub state: Arc<DependenciesState>,
 }
 
 //noinspection DuplicatedCode
-impl <
-    AccountS: AccountService + Send + Sync + 'static,
-    // AccountR: AccountRest<AccountS> + Send + Sync,
-> Clone for Dependencies<AccountS> {
+impl Clone for Dependencies {
     fn clone(&self) -> Self {
-        Dependencies::<AccountS> { state: Arc::clone(&self.state) }
+        Dependencies { state: Arc::clone(&self.state) }
     }
     fn clone_from(&mut self, source: &Self) {
         self.state = Arc::clone(&source.state)

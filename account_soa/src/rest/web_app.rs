@@ -9,11 +9,14 @@ use utoipa_swagger_ui::SwaggerUi;
 use mvv_auth::PlainPasswordComparator;
 
 use mvv_common::{
+    db::pg::pg_db_connection,
     env::process_env_load_res,
     exe::{current_exe_name, current_exe_dir},
     rest::health_check_router,
     server::start_axum_server,
-    utoipa::{generate_open_api, nest_open_api, to_generate_open_api, UpdateApiFile},
+    gen_src::UpdateFile,
+    net::ConnectionType,
+    utoipa::{generate_open_api, nest_open_api, to_generate_open_api},
 };
 use crate::cfg::AccountSoaServerConfig;
 use crate::service::{
@@ -34,7 +37,7 @@ use crate::web::{
 
 fn create_prod_dependencies() -> Result<Dependencies<AccountServiceImpl>, anyhow::Error> {
 
-    let db = Arc::new(mvv_common::db::pg::pg_db_ssl_connection("account_soa") ?);
+    let db = Arc::new(pg_db_connection("account_soa", ConnectionType::Ssl) ?);
     let account_service = Arc::new(AccountServiceImpl { database_connection: Arc::clone(&db) });
     let account_rest = Arc::new(AccountRest::<AccountServiceImpl> { account_service: Arc::clone(&account_service) });
 
@@ -110,7 +113,6 @@ async fn create_app_route <
     use crate::rest::auth::auth_layer::{ composite_auth_manager_layer };
     let auth_layer =
         composite_auth_manager_layer(
-            // Arc::clone(&dependencies.state.psw_comparator),
             dependencies.state.psw_comparator.clone(),
             Arc::clone(&dependencies.state.user_perm_provider),
         ).await ?;
@@ -182,7 +184,7 @@ pub async fn web_app_main() -> Result<(), anyhow::Error> {
     process_env_load_res(&env_filename, dotenv_res) ?;
 
     if to_generate_open_api() {
-        generate_open_api(&create_open_api(), env!("CARGO_PKG_NAME"), UpdateApiFile::IfModelChanged, None) ?;
+        generate_open_api(&create_open_api(), env!("CARGO_PKG_NAME"), UpdateFile::IfModelChanged, None) ?;
         return Ok(())
     }
 

@@ -48,6 +48,49 @@ services:
       replicas: 1
 
 
+  rust-client-search-soa:
+    # We can use 'extends' if we use docker-compose (swarm) in production
+    # and want just inherit prod docker compose file.
+    #
+    # extends:
+    #  service: account-soa
+    #  file: ${BASE_DIR}/../account-soa/src/main/docker/docker-compose.yml
+    #
+    # image: ${DOCKER_IMAGE_PREFIX}rust-mvv-webapp-debug # mvv-registry/mvv.bank/pseudo2-account-soa
+    image: mvv_rust_client_search_soa${DOCKER_IMAGE_PROFILE_SUFFIX}
+    networks:
+      - rust-account-soa-net
+    environment:
+      # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
+
+      - SERVER_PORT=8080
+      # - SERVER_CONTEXTPATH=/account-soa
+
+      - POSTGRES_HOST=database
+      - POSTGRES_DB=rust_mvvbank
+      - POSTGRES_USER=rust_mvvbank
+      - POSTGRES_PASSWORD=psw
+      #- POSTGRES_SSL_CERT_PATH=/certs/database.crt.pem  # database.crt.pem can be used with PgSslMode::Require
+      - POSTGRES_SSL_CERT_PATH=/certs/ca.crt.pem  # CA should be used if PgSslMode::VerifyCa/VerifyFull is used
+
+      - SERVER_SSL_KEY_PATH=/certs/rust-client-search-soa.key.pem
+      - SERVER_SSL_CERT_PATH=/certs/rust-client-search-soa.crt.pem
+    volumes:
+      - ../target/generated-test-resources/ssl/:/certs/:ro
+    ports:
+      # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:
+      - 8103:8080
+      # Remote debug
+      # - ${DOCKER_HOST_DEBUG_ACCOUNT_SOA_PORT_WITH_COLON}8000
+    links:
+      - database:db_postgres
+    depends_on:
+      - database
+    deploy:
+      #replicas: ${DOCKER_COMPOSE_SCALE_REPLICA_COUNT}
+      replicas: 1
+
+
   rust-account-web:
     # We can use 'extends' if we use docker-compose (swarm) in production
     # and want just inherit prod docker compose file.
@@ -82,6 +125,10 @@ services:
       - DEPENDENCIES_ACCOUNTSOA_REST_BASEURLS=https://rust-account-soa:8443
       - DEPENDENCIES_ACCOUNTSOA_USER=vovan-read
       - DEPENDENCIES_ACCOUNTSOA_PSW=qwerty
+
+      - DEPENDENCIES_CLIENT_SEARCH_SOA_GRPC_BASEURLS=http://rust-client-search-soa:8080
+      - DEPENDENCIES_CLIENT_SEARCH_SOA_USER=vovan-read
+      - DEPENDENCIES_CLIENT_SEARCH_SOA_PSW=qwerty
     volumes:
       - ../target/generated-test-resources/ssl/:/certs/:ro
     ports:

@@ -15,8 +15,7 @@ use crate::grpc::{
 #[diesel(table_name = crate::schema::CLIENTS)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct ClientInfo {
-    // pub client_id: Uuid,
-    pub client_id: String,
+    pub client_id: uuid::Uuid, // String,
     pub email: String,
     pub first_name: String,
     pub last_name: String,

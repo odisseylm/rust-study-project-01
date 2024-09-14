@@ -91,10 +91,10 @@ service ClientSearchService {
   option (mvv.roles.v1.service_roles).role = "read"; // [retention = RETENTION_SOURCE];
   rpc Search (ClientSearchRequest) returns (ClientSearchResponse) {
     option (mvv.roles.v1.method_roles).role = "read"; // [targets = TARGET_TYPE_FILE];
-    option (mvv.roles.v1.method_roles).role = "read678unique_value";  // [targets = TARGET_TYPE_FILE];
-    option (mvv.roles.v1.method_roles).role = "read678unique_value2"; // [targets = TARGET_TYPE_FILE];
-    option (mvv.roles.v1.method_roles).role = "read678unique_value3"; // [targets = TARGET_TYPE_FILE];
-    option (mvv.roles.v1.method_roles).role = "read678unique_value4"; // [targets = TARGET_TYPE_FILE];
+    // option (mvv.roles.v1.method_roles).role = "read678unique_value";  // [targets = TARGET_TYPE_FILE];
+    // option (mvv.roles.v1.method_roles).role = "read678unique_value2"; // [targets = TARGET_TYPE_FILE];
+    // option (mvv.roles.v1.method_roles).role = "read678unique_value3"; // [targets = TARGET_TYPE_FILE];
+    // option (mvv.roles.v1.method_roles).role = "read678unique_value4"; // [targets = TARGET_TYPE_FILE];
   }
   rpc GetClientById (GetClientByIdRequest) returns (GetClientByIdResponse) {}
 
@@ -128,15 +128,15 @@ message ClientSearchResponse {
 //}
 
 message GetClientByIdRequest {
-  int64 clientId = 1;
+  string clientId = 1;
 }
 
 message GetClientByIdResponse {
-  Client person = 1;
+  Client client = 1;
 }
 
 
-// TODO: how to remove ACCOUNT_STATUS_ prefix for java?
+// T O D O: how to remove ACCOUNT_STATUS_ prefix for java?
 enum AccountStatus {
   ACCOUNT_STATUS_UNKNOWN   = 0;
   ACCOUNT_STATUS_PENDING   = 1;
@@ -168,13 +168,6 @@ message ConstraintError {
   google.protobuf.StringValue errorMessage = 2;
   /*optional*/ google.protobuf.Any invalidValue = 3;
 }
-
-//message ValidationErrorResponse {
-//  optional string commodity_name = 1;
-//  optional string access_token = 2;
-//  optional string expected_token = 3;
-//  optional string expected_value = 4;
-//}
 
 
 
