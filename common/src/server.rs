@@ -17,7 +17,7 @@ pub async fn start_axum_server<Conf: ServerConf>(server_conf: Conf, app_router: 
 
     match connection_type {
         ConnectionType::Plain => {
-            // run our app with hyper, listening globally on port 3001
+            // run our app with hyper, listening globally on port 3000
             let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{port}")).await ?;
             info!("Web server started on port [{port}]");
             axum::serve(listener, app_router).await ?;

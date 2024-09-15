@@ -10,8 +10,8 @@ pub async fn run_web_1() {
     // build our application with a single route
     let app = Router::new().route("/", get(|| async { "Hello, World!" }));
 
-    // run our app with hyper, listening globally on port 3000
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    // run our app with hyper, listening globally on port 3001
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -44,7 +44,7 @@ pub async fn run_web_2() {
     // async fn post_foo() { async { "POST foo" } }
     // async fn foo_bar() { async { "GET foo_bar" } }
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3001").await.unwrap();
 
     // axum::serve(listener, app).await.unwrap();
 

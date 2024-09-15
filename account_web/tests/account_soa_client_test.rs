@@ -37,8 +37,8 @@ pub async fn test_account_soa_client() -> Result<(), anyhow::Error> {
 
     // client.basic_auth(user_name, password)
 
-    // let client = Client::new("http://localhost:3000");
-    let client = Client::new_with_client("http://localhost:3000", client);
+    // let client = Client::new("http://localhost:3001");
+    let client = Client::new_with_client("http://localhost:3001", client);
 
     let accounts = client.get_client_accounts("00000000-0000-0000-0000-000000000001").await ?;
 

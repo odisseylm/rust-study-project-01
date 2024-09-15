@@ -3,7 +3,7 @@ ARG RELEASE_OR_DEBUG_BUILD_PARAM=--release
 ARG RELEASE_OR_DEBUG_TARGET_DIR=./target/release
 ARG RUN_RUST_BACKTRACE=full
 
-EXPOSE 80 8080 443 8443 8000 2735 3000
+EXPOSE 80 8080 443 8443 8000 2735
 
 LABEL rust-test-label-02=value-2
 
@@ -178,7 +178,7 @@ FROM debian:bullseye-slim AS mvv_rust_account_soa
 
 ARG RUN_RUST_BACKTRACE=full
 
-EXPOSE 80 8080 443 8443 8000 2735 3000
+EXPOSE 80 8080 443 8443 8000 2735
 
 RUN adduser                   \
     --disabled-password       \
@@ -209,7 +209,7 @@ FROM debian:bullseye-slim AS mvv_rust_account_web
 
 ARG RUN_RUST_BACKTRACE=full
 
-EXPOSE 80 8080 443 8443 8000 2735 3000
+EXPOSE 80 8080 443 8443 8000 2735
 
 RUN adduser                   \
     --disabled-password       \
@@ -242,7 +242,7 @@ FROM debian:bullseye-slim AS mvv_rust_client_search_soa
 
 ARG RUN_RUST_BACKTRACE=full
 
-EXPOSE 80 8080 443 8443 8000 2735 3000
+EXPOSE 80 8080 443 8443 8000 2735
 
 RUN adduser                   \
     --disabled-password       \
