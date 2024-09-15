@@ -14,6 +14,7 @@ edition = "2021"
 # Defines a feature named `webp` that does not enable any other features.
 #error_generic_member_access = []
 
+tonic = [ "dep:tonic", "dep:tonic-async-interceptor", "dep:tower-layer", "mvv_common/tonic" ]
 ambassador = [ "dep:ambassador" ]
 default = [ "ambassador", ]
 #default = [ ]
@@ -70,9 +71,9 @@ uuid.workspace = true
 
 axum.workspace = true
 
-tonic.workspace = true
-tonic-async-interceptor.workspace = true
-tower-layer.workspace = true
+tonic = { workspace = true, optional = true }
+tonic-async-interceptor = { workspace = true, optional = true }
+tower-layer = { workspace = true, optional = true }
 
 tower.workspace = true
 tower-http.workspace = true

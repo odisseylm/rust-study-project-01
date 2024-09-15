@@ -12,11 +12,13 @@ use crate::backtrace::{backtrace, BacktraceCell};
     mvv_error_macro::ThisErrorBacktraceSource,
 )]
 pub enum GrpcCallError {
+    #[cfg(feature = "tonic")]
     #[error("Connection connection error {0}")]
     ConnectionError(
         #[source] #[from_with_bt]
         //#[educe(Debug(method(progenitor_err_dbg_fmt)))]
         tonic::transport::Error, BacktraceCell),
+    #[cfg(feature = "tonic")]
     #[error("Grpc call error {0}")]
     CallError(
         #[source] #[from_with_bt]
@@ -39,6 +41,7 @@ impl GrpcCallError {
 }
 
 
+#[cfg(feature = "tonic")]
 #[extension_trait::extension_trait]
 pub impl <T,E: Debug> TonicErrToStatusExt for Result<T,E> {
     type Value = T;

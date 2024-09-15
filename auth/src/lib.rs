@@ -18,6 +18,7 @@ pub mod extract;
 mod secure_str;
 
 pub mod psw_hash;
+#[cfg(feature = "tonic")]
 pub mod grpc;
 pub mod client;
 

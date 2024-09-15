@@ -12,8 +12,8 @@ edition = "2021"
 
 
 [dependencies]
-mvv_common = { version = "0.1.0", path = "../common" }
-mvv_auth = { version = "0.1.0", path = "../auth" }
+mvv_common = { version = "0.1.0", path = "../common", features = ["default", "tonic"] }
+mvv_auth = { version = "0.1.0", path = "../auth", features = ["default", "tonic"] }
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
 

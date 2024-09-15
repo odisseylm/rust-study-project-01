@@ -25,6 +25,8 @@ edition = "2021"
 serde_json_raw_value = ["serde_json/raw_value"]
 #default = ["serde_json_raw_value", ]
 
+tonic = [ "dep:tonic" ]
+
 ambassador = [ "dep:ambassador" ]
 default = [ "ambassador", "serde_json_raw_value" ]
 
@@ -232,7 +234,7 @@ by_address.workspace = true
 progenitor = { workspace = true, features = [] }
 progenitor-client = { workspace = true, features = [] }
 
-tonic.workspace = true
+tonic = { workspace = true, optional = true }
 
 fs_extra.workspace = true
 rust-embed.workspace = true

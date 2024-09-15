@@ -93,7 +93,7 @@ impl ClientSearchService {
             let now: chrono::NaiveDate = chrono::Local::now().naive_local().date();
             let birthday_from: chrono::NaiveDate =
                 if now.month() == 2 && now.day() == 29 {
-                    let mut birthday_from = now.with_year(now.year() - age);
+                    let birthday_from = now.with_year(now.year() - age);
                     match birthday_from {
                         None =>
                             // second attempt, see NaiveDate doc

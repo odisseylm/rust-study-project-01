@@ -27,8 +27,8 @@ prost-build.workspace = true
 [dependencies]
 mvv_error_macro = { version = "0.1.0", path = "../error_macro" }
 mvv_proc_macro = { version = "0.1.0", path = "../proc_macro" }
-mvv_common = { version = "0.1.0", path = "../common" }
-mvv_auth = { version = "0.1.0", path = "../auth" }
+mvv_common = { version = "0.1.0", path = "../common", features = ["default", "tonic"] }
+mvv_auth = { version = "0.1.0", path = "../auth", features = ["default", "tonic"] }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
 # It is not used as lib, but we need its 'bin' to generate OpenAPI spec and corresponding stubs.
