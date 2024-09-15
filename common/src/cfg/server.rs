@@ -1,3 +1,4 @@
+use std::time::Duration;
 use crate::cfg::SslConfValue;
 use crate::net::ConnectionType;
 use crate::string::StaticRefOrString;
@@ -15,6 +16,9 @@ pub trait ServerConf {
     fn server_port(&self) -> u16;
     fn server_ssl_key(&self) -> Option<&SslConfValue>;
     fn server_ssl_cert(&self) -> Option<&SslConfValue>;
+    fn shutdown_timeout(&self) -> Duration {
+        Duration::from_millis(5)
+    }
 }
 
 

@@ -46,6 +46,7 @@ services:
     deploy:
       #replicas: ${DOCKER_COMPOSE_SCALE_REPLICA_COUNT}
       replicas: 1
+    stop_grace_period: 1s
 
 
   rust-client-search-soa:
@@ -89,6 +90,7 @@ services:
     deploy:
       #replicas: ${DOCKER_COMPOSE_SCALE_REPLICA_COUNT}
       replicas: 1
+    stop_grace_period: 1s
 
 
   rust-account-web:
@@ -142,6 +144,7 @@ services:
     deploy:
       #replicas: ${DOCKER_COMPOSE_SCALE_REPLICA_COUNT}
       replicas: 1
+    stop_grace_period: 1s
 
 
   database:
@@ -174,6 +177,7 @@ services:
       retries: 6
     deploy:
       replicas: 1
+    stop_grace_period: 1s
 
 
 #  apache-proxy:
