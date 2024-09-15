@@ -5,7 +5,10 @@ use tonic::{
     transport::Server,
 };
 use tonic_types::pb;
-use mvv_auth::PlainPasswordComparator;
+use mvv_auth::{
+    PlainPasswordComparator,
+    grpc::server::{GrpcAuthzInterceptor, predefined_public_endpoints_roles, TonicServerGrpcReqEnrichExt},
+};
 use mvv_common::{
     cfg::ServerConf,
     env::process_env_load_res,
@@ -18,12 +21,10 @@ use crate::{
     auth::{AuthUser, CompositeAuthBackend},
     cfg::ClientSearchSoaServerConfig,
     dependencies::{create_dependencies},
-    grpc_auth::{GrpcAuthzInterceptor, TonicServerGrpcReqEnrichExt},
     client_search_service::ClientSearchService,
     health_check::HealthCheckService,
 };
 use crate::grpc::mvv::client::search::api::v1::client_search_service_server::ClientSearchServiceServer;
-use crate::grpc_auth::predefined_public_endpoints_roles;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -174,7 +175,6 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
         .add_service(client_search_serv)
         .serve(addr)
         .await ?;
-
 
     Ok(())
 }

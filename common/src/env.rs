@@ -23,7 +23,7 @@ pub fn env_var_or_else <F: Fn()->String> (env_var_name: &'static str, or_string:
 }
 
 
-pub fn env_var (env_var_name: &'static str) -> Result<Option<String>, EnvVarError> {
+pub fn env_var_static(env_var_name: &'static str) -> Result<Option<String>, EnvVarError> {
     use std::env::VarError;
 
     let port_env = std::env::var(env_var_name);
@@ -40,7 +40,7 @@ pub fn env_var (env_var_name: &'static str) -> Result<Option<String>, EnvVarErro
 }
 
 
-pub fn env_var_2 (env_var_name: &str) -> Result<Option<String>, EnvVarError> {
+pub fn env_var(env_var_name: &str) -> Result<Option<String>, EnvVarError> {
     use std::env::VarError;
 
     let port_env = std::env::var(env_var_name);
@@ -57,13 +57,13 @@ pub fn env_var_2 (env_var_name: &str) -> Result<Option<String>, EnvVarError> {
 }
 
 
-pub fn required_env_var (env_var_name: &'static str) -> Result<String, EnvVarError> {
-    env_var(env_var_name) ?
+pub fn required_env_var_static (env_var_name: &'static str) -> Result<String, EnvVarError> {
+    env_var_static(env_var_name) ?
         .ok_or_else(|| EnvVarError::new(env_var_name.into(), std::env::VarError::NotPresent))
 }
 
-pub fn required_env_var_2 (env_var_name: &str) -> Result<String, EnvVarError> {
-    env_var_2(env_var_name) ?
+pub fn required_env_var(env_var_name: &str) -> Result<String, EnvVarError> {
+    env_var(env_var_name) ?
         .ok_or_else(|| EnvVarError::new(env_var_name.to_owned().into(), std::env::VarError::NotPresent))
 }
 

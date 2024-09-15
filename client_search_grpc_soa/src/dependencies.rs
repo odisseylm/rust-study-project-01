@@ -7,6 +7,7 @@ use diesel::{
 };
 use mvv_auth::AuthUserProvider;
 use mvv_auth::permission::PermissionProvider;
+use mvv_common::net::ConnectionType;
 use crate::auth::{AuthUser, Role, RolePermissionsSet};
 
 // set an alias, so we don't have to keep writing out this long type
@@ -30,7 +31,7 @@ pub struct Dependencies {
 
 pub fn create_dependencies() -> anyhow::Result<Dependencies> {
     let diesel_db_pool = Arc::new(create_diesel_pooled_connection() ?);
-    let sqlx_db_pool = Arc::new(mvv_common::db::pg::pg_db_connection("client_search_soa") ?);
+    let sqlx_db_pool = Arc::new(mvv_common::db::pg::pg_db_connection("client_search_soa", ConnectionType::Ssl) ?);
     let user_provider = Arc::new(crate::auth::AuthUserProvider::with_cache(sqlx_db_pool.clone()) ?);
 
     Ok(Dependencies {

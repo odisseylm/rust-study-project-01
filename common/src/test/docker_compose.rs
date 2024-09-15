@@ -64,7 +64,7 @@ impl DockerImageProfile {
 
 pub fn get_docker_image_profile() -> DockerImageProfile {
 
-    let profile_suffix_from_env = crate::env::env_var("DOCKER_IMAGE_PROFILE_SUFFIX")
+    let profile_suffix_from_env = crate::env::env_var_static("DOCKER_IMAGE_PROFILE_SUFFIX")
         .unwrap_or_else(|_|Some(String::new())).unwrap_or_else(||String::new());
 
     // If it is already directly set in makefile.toml, we just inherit it.

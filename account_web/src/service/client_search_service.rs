@@ -1,7 +1,6 @@
-use std::str::FromStr;
 use std::sync::Arc;
-use tonic::{Request, Status};
-use mvv_common::grpc::{GrpcCallError, TonicErrToStatusExt};
+use log::info;
+use mvv_common::grpc::GrpcCallError;
 use crate::grpc_dependencies::mvv::client::search::api::v1::{
     Client as GrpcClientV1,
     PhoneNumber as GrpcPhoneNumberV1,
@@ -9,7 +8,8 @@ use crate::grpc_dependencies::mvv::client::search::api::v1::{
     client_search_service_client::ClientSearchServiceClient,
 };
 use tonic::transport::Channel;
-use mvv_common::cfg::{load_optional_path_from_env_vars, load_url_from_env_var, SslConfValue};
+use mvv_auth::grpc::client::GrpcClientAuthInterceptor;
+use mvv_common::cfg::{BaseDependencyConnectConf, DependencyConnectConf};
 use crate::grpc_dependencies::mvv::client::search::api::v1::client::Email;
 //--------------------------------------------------------------------------------------------------
 
@@ -68,10 +68,9 @@ impl From<GrpcClientV1> for ClientInfo {
         });
 
         Self {
-            id, first_name, last_name,
-            active,
-            email,
-            phones,
+            id, active,
+            first_name, last_name,
+            email, phones,
             birthday,
             business_user, super_business_user,
         }
@@ -80,32 +79,8 @@ impl From<GrpcClientV1> for ClientInfo {
 
 
 pub struct ClientSearchServiceImpl {
-    config: Arc<ClientSearchSoaCfg>,
+    config: Arc<BaseDependencyConnectConf>,
     // client: crate::grpc_dependencies::mvv::client::search::api::v1::client_search_service_client::ClientSearchServiceClient<>,
-}
-
-pub struct GrpcClientAuthInterceptor {
-    config: Arc<ClientSearchSoaCfg>,
-}
-impl tonic::service::Interceptor for GrpcClientAuthInterceptor {
-    fn call(&mut self, mut request: Request<()>) -> Result<Request<()>, Status> {
-        let cfg = &self.config;
-
-        use axum_extra::headers::{ Authorization, authorization::Credentials };
-        let auth = Authorization::basic(&cfg.user, &cfg.psw);
-
-        let as_header_v = auth.0.encode();
-        let as_header_v = as_header_v.to_str()
-            .to_tonic_internal_err("GrpcClientAuthInterceptor. header name error") ?;
-
-        request.metadata_mut().insert(
-            "authorization",
-            tonic::metadata::MetadataValue::from_str(as_header_v)
-                .to_tonic_internal_err("GrpcClientAuthInterceptor. header value error") ?
-        );
-
-        Ok(request)
-    }
 }
 
 
@@ -117,13 +92,12 @@ impl ClientSearchService for ClientSearchServiceImpl {
         let conf = self.config.clone();
 
         // TODO: can we use some pool ??
-        let channel = Channel::from_shared(conf.base_url.clone())
-            .map_err(|err|GrpcCallError::invalid_uri(conf.base_url.as_str(), err)) ?
+        let channel = Channel::from_shared(conf.base_url().to_string())
+            .map_err(|err|GrpcCallError::invalid_uri(conf.base_url().as_str(), err)) ?
             .connect().await ?;
 
         let mut client = ClientSearchServiceClient::with_interceptor(
-            channel,
-            GrpcClientAuthInterceptor { config: Arc::clone(&conf) },
+            channel, GrpcClientAuthInterceptor { config: Arc::clone(&conf) },
         );
 
         let res = client.get_client_by_id(GetClientByIdRequest {
@@ -139,48 +113,11 @@ impl ClientSearchService for ClientSearchServiceImpl {
 
 
 
-// - DEPENDENCIES_ACCOUNTSOA_REST_BASEURLS=https://account-soa/account-soa/api
-// - DEPENDENCIES_ACCOUNTSOA_REST_BASEURLTEMPLATE=https://bank-plugin-account-soa-REPLICA_NUMBER/account-soa/api
-// - DEPENDENCIES_ACCOUNTSOA_REST_CONTEXTPATH=/account-soa/api
-// - DEPENDENCIES_ACCOUNTSOA_REST_REPLICACOUNT=${DOCKER_COMPOSE_SCALE_REPLICA_COUNT}
-// - DEPENDENCIES_ACCOUNTSOA_REST_REPLICAIDTYPE=OneBasedIncremented
-// - DEPENDENCIES_ACCOUNTSOA_REST_PINGTIMEOUT=5s
-// - DEPENDENCIES_ACCOUNTSOA_REST_BALANCERTYPE=ribbon
-//
-#[derive(Debug, Clone)]
-pub struct ClientSearchSoaCfg {
-    pub base_url: String,
-    pub user: String,
-    pub psw: String,
-    pub server_cert: Option<SslConfValue>,
-}
-
-impl ClientSearchSoaCfg {
-
-    pub fn load_from_env() -> anyhow::Result<Self> {
-        let client_search_soa_cert = load_optional_path_from_env_vars([
-            "DEPENDENCIES_CLIENT_SEARCH_SOA_SSL_CERT_PATH", "CLIENT_SEARCH_SOA_SSL_CERT_PATH"])
-            ?.map(SslConfValue::Path);
-
-        Ok(ClientSearchSoaCfg {
-            // In general there may be several URLs with client balancing,
-            // but now we use only 1st url
-            base_url:
-                load_url_from_env_var("DEPENDENCIES_CLIENT_SEARCH_SOA_GRPC_BASEURLS") ?,
-            user:
-                mvv_common::env::required_env_var("DEPENDENCIES_CLIENT_SEARCH_SOA_USER") ?,
-            psw:
-                mvv_common::env::required_env_var("DEPENDENCIES_CLIENT_SEARCH_SOA_PSW") ?,
-            server_cert:
-                client_search_soa_cert,
-        })
-    }
-}
-
-
-
-pub fn create_client_search_service(cfg: &ClientSearchSoaCfg)
+pub fn create_client_search_service(cfg: &BaseDependencyConnectConf)
     -> anyhow::Result<ClientSearchServiceImpl> {
+
+    info!("Creating client-search service base on config [{cfg:?}]");
+
     // TODO: use SSL
 
     Ok(ClientSearchServiceImpl { config: Arc::new(cfg.clone()) })
@@ -220,9 +157,7 @@ pub fn create_client_search_service(cfg: &ClientSearchSoaCfg)
 
 #[cfg(test)]
 mod test {
-
     #[test]
     fn to_verify_compilation() {
     }
-
 }

@@ -18,6 +18,8 @@ pub mod extract;
 mod secure_str;
 
 pub mod psw_hash;
+pub mod grpc;
+pub mod client;
 
 pub use user_id::UserId;
 

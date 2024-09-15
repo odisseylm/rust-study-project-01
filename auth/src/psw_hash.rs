@@ -63,14 +63,14 @@ impl PswHashConfig {
                 format!("No/broken env var [{}]", err.var_name).into(), backtrace())
         }
 
-        let alg_name = mvv_common::env::required_env_var_2(&alg_name_env_name)
+        let alg_name = mvv_common::env::required_env_var(&alg_name_env_name)
             .map_err(no_env_var_err) ?;
-        let alg_ver_opt = mvv_common::env::env_var_2(&alg_ver_env_name)
+        let alg_ver_opt = mvv_common::env::env_var(&alg_ver_env_name)
             .map_err(no_env_var_err) ?;
-        let salt_b64 = mvv_common::env::required_env_var_2(&salt_env_name)
+        let salt_b64 = mvv_common::env::required_env_var(&salt_env_name)
             .map_err(no_env_var_err) ?;
 
-        let salt_rnd_gen_type: Option<String> = mvv_common::env::env_var_2(&salt_rnd_gen_type_env_name)
+        let salt_rnd_gen_type: Option<String> = mvv_common::env::env_var(&salt_rnd_gen_type_env_name)
             .map_err(no_env_var_err) ?;
         let salt_rnd_gen_type: Option<SaltRndGenType> = match salt_rnd_gen_type {
             None => None,

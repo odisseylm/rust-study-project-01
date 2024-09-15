@@ -21,7 +21,7 @@ use tonic::{
 };
 use tonic_async_interceptor::AsyncInterceptor;
 use tower::BoxError;
-use mvv_auth::{
+use crate::{
     //AuthUserProvider,
     backend::{RequestAuthenticated, authz_backend::AuthorizeBackend, UserContext},
     permission::PermissionSet,
@@ -32,7 +32,7 @@ use mvv_common::string::StaticRefOrString;
 
 
 #[derive(Debug, Clone)]
-pub struct GrpcAuthzInterceptor <
+pub struct GrpcAuthzInterceptor<
     Usr: axum_login::AuthUser + Clone + 'static,
     AuthB: AuthorizeBackend<User=Usr> + RequestAuthenticated<User=Usr> + Debug + 'static,
 > {

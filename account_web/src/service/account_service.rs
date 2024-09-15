@@ -1,12 +1,12 @@
-use anyhow::anyhow;
-use http::HeaderMap;
+use log::info;
 use reqwest::Certificate;
+use mvv_auth::client::basic_auth_headers_by_client_cfg;
 use mvv_common::{
-    cfg::load_url_from_env_var,
     soa::RestCallError,
+    cfg::DependencyConnectConf,
+    soa::improve_prog_err,
 };
-use mvv_common::cfg::SslConfValue;
-use crate::cfg::AccountWebServerConfig;
+use mvv_common::cfg::client::to_reqwest_tls_cert;
 use crate::rest_dependencies::account_soa_client::{
     Client as AccountSoaRestClient,
     types::{
@@ -19,7 +19,6 @@ use crate::rest_dependencies::account_soa_client::{
 
 #[async_trait::async_trait]
 pub trait AccountService {
-    // async fn get_client_accounts<'a>(&'a self, client_id: String) -> anyhow::Result<Vec<Account>>;
     async fn get_client_accounts(&self, client_id: &str) -> Result<Vec<Account>, RestCallError>;
     // async fn get_client_account(&self, client_id: &str, account_id: &str) -> anyhow::Result<Account>;
     // async fn transfer_amount(&self, client_id: &str, from_account_id: String, to_account_id: String, amount: Amount)
@@ -34,25 +33,16 @@ pub struct AccountServiceImpl {
 
 #[axum::async_trait]
 impl AccountService for AccountServiceImpl {
-    // async fn get_client_accounts<'a>(&'a self, client_id: String) -> anyhow::Result<Vec<Account>> {
-    //     let r = self.client.get_client_accounts::<'a>(client_id.as_str()).await ?;
-    //     Ok(r.into_inner())
-    // }
 
     async fn get_client_accounts(&self, client_id: &str) -> Result<Vec<Account>, RestCallError> {
-        let r = self.client.get_client_accounts(client_id).await ?;
-            // .map_err(improve_prog_err) ?;
+        let r = self.client.get_client_accounts(client_id).await
+            .map_err(improve_prog_err) ?;
         Ok(r.into_inner())
     }
 
-    // async fn get_client_accounts(&self, client_id: String) -> anyhow::Result<Vec<Account>> {
-    //     let client: Client = client();
-    //     let r = client.get_client_accounts(client_id.as_str()).await ?;
-    //     Ok(r.into_inner())
-    // }
-
     // async fn get_client_account(&self, client_id: &str, account_id: &str) -> anyhow::Result<Account> {
-    //     let r = self.client.get_client_account(client_id, account_id).await ?;
+    //     let r = self.client.get_client_account(client_id, account_id).await
+    //         .map_err(improve_prog_err) ?;
     //     Ok(r.into_inner())
     // }
     //
@@ -63,75 +53,25 @@ impl AccountService for AccountServiceImpl {
     //         amount: amount.value,
     //         currency: amount.currency,
     //     }).await
+    //     .map_err(improve_prog_err)
     // }
 }
 
 
-// - DEPENDENCIES_ACCOUNTSOA_REST_BASEURLS=https://account-soa/account-soa/api
-// - DEPENDENCIES_ACCOUNTSOA_REST_BASEURLTEMPLATE=https://bank-plugin-account-soa-REPLICA_NUMBER/account-soa/api
-// - DEPENDENCIES_ACCOUNTSOA_REST_CONTEXTPATH=/account-soa/api
-// - DEPENDENCIES_ACCOUNTSOA_REST_REPLICACOUNT=${DOCKER_COMPOSE_SCALE_REPLICA_COUNT}
-// - DEPENDENCIES_ACCOUNTSOA_REST_REPLICAIDTYPE=OneBasedIncremented
-// - DEPENDENCIES_ACCOUNTSOA_REST_PINGTIMEOUT=5s
-// - DEPENDENCIES_ACCOUNTSOA_REST_BALANCERTYPE=ribbon
-//
-#[derive(Debug)]
-pub struct AccountSoaConnectCfg {
-    pub base_url: String,
-    pub user: String,
-    pub psw: String,
-    pub server_cert: Option<SslConfValue>,
-}
-impl AccountSoaConnectCfg {
-    pub fn load_from_env() -> anyhow::Result<Self> {
-        let conf = AccountWebServerConfig::load_from_env() ?;
+pub fn create_account_service<Cfg: DependencyConnectConf>(cfg: &Cfg) -> anyhow::Result<AccountServiceImpl> {
 
-        Ok(AccountSoaConnectCfg {
-            // In general there may be several URLs with client balancing,
-            // but now we use only 1st url
-            base_url:
-                load_url_from_env_var("DEPENDENCIES_ACCOUNTSOA_REST_BASEURLS") ?,
-            user:
-                mvv_common::env::required_env_var("DEPENDENCIES_ACCOUNTSOA_USER") ?,
-            psw:
-                mvv_common::env::required_env_var("DEPENDENCIES_ACCOUNTSOA_PSW") ?,
-            server_cert:
-                conf.account_soa_cert,
-        })
-    }
-}
-
-pub fn create_account_service(cfg: &AccountSoaConnectCfg) -> anyhow::Result<AccountServiceImpl> {
-
-    use axum_extra::headers::{ Authorization, authorization::Credentials };
-
-    let auth = Authorization::basic(&cfg.user, &cfg.psw);
-
-    let cert: Option<Certificate> = match cfg.server_cert {
-        Some(SslConfValue::Path(ref cert_path)) =>{
-            let pem = std::fs::read_to_string(cert_path)
-                .map_err(|err| anyhow!("Error of reading from [{cert_path:?}] ({err:?})")) ?;
-            Some(Certificate::from_pem(pem.as_bytes()) ?)
-        }
-        Some(SslConfValue::Value(ref value)) =>
-            Some(Certificate::from_pem(value.as_bytes()) ?),
-        None => None,
-    };
+    info!("Creating account service base on config [{cfg:?}]");
 
     let mut client = reqwest::Client::builder()
-        .default_headers({
-            let mut headers = HeaderMap::new();
-            // headers.insert("Authorization", HeaderValue::from_str(&basic_auth_creds.as_http_header()) ?);
-            headers.insert("Authorization", auth.0.encode());
-            headers
-        });
+        .default_headers(basic_auth_headers_by_client_cfg(cfg));
 
+    let cert: Option<Certificate> = to_reqwest_tls_cert(cfg.server_cert()) ?;
     if let Some(cert) = cert {
         client = client.add_root_certificate(cert);
     }
     let client = client.build() ?;
 
-    let client = AccountSoaRestClient::new_with_client(&cfg.base_url, client);
+    let client = AccountSoaRestClient::new_with_client(cfg.base_url().as_str(), client);
     let account_service = AccountServiceImpl { client };
     Ok(account_service)
 }

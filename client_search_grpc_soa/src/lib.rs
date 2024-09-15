@@ -8,7 +8,6 @@ pub mod cfg;
 pub mod grpc;
 mod health_check;
 mod stream_static_wrapper;
-mod grpc_auth;
 mod auth;
 // tonic::include_proto!("../proto/mvv_client_search");
 // tonic::include_proto!("/home/volodymyr/projects/rust/rust-study-project-01/client_search_grpc_soa/proto/mvv.client.search.proto");

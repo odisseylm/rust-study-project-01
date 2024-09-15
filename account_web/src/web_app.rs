@@ -17,14 +17,15 @@ use mvv_common::{
     utoipa::to_generate_open_api,
     net::ConnectionType,
 };
+use mvv_common::cfg::{BaseDependencyConnectConf, DependencyType};
 use crate::{
     app_dependencies::{ Dependencies, DependenciesState },
     auth::SqlClientAuthUserProvider,
     cfg::{AccountWebServerConfig},
-    service::account_service::{AccountServiceImpl, AccountSoaConnectCfg, create_account_service},
+    service::account_service::{AccountServiceImpl, create_account_service},
 };
 use crate::service::client_search_service::{
-    ClientSearchServiceImpl, ClientSearchSoaCfg, create_client_search_service,
+    ClientSearchServiceImpl, create_client_search_service,
 };
 //--------------------------------------------------------------------------------------------------
 
@@ -34,8 +35,12 @@ fn create_prod_dependencies() -> Result<Arc<Dependencies>, anyhow::Error> {
 
     let db = Arc::new(pg_db_connection("account_web", ConnectionType::Ssl) ?);
 
-    let account_soa_cfg = AccountSoaConnectCfg::load_from_env() ?;
-    let client_search_soa_cfg = ClientSearchSoaCfg::load_from_env() ?;
+    let account_soa_cfg = BaseDependencyConnectConf::load_from_env(
+        "ACCOUNT_SOA".into(), DependencyType::REST, "account_web".into(),
+    ) ?;
+    let client_search_soa_cfg = BaseDependencyConnectConf::load_from_env(
+        "CLIENT_SEARCH_SOA".into(), DependencyType::GRPC, "account_web".into(),
+    ) ?;
 
     let account_service: Arc<AccountServiceImpl> = Arc::new(create_account_service(&account_soa_cfg) ?);
     let client_search_service: Arc<ClientSearchServiceImpl> = Arc::new(create_client_search_service(&client_search_soa_cfg) ?);

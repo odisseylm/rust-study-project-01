@@ -122,11 +122,11 @@ services:
       #- ACCOUNT_SOA_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem  # use it in simple self-signed key/cert generated
       - DEPENDENCIES_ACCOUNT_SOA_SSL_CERT_PATH=/certs/ca.crt.pem  # use CA if CA was used for generated server key/cert
 
-      - DEPENDENCIES_ACCOUNTSOA_REST_BASEURLS=https://rust-account-soa:8443
-      - DEPENDENCIES_ACCOUNTSOA_USER=vovan-read
-      - DEPENDENCIES_ACCOUNTSOA_PSW=qwerty
+      - DEPENDENCIES_ACCOUNT_SOA_REST_BASE_URLS=https://rust-account-soa:8443
+      - DEPENDENCIES_ACCOUNT_SOA_USER=vovan-read
+      - DEPENDENCIES_ACCOUNT_SOA_PSW=qwerty
 
-      - DEPENDENCIES_CLIENT_SEARCH_SOA_GRPC_BASEURLS=http://rust-client-search-soa:8080
+      - DEPENDENCIES_CLIENT_SEARCH_SOA_GRPC_BASE_URLS=http://rust-client-search-soa:8080
       - DEPENDENCIES_CLIENT_SEARCH_SOA_USER=vovan-read
       - DEPENDENCIES_CLIENT_SEARCH_SOA_PSW=qwerty
     volumes:

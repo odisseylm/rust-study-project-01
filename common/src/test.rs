@@ -195,14 +195,14 @@ pub fn is_CI_build() -> bool {
 
 
 pub fn current_sub_project_dir() -> anyhow::Result<PathBuf> {
-    let sub_project_dir = crate::env::required_env_var("CARGO_MANIFEST_DIR") ?;
+    let sub_project_dir = crate::env::required_env_var_static("CARGO_MANIFEST_DIR") ?;
     let sub_project_dir: PathBuf = sub_project_dir.into();
     Ok(sub_project_dir)
 }
 
 
 pub fn current_project_target_dir() -> anyhow::Result<PathBuf> {
-    let out_dir_str = crate::env::required_env_var("OUT_DIR") ?;
+    let out_dir_str = crate::env::required_env_var_static("OUT_DIR") ?;
     let out_dir: PathBuf = out_dir_str.into();
 
     let target_dir = find_target_dir(&out_dir) ?;

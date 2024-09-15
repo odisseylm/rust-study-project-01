@@ -2,14 +2,16 @@ use std::collections::HashMap;
 use std::pin::Pin;
 use tokio_stream::Stream;
 use tonic::{Request, Response, Status};
-use mvv_auth::permission::PermissionSet;
+use mvv_auth::{
+    grpc::server::public_access_permissions,
+    permission::PermissionSet,
+};
 use mvv_common::string::StaticRefOrString;
 use crate::grpc::health::v1::{
     health_server::Health,
     HealthCheckRequest, HealthCheckResponse,
     health_check_response::ServingStatus,
 };
-use crate::grpc_auth::public_access_permissions;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -23,8 +25,6 @@ impl HealthCheckService {
     }
 }
 
-// use tonic::{transport::server::ServiceName};
-// type Stream22 = VecDeque<Result<HealthCheckResponse, Status>>;
 
 #[tonic::async_trait]
 impl Health for HealthCheckService {
@@ -85,32 +85,6 @@ impl Health for HealthCheckService {
     }
 */
 
-/*
-// pin_project_lite::pin_project! {
-    pub struct Temp345 {
-        // data: Box<dyn Stream<Item = Result<HealthCheckResponse, Status>>>,
-        //#[pin]
-        data: tonic::codegen::BoxStream<HealthCheckResponse>,
-        // data: Box<dyn Stream<Item = Result<HealthCheckResponse, Status>>>,
-        // data: Pin<Box<dyn Stream<Item = Result<HealthCheckResponse, Status>>>>,
-    }
-// }
-impl Stream for Temp345 {
-    type Item = Result<HealthCheckResponse, Status>;
-
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        t o d o!()
-        // self.data.poll_next(cx)
-        // self.data.poll_next_unpin(cx)
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        t o d o!()
-        // self.data.size_hint()
-        // (0, None)
-    }
-}
-*/
 
 /*
 fn aaa() {

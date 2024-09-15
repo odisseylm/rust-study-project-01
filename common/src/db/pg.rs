@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use sqlx_postgres::{PgConnectOptions, PgSslMode};
-use crate::env::{ env_var, EnvVarOps };
+use crate::env::{env_var_static, EnvVarOps };
 use crate::net::ConnectionType;
 //--------------------------------------------------------------------------------------------------
 
@@ -14,11 +14,11 @@ pub fn pg_db_connection_options(connection_type: ConnectionType, app_name: &str)
     const POSTGRES_USER: &'static str = "POSTGRES_USER";
     const POSTGRES_PASSWORD: &'static str = "POSTGRES_PASSWORD";
 
-    let postgres_host = env_var(POSTGRES_HOST) ?;
-    let postgres_db = env_var(POSTGRES_DB) ?;
-    let postgres_user = env_var(POSTGRES_USER) ?;
-    let postgres_password = env_var(POSTGRES_PASSWORD) ?;
-    let postgres_ssl_cert = env_var(POSTGRES_SSL_CERT_PATH) ?;
+    let postgres_host = env_var_static(POSTGRES_HOST) ?;
+    let postgres_db = env_var_static(POSTGRES_DB) ?;
+    let postgres_user = env_var_static(POSTGRES_USER) ?;
+    let postgres_password = env_var_static(POSTGRES_PASSWORD) ?;
+    let postgres_ssl_cert = env_var_static(POSTGRES_SSL_CERT_PATH) ?;
 
     // if (&postgres_db, &postgres_user, &postgres_password).all_are_none() {
     if postgres_host.is_none() && postgres_db.is_none() &&
@@ -87,7 +87,7 @@ fn pg_db_ssl_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, anyhow:
 
 
 fn pg_db_auto_type_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, anyhow::Error> {
-    match env_var(POSTGRES_SSL_CERT_PATH) ? {
+    match env_var_static(POSTGRES_SSL_CERT_PATH) ? {
         None => pg_db_plain_connection(app_name),
         Some(_cert_path) => pg_db_ssl_connection(app_name),
     }
