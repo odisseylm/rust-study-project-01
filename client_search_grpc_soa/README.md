@@ -12,3 +12,4 @@
  - With bad/weak user (vovan:qwerty)
    - `grpcurl -d '{ "user_email": "cheburan@ukr.net" }' -H "Authorization: Basic dm92YW46cXdlcnR5" -plaintext localhost:3002 mvv.client.search.api.v1.ClientSearchService/Search`
  - `curl http://localhost:3002/healthcheck`
+ - `grpcurl -d '{ "service": "" }' -plaintext localhost:3002 grpc.health.v1.Health/Check`
