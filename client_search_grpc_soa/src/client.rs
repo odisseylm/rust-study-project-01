@@ -28,20 +28,26 @@ pub struct ClientInfo {
 
 impl From<ClientInfo> for Client {
     fn from(value: ClientInfo) -> Self {
+        value.into_grpc()
+    }
+}
+
+impl ClientInfo {
+    pub fn into_grpc(self) -> Client {
         Client {
-            id: value.client_id.to_string(),
-            email: Some(Email::EmailValue(value.email)),
-            phones: vec!(PhoneNumber { number: Some(value.phone), r#type: 123 }),
-            first_name: value.first_name,
-            last_name: value.last_name,
+            id: self.client_id.to_string(),
+            email: Some(Email::EmailValue(self.email)),
+            phones: vec!(PhoneNumber { number: Some(self.phone), r#type: 123 }),
+            first_name: self.first_name,
+            last_name: self.last_name,
             birthday: Some(ProtoDate {
-                year: value.birthday.year(),
-                month: value.birthday.month() as i32,
-                day: value.birthday.day() as i32,
+                year: self.birthday.year(),
+                month: self.birthday.month() as i32,
+                day: self.birthday.day() as i32,
             }),
-            active: value.active,
-            business_user: value.business_user,
-            super_business_user: value.super_business_user,
+            active: self.active,
+            business_user: self.business_user,
+            super_business_user: self.super_business_user,
         }
     }
 }

@@ -4,9 +4,9 @@ use anyhow::anyhow;
 use chrono::Datelike;
 use diesel::{Connection, PgConnection};
 use implicit_clone::ImplicitClone;
-use tonic::{Code, Request, Response, Status};
-use log::{error};
+use tonic::{Request, Response, Status};
 use mvv_auth::permission::PermissionSet;
+use mvv_common::grpc::TonicErrToStatusExt;
 use mvv_common::string::StaticRefOrString;
 use crate::auth::{Role, RolePermissionsSet};
 use crate::client::ClientInfo;
@@ -91,14 +91,22 @@ impl ClientSearchService {
 
         if let Some(age) = request.age {
             let now: chrono::NaiveDate = chrono::Local::now().naive_local().date();
-            let birthday_from: chrono::NaiveDate = if now.month() == 2 && now.day() == 29 {
-                now.with_day(28)
-                    .ok_or_else(||anyhow!("Internal error of processing 'age' (0).")) ?
-                    .with_year(now.year() - age)
-                    .ok_or_else(||anyhow!("Internal error of processing 'age' (1).")) ?
-            } else {
-                now
-            };
+            let birthday_from: chrono::NaiveDate =
+                if now.month() == 2 && now.day() == 29 {
+                    let mut birthday_from = now.with_year(now.year() - age);
+                    match birthday_from {
+                        None =>
+                            // second attempt, see NaiveDate doc
+                            now.with_day(28)
+                                .ok_or_else(|| anyhow!("Internal error of processing 'age' (setting day).")) ?
+                                .with_year(now.year() - age)
+                                .ok_or_else(|| anyhow!("Internal error of processing 'age' (setting year).")) ?,
+                        Some(birthday_from) => birthday_from,
+                    }
+                } else {
+                    now.with_year(now.year() - age)
+                        .ok_or_else(||anyhow!("Internal error of processing 'age' (setting year).")) ?
+                };
 
             query = query.filter(birthday.ge(birthday_from));
         }
@@ -108,14 +116,13 @@ impl ClientSearchService {
             .load(&mut con) ?;
 
         let clients: Vec<Client> = results.into_iter()
-            // .map(|clients|clients.map(|client|client.into()))
-            .map(|client|{ let cl: Client = client.into(); cl })
+            .map(|client|client.into())
             .collect::<Vec<Client>>();
 
         Ok(clients)
     }
 
-    fn do_get_client_by_id(&self, client_id_value: &str) -> anyhow::Result<Option<Client>> {
+    async fn do_get_client_by_id(&self, client_id_value: &str) -> anyhow::Result<Option<Client>> {
 
         let mut con = self.dependencies.diesel_db_pool.get() ?;
 
@@ -142,29 +149,16 @@ impl ClientSearchService {
 impl ClientSearchServiceTrait for ClientSearchService {
 
     async fn search(&self, request: Request<ClientSearchRequest>) -> Result<Response<ClientSearchResponse>, Status> {
-        let res = self.do_search(request).await;
-
-        match res {
-            Ok(clients) =>
-                Ok(Response::new(ClientSearchResponse { success: true, message: None, clients })),
-            Err(err) => {
-                error!("Diesel error: {err:?}");
-                Err(Status::new(Code::Internal, "Internal error"))
-            }
-        }
+        self.do_search(request).await
+            .map(|clients| Response::new(
+                ClientSearchResponse { success: true, message: None, clients }))
+            .to_tonic_internal_err("Client search error")
     }
 
     async fn get_client_by_id(&self, request: Request<GetClientByIdRequest>) -> Result<Response<GetClientByIdResponse>, Status> {
-        let res = self.do_get_client_by_id(request.get_ref().client_id.as_str());
-
-        match res {
-            Ok(client) =>
-                Ok(Response::new(GetClientByIdResponse { client })),
-            Err(err) => {
-                error!("Diesel error: {err:?}");
-                Err(Status::new(Code::Internal, "Internal error"))
-            }
-        }
+        self.do_get_client_by_id(request.get_ref().client_id.as_str()).await
+            .map(|client| Response::new(GetClientByIdResponse { client }))
+            .to_tonic_internal_err("get_client_by_id error")
     }
 
     async fn update_client(&self, _request: Request<ClientSearchRequest>) -> Result<Response<ClientSearchResponse>, Status> {

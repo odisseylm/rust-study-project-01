@@ -21,6 +21,7 @@ use tonic::{
 };
 use tonic_async_interceptor::AsyncInterceptor;
 use tower::BoxError;
+use mvv_common::grpc::TonicErrToStatusExt;
 use crate::{
     //AuthUserProvider,
     backend::{RequestAuthenticated, authz_backend::AuthorizeBackend, UserContext},
@@ -60,10 +61,7 @@ fn get_end_point_path<T>(req: &Request<T>) -> anyhow::Result<String> {
 }
 fn get_end_point_path_with_grpc_err<T>(req: &Request<T>) -> Result<String, Status> {
     let endpoint_path = get_end_point_path(&req)
-        .map_err(|err|{
-            error!("Error of getting endpoint url: {err:?}");
-            Status::internal("No endpoint url")
-        }) ?;
+        .to_tonic_internal_err("Error of getting endpoint url") ?;
     Ok(endpoint_path)
 }
 
