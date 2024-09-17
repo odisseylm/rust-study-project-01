@@ -1,6 +1,6 @@
 use anyhow::anyhow;
 use reqwest::Certificate;
-use crate::cfg::SslConfValue;
+use crate::cfg::{SslConfValue, SslConfValueOptionExt};
 use crate::secure::SecureString;
 use crate::string::StaticRefOrString;
 use super::{load_url_from_env_vars, required_env_var, load_optional_path_from_env_vars};
@@ -34,7 +34,10 @@ pub trait DependencyConnectConf: core::fmt::Debug {
     fn user(&self) -> &Option<StaticRefOrString>;
     fn password(&self) -> &Option<SecureString>;
     fn server_cert(&self) -> &Option<SslConfValue>;
+    fn ca_cert(&self) -> &Option<SslConfValue>;
     fn client_cert(&self) -> &Option<SslConfValue>;
+
+    fn preload_values(self) -> anyhow::Result<Self> where Self: Sized;
 }
 
 
@@ -60,6 +63,7 @@ pub struct BaseDependencyConnectConf {
     pub user: Option<StaticRefOrString>,
     pub password: Option<SecureString>,
     pub server_cert: Option<SslConfValue>,
+    pub ca_cert: Option<SslConfValue>,
     pub client_cert: Option<SslConfValue>,
 }
 
@@ -84,14 +88,20 @@ impl BaseDependencyConnectConf {
                 &format!("DEPENDENCIES_{dependency_env_name}_SSL_CERT_PATH"),
                 &format!("{dependency_env_name}_SERVER_SSL_CERT_PATH"),
                 &format!("{dependency_env_name}_SSL_CERT_PATH"),
-            ])
-            ?.map(SslConfValue::Path);
+            ]) ?
+            .map(SslConfValue::Path);
+
+        let ca_cert = load_optional_path_from_env_vars([
+                &format!("DEPENDENCIES_{dependency_env_name}_CA_SSL_CERT_PATH"),
+                &format!("{dependency_env_name}_CA_SSL_CERT_PATH"),
+            ]) ?
+            .map(SslConfValue::Path);
 
         let client_cert = load_optional_path_from_env_vars([
                 &format!("DEPENDENCIES_{dependency_env_name}_CLIENT_SSL_CERT_PATH"),
                 &format!("{dependency_env_name}_CLIENT_SSL_CERT_PATH"),
-            ])
-            ?.map(SslConfValue::Path);
+            ]) ?
+            .map(SslConfValue::Path);
 
         Ok(BaseDependencyConnectConf {
             app_name,
@@ -102,6 +112,7 @@ impl BaseDependencyConnectConf {
             user: Some(user.into()),
             password: Some(psw.into()),
             server_cert,
+            ca_cert,
             client_cert,
         })
     }
@@ -129,13 +140,32 @@ impl DependencyConnectConf for BaseDependencyConnectConf {
     fn server_cert(&self) -> &Option<SslConfValue> {
         &self.server_cert
     }
+    fn ca_cert(&self) -> &Option<SslConfValue> {
+        &self.ca_cert
+    }
     fn client_cert(&self) -> &Option<SslConfValue> {
         &self.client_cert
+    }
+
+    fn preload_values(self) -> anyhow::Result<Self> {
+        Ok(Self {
+            app_name: self.app_name,
+            dep_env_name: self.dep_env_name,
+            dep_type: self.dep_type,
+            // In general there may be several URLs with client balancing,
+            // but now we use only 1st url
+            base_urls: self.base_urls,
+            user: self.user,
+            password: self.password,
+            server_cert: self.server_cert.preload() ?,
+            ca_cert: self.ca_cert.preload() ?,
+            client_cert: self.client_cert.preload() ?,
+        })
     }
 }
 
 
-pub fn to_reqwest_tls_cert(cert: &Option<SslConfValue>) -> anyhow::Result<Option<Certificate>> {
+pub fn to_reqwest_tls_cert(cert: Option<&SslConfValue>) -> anyhow::Result<Option<Certificate>> {
     let cert = match cert {
         Some(SslConfValue::Path(ref cert_path)) =>{
             let pem = std::fs::read_to_string(cert_path)

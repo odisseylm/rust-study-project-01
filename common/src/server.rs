@@ -57,7 +57,7 @@ pub async fn start_axum_server<Conf: ServerConf>(server_conf: Conf, app_router: 
 }
 
 
-async fn server_rustls_config<Conf: ServerConf>(server_conf: &Conf)
+pub async fn server_rustls_config<Conf: ServerConf>(server_conf: &Conf)
     -> anyhow::Result<axum_server::tls_rustls::RustlsConfig> {
 
     use axum_server::tls_rustls::RustlsConfig;
@@ -83,6 +83,9 @@ async fn server_rustls_config<Conf: ServerConf>(server_conf: &Conf)
 }
 
 
+// See
+// * axum core: https://github.com/tokio-rs/axum/blob/main/examples/graceful-shutdown/src/main.rs
+// * axum_server: ...
 pub async fn axum_server_shutdown_signal(
     handle: axum_server::Handle, max_shutdown_duration: Duration) {
 

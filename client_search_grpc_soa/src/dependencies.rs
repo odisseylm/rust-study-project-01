@@ -5,8 +5,10 @@ use diesel::{
     r2d2::{ConnectionManager, Pool},
     PgConnection,
 };
-use mvv_auth::AuthUserProvider;
-use mvv_auth::permission::PermissionProvider;
+use mvv_auth::{
+    AuthUserProvider, PasswordComparator, PlainPasswordComparator,
+    permission::PermissionProvider,
+};
 use mvv_common::net::ConnectionType;
 use crate::auth::{AuthUser, Role, RolePermissionsSet};
 
@@ -24,6 +26,7 @@ pub type DieselPgDbPool = Pool<ConnectionManager<PgConnection>>;
 pub struct Dependencies {
     pub diesel_db_pool: Arc<DieselPgDbPool>,
     // pub sqlx_db_pool: Arc<sqlx_postgres::PgPool>,
+    pub password_comparator: Arc<dyn PasswordComparator + Send + Sync + 'static>,
     pub user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Send + Sync + 'static>,
     pub permission_provider: Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet> + Send + Sync + 'static>,
 }
@@ -36,6 +39,7 @@ pub fn create_dependencies() -> anyhow::Result<Dependencies> {
 
     Ok(Dependencies {
         diesel_db_pool,
+        password_comparator: Arc::new(PlainPasswordComparator::new()),
         //sqlx_db_pool,
         permission_provider: user_provider.clone(),
         user_provider,
@@ -57,7 +61,18 @@ pub fn create_diesel_pooled_connection()
     //     .map_err(|_err|anyhow!("No DB_URL env var")) ?;
 
     let manager = ConnectionManager::<PgConnection>::new(&database_url);
-    let pool = Pool::builder().build(manager)
+    let pool = Pool::builder()
+        // .max_size(15) // T O D O: move to config
+        // .test_on_check_out(true)
+        // .max_lifetime()
+        // .connection_timeout()
+        // .idle_timeout()
+        // .event_handler()
+        // .connection_customizer()
+        //
+        // Similar to lazy ? Let's keep it at least for 'dev'
+        .min_idle(Some(0))
+        .build(manager)
         ?; // .map_err("Failed to create pool.");
     Ok(pool)
 }

@@ -22,6 +22,7 @@ pub mod server_conf;
 pub mod map;
 pub mod cfg;
 pub mod soa;
+#[cfg(feature = "tonic")]
 pub mod grpc;
 pub mod backtrace;
 pub mod uuid;

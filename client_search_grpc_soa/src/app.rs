@@ -1,24 +1,44 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use log::info;
+use core::convert::Infallible;
+use std::{
+    collections::HashMap,
+    error::Error as StdError,
+    net::SocketAddr,
+    sync::Arc,
+};
+use anyhow::anyhow;
+use axum_server::service::SendService;
+use log::{error, info};
 use tonic::{
     transport::Server,
+    service::interceptor,
+    // transport::ServerTlsConfig,
 };
 use tonic_types::pb;
+use tower::{
+    BoxError, ServiceBuilder,
+    filter::FilterLayer,
+};
 use mvv_auth::{
-    PlainPasswordComparator,
-    grpc::server::{GrpcAuthzInterceptor, predefined_public_endpoints_roles, TonicServerGrpcReqEnrichExt},
+    AuthUserProvider, PasswordComparator, PlainPasswordComparator,
+    grpc::{
+        server::{GrpcAuthzInterceptor, predefined_public_endpoints_roles},
+        server::{grpc_req_enrich, axum::axum_grpc_req_enrich},
+    },
+    permission::PermissionProvider,
 };
 use mvv_common::{
-    cfg::ServerConf,
+    cfg::{ServerConf, SslConfValue},
     env::process_env_load_res,
     exe::{current_exe_dir, current_exe_name},
-    proto_files::{extract_proto_files, to_extract_proto_files},
     gen_src::UpdateFile,
+    grpc::server::server_tls_config,
+    net::ConnectionType,
+    proto_files::{extract_proto_files, to_extract_proto_files},
+    rest::health_check_router,
+    server::{server_rustls_config, start_axum_server},
 };
-// use mvv_common::rest::health_check_router;
 use crate::{
-    auth::{AuthUser, CompositeAuthBackend},
+    auth::{AuthUser, CompositeAuthBackend, Role, RolePermissionsSet},
     cfg::ClientSearchSoaServerConfig,
     dependencies::{create_dependencies},
     client_search_service::ClientSearchService,
@@ -61,38 +81,16 @@ fn init_logger() {
     */
 }
 
-// pub const FILE_DESCRIPTOR_SET_333: &[u8] = include_bytes!("generated/types.bin");
 pub const APP_SERVICES_FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("mvv_client_search_descriptor");
 
 
-/*
-#[derive(Debug, Clone)]
-struct DependenciesContext {
-    dependencies: Arc<Dependencies>,
-}
-
-
-#[derive(Debug, Clone)]
-struct DependenciesSetInterceptor {
-    dependencies: Arc<Dependencies>,
-}
-impl tonic::service::Interceptor for DependenciesSetInterceptor {
-    fn call(&mut self, mut request: Request<()>) -> Result<Request<()>, Status> {
-        request.extensions_mut().insert(DependenciesContext {
-            dependencies: self.dependencies.clone()
-        });
-        Ok(request)
-    }
-}
-*/
 
 #[derive(rust_embed::Embed)]
 #[folder = "proto"]
 pub struct ProtoFiles;
 
 
-// #[tokio::main]
-pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn grpc_app_main() -> Result<(), Box<dyn StdError>> {
 
     let env_filename = format!(".{}.env", current_exe_name() ?);
 
@@ -114,7 +112,7 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
 
     // let addr = std::env::var("GRPC_SERVER_ADDRESS") ?.parse()?;
     let addr = format!("0.0.0.0:{}", conf.server_port());
-    let addr = addr.parse() ?;
+    let addr: SocketAddr = addr.parse() ?;
 
     // run_migrations(&pool);
 
@@ -130,13 +128,15 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
             roles
         }),
         auth: Arc::new(CompositeAuthBackend::new_2(
-            Arc::new(PlainPasswordComparator::new()),
+            dependencies.password_comparator.clone(),
             dependencies.user_provider.clone(),
             dependencies.permission_provider.clone(),
         ) ?),
     };
 
     /*
+    // With interceptor
+    //
     let client_search_serv = AsyncInterceptedService::new(
         ClientSearchServiceServer::from_arc(serv_impl),
         grpc_auth_interceptor,
@@ -149,6 +149,7 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
     */
 
     // With interceptor
+    //
     // let client_search_serv =
     //     ClientSearchServiceServer::with_interceptor(ClientSearchService { dependencies: dependencies.clone() }, intercept)
     //     ;
@@ -163,18 +164,70 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn std::error::Error>> {
         .register_encoded_file_descriptor_set(pb::FILE_DESCRIPTOR_SET)
         .register_encoded_file_descriptor_set(APP_SERVICES_FILE_DESCRIPTOR_SET)
         .build_v1() ?;
-    Server::builder()
-        .add_grpc_req_enrich_layer() // similar to `.layer(FilterLayer::new(grpc_req_enrich))`
-        // As example
-        // .layer(tonic::service::interceptor(DependenciesSetInterceptor { dependencies: dependencies.clone() }))
-        //
-        .layer(async_interceptor(grpc_auth_interceptor))
-        // .add_routes(rest_route)
-        .add_service(reflection_service)
-        .add_service(health_check_serv)
-        .add_service(client_search_serv)
-        .serve(addr)
-        .await ?;
+
+    let routes = tonic::service::Routes::builder().routes()
+        .add_service(reflection_service.clone())
+        .add_service(health_check_serv.clone())
+        .add_service(client_search_serv.clone())
+        ;
+
+
+    match conf.connection_type() {
+
+        ConnectionType::Plain => {
+            use mvv_auth::grpc::server::TonicServerGrpcReqEnrichExt;
+
+            Server::builder()
+                // !!! T O D O: At that moment it silently crashes with enabled SSL !!!
+                // !!!          at least with rustls                                !!!
+                //
+                // .tls_config(server_tls_config(&conf).await ?) ? // now it crashes
+                //
+
+                // Other configurations/customizations
+                // .concurrency_limit_per_connection(256)
+                //
+
+                // Authentication/authorization configuration
+                //
+                .add_grpc_req_enrich_layer()? // similar to `.layer(FilterLayer::new(grpc_req_enrich))`
+                // As example
+                // .layer(tonic::service::interceptor(DependenciesSetInterceptor { dependencies: dependencies.clone() }))
+                //
+                // .layer(async_interceptor(grpc_auth_interceptor))
+                //
+                .add_grpc_auth_layer(grpc_auth_interceptor)?
+
+                // .add_routes(rest_route)
+                .add_routes(routes)
+                .serve(addr)
+                .await ?
+        }
+
+        ConnectionType::Ssl => {
+            // !!! WORKAROUND !!!:
+            //  At that moment tonic server silently crashes with enabled SSL.
+            //  As workaround now I use axum/axum-server for SSL mode.
+            //  Use tonic when this bug is fixed.
+
+            let app_axum_router = axum::Router::new()
+                .merge(health_check_router())
+                .merge(routes.into_axum_router())
+                .layer(
+                    ServiceBuilder::new()
+                        .layer(tower_http::trace::TraceLayer::new_for_http())
+                        // We cannot reuse tower FilterLayer/AsyncFilterLayer there
+                        // (similar to tonic approach) since Error incompatibility
+                        // between axum (Infallible) and tower BoxError
+                        .layer(axum::middleware::from_fn(axum_grpc_req_enrich))
+                        .layer(async_interceptor(grpc_auth_interceptor))
+                );
+            start_axum_server(conf, app_axum_router).await ?;
+        }
+
+        ConnectionType::Auto =>
+            Err(anyhow!("Server connection type auto detection is not supported")) ?,
+    }
 
     Ok(())
 }

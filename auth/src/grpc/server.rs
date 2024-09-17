@@ -19,7 +19,7 @@ use tonic::{
     // metadata::{Ascii, KeyAndValueRef, MetadataValue, ValueRef},
     metadata::KeyAndValueRef,
 };
-use tonic_async_interceptor::AsyncInterceptor;
+use tonic_async_interceptor::{async_interceptor, AsyncInterceptor};
 use tower::BoxError;
 use mvv_common::grpc::TonicErrToStatusExt;
 use crate::{
@@ -66,7 +66,7 @@ fn get_end_point_path_with_grpc_err<T>(req: &Request<T>) -> Result<String, Statu
 }
 
 pub fn get_grpc_req_url<T>(req: &Request<T>) -> anyhow::Result<http::uri::Uri> {
-    let uri = req.extensions().get::<axum::extract::OriginalUri>();
+    let uri = req.extensions().get::<::axum::extract::OriginalUri>();
     match uri {
         None => anyhow::bail!("Request does not contains url info."),
         Some(uri) => Ok(uri.0.clone())
@@ -202,9 +202,9 @@ async fn authz_req_impl <
 }
 
 
-fn grpc_req_to_axum_req<T>(grpc_req: &Request<T>) -> anyhow::Result<axum::extract::Request<axum::body::Body>> {
-    let mut axum_req: axum::extract::Request<axum::body::Body> =
-        axum::extract::Request::new(axum::body::Body::empty());
+fn grpc_req_to_axum_req<T>(grpc_req: &Request<T>) -> anyhow::Result<::axum::extract::Request<::axum::body::Body>> {
+    let mut axum_req: ::axum::extract::Request<::axum::body::Body> =
+        ::axum::extract::Request::new(::axum::body::Body::empty());
 
     for ref k_v_ref in grpc_req.metadata().iter() {
         let header_name_value = to_http_header(k_v_ref);
@@ -258,10 +258,10 @@ impl <Body> tower::filter::Predicate<http::request::Request<Body>> for GrpcReqEn
 pub fn grpc_req_enrich<Body>(mut req: http::request::Request<Body>)
     -> Result<http::request::Request<Body>, BoxError> {
 
-    let ext_uri = req.extensions().get::<axum::extract::OriginalUri>();
+    let ext_uri = req.extensions().get::<::axum::extract::OriginalUri>();
     if ext_uri.is_none() {
         let uri = req.uri().clone();
-        req.extensions_mut().insert(axum::extract::OriginalUri(uri));
+        req.extensions_mut().insert(::axum::extract::OriginalUri(uri));
     }
     Ok(req)
 }
@@ -270,10 +270,76 @@ pub fn grpc_req_enrich<Body>(mut req: http::request::Request<Body>)
 #[extension_trait::extension_trait]
 pub impl<L> TonicServerGrpcReqEnrichExt<L> for tonic::transport::Server<L> {
     fn add_grpc_req_enrich_layer(self)
-        -> tonic::transport::Server<tower_layer::Stack<
-            tower::filter::FilterLayer<GrpcReqEnrichPredicate>, L>> {
+        -> anyhow::Result<tonic::transport::Server<tower_layer::Stack<
+            tower::filter::FilterLayer<GrpcReqEnrichPredicate>, L>>> {
 
         use tower::filter::FilterLayer;
-        self.layer(FilterLayer::new(GrpcReqEnrichPredicate))
+        Ok(self.layer(FilterLayer::new(GrpcReqEnrichPredicate)))
     }
+
+    fn add_grpc_auth_layer<AsyncInter: AsyncInterceptor>(
+        self, grpc_auth_interceptor: AsyncInter)
+        -> anyhow::Result<tonic::transport::Server<tower_layer::Stack<tonic_async_interceptor::AsyncInterceptorLayer<AsyncInter>, L>>> {
+
+        let layer = self.layer(async_interceptor(grpc_auth_interceptor));
+        Ok(layer)
+    }
+}
+
+
+
+pub mod axum {
+    use log::error;
+
+    pub async fn axum_grpc_req_enrich(
+        request: http::Request<axum::body::Body>,
+        next: axum::middleware::Next,
+    ) -> Result<axum::response::Response, http::StatusCode> {
+
+        let req_res = super::grpc_req_enrich(request);
+        match req_res {
+            Ok(request) => {
+
+                // We can put there other headers and extensions
+                // which are missed due to using axum server instead of tonic server
+                //
+                /*
+                use http::{HeaderName, HeaderValue, Request};
+
+                use core::str::FromStr;
+                request.headers_mut().insert(
+                    HeaderName::from_str("MyHeader1").unwrap(),
+                    HeaderValue::from_str("MyHeader1 Value").unwrap()
+                );
+
+                request.extensions_mut().insert(TempExtension1::new());
+                */
+
+                // Since it is axum middleware it requires axum request type
+                // axum::extract::Request instead of http::Request
+                //
+                let axum_req: axum::extract::Request = request.into();
+                let response = next.run(axum_req).await;
+                Ok(response)
+            }
+            Err(err) => {
+                // Errors due to converting HTTP headers into tonic metadata
+                // (there is no way just to move it without any validations).
+                //
+                error!("axum_grpc_req_enrich error: {err:?}");
+                Err(http::StatusCode::INTERNAL_SERVER_ERROR)
+            }
+        }
+    }
+
+    // Would be nice to create extension methods but which return type should be (due to async) ??
+    /*
+    #[extension_trait::extension_trait]
+    pub impl<L> AxumServerTonicGrpcReqEnrichExt<L> for tower::builder::ServiceBuilder<L> {
+        fn add_grpc_req_enrich_layer<R>(self)
+            -> tower::builder::ServiceBuilder<tower_layer::Stack<R>, L> {
+            self.layer(axum::middleware::from_fn(axum_grpc_req_enrich))
+        }
+    }
+    */
 }

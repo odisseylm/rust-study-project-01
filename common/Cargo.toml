@@ -234,7 +234,8 @@ by_address.workspace = true
 progenitor = { workspace = true, features = [] }
 progenitor-client = { workspace = true, features = [] }
 
-tonic = { workspace = true, optional = true }
+#tonic = { workspace = true, features = ["default", "transport", "tls", "channel", "codegen"], optional = true }
+tonic = { workspace = true, features = ["default", "transport", "tls"], optional = true }
 
 fs_extra.workspace = true
 rust-embed.workspace = true

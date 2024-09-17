@@ -14,12 +14,13 @@ services:
     #
     # image: ${DOCKER_IMAGE_PREFIX}rust-mvv-webapp-debug # mvv-registry/mvv.bank/pseudo2-account-soa
     image: mvv_rust_client_search_soa${DOCKER_IMAGE_PROFILE_SUFFIX}
+    # entrypoint: sleep 99999
     networks:
       - rust-client-search-soa-net
     environment:
       # - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,address=*:8000,server=y,suspend=n
 
-      - SERVER_PORT=8080
+      - SERVER_PORT=8443
       # - SERVER_CONTEXTPATH=/account-soa
 
       - POSTGRES_HOST=database

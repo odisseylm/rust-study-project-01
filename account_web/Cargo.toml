@@ -211,7 +211,7 @@ progenitor-client.workspace = true
 progenitor-impl = { workspace = true, optional = true }
 #http-auth-basic = "0.3.3"
 
-tonic.workspace = true
+tonic = { workspace = true, features = ["default", "transport", "tls"] }
 tonic-types.workspace = true
 googleapis-tonic-google-type.workspace = true
 prost.workspace = true

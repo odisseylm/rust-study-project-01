@@ -26,6 +26,7 @@ args = [ "build flow" ]
 dependencies = [
     "pre-build",
     "rs-compile",
+    "generate-ssl-certs",
     "generate-open-api",
     "post-build",
 ]
@@ -36,7 +37,6 @@ dependencies = [
 extend = "cargo-test"
 dependencies = [
     "build",
-    "generate-ssl-certs",
 ]
 
 

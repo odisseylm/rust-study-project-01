@@ -1,15 +1,19 @@
+use std::borrow::Cow;
 use std::sync::Arc;
 use log::info;
-use mvv_common::grpc::GrpcCallError;
 use crate::grpc_dependencies::mvv::client::search::api::v1::{
     Client as GrpcClientV1,
     PhoneNumber as GrpcPhoneNumberV1,
     GetClientByIdRequest,
     client_search_service_client::ClientSearchServiceClient,
 };
-use tonic::transport::Channel;
+use tonic::transport::{Channel, ClientTlsConfig};
 use mvv_auth::grpc::client::GrpcClientAuthInterceptor;
-use mvv_common::cfg::{BaseDependencyConnectConf, DependencyConnectConf};
+use mvv_common::{
+    grpc::GrpcCallError,
+    cfg::{BaseDependencyConnectConf, DependencyConnectConf},
+    secure::SecureString,
+};
 use crate::grpc_dependencies::mvv::client::search::api::v1::client::Email;
 //--------------------------------------------------------------------------------------------------
 
@@ -80,7 +84,6 @@ impl From<GrpcClientV1> for ClientInfo {
 
 pub struct ClientSearchServiceImpl {
     config: Arc<BaseDependencyConnectConf>,
-    // client: crate::grpc_dependencies::mvv::client::search::api::v1::client_search_service_client::ClientSearchServiceClient<>,
 }
 
 
@@ -91,10 +94,28 @@ impl ClientSearchService for ClientSearchServiceImpl {
 
         let conf = self.config.clone();
 
+        let certs = get_ca_and_server_certs(conf.as_ref()) ?;
+
         // TODO: can we use some pool ??
         let channel = Channel::from_shared(conf.base_url().to_string())
-            .map_err(|err|GrpcCallError::invalid_uri(conf.base_url().as_str(), err)) ?
-            .connect().await ?;
+            .map_err(|err|GrpcCallError::invalid_uri(conf.base_url().as_str(), err)) ?;
+
+        let channel =
+            if !certs.is_empty() {
+                let tls = ClientTlsConfig::new()
+                    // It can be added to DependencyConnectConf.
+                    // 'domain_name' may be needed if we connect by IP.
+                    //
+                    // .domain_name("example.com")
+                    .ca_certificates(certs.into_iter())
+                    ;
+
+                channel.tls_config(tls) ?
+            } else {
+                channel
+            };
+
+        let channel = channel.connect().await ?;
 
         let mut client = ClientSearchServiceClient::with_interceptor(
             channel, GrpcClientAuthInterceptor { config: Arc::clone(&conf) },
@@ -105,12 +126,26 @@ impl ClientSearchService for ClientSearchServiceImpl {
         }).await ?;
 
         let res = res.get_ref();
-        let client = res.person.clone();
+        let client = res.client.clone();
 
         Ok(client.map(|client|client.into()))
     }
 }
 
+
+fn get_ca_and_server_certs<Conf: DependencyConnectConf>(conf: &Conf) -> anyhow::Result<Vec<tonic::transport::Certificate>> {
+
+    let certs = [conf.ca_cert(), conf.server_cert()]
+        .into_iter()
+        .filter_map(|opt|opt.as_ref())
+        .map(|cert|cert.as_secure_string())
+        .collect::<anyhow::Result<Vec<Cow<SecureString>>>>() ?;
+
+    let certs = certs.into_iter()
+        .map(|cert|tonic::transport::Certificate::from_pem(cert.as_ref().as_bytes()))
+        .collect::<Vec<_>>();
+    Ok(certs)
+}
 
 
 pub fn create_client_search_service(cfg: &BaseDependencyConnectConf)

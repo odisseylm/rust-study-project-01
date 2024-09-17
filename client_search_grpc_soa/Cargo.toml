@@ -19,10 +19,18 @@ mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_ma
 
 rust-embed.workspace = true
 
-tonic.workspace = true
+#tonic.workspace = true
+# tls-rustls = ["dep:http", "dep:hyper", "dep:hyper-util", "dep:hyper-rustls", "dep:tower", "tower-http/util", "tower-http/add-extension", "dep:rustls-pemfile", "dep:tokio-rustls", "dep:pin-project", "dep:http-body-util"]
+#tonic = { workspace = true, features = ["default", "prost", "channel", "transport", "tls", "tls-roots", "codegen", "server", "router"] }
+tonic = { workspace = true, features = ["default", "prost", "channel", "transport", "tls"] }
 tonic-types.workspace = true
 tonic-reflection.workspace = true
 tonic-async-interceptor.workspace = true
+
+# T O D O: temp or not temp, since now 'tonic' crashs with rustls.
+tower-http.workspace = true
+axum-server.workspace = true
+time.workspace = true
 
 googleapis-tonic-google-type.workspace = true
 #googleapis-tonic-google-api.workspace = true

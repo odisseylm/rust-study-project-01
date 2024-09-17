@@ -26,7 +26,7 @@ const ACCOUNT_SOA_SERVICE: &'static str = "rust-account-soa";
 const ACCOUNT_SOA_HTTP_PORT: Port = Port::new(8443);
 
 const CLIENT_SEARCH_SOA_SERVICE: &'static str = "rust-client-search-soa";
-const CLIENT_SEARCH_SOA_HTTP_PORT: Port = Port::new(8080);
+const CLIENT_SEARCH_SOA_HTTP_PORT: Port = Port::new(8443);
 
 const ACCOUNT_WEB_SERVICE: &'static str = "rust-account-web";
 const ACCOUNT_WEB_HTTP_PORT: Port = Port::new(8443);

@@ -19,6 +19,20 @@ PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/account_web"
 
 # -----------------------------------------------------------------------------
 
+# Overriding 'build' to add 'generate-open-api' to build flow.
+[tasks.build]
+command = "echo" # overriding/disabling predefined build command
+args = [ "build flow" ]
+dependencies = [
+    "pre-build",
+    "rs-compile",
+    # "generate-open-api",
+    "generate-ssl-certs",
+    "post-build",
+]
+
+
+
 [tasks.test]
 extend = "cargo-test"
 dependencies = [

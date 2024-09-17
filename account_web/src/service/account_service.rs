@@ -3,10 +3,9 @@ use reqwest::Certificate;
 use mvv_auth::client::basic_auth_headers_by_client_cfg;
 use mvv_common::{
     soa::RestCallError,
-    cfg::DependencyConnectConf,
+    cfg::{DependencyConnectConf, client::to_reqwest_tls_cert},
     soa::improve_prog_err,
 };
-use mvv_common::cfg::client::to_reqwest_tls_cert;
 use crate::rest_dependencies::account_soa_client::{
     Client as AccountSoaRestClient,
     types::{
@@ -61,17 +60,27 @@ impl AccountService for AccountServiceImpl {
 pub fn create_account_service<Cfg: DependencyConnectConf>(cfg: &Cfg) -> anyhow::Result<AccountServiceImpl> {
 
     info!("Creating account service base on config [{cfg:?}]");
+    let client = create_reqwest_client(cfg) ?;
+
+    let client = AccountSoaRestClient::new_with_client(cfg.base_url().as_str(), client);
+    let account_service = AccountServiceImpl { client };
+    Ok(account_service)
+}
+
+
+fn create_reqwest_client<Cfg: DependencyConnectConf>(cfg: &Cfg) -> anyhow::Result<reqwest::Client> {
 
     let mut client = reqwest::Client::builder()
         .default_headers(basic_auth_headers_by_client_cfg(cfg));
 
-    let cert: Option<Certificate> = to_reqwest_tls_cert(cfg.server_cert()) ?;
+    let cert = cfg.ca_cert().as_ref()
+        .or(cfg.server_cert().as_ref());
+    let cert: Option<Certificate> = to_reqwest_tls_cert(cert) ?;
+
     if let Some(cert) = cert {
         client = client.add_root_certificate(cert);
     }
     let client = client.build() ?;
 
-    let client = AccountSoaRestClient::new_with_client(cfg.base_url().as_str(), client);
-    let account_service = AccountServiceImpl { client };
-    Ok(account_service)
+    Ok(client)
 }

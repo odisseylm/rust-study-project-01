@@ -1,4 +1,6 @@
-use std::path::PathBuf;
+use std::borrow::Cow;
+use std::path::{Path, PathBuf};
+use anyhow::anyhow;
 use crate::{
     env::env_var,
     exe::current_exe_dir,
@@ -96,6 +98,43 @@ fn fix_path(path: String) -> anyhow::Result<String> {
 pub enum SslConfValue {
     Path(PathBuf), // Path(SecureString),
     Value(SecureString),
+}
+
+impl SslConfValue {
+    pub fn as_secure_string<'a>(&'a self) -> anyhow::Result<Cow<'a, SecureString>> {
+        match self {
+            SslConfValue::Path(ref path) => {
+                Ok(Cow::Owned(SecureString::from_string(read_to_string(path) ?)))
+            }
+            SslConfValue::Value(ref secure_string) =>
+                Ok(Cow::Borrowed::<'a>(secure_string)),
+        }
+    }
+    pub fn preload(self) -> anyhow::Result<SslConfValue> {
+        match self {
+            SslConfValue::Path(ref path) => {
+                Ok(SslConfValue::Value(SecureString::from_string(read_to_string(path) ?)))
+            }
+            SslConfValue::Value(ref _secure_string) =>
+                Ok(self), // already loaded
+        }
+    }
+}
+
+#[extension_trait::extension_trait]
+pub impl SslConfValueOptionExt for Option<SslConfValue> {
+    fn preload(self) -> anyhow::Result<Option<SslConfValue>> {
+        match self {
+            None => Ok(None),
+            Some(ssl_conf_value) => Ok(Some(ssl_conf_value.preload() ?))
+        }
+    }
+}
+
+fn read_to_string<P: AsRef<Path>>(path: P) -> anyhow::Result<String> where P: core::fmt::Debug {
+    let str = std::fs::read_to_string(&path)
+        .map_err(|err|anyhow!("Error load file [{path:?}] ({err:?})")) ?;
+    Ok(str)
 }
 
 pub use server::ServerConf;
