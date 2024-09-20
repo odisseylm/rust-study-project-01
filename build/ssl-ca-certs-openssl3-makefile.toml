@@ -88,6 +88,46 @@ dependencies = [
 ]
 
 
+# basicConstraints=CA:FALSE
+# extendedKeyUsage=serverAuth
+# subjectAltName=email:my@other.address,RID:1.2.3.4
+
+[tasks.gen-openssl3-ssl-ca-client-cert]
+private = true
+workspace = false
+cwd = "${TEST_CERTS_DIR}"
+script = '''
+    echo " ### generating cert request user-${CLIENT_NAME}.crt.csr (openssl3) "
+    ${openssl3} req -newkey rsa:2048 -nodes                             \
+        -keyout "${TEST_CERTS_DIR}/user-${CLIENT_NAME}.key.pem"         \
+        -out "${TEST_CERTS_DIR}/user-${CLIENT_NAME}.crt.csr"            \
+        -config "${OPEN_SSL3_CONF}"                                     \
+        -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=${CLIENT_NAME}-CN-USER"     \
+        -addext basicConstraints=CA:FALSE                               \
+        -addext extendedKeyUsage=clientAuth                             \
+        -addext subjectAltName=email:${CLIENT_NAME}@myorg.com,email:asdf@qwert.com,DNS:${CLIENT_NAME}.abc.com,IP:23.45.66.89
+
+    echo " ### generating cert request user-${CLIENT_NAME}.crt.csr (openssl3) "
+    ${openssl3} x509 -req                                               \
+        -in "${TEST_CERTS_DIR}/user-${CLIENT_NAME}.crt.csr"             \
+        -copy_extensions copy                                           \
+        -CA "${TEST_CERTS_DIR}/ca.crt.pem"                              \
+        -CAkey "${TEST_CERTS_DIR}/ca.key.pem"                           \
+        -CAcreateserial -out "${TEST_CERTS_DIR}/user-${CLIENT_NAME}.crt.pem"   \
+        -days 30 -sha256
+
+    chmod ugo+r "${TEST_CERTS_DIR}/user-${CLIENT_NAME}.key.pem"
+
+    # echo " ### installing certs "
+    # sudo cp myCA.crt /etc/pki/ca-trust/source/anchors/
+    # sudo update-ca-trust
+'''
+dependencies = [
+    "gen-openssl3-ssl-ca-certs-prepare",
+    "gen-openssl3-ssl-ca-root",
+]
+
+
 [tasks.gen-openssl3-ssl-ca-cert--for-database]
 condition = { files_not_exist = ["${TEST_CERTS_DIR}/database.key.pem", "${TEST_CERTS_DIR}/database.crt.pem"] }
 env = { SERV_NAME = "database" }
@@ -129,15 +169,41 @@ dependencies = [ # seems dependencies are not inherited in current 'cargo make' 
 
 
 
+[tasks.gen-openssl3-ssl-ca-cert--for-user-vovan]
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/user-vovan.key.pem", "${TEST_CERTS_DIR}/user-vovan.crt.pem"] }
+env = { CLIENT_NAME = "vovan" }
+extend = "gen-openssl3-ssl-ca-client-cert"
+dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
+    "gen-openssl3-ssl-ca-certs-prepare",
+    "gen-openssl3-ssl-ca-root",
+]
+
+
+[tasks.gen-openssl3-ssl-ca-cert--for-user-vovan-read]
+condition = { files_not_exist = ["${TEST_CERTS_DIR}/user-vovan-read.key.pem", "${TEST_CERTS_DIR}/user-vovan-read.crt.pem"] }
+env = { CLIENT_NAME = "vovan-read" }
+extend = "gen-openssl3-ssl-ca-client-cert"
+dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
+    "gen-openssl3-ssl-ca-certs-prepare",
+    "gen-openssl3-ssl-ca-root",
+]
+
+
+
+
 [tasks.generate-openssl3-ssl-ca-certs]
 workspace = false
 dependencies = [
     "gen-openssl3-ssl-ca-certs-prepare",
     "gen-openssl3-ssl-ca-root",
+    # services/SOAs certs
     "gen-openssl3-ssl-ca-cert--for-database",
     "gen-openssl3-ssl-ca-cert--for-account-soa",
     "gen-openssl3-ssl-ca-cert--for-client-search-soa",
     "gen-openssl3-ssl-ca-cert--for-account-web",
+    # user certs
+    "gen-openssl3-ssl-ca-cert--for-user-vovan",
+    "gen-openssl3-ssl-ca-cert--for-user-vovan-read",
 ]
 
 

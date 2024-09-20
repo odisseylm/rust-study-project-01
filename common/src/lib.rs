@@ -33,3 +33,5 @@ pub mod server;
 mod futures;
 pub mod proto_files;
 pub mod gen_src;
+mod client_auth_cert_info;
+mod client_cert_auth;

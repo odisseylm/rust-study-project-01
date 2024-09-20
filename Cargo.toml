@@ -176,7 +176,7 @@ type-rules = { version = "0.2.3", features = ["derive", "regex"] }
 
 axum = { version = "0.7.5" , features = ["default", "macros"] }
 # !! 'axum-server' is maintained by community independently from axum !!
-axum-server = { version = "0.7.1" }
+axum-server = { version = "0.7.1", features = ["tls-rustls-no-provider"] }
 #axum-handle-error-extract = "0.1.0"
 async-trait = "0.1.80"
 #axum = {  version = "0.7.5", features = ["default", "tracing", ] }
@@ -243,7 +243,12 @@ tokio-test = "0.4.4"
 ##pin-project = {version = "1.1.5", features = []}
 pin-project-lite = { version = "0.2.14", features = [] }
 
-rustls = { version = "0.23.12", default-features = false, features = ["ring", "logging", "std", "tls12" ] }
+rustls = { version = "0.23.12", default-features = false, features = ["ring", "logging", "std", "tls12", ] }
+rustls-webpki = "0.102.8"
+rustls-pemfile = "2.1.3"
+rustls-pki-types = "1.8.0"
+
+x509-parser = "0.16.0"
 
 askama = { version = "0.12.1", features = ["with-axum"] }
 askama_axum = "0.4.0"

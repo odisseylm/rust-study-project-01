@@ -32,6 +32,13 @@ impl SecureString {
     // pub fn into_bytes(self) -> Vec<u8> {
     //     self.0.into_bytes()
     // }
+    pub fn into_bytes(self) -> Vec<u8> {
+        // cannot move out of type `SecureString`, which implements the `Drop` trait
+        // self.0.into_bytes()
+        // TODO: How to move? Maybe use swap?
+
+        self.0.clone().into_bytes()
+    }
 }
 
 generate_simple_display! { SecureString, "Secure[...]" }

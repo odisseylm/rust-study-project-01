@@ -1,5 +1,5 @@
 use std::time::Duration;
-use crate::cfg::SslConfValue;
+use crate::cfg::{SslConfValue, SslConfValueOptionExt};
 use crate::net::ConnectionType;
 use crate::string::StaticRefOrString;
 use super::{get_server_port, get_server_connection_type, load_path_from_env_vars};
@@ -16,9 +16,13 @@ pub trait ServerConf {
     fn server_port(&self) -> u16;
     fn server_ssl_key(&self) -> Option<&SslConfValue>;
     fn server_ssl_cert(&self) -> Option<&SslConfValue>;
+    fn client_auth_ssl_ca_cert(&self) -> Option<&SslConfValue>;
+
     fn shutdown_timeout(&self) -> Duration {
         Duration::from_millis(5)
     }
+
+    fn preload_values(self) -> anyhow::Result<Self> where Self: Sized;
 }
 
 
@@ -29,6 +33,7 @@ pub struct BaseServerConf {
     pub connection_type: ConnectionType,
     pub server_ssl_key: Option<SslConfValue>,
     pub server_ssl_cert: Option<SslConfValue>,
+    pub client_auth_ssl_ca_cert: Option<SslConfValue>,
 }
 
 impl BaseServerConf {
@@ -42,22 +47,37 @@ impl BaseServerConf {
 
         let server_ssl_key: Option<SslConfValue>;
         let server_ssl_cert: Option<SslConfValue>;
+        let client_auth_ssl_ca_cert: Option<SslConfValue>;
 
         if let ConnectionType::Ssl = connection_type {
             server_ssl_key = Some(SslConfValue::Path(load_path_from_env_vars([
                 // for local dev testing with single config env file
-                &format!("{server_env_name}SSL_KEY_PATH"), &format!("{server_env_name}_SSL_KEY_PATH"),
+                &format!("{server_env_name}SERVER_SSL_KEY_PATH"),
+                &format!("{server_env_name}_SERVER_SSL_KEY_PATH"),
+                &format!("{server_env_name}SSL_KEY_PATH"),
+                &format!("{server_env_name}_SSL_KEY_PATH"),
                 // for prod/docker
                 "SERVER_SSL_KEY_PATH", "SSL_KEY_PATH"])?));
 
             server_ssl_cert = Some(SslConfValue::Path(load_path_from_env_vars([
                 // for local dev testing with single config env file
-                &format!("{server_env_name}SSL_CERT_PATH"), &format!("{server_env_name}_SSL_CERT_PATH"),
+                &format!("{server_env_name}SEVER_SSL_CERT_PATH"),
+                &format!("{server_env_name}_SERVER_SSL_CERT_PATH"),
+                &format!("{server_env_name}SSL_CERT_PATH"),
+                &format!("{server_env_name}_SSL_CERT_PATH"),
                 // for prod/docker
                 "SERVER_SSL_CERT_PATH", "SSL_CERT_PATH"])?));
+
+            client_auth_ssl_ca_cert = Some(SslConfValue::Path(load_path_from_env_vars([
+                // for local dev testing with single config env file
+                &format!("{server_env_name}CLIENT_SSL_CERT_PATH"),
+                &format!("{server_env_name}_CLIENT_SSL_CERT_PATH"),
+                // for prod/docker
+                "CLIENT_SSL_CERT_PATH"])?));
         } else {
             server_ssl_key = None;
             server_ssl_cert = None;
+            client_auth_ssl_ca_cert = None;
         }
 
         Ok(Self {
@@ -67,6 +87,7 @@ impl BaseServerConf {
             connection_type,
             server_ssl_key,
             server_ssl_cert,
+            client_auth_ssl_ca_cert,
         })
     }
 }
@@ -78,4 +99,19 @@ impl ServerConf for BaseServerConf {
     fn server_port(&self) -> u16 { self.server_port }
     fn server_ssl_key(&self) -> Option<&SslConfValue> { self.server_ssl_key.as_ref() }
     fn server_ssl_cert(&self) -> Option<&SslConfValue> { self.server_ssl_cert.as_ref() }
+    fn client_auth_ssl_ca_cert(&self) -> Option<&SslConfValue> {
+        self.client_auth_ssl_ca_cert.as_ref()
+    }
+
+    fn preload_values(self) -> anyhow::Result<Self> where Self: Sized {
+        Ok(Self {
+            server_name: self.server_name,
+            server_env_name: self.server_env_name,
+            server_port: self.server_port,
+            connection_type: self.connection_type,
+            server_ssl_key: self.server_ssl_key.preload() ?,
+            server_ssl_cert: self.server_ssl_cert.preload() ?,
+            client_auth_ssl_ca_cert: self.client_auth_ssl_ca_cert.preload() ?,
+        })
+    }
 }

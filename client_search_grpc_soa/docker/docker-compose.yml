@@ -36,7 +36,7 @@ services:
       - ../target/generated-test-resources/ssl/:/certs/:ro
     ports:
       # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:
-      - 8103:8080
+      - 8103:8443
       # Remote debug
       # - ${DOCKER_HOST_DEBUG_ACCOUNT_SOA_PORT_WITH_COLON}8000
     links:

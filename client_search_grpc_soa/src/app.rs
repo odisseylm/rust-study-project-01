@@ -1,4 +1,3 @@
-use core::convert::Infallible;
 use std::{
     collections::HashMap,
     error::Error as StdError,
@@ -6,39 +5,28 @@ use std::{
     sync::Arc,
 };
 use anyhow::anyhow;
-use axum_server::service::SendService;
-use log::{error, info};
-use tonic::{
-    transport::Server,
-    service::interceptor,
-    // transport::ServerTlsConfig,
-};
+use log::info;
+use tonic::transport::Server;
 use tonic_types::pb;
-use tower::{
-    BoxError, ServiceBuilder,
-    filter::FilterLayer,
-};
+use tower::ServiceBuilder;
 use mvv_auth::{
-    AuthUserProvider, PasswordComparator, PlainPasswordComparator,
     grpc::{
         server::{GrpcAuthzInterceptor, predefined_public_endpoints_roles},
-        server::{grpc_req_enrich, axum::axum_grpc_req_enrich},
+        server::axum::axum_grpc_req_enrich,
     },
-    permission::PermissionProvider,
 };
 use mvv_common::{
-    cfg::{ServerConf, SslConfValue},
+    cfg::ServerConf,
     env::process_env_load_res,
     exe::{current_exe_dir, current_exe_name},
     gen_src::UpdateFile,
-    grpc::server::server_tls_config,
     net::ConnectionType,
     proto_files::{extract_proto_files, to_extract_proto_files},
     rest::health_check_router,
-    server::{server_rustls_config, start_axum_server},
+    server::start_axum_server,
 };
 use crate::{
-    auth::{AuthUser, CompositeAuthBackend, Role, RolePermissionsSet},
+    auth::{AuthUser, CompositeAuthBackend},
     cfg::ClientSearchSoaServerConfig,
     dependencies::{create_dependencies},
     client_search_service::ClientSearchService,
@@ -120,6 +108,9 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn StdError>> {
 
     use tonic_async_interceptor::async_interceptor;
 
+    // axum::extract::connect_info
+    // axum::extract::connect_info::ConnectInfo
+
     let grpc_auth_interceptor = GrpcAuthzInterceptor::<AuthUser, /*Role, RolePermissionsSet,*/ CompositeAuthBackend> {
         endpoints_roles: Arc::new({
             let mut roles = HashMap::new();
@@ -171,6 +162,17 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn StdError>> {
         .add_service(client_search_serv.clone())
         ;
 
+    let _app_routes = tonic::service::Routes::builder().routes()
+        // .add_service(reflection_service.clone())
+        // .add_service(health_check_serv.clone())
+        .add_service(client_search_serv.clone())
+        ;
+
+    let _system_svc_routes = tonic::service::Routes::builder().routes()
+        .add_service(reflection_service.clone())
+        .add_service(health_check_serv.clone())
+        // .add_service(client_search_serv.clone())
+        ;
 
     match conf.connection_type() {
 
@@ -208,20 +210,27 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn StdError>> {
             // !!! WORKAROUND !!!:
             //  At that moment tonic server silently crashes with enabled SSL.
             //  As workaround now I use axum/axum-server for SSL mode.
-            //  Use tonic when this bug is fixed.
+            //  Please, use tonic when this bug is fixed.
 
             let app_axum_router = axum::Router::new()
                 .merge(health_check_router())
                 .merge(routes.into_axum_router())
+                // .merge(app_routes.into_axum_router())
                 .layer(
                     ServiceBuilder::new()
                         .layer(tower_http::trace::TraceLayer::new_for_http())
+                        .layer(tower_http::trace::TraceLayer::new_for_grpc())
                         // We cannot reuse tower FilterLayer/AsyncFilterLayer there
                         // (similar to tonic approach) since Error incompatibility
                         // between axum (Infallible) and tower BoxError
                         .layer(axum::middleware::from_fn(axum_grpc_req_enrich))
                         .layer(async_interceptor(grpc_auth_interceptor))
-                );
+                )
+                // after middle-ware to skip tracing so on... Does NOT work with tonic !!??
+                // .merge(health_check_router())
+                // .merge(system_svc_routes.into_axum_router())
+                ;
+
             start_axum_server(conf, app_axum_router).await ?;
         }
 

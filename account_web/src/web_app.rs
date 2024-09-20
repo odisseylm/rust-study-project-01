@@ -109,7 +109,7 @@ async fn create_app_route (dependencies: Arc<Dependencies>) -> Result<Router<()>
     let login_route = composite_login_router();
 
     let app_router = Router::new()
-        .merge(health_check_router())
+        // .merge(health_check_router())
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", create_open_api()))
         .merge(login_route)
         .nest("/api", Router::new()
@@ -135,7 +135,10 @@ async fn create_app_route (dependencies: Arc<Dependencies>) -> Result<Router<()>
                 .map_err(|err|{
                     error!("### Route error: {:?}", err); err
                 })
-        );
+        )
+        // after middle-ware to skip tracing so on...
+        .merge(health_check_router())
+        ;
     Ok(app_router)
 }
 

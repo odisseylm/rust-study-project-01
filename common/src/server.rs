@@ -3,6 +3,7 @@ use std::net::SocketAddr;
 use log::info;
 use tokio::signal;
 use crate::cfg::{ServerConf, SslConfValue};
+use crate::client_cert_auth::server_rustls_with_ssl_cert_client_auth_config;
 use crate::net::ConnectionType;
 //--------------------------------------------------------------------------------------------------
 
@@ -40,7 +41,13 @@ pub async fn start_axum_server<Conf: ServerConf>(server_conf: Conf, app_router: 
         }
 
         ConnectionType::Ssl => {
-            let rust_tls_config = server_rustls_config(&server_conf).await ?;
+
+            let rust_tls_config =
+                if server_conf.client_auth_ssl_ca_cert().is_some() {
+                    server_rustls_with_ssl_cert_client_auth_config(&server_conf).await ?
+                } else {
+                    server_rustls_config(&server_conf).await ?
+                };
 
             info!("Web server started on ssl port [{port}]");
             axum_server::bind_rustls(addr, rust_tls_config)

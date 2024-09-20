@@ -30,6 +30,7 @@ tonic-async-interceptor.workspace = true
 # T O D O: temp or not temp, since now 'tonic' crashs with rustls.
 tower-http.workspace = true
 axum-server.workspace = true
+rustls.workspace = true
 time.workspace = true
 
 googleapis-tonic-google-type.workspace = true

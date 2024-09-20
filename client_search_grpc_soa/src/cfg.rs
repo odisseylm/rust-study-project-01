@@ -17,6 +17,15 @@ impl ServerConf for ClientSearchSoaServerConfig {
     fn server_port(&self) -> u16 { self.base_server_conf.server_port() }
     fn server_ssl_key(&self) -> Option<&SslConfValue> { self.base_server_conf.server_ssl_key() }
     fn server_ssl_cert(&self) -> Option<&SslConfValue> { self.base_server_conf.server_ssl_cert() }
+    fn client_auth_ssl_ca_cert(&self) -> Option<&SslConfValue> {
+        self.base_server_conf.client_auth_ssl_ca_cert()
+    }
+
+    fn preload_values(self) -> anyhow::Result<Self> where Self: Sized {
+        Ok(Self {
+            base_server_conf: self.base_server_conf.preload_values() ?,
+        })
+    }
 }
 
 impl ClientSearchSoaServerConfig {
