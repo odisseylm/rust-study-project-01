@@ -140,8 +140,14 @@ trait-variant.workspace = true # similaer to 'async-trait'
 
 axum = { workspace = true, features = ["default", "macros"] }
 axum-server = { workspace = true, features = [ "tls-rustls-no-provider" ] }
+tower-service.workspace = true
+http-body.workspace = true
+bytes.workspace = true
 
 rustls.workspace = true
+tokio-rustls.workspace = true
+#pin-project.workspace = true
+pin-project-lite.workspace = true
 rustls-webpki.workspace = true
 rustls-pemfile.workspace = true
 rustls-pki-types.workspace = true
@@ -183,6 +189,7 @@ jsonwebtoken.workspace = true
 
 tokio = { workspace = true, features = ["full"] }
 tokio-test.workspace = true
+tokio-inherit-task-local.workspace = true
 
 askama = { workspace = true, features = ["with-axum"] }
 askama_axum.workspace = true

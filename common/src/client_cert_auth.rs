@@ -9,9 +9,11 @@ use rustls::{
     server::danger::ClientCertVerified,
 };
 use rustls_pki_types::CertificateDer;
+use x509_parser::nom::AsBytes;
 use crate::{
-    cfg::ServerConf,
-    client_auth_cert_info::extract_client_auth_cert_info_from_cert,
+    cfg::ServerConf, client_auth_cert_info,
+    client_auth_cert_info::{ClientAuthCertInfo, extract_client_auth_cert_info_from_cert},
+    rustls_acceptor_2::ConnectionInfo,
 };
 //--------------------------------------------------------------------------------------------------
 
@@ -37,7 +39,8 @@ pub async fn server_rustls_with_ssl_cert_client_auth_config<Conf: ServerConf>(se
     let key = Vec::<u8>::from(key.as_ref().as_bytes());
     let client_auth_ca_cert: Vec<u8> = Vec::<u8>::from(client_auth_ca_cert.as_ref().as_bytes());
 
-    let serv_conf = config_from_pem(cert, key, client_auth_ca_cert) ?;
+    let mut serv_conf = config_from_pem(cert, key, client_auth_ca_cert) ?;
+    serv_conf.enable_secret_extraction = true; // TODO: Do we need it?
     let rust_tls_config = RustlsConfig::from_config(Arc::new(serv_conf));
     Ok(rust_tls_config)
 }
@@ -122,7 +125,7 @@ fn config_from_der(cert: Vec<Vec<u8>>, key: Vec<u8>, client_auth_ca_cert: Vec<u8
     }
 
     let verifier = WebPkiClientVerifier::builder(Arc::new(root_s))
-        .allow_unauthenticated()
+        .allow_unauthenticated() // T O D O: make configurable
         .build()
         // .map_err(|err| io_other("Error of creating WebPkiClientVerifier."));
         .map_err(|err| io_other(err))
@@ -138,6 +141,54 @@ fn config_from_der(cert: Vec<Vec<u8>>, key: Vec<u8>, client_auth_ca_cert: Vec<u8
     Ok(config)
 }
 
+
+// tokio::task_local! {
+//     pub static ONE_BLA_BLA: u32;
+// }
+// tokio_inherit_task_local::inheritable_task_local! {
+//     pub static ONE_BLA_BLA_2: u32;
+// }
+
+pub fn get_current_client_auth_cert() -> anyhow::Result<Option<ClientAuthCertInfo>> {
+    // TODO: temp, move it to 'enrich request' interceptor
+    //       and take there ConnectionInfo from request extensions (not from task-local var)
+    let ext = crate::rustls_acceptor_2::CONNECTION_STREAM_EXTENSION
+        .try_with(|v| v.clone());
+
+    let ext = match ext {
+        Ok(ext) => ext,
+        Err(ref _err) =>
+            // Or we can throw exception and force developer not oto use it
+            // if server is not configured properly
+            // return Ok(None),
+
+            anyhow::bail!("Seems server is not configured to capture SSL/TLS stream info.")
+    };
+
+    // TODO: Use also tonic approach
+
+    let con_info = ext.get::<ConnectionInfo>();
+    println!("### con_info: ${con_info:?}");
+
+    match con_info {
+        None => Ok(None),
+        Some(con_info) => {
+            match con_info.peer_certs {
+                None => Ok(None),
+                Some(ref peer_certs) => {
+                    // TODO: use filter/validate/find authClient certificate
+                    let auth_client_cert = peer_certs.certs.first()
+                        // Or we can return None... but I think if we are there
+                        // it is unexpected situation, and it is error/bug
+                        .ok_or_else(||anyhow!("No auth cert")) ?;
+                    let client_auth_cert_info = extract_client_auth_cert_info_from_cert(
+                        auth_client_cert.as_bytes()) ?;
+                    Ok(Some(client_auth_cert_info))
+                }
+            }
+        }
+    }
+}
 
 #[derive(Debug)]
 struct MyClientCertVerifier {
@@ -167,6 +218,7 @@ impl rustls::server::danger::ClientCertVerifier for MyClientCertVerifier {
         let res = self.delegate.verify_client_cert(end_entity, intermediates, now);
         match res {
             Ok(ref _client_cert_verified) => {
+                /*
                 info!("Client cert verification succeeded");
                 let der_bytes = end_entity.as_ref();
 
@@ -174,14 +226,31 @@ impl rustls::server::danger::ClientCertVerifier for MyClientCertVerifier {
                 match cert_info {
                     Ok(client_auth_cert_info) => {
                         info!("cert_info: {client_auth_cert_info:?}");
-                        // TODO: put client_auth_cert_info to request context
+                        // T O D O: put client_auth_cert_info to request context
+                        // ONE_BLA_BLA = LocalKey::new() 567;
+                        // ONE_BLA_BLA.with(|_arg|456);
+                        // ONE_BLA_BLA.scope(1, async move {
+                        //     println!("task local value: {}", ONE_BLA_BLA. get());
+                        // }).await;
+
+                        // tokio::task::futures::TaskLocalFuture
+
+                        // ONE_BLA_BLA.get();
+                        // let bla_bla_2 = ONE_BLA_BLA_2.get();
+                        // println!("### bla_bla_2: {bla_bla_2}");
+
+                        // ONE_BLA_BLA.sync_scope(1, move ||{
+                        //         println!("task local value: {}", ONE_BLA_BLA. get());
+                        //     });
+
                     }
                     Err(err) => {
                         error!("Client verification succeeded, but extracting cert info failed ({err:?})");
-                        // return Err(rustls::Error::Other(rustls::OtherError(Arc::new(err)))) // TODO: Why?
+                        // return Err(rustls::Error::Other(rustls::OtherError(Arc::new(err)))) // T O D O: Why?
                         return Err(rustls::Error::General(err.to_string()))
                     }
                 }
+                */
             }
             Err(ref err) => {
                 error!("Client cert verification failed: {err:?}");
@@ -210,3 +279,40 @@ impl rustls::server::danger::ClientCertVerifier for MyClientCertVerifier {
         self.delegate.supported_verify_schemes()
     }
 }
+
+
+//--------------------------------------------------------------------------------------------------
+
+// use tonic::{
+//     // Request,
+//     transport::server::Connected,
+// };
+// use x509_parser::nom::AsBytes;
+// use crate::client_auth_cert_info::ClientAuthCertInfo;
+// use crate::rustls_acceptor_2::{ConnectionInfo, ConnectionStreamExtensions, PeerCertificates};
+
+/*
+// A `Stream` that yields connections
+struct MyConnector {}
+
+// Return metadata about the connection as `MyConnectInfo`
+impl Connected for MyConnector {
+    type ConnectInfo = MyConnectInfo;
+
+    fn connect_info(&self) -> Self::ConnectInfo {
+        MyConnectInfo {}
+    }
+}
+
+#[derive(Clone)]
+struct MyConnectInfo {
+    // Metadata about your connection
+}
+*/
+/*
+// The connect info can be accessed through request extensions:
+let connect_info: &MyConnectInfo = request
+    .extensions()
+    .get::<MyConnectInfo>()
+    .expect("bug in tonic");
+*/

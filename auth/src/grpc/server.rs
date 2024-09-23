@@ -258,6 +258,9 @@ impl <Body> tower::filter::Predicate<http::request::Request<Body>> for GrpcReqEn
 pub fn grpc_req_enrich<Body>(mut req: http::request::Request<Body>)
     -> Result<http::request::Request<Body>, BoxError> {
 
+    // let aa = mvv_common::client_cert_auth::get_current_client_auth_cert();
+    // println!("### LOCAL aa: {aa}");
+
     let ext_uri = req.extensions().get::<::axum::extract::OriginalUri>();
     if ext_uri.is_none() {
         let uri = req.uri().clone();

@@ -62,6 +62,16 @@ impl ClientSearchService {
 impl ClientSearchService {
     async fn do_search(&self, request: Request<ClientSearchRequest>) -> anyhow::Result<Vec<Client>> {
 
+        // RustlsAcceptorFuture::
+
+        // let certs = request
+        //     .peer_certs()
+        //     .expect("Client did not send its certs!");
+        // println!("### certs: {certs:?}");
+
+        let aa = mvv_common::client_cert_auth::get_current_client_auth_cert();
+        println!("### LOCAL aa: {aa:?}");
+
         // let mut con = establish_connection() ?;
         let mut con = self.dependencies.diesel_db_pool.get() ?;
 
