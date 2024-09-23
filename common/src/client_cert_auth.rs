@@ -13,7 +13,7 @@ use x509_parser::nom::AsBytes;
 use crate::{
     cfg::ServerConf, //client_auth_cert_info,
     client_auth_cert_info::{ClientAuthCertInfo, extract_client_auth_cert_info_from_cert},
-    rustls_acceptor_2::ConnectionInfo,
+    rustls_acceptor_with_con_info::ConnectionInfo,
 };
 //--------------------------------------------------------------------------------------------------
 
@@ -152,7 +152,7 @@ fn config_from_der(cert: Vec<Vec<u8>>, key: Vec<u8>, client_auth_ca_cert: Vec<u8
 pub fn get_current_client_auth_cert() -> anyhow::Result<Option<ClientAuthCertInfo>> {
     // TODO: temp, move it to 'enrich request' interceptor
     //       and take there ConnectionInfo from request extensions (not from task-local var)
-    let ext = crate::rustls_acceptor_2::CONNECTION_STREAM_EXTENSION
+    let ext = crate::rustls_acceptor_with_con_info::CONNECTION_STREAM_EXTENSION
         .try_with(|v| v.clone());
 
     let ext = match ext {

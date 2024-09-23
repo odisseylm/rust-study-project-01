@@ -25,6 +25,7 @@ pub trait ExtendableByConnectServiceService {
     fn install_connect_info_to(&self, extensions: &mut ConnectionStreamExtensions); // TODO: return Result
 }
 
+
 // Actually this class belongs to 'http' crate, but let's reuse it instead of recreation.
 pub type ConnectionStreamExtensions = http::Extensions;
 
@@ -32,6 +33,7 @@ tokio::task_local! {
 // tokio_inherit_task_local::inheritable_task_local! {
     pub static CONNECTION_STREAM_EXTENSION: ConnectionStreamExtensions;
 }
+
 
 pub struct ServiceWrapper<S> {
     pub svc: S,
@@ -44,16 +46,19 @@ impl<S> ServiceWrapper<S> {
     }
 }
 
+
 #[derive(Debug, Clone)]
 pub struct ConnectionInfo {
     pub peer_certs: Option<PeerCertificates>,
 }
+
 
 #[derive(Clone)]
 pub struct PeerCertificates {
     pub certs: Vec<rustls_pki_types::CertificateDer<'static>>,
 }
 generate_empty_debug_non_exhaustive! { PeerCertificates }
+
 
 impl<S> ExtendableByConnectServiceService for ServiceWrapper<S> {
     fn extend_with_connect_info_from_ssl_stream<RawStream>(
@@ -115,7 +120,7 @@ generate_debug! { ServiceWrapper<S: Debug>, svc }
 
 
 #[derive(Debug, Clone)]
-pub struct MyIntoMakeService<S> where S: Debug + Clone {
+pub struct ServiceWrapperIntoMakeService<S> where S: Debug + Clone {
     pub svc: ServiceWrapper<S>,
 }
 
@@ -132,20 +137,20 @@ impl ServiceWrapper<axum::Router<()>> {
         }
     }
 
-    pub fn into_make_service(self) -> MyIntoMakeService<axum::Router<()>> {
+    pub fn into_make_service(self) -> ServiceWrapperIntoMakeService<axum::Router<()>> {
         // call `Router::with_state` such that everything is turned into `Route` eagerly
         // rather than doing that per request
-        MyIntoMakeService { svc: self.with_state(()) }
+        ServiceWrapperIntoMakeService { svc: self.with_state(()) }
     }
 }
 
-impl<S, T> tower_service::Service<T> for MyIntoMakeService<S>
+impl<S, T> tower_service::Service<T> for ServiceWrapperIntoMakeService<S>
 where
     S: Debug + Clone,
 {
     type Response = ServiceWrapper<S>;
     type Error = Infallible;
-    type Future = MyIntoMakeServiceFuture2<S>;
+    type Future = ServiceWrapperIntoMakeServiceFuture<S>;
 
     #[inline]
     //noinspection DuplicatedCode
@@ -155,28 +160,29 @@ where
 
     #[inline]
     fn call(&mut self, _target: T) -> Self::Future {
-        MyIntoMakeServiceFuture2::new(self.svc.clone())
+        ServiceWrapperIntoMakeServiceFuture::new(self.svc.clone())
     }
 }
 
 
 pin_project_lite::pin_project! {
-    pub struct MyIntoMakeServiceFuture2<S> {
+    pub struct ServiceWrapperIntoMakeServiceFuture<S> {
         #[pin] // Do I need pin there?
         svc: ServiceWrapper<S>,
     }
 }
 
-impl<S> MyIntoMakeServiceFuture2<S> {
+impl<S> ServiceWrapperIntoMakeServiceFuture<S> {
     #[inline]
     pub fn new(svc: ServiceWrapper<S>) -> Self {
         Self { svc }
     }
 }
-generate_empty_debug_non_exhaustive! { MyIntoMakeServiceFuture2<S> }
+generate_empty_debug_non_exhaustive! { ServiceWrapperIntoMakeServiceFuture<S> }
+
 
 // T O D O: try to remove Clone requirement later, but in easy way
-impl<S: Debug + Clone> Future for MyIntoMakeServiceFuture2<S>
+impl<S: Debug + Clone> Future for ServiceWrapperIntoMakeServiceFuture<S>
 where
     std::future::Ready<Result<S, Infallible>>: Future,
 {
@@ -267,11 +273,13 @@ impl Future for ServiceAxumRoutreWrapperCallFuture {
 
 
 #[derive(Clone)]
-pub struct MyRustlsAcceptor2<A: Clone = axum_server::accept::DefaultAcceptor> {
+pub struct ServiceWrapperRustlsAcceptor<A: Clone = axum_server::accept::DefaultAcceptor> {
     delegate: axum_server::tls_rustls::RustlsAcceptor<A>,
 }
+generate_empty_debug_non_exhaustive! { ServiceWrapperRustlsAcceptor<A: Clone> }
 
-impl MyRustlsAcceptor2 {
+
+impl ServiceWrapperRustlsAcceptor {
     // axum_server::tls_rustls::RustlsAcceptor API
     pub fn new(config: axum_server::tls_rustls::RustlsConfig) -> Self {
         Self {
@@ -286,10 +294,10 @@ impl MyRustlsAcceptor2 {
     }
 }
 
-impl<A: Clone> MyRustlsAcceptor2<A> {
+impl<A: Clone> ServiceWrapperRustlsAcceptor<A> {
     // axum_server::tls_rustls::RustlsAcceptor API
-    pub fn acceptor<Acceptor: Clone>(self, acceptor: Acceptor) -> MyRustlsAcceptor2<Acceptor> {
-        MyRustlsAcceptor2::<Acceptor> {
+    pub fn acceptor<Acceptor: Clone>(self, acceptor: Acceptor) -> ServiceWrapperRustlsAcceptor<Acceptor> {
+        ServiceWrapperRustlsAcceptor::<Acceptor> {
             delegate: self.delegate.acceptor(acceptor)
         }
     }
@@ -297,7 +305,7 @@ impl<A: Clone> MyRustlsAcceptor2<A> {
 
 
 
-impl<A, I, S> axum_server::accept::Accept<I, S> for MyRustlsAcceptor2<A>
+impl<A, I, S> axum_server::accept::Accept<I, S> for ServiceWrapperRustlsAcceptor<A>
 where
     A: Clone + axum_server::accept::Accept<I, S>,
     A::Stream: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
@@ -306,18 +314,17 @@ where
 {
     type Stream = tokio_rustls::server::TlsStream<A::Stream>;
     type Service = A::Service;
-    type Future = RustlsAcceptorFuture2_2<A::Future, A::Stream, A::Service>;
+    type Future = ServiceWrapperRustlsAcceptorFuture<A::Future, A::Stream, A::Service>;
     // type Future = Map<RustlsAcceptorFuture2_2<A::Future, A::Stream, A::Service>, MapperStruct>;
 
     fn accept(&self, stream: I, service: S) -> Self::Future {
         let accept_fut = self.delegate.accept(stream, service);
-        let fut: RustlsAcceptorFuture2_2<A::Future, A::Stream, A::Service> =
-            RustlsAcceptorFuture2_2::new(accept_fut);
+        let fut: ServiceWrapperRustlsAcceptorFuture<A::Future, A::Stream, A::Service> =
+            ServiceWrapperRustlsAcceptorFuture::new(accept_fut);
         fut
     }
 }
 
-generate_empty_debug_non_exhaustive! { MyRustlsAcceptor2<A: Clone> }
 
 // Seems pin_project_lite::pin_project does not support new-type approach
 // (we need to use classical struct).
@@ -326,22 +333,22 @@ generate_empty_debug_non_exhaustive! { MyRustlsAcceptor2<A: Clone> }
 
 
 pin_project_lite::pin_project! {
-    pub struct RustlsAcceptorFuture2_2<F, I, S> {
+    pub struct ServiceWrapperRustlsAcceptorFuture<F, I, S> {
         #[pin]
         delegate_fut: RustlsAcceptorFuture<F, I, S>
     }
 }
+generate_empty_debug_non_exhaustive! { ServiceWrapperRustlsAcceptorFuture<F, I, S> }
 
-impl<F, I, S> RustlsAcceptorFuture2_2<F, I, S> {
+
+impl<F, I, S> ServiceWrapperRustlsAcceptorFuture<F, I, S> {
     pub fn new(rustls_acceptor_future: RustlsAcceptorFuture<F, I, S>) -> Self {
         Self { delegate_fut: rustls_acceptor_future }
     }
 }
 
-generate_empty_debug_non_exhaustive! { RustlsAcceptorFuture2_2<F, I, S> }
 
-
-impl<F, I, S> Future for RustlsAcceptorFuture2_2<F, I, S>
+impl<F, I, S> Future for ServiceWrapperRustlsAcceptorFuture<F, I, S>
 where
     F: Future<Output = io::Result<(I, S)>>,
     I: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
@@ -362,5 +369,13 @@ where
             Poll::Pending =>
                 Poll::Pending,
         }
+    }
+}
+
+
+#[extension_trait::extension_trait]
+pub impl ServiceWrapperExt for axum::Router<()> {
+    fn into_make_service_with_con_info(self) -> ServiceWrapperIntoMakeService<axum::Router<()>> {
+        ServiceWrapper::<axum::Router<()>>::new(self).into_make_service()
     }
 }
