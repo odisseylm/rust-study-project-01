@@ -123,70 +123,61 @@
 
 
 
-#[macro_export] macro_rules! generate_empty_debug_delegate {
-    ($Type:ty) => {
-        #[allow(unused_imports, unused_qualifications)]
-        impl core::fmt::Debug for $Type {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.debug_struct(stringify!($Type)).finish()
+#[macro_export] macro_rules! generate_empty_debug {
+    // Idea/code is taken from stackoverflow.com
+    // https://stackoverflow.com/questions/41603424/rust-macro-accepting-type-with-generic-parameters
+    //
+    ( $( $Type:ident $(< $( $TypeParam:tt $( : $TypeParamSpec:tt $(+ $OtherTypeParamSpec:tt )* )? ),+ >)? ),+ ) => {
+        $(
+            impl $(< $( $TypeParam $( : $TypeParamSpec $(+ $OtherTypeParamSpec )* )? ),+ >)?  core::fmt::Debug
+                for $Type $(< $( $TypeParam ),+ >)? {
+                fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                    f.debug_struct(stringify!($Type)).finish()
+                }
             }
-        }
-    };
-    ($Type:ty, $label:literal) => {
-        #[allow(unused_imports, unused_qualifications)]
-        impl core::fmt::Debug for $Type {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.debug_struct($label).finish()
-            }
-        }
-    };
+        )+
+    }
 }
 
 
-#[macro_export] macro_rules! generate_empty_debug_non_exhaustive_delegate {
-    ($Type:ty) => {
-        #[allow(unused_imports, unused_qualifications)]
-        impl core::fmt::Debug for $Type {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.debug_struct(stringify!($Type)).finish_non_exhaustive()
+#[macro_export] macro_rules! generate_empty_debug_non_exhaustive {
+    // Idea/code is taken from stackoverflow.com
+    // https://stackoverflow.com/questions/41603424/rust-macro-accepting-type-with-generic-parameters
+    //
+    ( $( $Type:ident $(< $( $TypeParam:tt $( : $TypeParamSpec:tt $(+ $OtherTypeParamSpec:tt )* )? ),+ >)? ),+ ) => {
+        $(
+            impl $(< $( $TypeParam $( : $TypeParamSpec $(+ $OtherTypeParamSpec )* )? ),+ >)?  core::fmt::Debug
+                for $Type $(< $( $TypeParam ),+ >)? {
+                fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                    f.debug_struct(stringify!($Type)).finish_non_exhaustive()
+                }
             }
-        }
-    };
-    ($Type:tt, $GenericParam:ident) => {
-        #[allow(unused_imports, unused_qualifications)]
-        impl<$GenericParam> core::fmt::Debug for $Type::<$GenericParam> {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.debug_struct(stringify!($Type)).finish_non_exhaustive()
-            }
-        }
-    };
-    ($Type:tt, $GenericParam1:ident, $GenericParam2:ident) => {
-        #[allow(unused_imports, unused_qualifications)]
-        impl<$GenericParam1, $GenericParam2> core::fmt::Debug for $Type::<$GenericParam1, $GenericParam2> {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.debug_struct(stringify!($Type)).finish_non_exhaustive()
-            }
-        }
-    };
-    ($Type:tt, $GenericParam1:ident, $GenericParam2:ident, $GenericParam3:ident) => {
-        #[allow(unused_imports, unused_qualifications)]
-        impl<$GenericParam1, $GenericParam2, $GenericParam3> core::fmt::Debug for $Type::<$GenericParam1, $GenericParam2, $GenericParam3> {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.debug_struct(stringify!($Type)).finish_non_exhaustive()
-            }
-        }
-    };
-    /*
-    ($Type:ty, $label:literal) => {
-        #[allow(unused_imports, unused_qualifications)]
-        impl core::fmt::Debug for $Type {
-            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-                f.debug_struct($label).finish_non_exhaustive()
-            }
-        }
-    };
-    */
+        )+
+    }
 }
+
+
+// With fields
+#[macro_export] macro_rules! generate_debug {
+    // Idea/code is taken from stackoverflow.com
+    // https://stackoverflow.com/questions/41603424/rust-macro-accepting-type-with-generic-parameters
+    //
+    ( $Type:ident
+        $(< $( $TypeParam:tt $( : $TypeParamSpec:tt $(+ $OtherTypeParamSpec:tt )* )? ),+ >)?,
+        // $( ( $( $field:ident),+ ) )?
+        $( $field:ident),+
+        ) => {
+        impl $(< $( $TypeParam $( : $TypeParamSpec $(+ $OtherTypeParamSpec )* )? ),+ >)?  core::fmt::Debug
+            for $Type $(< $( $TypeParam ),+ >)? {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                f.debug_struct(stringify!($Type))
+                    $(.field(stringify!($field), &self.$field))*
+                    .finish()
+            }
+        }
+    }
+}
+
 
 #[macro_export] macro_rules! generate_simple_display {
     ($Type:ty, $string:literal) => {
@@ -224,7 +215,7 @@
 }
 
 
-/// It designed ONLY for logging! It may stop working after next Rust/tokio update :-)
+/// It designed ONLY for logging! It may stop working (exactly) after next Rust/tokio update :-)
 #[macro_export] macro_rules! fn_name {
     () => {{
         fn f() {}

@@ -1,5 +1,5 @@
 use core::{
-    fmt::{self, Debug},
+    fmt::Debug,
     convert::Infallible,
 };
 use std::{
@@ -10,7 +10,7 @@ use std::{
     task::{Context, Poll},
 };
 use axum_server::tls_rustls::future::RustlsAcceptorFuture;
-use crate::{generate_empty_debug_non_exhaustive_delegate};
+use crate::{generate_debug, generate_empty_debug_non_exhaustive};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -24,7 +24,7 @@ pub trait ExtendableByConnectServiceService {
     fn install_connect_info_to(&self, extensions: &mut ConnectionStreamExtensions); // TODO: return Result
 }
 
-/// Actually this class belongs to 'http', but let's reuse it.
+// Actually this class belongs to 'http' crate, but let's reuse it instead of recreation.
 pub type ConnectionStreamExtensions = http::Extensions;
 
 tokio::task_local! {
@@ -52,7 +52,7 @@ pub struct ConnectionInfo {
 pub struct PeerCertificates {
     pub certs: Vec<rustls_pki_types::CertificateDer<'static>>,
 }
-generate_empty_debug_non_exhaustive_delegate! { PeerCertificates }
+generate_empty_debug_non_exhaustive! { PeerCertificates }
 
 impl<S> ExtendableByConnectServiceService for ServiceWrapper<S> {
     fn extend_with_connect_info_from_ssl_stream<RawStream>(
@@ -110,13 +110,8 @@ impl<S: Clone> Clone for ServiceWrapper<S> {
         }
     }
 }
-impl<S: Debug> Debug for ServiceWrapper<S> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("ServiceWrapper")
-            .field("svc", &self.svc)
-            .finish()
-    }
-}
+generate_debug! { ServiceWrapper<S: Debug>, svc }
+
 
 #[derive(Debug, Clone)]
 pub struct MyIntoMakeService<S> where S: Debug + Clone {
@@ -177,7 +172,7 @@ impl<S> MyIntoMakeServiceFuture2<S> {
         Self { svc }
     }
 }
-generate_empty_debug_non_exhaustive_delegate! { MyIntoMakeServiceFuture2, S }
+generate_empty_debug_non_exhaustive! { MyIntoMakeServiceFuture2<S> }
 
 // T O D O: try to remove Clone requirement later, but in easy way
 impl<S: Debug + Clone> Future for MyIntoMakeServiceFuture2<S>
@@ -230,7 +225,8 @@ where
         // self.svc.call_with_state(req, ())
 
         let mut stream_ext: ConnectionStreamExtensions = ConnectionStreamExtensions::new();
-        <ServiceWrapper<axum::Router> as ExtendableByConnectServiceService>::install_connect_info_to(self, &mut stream_ext);
+        <ServiceWrapper<axum::Router> as ExtendableByConnectServiceService>
+            ::install_connect_info_to(self, &mut stream_ext);
 
         // delegate call
         let axum_router_fut = self.svc.call(req);
@@ -298,12 +294,7 @@ where
     }
 }
 
-// generate_empty_debug_non_exhaustive_delegate! { MyRustlsAcceptor2, A } // TODO: try to use it
-impl<A: Clone> Debug for MyRustlsAcceptor2<A> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct(stringify!(MyRustlsAcceptor2)).finish()
-    }
-}
+generate_empty_debug_non_exhaustive! { MyRustlsAcceptor2<A: Clone> }
 
 // Seems pin_project_lite::pin_project does not support new-type approach
 // (we need to use classical struct).
@@ -324,7 +315,7 @@ impl<F, I, S> RustlsAcceptorFuture2_2<F, I, S> {
     }
 }
 
-generate_empty_debug_non_exhaustive_delegate! { RustlsAcceptorFuture2_2, F, I, S }
+generate_empty_debug_non_exhaustive! { RustlsAcceptorFuture2_2<F, I, S> }
 
 
 impl<F, I, S> Future for RustlsAcceptorFuture2_2<F, I, S>
