@@ -10,6 +10,7 @@ use std::{
     task::{Context, Poll},
 };
 use axum_server::tls_rustls::future::RustlsAcceptorFuture;
+use tokio::task::futures::TaskLocalFuture;
 use crate::{generate_debug, generate_empty_debug_non_exhaustive};
 //--------------------------------------------------------------------------------------------------
 
@@ -212,7 +213,9 @@ where
 {
     type Response = axum::response::Response;
     type Error = Infallible;
-    type Future = Pin<Box<dyn Future<Output=Result<axum::response::Response, Infallible>> + Send>>;
+    type Future = ServiceAxumRoutreWrapperCallFuture;
+    // Box can be used if underlying/axum API is changeable
+    // type Future = Pin<Box<dyn Future<Output=Result<axum::response::Response, Infallible>> + Send>>;
 
     #[inline]
     fn poll_ready(&mut self, _ctx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
@@ -234,10 +237,30 @@ where
         let fut_wrapper= CONNECTION_STREAM_EXTENSION
             .scope(stream_ext, axum_router_fut);
 
-        // let abc: Pin<Box<dyn Future<Output=Result<axum::response::Response, Infallible>> + Send>> =
-        //     Box::pin(fut_wrapper);
-        // abc
-        Box::pin(fut_wrapper) // TODO: try to avoid Box
+        // Box can be used if underlying/axum API is changeable
+        // Box::pin(fut_wrapper) // T O D O: try to avoid Box
+
+        ServiceAxumRoutreWrapperCallFuture { delegate_fut: fut_wrapper }
+    }
+}
+
+// Separate type is used to make ServiceWrapper::Future less changeable
+// if/when we change task_local by some something else.
+// In general, we could use
+//   ServiceWrapper::Future = TaskLocalFuture<ConnectionStreamExtensions, axum::routing::future::RouteFuture<Infallible>>
+pin_project_lite::pin_project! {
+    pub struct ServiceAxumRoutreWrapperCallFuture {
+        #[pin]
+        delegate_fut: TaskLocalFuture<ConnectionStreamExtensions, axum::routing::future::RouteFuture<Infallible>>,
+    }
+}
+generate_debug! { ServiceAxumRoutreWrapperCallFuture, delegate_fut }
+
+impl Future for ServiceAxumRoutreWrapperCallFuture {
+    type Output = Result<axum::response::Response, Infallible>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        self.project().delegate_fut.poll(cx)
     }
 }
 
