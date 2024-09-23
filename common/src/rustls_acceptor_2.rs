@@ -1,22 +1,26 @@
-use core::fmt::{self, Debug};
-use std::io;
-use std::convert::Infallible;
-use std::future::Future;
-use std::mem::transmute;
-use std::pin::Pin;
-use std::sync::Arc;
-use std::task::{Context, Poll};
+use core::{
+    fmt::{self, Debug},
+    convert::Infallible,
+};
+use std::{
+    io,
+    future::Future,
+    pin::Pin,
+    sync::Arc,
+    task::{Context, Poll},
+};
 use axum_server::tls_rustls::future::RustlsAcceptorFuture;
+use crate::{generate_empty_debug_non_exhaustive_delegate};
 //--------------------------------------------------------------------------------------------------
 
-//
+
 //
 // Actually we could use axum::extract::connect_info::Connected...
 // but due to Rust design it would be a bit complicated implement outer trait
 // for outer types (stream) :-)
 //
 pub trait ExtendableByConnectServiceService {
-    fn extend_with_connect_info_from<RawStream>(self, stream: &tokio_rustls::server::TlsStream<RawStream>) -> Self;
+    fn extend_with_connect_info_from_ssl_stream<RawStream>(self, stream: &tokio_rustls::server::TlsStream<RawStream>) -> Self;
     fn install_connect_info_to(&self, extensions: &mut ConnectionStreamExtensions); // TODO: return Result
 }
 
@@ -28,17 +32,14 @@ tokio::task_local! {
     pub static CONNECTION_STREAM_EXTENSION: ConnectionStreamExtensions;
 }
 
-pub struct ServiceWrapper<S> /*where S: Clone + Debug*/ {
+pub struct ServiceWrapper<S> {
     pub svc: S,
     pub connection_info: Option<Arc<ConnectionInfo>>, // TODO: it is simple impl, try to do it more generic
 }
 
 impl<S> ServiceWrapper<S> {
     pub fn new(svc: S) -> Self {
-        Self {
-            svc,
-            connection_info: None,
-        }
+        Self { svc, connection_info: None }
     }
 }
 
@@ -47,17 +48,18 @@ pub struct ConnectionInfo {
     pub peer_certs: Option<PeerCertificates>,
 }
 
-#[derive(Clone, Debug)] // TODO: implement faking Debug
+#[derive(Clone)]
 pub struct PeerCertificates {
     pub certs: Vec<rustls_pki_types::CertificateDer<'static>>,
 }
+generate_empty_debug_non_exhaustive_delegate! { PeerCertificates }
 
 impl<S> ExtendableByConnectServiceService for ServiceWrapper<S> {
-    fn extend_with_connect_info_from<RawStream>(self, stream: &tokio_rustls::server::TlsStream<RawStream>) -> Self {
+    fn extend_with_connect_info_from_ssl_stream<RawStream>(
+        self, stream: &tokio_rustls::server::TlsStream<RawStream>) -> Self {
+
         let peer_certs = get_peer_certs(stream);
-        let connection_info = ConnectionInfo {
-            peer_certs,
-        };
+        let connection_info = ConnectionInfo { peer_certs };
 
         Self {
             svc: self.svc,
@@ -150,10 +152,12 @@ where
     type Future = MyIntoMakeServiceFuture2<S>;
 
     #[inline]
+    //noinspection DuplicatedCode
     fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         Poll::Ready(Ok(()))
     }
 
+    #[inline]
     fn call(&mut self, _target: T) -> Self::Future {
         MyIntoMakeServiceFuture2::new(self.svc.clone())
     }
@@ -161,52 +165,22 @@ where
 
 
 pin_project_lite::pin_project! {
-    pub struct MyIntoMakeServiceFuture<S> {
-        #[pin]
-        future: std::future::Ready<Result<S, Infallible>>,
-    }
-}
-
-impl<S> MyIntoMakeServiceFuture<S> {
-    pub fn new(future: std::future::Ready<Result<S, Infallible>>) -> Self {
-        Self { future }
-    }
-}
-impl<S> Debug for MyIntoMakeServiceFuture<S> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("MyIntoMakeServiceFuture").finish_non_exhaustive()
-    }
-}
-impl<S> Future for MyIntoMakeServiceFuture<S>
-where
-    std::future::Ready<Result<S, Infallible>>: Future,
-{
-    type Output = <std::future::Ready<Result<S, Infallible>>
-        as Future>::Output;
-    #[inline]
-    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        self.project().future.poll(cx)
-    }
-}
-
-pin_project_lite::pin_project! {
     pub struct MyIntoMakeServiceFuture2<S> {
-        // #[pin]
+        #[pin] // Do I need pin there?
         svc: ServiceWrapper<S>,
     }
 }
 
-impl<S: Debug + Clone> MyIntoMakeServiceFuture2<S> {
+impl<S> MyIntoMakeServiceFuture2<S> {
+    #[inline]
     pub fn new(svc: ServiceWrapper<S>) -> Self {
         Self { svc }
     }
 }
-impl<S: Debug> Debug for MyIntoMakeServiceFuture2<S> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("MyIntoMakeServiceFuture").finish_non_exhaustive()
-    }
-}
-impl<S: Debug + Clone> Future for MyIntoMakeServiceFuture2<S> // TODO: try remove Clone requirement later
+generate_empty_debug_non_exhaustive_delegate! { MyIntoMakeServiceFuture2, S }
+
+// T O D O: try to remove Clone requirement later, but in easy way
+impl<S: Debug + Clone> Future for MyIntoMakeServiceFuture2<S>
 where
     std::future::Ready<Result<S, Infallible>>: Future,
 {
@@ -223,6 +197,8 @@ impl tower_service::Service<axum::serve::IncomingStream<'_>> for ServiceWrapper<
     type Error = Infallible;
     type Future = std::future::Ready<Result<Self::Response, Self::Error>>;
 
+    #[inline]
+    //noinspection DuplicatedCode
     fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         Poll::Ready(Ok(()))
     }
@@ -245,12 +221,10 @@ where
 
     #[inline]
     fn poll_ready(&mut self, _ctx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        // Poll::Ready(Ok(()))
         <axum::Router as tower_service::Service<axum::extract::Request<B>>>
             ::poll_ready(&mut self.svc, _ctx)
     }
 
-    #[inline]
     fn call(&mut self, req: axum::extract::Request<B>) -> Self::Future {
         // let req = req.map(axum::body::Body::new);
         // self.svc.call_with_state(req, ())
@@ -258,14 +232,16 @@ where
         let mut stream_ext: ConnectionStreamExtensions = ConnectionStreamExtensions::new();
         <ServiceWrapper<axum::Router> as ExtendableByConnectServiceService>::install_connect_info_to(self, &mut stream_ext);
 
+        // delegate call
         let axum_router_fut = self.svc.call(req);
 
         let fut_wrapper= CONNECTION_STREAM_EXTENSION
             .scope(stream_ext, axum_router_fut);
 
-        let abc: Pin<Box<dyn Future<Output=Result<axum::response::Response, Infallible>> + Send>> =
-            Box::pin(fut_wrapper);
-        abc
+        // let abc: Pin<Box<dyn Future<Output=Result<axum::response::Response, Infallible>> + Send>> =
+        //     Box::pin(fut_wrapper);
+        // abc
+        Box::pin(fut_wrapper) // TODO: try to avoid Box
     }
 }
 
@@ -277,11 +253,13 @@ pub struct MyRustlsAcceptor2<A: Clone = axum_server::accept::DefaultAcceptor> {
 }
 
 impl MyRustlsAcceptor2 {
+    // axum_server::tls_rustls::RustlsAcceptor API
     pub fn new(config: axum_server::tls_rustls::RustlsConfig) -> Self {
         Self {
             delegate: axum_server::tls_rustls::RustlsAcceptor::new(config),
         }
     }
+    // axum_server::tls_rustls::RustlsAcceptor API
     pub fn handshake_timeout(self, val: core::time::Duration) -> Self {
         Self {
             delegate: self.delegate.handshake_timeout(val),
@@ -290,7 +268,7 @@ impl MyRustlsAcceptor2 {
 }
 
 impl<A: Clone> MyRustlsAcceptor2<A> {
-    /// Overwrite inner acceptor.
+    // axum_server::tls_rustls::RustlsAcceptor API
     pub fn acceptor<Acceptor: Clone>(self, acceptor: Acceptor) -> MyRustlsAcceptor2<Acceptor> {
         MyRustlsAcceptor2::<Acceptor> {
             delegate: self.delegate.acceptor(acceptor)
@@ -304,47 +282,49 @@ impl<A, I, S> axum_server::accept::Accept<I, S> for MyRustlsAcceptor2<A>
 where
     A: Clone + axum_server::accept::Accept<I, S>,
     A::Stream: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
-    // S: ExtendableByConnectServiceService<I>,
     A::Service: ExtendableByConnectServiceService,
-    // <A as axum_server::accept::Accept<I, S>>::Service: ExtendableByConnectServiceService<<A as axum_server::accept::Accept<I, S>>::Stream>,
     <A as axum_server::accept::Accept<I, S>>::Service: ExtendableByConnectServiceService,
 {
     type Stream = tokio_rustls::server::TlsStream<A::Stream>;
     type Service = A::Service;
-    // type Future = axum_server::tls_rustls::future::RustlsAcceptorFuture<A::Future, A::Stream, A::Service>;
-    // type Future = RustlsAcceptorFuture2<A::Future, A::Stream, A::Service>;
     type Future = RustlsAcceptorFuture2_2<A::Future, A::Stream, A::Service>;
-    // type Future = MyRustlsAcceptorFuture<A::Future, A::Stream, A::Service>;
-    // type Future = BoxFuture<io::Result<(Self::Stream, Self::Service)>>;
+    // type Future = Map<RustlsAcceptorFuture2_2<A::Future, A::Stream, A::Service>, MapperStruct>;
 
     fn accept(&self, stream: I, service: S) -> Self::Future {
-
-        // let accept_fut = self.delegate.accept(stream, service)
-        //     .map(|aa|123);
         let accept_fut = self.delegate.accept(stream, service);
         let fut: RustlsAcceptorFuture2_2<A::Future, A::Stream, A::Service> =
-            // RustlsAcceptorFuture2_2::new(_delegate, accept_fut);
-            RustlsAcceptorFuture2_2(accept_fut);
+            RustlsAcceptorFuture2_2::new(accept_fut);
         fut
     }
 }
 
+// generate_empty_debug_non_exhaustive_delegate! { MyRustlsAcceptor2, A } // TODO: try to use it
 impl<A: Clone> Debug for MyRustlsAcceptor2<A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("MyRustlsAcceptor").finish()
+        f.debug_struct(stringify!(MyRustlsAcceptor2)).finish()
     }
 }
 
+// Seems pin_project_lite::pin_project does not support new-type approach
+// (we need to use classical struct).
+//
+// pub struct RustlsAcceptorFuture2_2<F, I, S>(RustlsAcceptorFuture<F, I, S>);
 
-pub struct RustlsAcceptorFuture2_2<F, I, S>(
-    RustlsAcceptorFuture<F, I, S>
-);
 
-impl<F, I, S> Debug for RustlsAcceptorFuture2_2<F, I, S> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("RustlsAcceptorFuture").finish()
+pin_project_lite::pin_project! {
+    pub struct RustlsAcceptorFuture2_2<F, I, S> {
+        #[pin]
+        delegate_fut: RustlsAcceptorFuture<F, I, S>
     }
 }
+
+impl<F, I, S> RustlsAcceptorFuture2_2<F, I, S> {
+    pub fn new(rustls_acceptor_future: RustlsAcceptorFuture<F, I, S>) -> Self {
+        Self { delegate_fut: rustls_acceptor_future }
+    }
+}
+
+generate_empty_debug_non_exhaustive_delegate! { RustlsAcceptorFuture2_2, F, I, S }
 
 
 impl<F, I, S> Future for RustlsAcceptorFuture2_2<F, I, S>
@@ -356,13 +336,11 @@ where
     type Output = io::Result<(tokio_rustls::server::TlsStream<I>, S)>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let delegate_fut_pin: Pin<&mut RustlsAcceptorFuture<F, I, S>> =
-            unsafe { transmute(&self.0) };
-        let poll_res = delegate_fut_pin.poll(cx);
+        let poll_res = self.project().delegate_fut.poll(cx);
 
         match poll_res {
             Poll::Ready(Ok((stream, service))) => {
-                let service = service.extend_with_connect_info_from(&stream);
+                let service = service.extend_with_connect_info_from_ssl_stream(&stream);
                 Poll::Ready(Ok((stream, service)))
             }
             Poll::Ready(other_ready) =>
@@ -372,4 +350,3 @@ where
         }
     }
 }
-

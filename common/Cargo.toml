@@ -187,6 +187,9 @@ validator = { workspace = true, features = ["derive", "validator_derive"] }
 validify.workspace = true
 jsonwebtoken.workspace = true
 
+futures.workspace = true
+futures-util.workspace = true
+
 tokio = { workspace = true, features = ["full"] }
 tokio-test.workspace = true
 tokio-inherit-task-local.workspace = true

@@ -122,6 +122,72 @@
 }
 
 
+
+#[macro_export] macro_rules! generate_empty_debug_delegate {
+    ($Type:ty) => {
+        #[allow(unused_imports, unused_qualifications)]
+        impl core::fmt::Debug for $Type {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                f.debug_struct(stringify!($Type)).finish()
+            }
+        }
+    };
+    ($Type:ty, $label:literal) => {
+        #[allow(unused_imports, unused_qualifications)]
+        impl core::fmt::Debug for $Type {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                f.debug_struct($label).finish()
+            }
+        }
+    };
+}
+
+
+#[macro_export] macro_rules! generate_empty_debug_non_exhaustive_delegate {
+    ($Type:ty) => {
+        #[allow(unused_imports, unused_qualifications)]
+        impl core::fmt::Debug for $Type {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                f.debug_struct(stringify!($Type)).finish_non_exhaustive()
+            }
+        }
+    };
+    ($Type:tt, $GenericParam:ident) => {
+        #[allow(unused_imports, unused_qualifications)]
+        impl<$GenericParam> core::fmt::Debug for $Type::<$GenericParam> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                f.debug_struct(stringify!($Type)).finish_non_exhaustive()
+            }
+        }
+    };
+    ($Type:tt, $GenericParam1:ident, $GenericParam2:ident) => {
+        #[allow(unused_imports, unused_qualifications)]
+        impl<$GenericParam1, $GenericParam2> core::fmt::Debug for $Type::<$GenericParam1, $GenericParam2> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                f.debug_struct(stringify!($Type)).finish_non_exhaustive()
+            }
+        }
+    };
+    ($Type:tt, $GenericParam1:ident, $GenericParam2:ident, $GenericParam3:ident) => {
+        #[allow(unused_imports, unused_qualifications)]
+        impl<$GenericParam1, $GenericParam2, $GenericParam3> core::fmt::Debug for $Type::<$GenericParam1, $GenericParam2, $GenericParam3> {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                f.debug_struct(stringify!($Type)).finish_non_exhaustive()
+            }
+        }
+    };
+    /*
+    ($Type:ty, $label:literal) => {
+        #[allow(unused_imports, unused_qualifications)]
+        impl core::fmt::Debug for $Type {
+            fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+                f.debug_struct($label).finish_non_exhaustive()
+            }
+        }
+    };
+    */
+}
+
 #[macro_export] macro_rules! generate_simple_display {
     ($Type:ty, $string:literal) => {
         impl core::fmt::Display for $Type {
