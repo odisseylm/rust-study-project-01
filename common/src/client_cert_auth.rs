@@ -2,7 +2,7 @@ use std::{
     sync::Arc,
 };
 use anyhow::anyhow;
-use log::{error, info};
+use log::{error};
 use rustls::{
     DigitallySignedStruct, DistinguishedName,
     client::danger::HandshakeSignatureValid,
@@ -11,7 +11,7 @@ use rustls::{
 use rustls_pki_types::CertificateDer;
 use x509_parser::nom::AsBytes;
 use crate::{
-    cfg::ServerConf, client_auth_cert_info,
+    cfg::ServerConf, //client_auth_cert_info,
     client_auth_cert_info::{ClientAuthCertInfo, extract_client_auth_cert_info_from_cert},
     rustls_acceptor_2::ConnectionInfo,
 };
