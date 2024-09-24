@@ -92,6 +92,8 @@ rand.workspace = true
 rand_hc.workspace = true
 rand_chacha.workspace = true
 
+rustls-pki-types.workspace = true
+
 #axum-auth.workspace = true
 axum-extra.workspace = true
 axum-ctx.workspace = true

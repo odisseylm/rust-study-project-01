@@ -118,7 +118,7 @@ pub async fn grpc_app_main() -> Result<(), Box<dyn StdError>> {
             roles.extend(ClientSearchService::endpoints_roles());
             roles
         }),
-        auth: Arc::new(CompositeAuthBackend::new_2(
+        auth: Arc::new(CompositeAuthBackend::new(
             dependencies.password_comparator.clone(),
             dependencies.user_provider.clone(),
             dependencies.permission_provider.clone(),

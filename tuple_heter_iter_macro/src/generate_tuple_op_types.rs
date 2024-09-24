@@ -9,7 +9,7 @@ use crate::util::make_ident;
 
 pub(crate) fn generate_assert_tuple_len_is_impl(max_tuple_len: usize) -> proc_macro2::TokenStream {
 
-    let assert_tuple_len_is_functions = (1..max_tuple_len)
+    let assert_tuple_len_is_functions = (2..max_tuple_len)
         .into_iter()
         .map(|i|{
             let method_ident = make_ident(format!("assert_tuple_len_is_{i}"));
@@ -22,6 +22,7 @@ pub(crate) fn generate_assert_tuple_len_is_impl(max_tuple_len: usize) -> proc_ma
 
     let q = quote! {
         pub fn assert_tuple_len_is_0(_tuple: &()) {}
+        pub fn assert_tuple_len_is_1<T0>(_tuple: &(T0,)) {}
         #(#assert_tuple_len_is_functions)*
     };
     q.into()

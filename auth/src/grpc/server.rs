@@ -10,24 +10,23 @@ use std::{
 };
 use http::{
     HeaderName, HeaderValue,
-    // request::Builder,
 };
 use log::{debug, error, warn};
-use tonic::{
+use tonic::{ // TODO: [client-cert-auth] use 'tonic' feature
     Request, Status,
-    // codegen::BoxFuture,
-    // metadata::{Ascii, KeyAndValueRef, MetadataValue, ValueRef},
     metadata::KeyAndValueRef,
 };
 use tonic_async_interceptor::{async_interceptor, AsyncInterceptor};
 use tower::BoxError;
-use mvv_common::grpc::TonicErrToStatusExt;
+use mvv_common::{
+    grpc::TonicErrToStatusExt,
+    rustls_acceptor_with_con_info::{extract_cert_peers_from_axum_server_task_local, PeerCertificates},
+    string::StaticRefOrString,
+};
 use crate::{
-    //AuthUserProvider,
     backend::{RequestAuthenticated, authz_backend::AuthorizeBackend, UserContext},
     permission::PermissionSet,
 };
-use mvv_common::string::StaticRefOrString;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -76,7 +75,7 @@ pub fn get_grpc_req_url<T>(req: &Request<T>) -> anyhow::Result<http::uri::Uri> {
 impl <
     Usr: axum_login::AuthUser + Clone + 'static,
     AuthB: AuthorizeBackend<User=Usr> + RequestAuthenticated<User=Usr> + Debug + 'static,
-> GrpcAuthzInterceptor<Usr, /*Perm, PermSet,*/ AuthB> {
+> GrpcAuthzInterceptor<Usr, AuthB> {
 
     fn find_end_point_path_roles(&self, req: &Request<()>) -> Result<Option<&AuthB::PermissionSet>, Status> {
 
@@ -103,13 +102,13 @@ impl <
 impl <
     Usr: axum_login::AuthUser + Clone + 'static,
     AuthB: AuthorizeBackend<User=Usr> + RequestAuthenticated<User=Usr> + Debug + 'static,
-> AsyncInterceptor for GrpcAuthzInterceptor<Usr, /*Perm, PermSet,*/ AuthB> {
+> AsyncInterceptor for GrpcAuthzInterceptor<Usr, AuthB> {
     type Future = Pin<Box<dyn Future<Output=Result<Request<()>, Status>> + Send + 'static >>;
     // type Future = tonic::codegen::BoxFuture<Request<()>, Status>;
     // type Future = futures_util::future::BoxFuture<Request<()>, Status>;
 
     fn call(&mut self, request: Request<()>) -> Self::Future {
-        Box::pin(authorize_req::<Usr, /*Perm, PermSet,*/ AuthB>(self.clone(), request))
+        Box::pin(authorize_req::<Usr, AuthB>(self.clone(), request))
     }
 }
 
@@ -119,7 +118,7 @@ async fn authorize_req <
     Usr: axum_login::AuthUser + Clone + 'static,
     AuthB: AuthorizeBackend<User=Usr> + RequestAuthenticated<User=Usr> + Debug + 'static,
 > (
-    state: GrpcAuthzInterceptor<Usr,/*Perm,PermSet,*/AuthB>,
+    state: GrpcAuthzInterceptor<Usr, AuthB>,
     req: Request<()>,
     ) -> Result<Request<()>, Status> {
 
@@ -138,18 +137,18 @@ async fn authorize_req <
         return Ok(req);
     }
 
-    let res = authz_req_impl::<Usr, /*Perm, PermSet,*/ AuthB>(state, req, required_roles.clone()).await;
+    let (req, res) = authz_req_impl::<Usr, AuthB>(state, req, required_roles.clone()).await;
     match res {
         Ok(AuthorizeResult::Authorized { user }) => {
             debug!("User [{user:?}] is authorized.");
-            Ok(Request::new(()))
+            Ok(req)
         }
         Ok(AuthorizeResult::Unauthorized { user }) => {
             debug!("User [{user:?}] is unauthorized.");
             Err(Status::permission_denied("Unauthorized"))
         }
         Ok(AuthorizeResult::Unauthenticated) => {
-            debug!("User is authorized.");
+            debug!("User is unauthenticated.");
             Err(Status::unauthenticated("Unauthenticated"))
         }
         Err(err) => {
@@ -172,37 +171,49 @@ async fn authz_req_impl <
     Usr: axum_login::AuthUser + Clone + 'static,
     AuthB: AuthorizeBackend<User=Usr> + RequestAuthenticated<User=Usr> + Debug + 'static,
 > (
-    auth_state: GrpcAuthzInterceptor<Usr,/*Perm,PermSet,*/AuthB>,
+    auth_state: GrpcAuthzInterceptor<Usr,AuthB>,
     mut grpc_req: Request<()>,
     required_roles: AuthB::PermissionSet,
-) -> anyhow::Result<AuthorizeResult<Usr>> {
+) -> (Request<()>, anyhow::Result<AuthorizeResult<Usr>>) {
 
-    let axum_req= grpc_req_to_axum_req(&grpc_req) ?;
+    let axum_req= grpc_req_to_axum_req(&grpc_req);
+    let axum_req = match axum_req {
+        Err(err) => return (grpc_req, Err(err.into())),
+        Ok(axum_req) => axum_req,
+    };
 
-    let (_req, res) = auth_state.auth.do_authenticate_request::<AuthB, ()>(
+    let (_axum_req, res) = auth_state.auth.do_authenticate_request::<AuthB, ()>(
         None, axum_req).await;
 
     match res {
         Ok(Some(user)) => {
-            let has_permissions = auth_state.auth.has_permissions(&user, required_roles).await ?;
-            if has_permissions {
-                grpc_req.extensions_mut().insert(UserContext::new(user.clone()));
-                Ok(AuthorizeResult::Authorized {user })
-            } else {
-                Ok(AuthorizeResult::Unauthorized { user })
+            let has_permissions = auth_state.auth.has_permissions(&user, required_roles).await;
+            match has_permissions {
+                Err(err) =>
+                    (grpc_req, Err(err.into())),
+                Ok(has_permissions) => {
+                    if has_permissions {
+                        grpc_req.extensions_mut().insert(UserContext::new(user.clone()));
+                        (grpc_req, Ok(AuthorizeResult::Authorized { user }))
+                    } else {
+                        (grpc_req, Ok(AuthorizeResult::Unauthorized { user }))
+                    }
+                }
             }
         }
         Ok(None) =>
-            Ok(AuthorizeResult::Unauthenticated),
+            (grpc_req, Ok(AuthorizeResult::Unauthenticated)),
         Err(err) => {
             error!("Grpc AuthBackend error: {err:?}");
-            Err(err.into())
+            (grpc_req, Err(err.into()))
         }
     }
 }
 
 
-fn grpc_req_to_axum_req<T>(grpc_req: &Request<T>) -> anyhow::Result<::axum::extract::Request<::axum::body::Body>> {
+fn grpc_req_to_axum_req<T>(grpc_req: &Request<T>)
+    -> anyhow::Result<::axum::extract::Request<::axum::body::Body>> {
+
     let mut axum_req: ::axum::extract::Request<::axum::body::Body> =
         ::axum::extract::Request::new(::axum::body::Body::empty());
 
@@ -217,6 +228,8 @@ fn grpc_req_to_axum_req<T>(grpc_req: &Request<T>) -> anyhow::Result<::axum::extr
             }
         }
     }
+
+    axum_req.extensions_mut().extend(grpc_req.extensions().clone());
 
     Ok(axum_req)
 }
@@ -258,14 +271,26 @@ impl <Body> tower::filter::Predicate<http::request::Request<Body>> for GrpcReqEn
 pub fn grpc_req_enrich<Body>(mut req: http::request::Request<Body>)
     -> Result<http::request::Request<Body>, BoxError> {
 
-    // let aa = mvv_common::client_cert_auth::get_current_client_auth_cert();
-    // println!("### LOCAL aa: {aa}");
-
     let ext_uri = req.extensions().get::<::axum::extract::OriginalUri>();
     if ext_uri.is_none() {
         let uri = req.uri().clone();
         req.extensions_mut().insert(::axum::extract::OriginalUri(uri));
     }
+
+    let certs = extract_cert_peers_from_axum_server_task_local();
+    match certs {
+        Ok(None) => { }
+        Ok(Some(certs)) => {
+            // I cannot use tonic TlsConnectInfo there because it is very-very-very TODO: [client-cert-auth] try again
+            // difficult to create its instance...
+            // Let's live without emulation of tonic behavior.
+            req.extensions_mut().insert(PeerCertificates::new(certs));
+        }
+        Err(_err) => {
+            // let's ignore now, or we need to make this action configurable...
+        }
+    }
+
     Ok(req)
 }
 
@@ -335,7 +360,7 @@ pub mod axum {
         }
     }
 
-    // Would be nice to create extension methods but which return type should be (due to async) ??
+    // TODO: [future] Would be nice to create extension methods but which return type should be (due to async) ??
     /*
     #[extension_trait::extension_trait]
     pub impl<L> AxumServerTonicGrpcReqEnrichExt<L> for tower::builder::ServiceBuilder<L> {

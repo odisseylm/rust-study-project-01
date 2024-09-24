@@ -3065,6 +3065,7 @@ dependencies = [
  "rand_hc",
  "readonly",
  "reqwest 0.12.5",
+ "rustls-pki-types",
  "scrypt",
  "serde",
  "sqlx",

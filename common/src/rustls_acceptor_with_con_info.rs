@@ -31,7 +31,7 @@ pub type ConnectionStreamExtensions = http::Extensions;
 
 tokio::task_local! {
 // tokio_inherit_task_local::inheritable_task_local! {
-    pub static CONNECTION_STREAM_EXTENSION: ConnectionStreamExtensions;
+    static CONNECTION_STREAM_EXTENSION: Arc<ConnectionStreamExtensions>;
 }
 
 
@@ -46,10 +46,13 @@ impl<S> ServiceWrapper<S> {
     }
 }
 
+pub type TonicTlsConnectInfo = tonic::transport::server::TlsConnectInfo<
+    tonic::transport::server::TcpConnectInfo>;
 
 #[derive(Debug, Clone)]
 pub struct ConnectionInfo {
-    pub peer_certs: Option<PeerCertificates>,
+    pub peer_certs: Option<PeerCertificates>, // [client-cert-auth] TODO: also use Arc
+    pub tonic_tls_con_info: Option<Arc<TonicTlsConnectInfo>>,
 }
 
 
@@ -58,6 +61,50 @@ pub struct PeerCertificates {
     pub certs: Vec<rustls_pki_types::CertificateDer<'static>>,
 }
 generate_empty_debug_non_exhaustive! { PeerCertificates }
+impl PeerCertificates {
+    pub fn new(certs: Vec<rustls_pki_types::CertificateDer<'static>>) -> Self {
+        Self { certs }
+    }
+}
+
+
+fn get_connection_stream_extension() -> anyhow::Result<Arc<ConnectionStreamExtensions>> {
+    let ext = CONNECTION_STREAM_EXTENSION
+        .try_with(|v| v.clone());
+
+    let ext = match ext {
+        Ok(ext) => ext,
+        Err(ref _err) =>
+            // Or we can throw exception and force developer not oto use it
+            // if server is not configured properly
+            // return Ok(None),
+
+            // TODO: [client-cert-auth] add details to error message how to fix
+            anyhow::bail!("Seems server is not configured to capture SSL/TLS stream info.")
+    };
+    Ok(ext)
+}
+
+pub fn extract_cert_peers_from_axum_server_task_local() -> anyhow::Result<Option<Vec<rustls_pki_types::CertificateDer<'static>>>> {
+    let ext = get_connection_stream_extension() ?;
+
+    let con_info = ext.get::<ConnectionInfo>();
+    println!("### con_info: ${con_info:?}");
+
+    let peer_certs = match con_info {
+        None => None,
+        Some(con_info) => {
+            match con_info.peer_certs {
+                None => None,
+                Some(ref peer_certs) =>
+                    Some(peer_certs.certs.clone()),
+            }
+        }
+    };
+
+    Ok(peer_certs)
+}
+
 
 
 impl<S> ExtendableByConnectServiceService for ServiceWrapper<S> {
@@ -65,7 +112,15 @@ impl<S> ExtendableByConnectServiceService for ServiceWrapper<S> {
         self, stream: &tokio_rustls::server::TlsStream<RawStream>) -> Self {
 
         let peer_certs = get_peer_certs(stream);
-        let connection_info = ConnectionInfo { peer_certs };
+        // #[cfg(feature = "tonic")]
+        // let tonic_tls_con_info = get_tonic_tls_connect_info(stream)
+        //     .map(Arc::new);
+
+        let connection_info = ConnectionInfo {
+            peer_certs,
+            #[cfg(feature = "tonic")]
+            tonic_tls_con_info: None,
+        };
 
         Self {
             svc: self.svc,
@@ -98,12 +153,30 @@ fn get_peer_certs<RawStream>(stream: &tokio_rustls::server::TlsStream<RawStream>
             if certs.is_empty() {
                 None
             } else {
-                Some(PeerCertificates { certs })
+                Some(PeerCertificates::new(certs))
             }
         }
     };
     peer_certs
 }
+
+
+#[cfg(feature = "tonic")]
+#[allow(dead_code)]
+fn get_tonic_tls_connect_info <
+    RawStream: tonic::transport::server::Connected<ConnectInfo = tonic::transport::server::TcpConnectInfo>
+> (stream: &tokio_rustls::server::TlsStream<RawStream>)
+    -> Option<TonicTlsConnectInfo>
+{
+    use tonic::transport::server::Connected;
+    use tokio_rustls::server::TlsStream;
+
+    let _con_info: TonicTlsConnectInfo = <TlsStream<RawStream>
+        as Connected>::connect_info(stream);
+
+    None
+}
+
 
 // #[derive(Debug,Clone)] is not used because pin_project_lite::pin_project does not support it :-(.
 //
@@ -241,7 +314,7 @@ where
         let axum_router_fut = self.svc.call(req);
 
         let fut_wrapper= CONNECTION_STREAM_EXTENSION
-            .scope(stream_ext, axum_router_fut);
+            .scope(Arc::new(stream_ext), axum_router_fut);
 
         // Box can be used if underlying/axum API is changeable
         // Box::pin(fut_wrapper) // T O D O: try to avoid Box
@@ -257,7 +330,7 @@ where
 pin_project_lite::pin_project! {
     pub struct ServiceAxumRoutreWrapperCallFuture {
         #[pin]
-        delegate_fut: TaskLocalFuture<ConnectionStreamExtensions, axum::routing::future::RouteFuture<Infallible>>,
+        delegate_fut: TaskLocalFuture<Arc<ConnectionStreamExtensions>, axum::routing::future::RouteFuture<Infallible>>,
     }
 }
 generate_debug! { ServiceAxumRoutreWrapperCallFuture, delegate_fut }

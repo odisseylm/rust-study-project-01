@@ -7,6 +7,7 @@ use mvv_auth::{
     AuthBackendError, /*PlainPasswordComparator,*/ PasswordComparator,
     backend::{
         AuthBackendMode,
+        ClientCertAuthBackend,
         RequestAuthenticated,
         authz_backend::{ AuthorizeBackend, PermissionProviderSource },
         psw_auth::PswAuthCredentials,
@@ -39,7 +40,8 @@ pub struct CompositeAuthBackend <
     permission_provider: Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet> + Sync + Send>,
     //
     http_basic_auth_backend: Option<HttpBasicAuthBackend<AuthUser,RolePermissionsSet>>,
-    // TODO: add cert-based and JWT auth-backends
+    client_cert_auth_backend: Option<ClientCertAuthBackend<AuthUser,RolePermissionsSet>>,
+    // TODO: add JWT auth-backends
 }
 
 
@@ -47,14 +49,14 @@ pub struct CompositeAuthBackend <
 impl CompositeAuthBackend {
     fn backends(&self) -> (
         &Option<HttpBasicAuthBackend<AuthUser,RolePermissionsSet>>,
-        //&Option<CertAuthBackend<AuthUser,RolePermissionsSet>>,
+        &Option<ClientCertAuthBackend<AuthUser,RolePermissionsSet>>,
         //&Option<JwtAuthBackend<AuthUser,RolePermissionsSet>>,
     ) {
-        (&self.http_basic_auth_backend, /* &self.login_form_auth_backend, &self.oauth2_backend*/)
+        (&self.http_basic_auth_backend, &self.client_cert_auth_backend)
     }
 
     #[allow(dead_code)]
-    pub fn new <UsrProvider> (
+    pub fn new_by_static_type <UsrProvider> (
         psw_comp: Arc<dyn PasswordComparator + Send + Sync>,
         users_and_perm_provider: Arc<UsrProvider>,
     ) -> Result<CompositeAuthBackend, AuthBackendError>
@@ -77,10 +79,10 @@ impl CompositeAuthBackend {
         // !!! With Arc::clone(&usr_provider_impl) auto casting does NOT work !!!
         //
 
-        Self::new_2(psw_comp, user_provider, perm_provider)
+        Self::new(psw_comp, user_provider, perm_provider)
     }
 
-    pub fn new_2 (
+    pub fn new (
         psw_comp: Arc<dyn PasswordComparator + Send + Sync>,
         user_provider: Arc<dyn AuthUserProvider<User=AuthUser> + Send + Sync + 'static>,
         permission_provider: Arc<dyn PermissionProvider<User=AuthUser,Permission=Role,PermissionSet=RolePermissionsSet> + Send + Sync + 'static>,
@@ -94,10 +96,16 @@ impl CompositeAuthBackend {
             Arc::clone(&permission_provider),
         );
 
+        let client_cert_auth_backend = ClientCertAuthBackend::<AuthUser, RolePermissionsSet>::new(
+            Arc::clone(&user_provider),
+            Arc::clone(&permission_provider),
+        ) ?;
+
         Ok(CompositeAuthBackend {
             user_provider,
             permission_provider,
             http_basic_auth_backend: Some(http_basic_auth_backend),
+            client_cert_auth_backend: Some(client_cert_auth_backend),
         })
     }
 
@@ -137,7 +145,7 @@ impl RequestAuthenticated for CompositeAuthBackend {
         #[allow(dead_code, unused_variables)]
         let backend = &self.http_basic_auth_backend;
 
-        tuple_for_each_by_ref! { $backend, self.backends(), 1, {
+        tuple_for_each_by_ref! { $backend, self.backends(), 2, {
             if let Some(ref backend) = backend {
                 req_and_res = backend.do_authenticate_request::<RootBackend,()>(
                     auth_session.clone(), req_and_res.0).await;
@@ -167,7 +175,7 @@ impl RequestAuthenticated for CompositeAuthBackend {
         #[allow(dead_code, unused_variables)]
         let backend = &self.http_basic_auth_backend;
 
-        tuple_for_each_by_ref! { $backend, self.backends(), 1, {
+        tuple_for_each_by_ref! { $backend, self.backends(), 2, {
             if let Some(ref backend) = backend {
                 res = backend.do_authenticate_request_parts::<RootBackend,()>(
                     auth_session.clone(), req).await;

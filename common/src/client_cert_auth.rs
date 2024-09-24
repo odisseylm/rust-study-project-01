@@ -11,10 +11,10 @@ use rustls::{
 use rustls_pki_types::CertificateDer;
 use x509_parser::nom::AsBytes;
 use crate::{
-    cfg::ServerConf, //client_auth_cert_info,
+    cfg::ServerConf,
     client_auth_cert_info::{ClientAuthCertInfo, extract_client_auth_cert_info_from_cert},
-    rustls_acceptor_with_con_info::ConnectionInfo,
 };
+use crate::rustls_acceptor_with_con_info::PeerCertificates;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -39,8 +39,7 @@ pub async fn server_rustls_with_ssl_cert_client_auth_config<Conf: ServerConf>(se
     let key = Vec::<u8>::from(key.as_ref().as_bytes());
     let client_auth_ca_cert: Vec<u8> = Vec::<u8>::from(client_auth_ca_cert.as_ref().as_bytes());
 
-    let mut serv_conf = config_from_pem(cert, key, client_auth_ca_cert) ?;
-    serv_conf.enable_secret_extraction = true; // TODO: Do we need it?
+    let serv_conf = config_from_pem(cert, key, client_auth_ca_cert) ?;
     let rust_tls_config = RustlsConfig::from_config(Arc::new(serv_conf));
     Ok(rust_tls_config)
 }
@@ -99,20 +98,7 @@ fn config_from_der(cert: Vec<Vec<u8>>, key: Vec<u8>, client_auth_ca_cert: Vec<u8
     use std::sync::Arc;
 
     let mut root_s: RootCertStore = RootCertStore::empty();
-    //
-    // let client_auth_cert = client_auth_ca_cert.as_secure_string() ?;
-    // let client_auth_cert = match client_auth_cert {
-    //     Cow::Borrowed(secure_str_ref) =>
-    //         Vec::from(secure_str_ref.as_bytes()),
-    //     Cow::Owned(secure_str) =>
-    //         secure_str.into_bytes(),
-    // };
-    // let client_auth_cert = client_auth_cert.as_bytes();
-
     let ca_bytes = client_auth_ca_cert;
-    // let ca = ca_bytes.into_iter().map(rustls::pki_types::CertificateDer::from).collect();
-    // let ca = rustls::pki_types::CertificateDer::from(ca_bytes);
-
     let mut certs: &mut dyn std::io::BufRead = &mut ca_bytes.as_slice();
 
     for cert in rustls_pemfile::certs(&mut certs).collect::<Result<Vec<_>, _>>()? {
@@ -142,52 +128,54 @@ fn config_from_der(cert: Vec<Vec<u8>>, key: Vec<u8>, client_auth_ca_cert: Vec<u8
 }
 
 
-// tokio::task_local! {
-//     pub static ONE_BLA_BLA: u32;
-// }
-// tokio_inherit_task_local::inheritable_task_local! {
-//     pub static ONE_BLA_BLA_2: u32;
-// }
+pub fn get_grpc_current_client_auth_cert<T>(req: &tonic::Request<T>) -> anyhow::Result<Option<ClientAuthCertInfo>> {
+    let ext = req.extensions();
 
-pub fn get_current_client_auth_cert() -> anyhow::Result<Option<ClientAuthCertInfo>> {
-    // TODO: temp, move it to 'enrich request' interceptor
-    //       and take there ConnectionInfo from request extensions (not from task-local var)
-    let ext = crate::rustls_acceptor_with_con_info::CONNECTION_STREAM_EXTENSION
-        .try_with(|v| v.clone());
+    let tonic_certs = req.peer_certs();
+    if let Some(tonic_certs) = tonic_certs {
+        return get_current_client_auth_cert(tonic_certs.as_ref());
+    }
 
-    let ext = match ext {
-        Ok(ext) => ext,
-        Err(ref _err) =>
-            // Or we can throw exception and force developer not oto use it
-            // if server is not configured properly
-            // return Ok(None),
+    ext.get::<PeerCertificates>()
+        .map(|peer_certs|get_current_client_auth_cert(&peer_certs.certs))
+        .unwrap_or(Ok(None))
+}
 
-            anyhow::bail!("Seems server is not configured to capture SSL/TLS stream info.")
-    };
+pub fn get_http_current_client_auth_cert_from_req<T>(req: &http::Request<T>) -> anyhow::Result<Option<ClientAuthCertInfo>> {
+    let ext = req.extensions();
 
-    // TODO: Use also tonic approach
-
-    let con_info = ext.get::<ConnectionInfo>();
-    println!("### con_info: ${con_info:?}");
-
-    match con_info {
-        None => Ok(None),
-        Some(con_info) => {
-            match con_info.peer_certs {
-                None => Ok(None),
-                Some(ref peer_certs) => {
-                    // TODO: use filter/validate/find authClient certificate
-                    let auth_client_cert = peer_certs.certs.first()
-                        // Or we can return None... but I think if we are there
-                        // it is unexpected situation, and it is error/bug
-                        .ok_or_else(||anyhow!("No auth cert")) ?;
-                    let client_auth_cert_info = extract_client_auth_cert_info_from_cert(
-                        auth_client_cert.as_bytes()) ?;
-                    Ok(Some(client_auth_cert_info))
-                }
-            }
+    if cfg!(feature = "tonic") {
+        let tonic_certs = ext.get::<tonic::transport::server::TlsConnectInfo<tonic::transport::server::TcpConnectInfo>>()
+            .and_then(|i| i.peer_certs())
+            .map(|peer_certs| get_current_client_auth_cert(&peer_certs.as_ref()))
+            .unwrap_or(Ok(None)) ?;
+        if let Some(ref _certs) = tonic_certs {
+            return Ok(tonic_certs);
         }
     }
+
+    ext.get::<PeerCertificates>()
+        .map(|peer_certs|get_current_client_auth_cert(&peer_certs.certs))
+        .unwrap_or(Ok(None))
+}
+
+pub fn get_http_current_client_auth_cert_from_req_parts(req: &http::request::Parts) -> anyhow::Result<Option<ClientAuthCertInfo>> {
+    let ext = &req.extensions;
+    ext.get::<PeerCertificates>()
+        .map(|peer_certs|get_current_client_auth_cert(&peer_certs.certs))
+        .unwrap_or(Ok(None))
+}
+
+pub fn get_current_client_auth_cert(peer_certs: &Vec<CertificateDer<'static>>) -> anyhow::Result<Option<ClientAuthCertInfo>> {
+
+    // TODO: [client-cert-auth] use filter/validate/find authClient certificate
+    let auth_client_cert = peer_certs.first()
+        // Or we can return None... but I think if we are there
+        // it is unexpected situation, and it is error/bug
+        .ok_or_else(||anyhow!("No auth cert")) ?;
+    let client_auth_cert_info = extract_client_auth_cert_info_from_cert(
+        auth_client_cert.as_bytes()) ?;
+    Ok(Some(client_auth_cert_info))
 }
 
 #[derive(Debug)]

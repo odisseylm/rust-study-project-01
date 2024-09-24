@@ -33,6 +33,9 @@ pub enum AuthBackendError {
     // ----------------------------------------------------------------------------
     //                            Internal errors
     //
+    #[error("ExtractUserFromReqError")]
+    ExtractUserFromReqError(#[from] anyhow::Error),
+
     #[error("User Provider error")]
     UserProviderError(#[from] AuthUserProviderError),
 

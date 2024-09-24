@@ -6,11 +6,15 @@ use diesel::{Connection, PgConnection};
 use implicit_clone::ImplicitClone;
 use tonic::{Request, Response, Status};
 use mvv_auth::permission::PermissionSet;
-use mvv_common::grpc::TonicErrToStatusExt;
-use mvv_common::string::StaticRefOrString;
-use crate::auth::{Role, RolePermissionsSet};
-use crate::client::ClientInfo;
-use crate::dependencies::{Dependencies};
+use mvv_common::{
+    grpc::TonicErrToStatusExt,
+    string::StaticRefOrString,
+};
+use crate::{
+    auth::{Role, RolePermissionsSet},
+    client::ClientInfo,
+    dependencies::{Dependencies},
+};
 use crate::grpc::mvv::client::search::api::v1::{
     {Client, ClientSearchRequest, ClientSearchResponse, GetClientByIdRequest, GetClientByIdResponse},
     client_search_service_server::ClientSearchService as ClientSearchServiceTrait,
@@ -69,8 +73,9 @@ impl ClientSearchService {
         //     .expect("Client did not send its certs!");
         // println!("### certs: {certs:?}");
 
-        let aa = mvv_common::client_cert_auth::get_current_client_auth_cert();
-        println!("### LOCAL aa: {aa:?}");
+        let cert = mvv_common::client_cert_auth::
+            get_grpc_current_client_auth_cert(&request);
+        println!("### Client cert: {cert:?}");
 
         // let mut con = establish_connection() ?;
         let mut con = self.dependencies.diesel_db_pool.get() ?;

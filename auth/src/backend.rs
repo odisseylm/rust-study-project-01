@@ -1,5 +1,7 @@
 use std::sync::Arc;
 use async_trait::async_trait;
+//--------------------------------------------------------------------------------------------------
+
 
 use crate::user_provider::AuthUserProvider;
 
@@ -36,6 +38,17 @@ pub enum AuthBackendMode {
 pub trait ProposeAuthAction : axum::response::IntoResponse {
 }
 
+#[derive(Debug, Clone)]
+pub struct NoProposeHttpAuthAction;
+impl ProposeAuthAction for NoProposeHttpAuthAction { }
+#[inherent::inherent]
+impl axum::response::IntoResponse for NoProposeHttpAuthAction {
+    #[allow(dead_code)] // !! It is really used IMPLICITLY !!
+    pub fn into_response(self) -> axum::response::Response<axum::body::Body> {
+        // Should not be called
+        http_unauthenticated_401_response("Unknown")
+    }
+}
 
 #[async_trait]
 #[cfg_attr(feature = "ambassador", ambassador::delegatable_trait)]
@@ -145,8 +158,11 @@ pub mod login_form_auth;
 pub mod oauth2_auth;
 pub mod psw_auth;
 pub mod authz_backend;
+mod client_cert_auth;
 
-pub use http_basic_auth::{ HttpBasicAuthBackend, ProposeHttpBasicAuthAction, };
+pub use http_basic_auth::{HttpBasicAuthBackend, ProposeHttpBasicAuthAction, };
 pub use login_form_auth::{ LoginFormAuthBackend, LoginFormAuthConfig, ProposeLoginFormAuthAction, };
 pub use oauth2_auth::{ OAuth2AuthBackend, OAuth2AuthCredentials, OAuth2Config, Oauth2ConfigError, OAuth2UserStore, };
+pub use client_cert_auth::{ClientCertAuthBackend, ClientCertAuthCredentials};
 pub use psw_auth::{ PswAuthCredentials };
+use crate::util::http::http_unauthenticated_401_response;
