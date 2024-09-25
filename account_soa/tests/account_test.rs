@@ -6,8 +6,10 @@ use mvv_account_soa::entity::{
     ClientId,
 };
 use mvv_auth::util::test_unwrap::TestSringOps;
-use mvv_common::entity::amount::Amount;
-use mvv_common::test::{ TestResultUnwrap };
+use mvv_common::{
+    entity::amount::Amount,
+    test::{ TestResultUnwrap },
+};
 //--------------------------------------------------------------------------------------------------
 
 

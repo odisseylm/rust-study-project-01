@@ -1,4 +1,10 @@
 use core::fmt;
+use mvv_common::{
+    backtrace::BacktraceCell,
+    cache::{CacheError, CacheOrFetchError},
+};
+use crate::UserId;
+//--------------------------------------------------------------------------------------------------
 
 
 #[axum::async_trait]
@@ -78,6 +84,4 @@ impl From<CacheOrFetchError<AuthUserProviderError>> for AuthUserProviderError {
 pub mod mem_user_provider;
 
 pub use mem_user_provider::InMemAuthUserProvider;
-use mvv_common::backtrace::BacktraceCell;
-use mvv_common::cache::{CacheError, CacheOrFetchError};
-use crate::UserId;
+

@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
-use axum::extract::Request;
-use axum::response::{ IntoResponse, Response };
+use axum::{
+    extract::Request,
+    response::{ IntoResponse, Response },
+};
 use implicit_clone::ImplicitClone;
 
 use mvv_auth::{
@@ -17,10 +19,6 @@ use mvv_auth::{
     },
     user_provider::{ AuthUserProvider },
     permission::{ PermissionProvider },
-    // util::composite_util::{
-    //     backend_usr_prov_ref, backend_perm_prov_ref,
-    //     get_unique_user_provider_ref, get_unique_permission_provider_ref,
-    // },
 };
 use mvv_common::backtrace::backtrace;
 use super::user::{ClientAuthUser as AuthUser, Role, RolePermissionsSet };

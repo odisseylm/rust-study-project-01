@@ -4,8 +4,10 @@ use serde::{ Deserialize, Serialize };
 use once_cell::sync::Lazy;
 use regex::Regex;
 // use validator::Validate; // Need to do it manually since 'validator' does not import it by itself ?!
-use mvv_common::entity::currency::InnerCurStr;
-use mvv_common::unchecked::UncheckedResultUnwrap;
+use mvv_common::{
+    entity::currency::InnerCurStr,
+    unchecked::UncheckedResultUnwrap,
+};
 //--------------------------------------------------------------------------------------------------
 
 

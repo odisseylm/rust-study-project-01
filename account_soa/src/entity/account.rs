@@ -1,6 +1,6 @@
 use chrono::Utc;
-use mvv_common::entity::amount::Amount;
 use mvv_common::{
+    entity::amount::Amount,
     generate_from_str_new_type_delegate,
     generate_into_inner_delegate,
     generate_pg_delegate_decode,

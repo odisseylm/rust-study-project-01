@@ -107,8 +107,6 @@ pub mod parse_amount_another_01 {
 #[test]
 fn test_currency_format_error_other() {
     use parse_currency_another_01::*;
-    // use mvv_common::backtrace::NewBacktracePolicy;
-    // use mvv_common::backtrace::NewBacktracePolicy;
     use anyhow::__private::kind::TraitKind;
     use thiserror::__private::AsDynError;
     use core::any::Any;

@@ -1,15 +1,22 @@
-use axum::body::Body;
-use axum::http::StatusCode;
-use axum::Json;
-use axum::response::{IntoResponse, Response };
-use axum_extra::headers::Authorization;
-use axum_extra::headers::authorization::Basic;
-use axum_extra::TypedHeader;
+use axum::{
+    body::Body,
+    http::StatusCode,
+    Json,
+    response::{IntoResponse, Response },
+};
+use axum_extra::{
+    TypedHeader,
+    headers::{Authorization, authorization::Basic},
+};
 use log::error;
-use mvv_common::backtrace::{backtrace, BacktraceCell};
-use mvv_common::rest::InvalidInputError;
-use crate::entity::user::UserId;
-use crate::service::account_service::AccountProcessError;
+use mvv_common::{
+    backtrace::{backtrace, BacktraceCell},
+    rest::InvalidInputError,
+};
+use crate::{
+    entity::user::UserId,
+    service::account_service::AccountProcessError,
+};
 //--------------------------------------------------------------------------------------------------
 
 

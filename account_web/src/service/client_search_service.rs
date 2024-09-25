@@ -133,7 +133,8 @@ impl ClientSearchService for ClientSearchServiceImpl {
 }
 
 
-fn get_ca_and_server_certs<Conf: DependencyConnectConf>(conf: &Conf) -> anyhow::Result<Vec<tonic::transport::Certificate>> {
+fn get_ca_and_server_certs<Conf: DependencyConnectConf>(conf: &Conf)
+    -> anyhow::Result<Vec<tonic::transport::Certificate>> {
 
     let certs = [conf.ca_cert(), conf.server_cert()]
         .into_iter()
@@ -152,40 +153,7 @@ pub fn create_client_search_service(cfg: &BaseDependencyConnectConf)
     -> anyhow::Result<ClientSearchServiceImpl> {
 
     info!("Creating client-search service base on config [{cfg:?}]");
-
-    // TODO: use SSL
-
     Ok(ClientSearchServiceImpl { config: Arc::new(cfg.clone()) })
-
-    /*
-    let cert: Option<Certificate> = match cfg.server_cert {
-        Some(SslConfValue::Path(ref cert_path)) =>{
-            let pem = std::fs::read_to_string(cert_path)
-                .map_err(|err| anyhow!("Error of reading from [{cert_path:?}] ({err:?})")) ?;
-            Some(Certificate::from_pem(pem.as_bytes()) ?)
-        }
-        Some(SslConfValue::Value(ref value)) =>
-            Some(Certificate::from_pem(value.as_bytes()) ?),
-        None => None,
-    };
-
-    let mut client = reqwest::Client::builder()
-        .default_headers({
-            let mut headers = HeaderMap::new();
-            // headers.insert("Authorization", HeaderValue::from_str(&basic_auth_creds.as_http_header()) ?);
-            headers.insert("Authorization", auth.0.encode());
-            headers
-        });
-
-    if let Some(cert) = cert {
-        client = client.add_root_certificate(cert);
-    }
-    let client = client.build() ?;
-
-    let client = AccountSoaRestClient::new_with_client(&cfg.base_url, client);
-    let account_service = AccountServiceImpl { client };
-    Ok(account_service)
-    */
 }
 
 
