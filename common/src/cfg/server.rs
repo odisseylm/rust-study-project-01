@@ -1,5 +1,5 @@
 use std::time::Duration;
-use crate::cfg::{SslConfValue, SslConfValueOptionExt};
+use crate::cfg::{load_optional_path_from_env_vars, SslConfValue, SslConfValueOptionExt};
 use crate::net::ConnectionType;
 use crate::string::StaticRefOrString;
 use super::{get_server_port, get_server_connection_type, load_path_from_env_vars};
@@ -68,12 +68,12 @@ impl BaseServerConf {
                 // for prod/docker
                 "SERVER_SSL_CERT_PATH", "SSL_CERT_PATH"])?));
 
-            client_auth_ssl_ca_cert = Some(SslConfValue::Path(load_path_from_env_vars([
+            client_auth_ssl_ca_cert = load_optional_path_from_env_vars([
                 // for local dev testing with single config env file
                 &format!("{server_env_name}CLIENT_SSL_CERT_PATH"),
                 &format!("{server_env_name}_CLIENT_SSL_CERT_PATH"),
                 // for prod/docker
-                "CLIENT_SSL_CERT_PATH"])?));
+                "CLIENT_SSL_CERT_PATH"])? .map(SslConfValue::Path);
         } else {
             server_ssl_key = None;
             server_ssl_cert = None;
