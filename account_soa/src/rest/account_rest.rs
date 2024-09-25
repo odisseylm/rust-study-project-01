@@ -12,7 +12,7 @@ use log::{ debug as log_debug, info as log_info /*, error as log_error*/ };
 use serde::{ Deserialize };
 use utoipa::OpenApi;
 use crate::{
-    entity::{ self, prelude::UserId, AccountId, ClientId },
+    entity::{ self, AccountId, ClientId },
     rest::{
         auth::{ RequiredAuthorizationExtension, Role, },
         app_dependencies::Dependencies,
@@ -318,7 +318,7 @@ fn map_account_to_rest(account: entity::Account) -> dto::Account {
         id: id.into_inner(), // .to_string(),
         iban: iban.to_string(), // hm... where 'into_inner()' ??
         client_id: client_id.into_inner(), //.to_string(),
-        name,
+        name: name.into_inner(),
         amount: dto::Amount { value: amount_value, currency: currency.into_inner() },
         created_at,
         updated_at,

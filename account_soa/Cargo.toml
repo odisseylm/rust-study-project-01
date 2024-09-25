@@ -120,10 +120,10 @@ readonly.workspace = true
 extension-trait.workspace = true
 ambassador = { workspace = true,  optional = true }  # Delegation support
 
-fixedstr.workspace = true
+fixedstr = { workspace = true, features = ["default", "serde"] }
 
 num.workspace = true
-nutype.workspace = true
+nutype = { workspace = true, features = ["default", "std", "serde"] }
 nonzero_lit.workspace = true
 
 implicit-clone.workspace = true

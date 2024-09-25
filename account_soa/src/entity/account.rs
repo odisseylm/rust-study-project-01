@@ -3,9 +3,15 @@ use mvv_common::{
     entity::amount::Amount,
     generate_from_str_new_type_delegate,
     generate_into_inner_delegate,
+    generate_pg_decode_from_str,
     generate_pg_delegate_decode,
     generate_pg_delegate_encode,
     generate_pg_delegate_type_info,
+    generate_pg_encode_from_as_str,
+};
+use mvv_common::{
+    backtrace::{backtrace, BacktraceCell},
+    unchecked::UncheckedResultUnwrap,
 };
 use crate::entity::ClientId;
 // -------------------------------------------------------------------------------------------------
@@ -29,13 +35,80 @@ generate_pg_delegate_decode!    { AccountId, uuid::Uuid }
 
 
 
+
+lazy_static::lazy_static! {
+    // T O D O: allow ANY alphabet chars from any language (but deny ANY special chars)
+    static ref ACCOUNT_NAME_REGEX: regex::Regex = regex::Regex::new(r#"^[0-9A-Za-z_\- \t]+$"#)
+        .unchecked_unwrap();
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum AccountNameError {
+    // Enum variant names are taken from 'nutype' crate.
+    //  => NotEmptyViolated, LenCharMinViolated, LenCharMaxViolated, RegexViolated
+
+    #[error("Account name max length error")]
+    LenCharMaxViolated(BacktraceCell),
+    #[error("Account name allowed chars error")]
+    RegexViolated(BacktraceCell),
+}
+
+fn validate_account_name(str: &AccountNameInner) -> Result<(), AccountNameError> {
+    if !ACCOUNT_NAME_REGEX.is_match(str.as_str()) {
+        return Err(AccountNameError::RegexViolated(backtrace()))
+    }
+    Ok(())
+}
+
+/// Fixed string is used there only as experiment/investigation
+/// In my opinion it makes sense to use Fixed string only for tiny strings
+/// or for strings which are not passed outside from creation place
+pub type AccountNameInner = fixedstr::str256;
+
+#[nutype::nutype(
+    // Predefined string validators are not allowed for custom strings (as expected :-))
+    // validate(len_char_min = 1, len_char_max = 128, regex = ACCOUNT_NAME_REGEX),
+    validate(with = validate_account_name, error = AccountNameError),
+    derive(Debug, Display, AsRef, PartialEq, Clone, Serialize, Deserialize),
+)]
+struct AccountName(AccountNameInner);
+impl AccountName {
+    #[inline]
+    pub fn as_str(&self) -> &str {
+        // 'manual' typing is used there to make sure that there is no recursion
+        let inner: &AccountNameInner = self.as_ref();
+        inner.as_str()
+    }
+}
+impl core::str::FromStr for AccountName {
+    type Err = AccountNameError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let inner = AccountNameInner::from_str(s)
+            .map_err(|_err| AccountNameError::LenCharMaxViolated(backtrace()))?;
+        Self::try_new(inner)
+    }
+}
+// For easy use `try_into()`
+impl TryFrom<&str> for AccountName {
+    type Error = AccountNameError;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        <Self as core::str::FromStr>::from_str(value)
+    }
+}
+generate_pg_delegate_type_info! { AccountName, str }
+generate_pg_encode_from_as_str! { AccountName }
+// Maybe not optimized approach (or maybe optimized :-)... hz)
+generate_pg_decode_from_str! { AccountName }
+// gener
+
+
 #[derive(Debug)]
 #[readonly::make]
 pub struct Account {
     pub id: AccountId, // internal ID
     pub iban: iban::Iban,
     pub client_id: ClientId,
-    pub name: String, // TODO: Use type AccountName
+    pub name: AccountName,
     pub amount: Amount,
     pub created_at: chrono::DateTime<Utc>,
     pub updated_at: chrono::DateTime<Utc>,
@@ -45,7 +118,7 @@ pub struct AccountParts {
     pub id: AccountId, // internal ID
     pub iban: iban::Iban,
     pub client_id: ClientId,
-    pub name: String,
+    pub name: AccountName,
     pub amount: Amount,
     pub created_at: chrono::DateTime<Utc>,
     pub updated_at: chrono::DateTime<Utc>,

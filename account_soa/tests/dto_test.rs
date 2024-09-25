@@ -80,7 +80,7 @@ fn account_display_and_debug_fmt_test() {
         id: uuid_from_str("ebe86a70-835b-43be-8069-65a0dccc2876"),
         client_id: uuid_from_str("7911a64a-7aef-4ade-ace0-0299849b28a6"),
         iban: "UA90 305299 2990004149123456789".to_test_string(),
-        name: "Account 2".to_test_string(),
+        name: "Account 2".try_into().test_unwrap(),
         amount: Amount {
             value: BigDecimal::from_str("123.0456").test_unwrap(),
             currency: InnerCurStr::const_make("USD"),
@@ -95,12 +95,13 @@ fn account_display_and_debug_fmt_test() {
         account.to_test_display_string(),
         "Account { ebe86a70-835b-43be-8069-65a0dccc2876, iban: UA90 305299 2990004149123456789, client: 7911a64a-7aef-4ade-ace0-0299849b28a6, amount: 123.0456 USD, created/updated at: 2024-05-30 20:29:57 UTC/2024-05-31 20:29:57 UTC }",
     );
+    // hm... core string is shown like "Account 2", but FixedString is shown without quotes...
     assert_eq!(
             account.to_test_debug_string(),
             "Account { id: ebe86a70-835b-43be-8069-65a0dccc2876, \
              iban: \"UA90 305299 2990004149123456789\", \
              client_id: 7911a64a-7aef-4ade-ace0-0299849b28a6, \
-             name: \"Account 2\", \
+             name: Account 2, \
              amount: Amount { value: 123.0456 (BigDecimal(sign=Plus, scale=4, digits=[1230456])), currency: USD }, \
              created_at: 2024-05-30T20:29:57Z, updated_at: 2024-05-31T20:29:57Z }",
         );
@@ -113,7 +114,7 @@ fn account_to_json() {
         id: uuid_from_str("ebe86a70-835b-43be-8069-65a0dccc2876"),
         client_id: uuid_from_str("7911a64a-7aef-4ade-ace0-0299849b28a6"),
         iban: "UA90 305299 2990004149123456789".to_test_string(),
-        name: "Account 3".to_test_string(),
+        name: "Account 3".try_into().test_unwrap(),
         amount: Amount {
             value: BigDecimal::from_str("123.0456").test_unwrap(),
             currency: InnerCurStr::const_make("USD"),
@@ -186,7 +187,7 @@ fn account_from_json() {
         id: uuid_from_str("ebe86a70-835b-43be-8069-65a0dccc2876"),
         client_id: uuid_from_str("7911a64a-7aef-4ade-ace0-0299849b28a6"),
         iban: "UA90 305299 2990004149123456789".to_test_string(),
-        name: "Account 4".to_test_string(),
+        name: "Account 4".try_into().test_unwrap(),
         amount: Amount {
             value: BigDecimal::from_str("123.0456").test_unwrap(),
             currency: InnerCurStr::const_make("USD"),

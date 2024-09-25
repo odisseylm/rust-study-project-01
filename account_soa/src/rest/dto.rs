@@ -8,6 +8,7 @@ use mvv_common::{
     entity::currency::InnerCurStr,
     unchecked::UncheckedResultUnwrap,
 };
+use crate::entity::account::AccountNameInner;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -83,9 +84,10 @@ pub struct Account {
     pub client_id: uuid::Uuid, // String
 
     /// Account (short) name
-    #[validate(length(min=1, max=320))] // TODO: add simple validation // , regex(ID_PATTERN))]
-    #[schema(example = "My AUD account")]
-    pub name: String,
+    // Validation for String type
+    // #[validate(length(min=1, max=320))] // T O D O: add simple validation // , regex(ID_PATTERN))]
+    #[schema(value_type = String, example = "My AUD account")]
+    pub name: AccountNameInner, // String
 
     #[validify]
     #[schema(value_type = Amount)] // api::models::Amount)]
