@@ -129,6 +129,7 @@ fn config_from_der(cert: Vec<Vec<u8>>, key: Vec<u8>, client_auth_ca_cert: Vec<u8
 }
 
 
+#[cfg(feature = "tonic")]
 pub fn get_grpc_current_client_auth_cert<T>(req: &tonic::Request<T>) -> anyhow::Result<Option<ClientAuthCertInfo>> {
     let ext = req.extensions();
 
@@ -145,7 +146,8 @@ pub fn get_grpc_current_client_auth_cert<T>(req: &tonic::Request<T>) -> anyhow::
 pub fn get_http_current_client_auth_cert_from_req<T>(req: &http::Request<T>) -> anyhow::Result<Option<ClientAuthCertInfo>> {
     let ext = req.extensions();
 
-    if cfg!(feature = "tonic") {
+    #[cfg(feature = "tonic")]
+    {
         let tonic_certs = ext.get::<tonic::transport::server::TlsConnectInfo<tonic::transport::server::TcpConnectInfo>>()
             .and_then(|i| i.peer_certs())
             .map(|peer_certs| get_current_client_auth_cert(&peer_certs.as_ref()))

@@ -21,7 +21,7 @@ use crate::{generate_debug, generate_empty_debug_non_exhaustive};
 // for outer types (stream) :-)
 //
 pub trait ExtendableByConnectServiceService {
-    fn extend_with_connect_info_from_ssl_stream<RawStream>(self, stream: &tokio_rustls::server::TlsStream<RawStream>) -> Self;
+    fn extend_with_connect_info_from_ssl_stream<RawStream: RawTlStreamSpec>(self, stream: &tokio_rustls::server::TlsStream<RawStream>) -> Self;
     fn install_connect_info_to(&self, extensions: &mut ConnectionStreamExtensions); // TODO: return Result
 }
 
@@ -37,7 +37,7 @@ tokio::task_local! {
 
 pub struct ServiceWrapper<S> {
     pub svc: S,
-    pub connection_info: Option<Arc<ConnectionInfo>>, // TODO: it is simple impl, try to do it more generic
+    pub connection_info: Option<Arc<ConnectionInfo>>, // T O D O: it is simple impl, try to do it more generic
 }
 
 impl<S> ServiceWrapper<S> {
@@ -46,13 +46,18 @@ impl<S> ServiceWrapper<S> {
     }
 }
 
+#[cfg(feature = "tonic")]
 pub type TonicTlsConnectInfo = tonic::transport::server::TlsConnectInfo<
     tonic::transport::server::TcpConnectInfo>;
 
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct ConnectionInfo {
     pub peer_certs: Option<PeerCertificates>, // [client-cert-auth] TODO: also use Arc
+    #[cfg(feature = "tonic")]
     pub tonic_tls_con_info: Option<Arc<TonicTlsConnectInfo>>,
+    #[doc(hidden)]
+    __non_exhaustive: (),
 }
 
 
@@ -106,6 +111,7 @@ pub fn extract_cert_peers_from_axum_server_task_local() -> anyhow::Result<Option
     Ok(peer_certs)
 }
 
+#[cfg(feature = "tonic")]
 pub fn extract_tonic_tls_connect_info_from_axum_server_task_local()
     -> anyhow::Result<Option<tonic::transport::server::TlsConnectInfo<
         tonic::transport::server::TcpConnectInfo>>> {
@@ -120,20 +126,36 @@ pub fn extract_tonic_tls_connect_info_from_axum_server_task_local()
 }
 
 
+/// Internal trait to (conditionally by feature) satisfy 'tonic' requirements.
+#[cfg(feature = "tonic")]
+pub trait RawTlStreamSpec :
+    tonic::transport::server::Connected<ConnectInfo = tonic::transport::server::TcpConnectInfo> {
+}
+#[cfg(feature = "tonic")]
+impl<T> RawTlStreamSpec for T
+where T: tonic::transport::server::Connected<ConnectInfo = tonic::transport::server::TcpConnectInfo>
+{ }
+
+#[cfg(not(feature = "tonic"))]
+pub trait RawTlStreamSpec { }
+#[cfg(not(feature = "tonic"))]
+impl<T> RawTlStreamSpec for T { }
+
 
 impl<S> ExtendableByConnectServiceService for ServiceWrapper<S> {
-    fn extend_with_connect_info_from_ssl_stream<RawStream>(
+    fn extend_with_connect_info_from_ssl_stream<RawStream: RawTlStreamSpec>(
         self, stream: &tokio_rustls::server::TlsStream<RawStream>) -> Self {
 
         let peer_certs = get_peer_certs(stream);
-        // #[cfg(feature = "tonic")]
-        // let tonic_tls_con_info = get_tonic_tls_connect_info(stream)
-        //     .map(Arc::new);
+        #[cfg(feature = "tonic")]
+        let tonic_tls_con_info = create_tonic_tls_connect_info(stream)
+            .map(Arc::new);
 
         let connection_info = ConnectionInfo {
             peer_certs,
             #[cfg(feature = "tonic")]
-            tonic_tls_con_info: None,
+            tonic_tls_con_info,
+            __non_exhaustive: (),
         };
 
         Self {
@@ -177,7 +199,7 @@ fn get_peer_certs<RawStream>(stream: &tokio_rustls::server::TlsStream<RawStream>
 
 #[cfg(feature = "tonic")]
 #[allow(dead_code)]
-fn get_tonic_tls_connect_info <
+fn create_tonic_tls_connect_info<
     RawStream: tonic::transport::server::Connected<ConnectInfo = tonic::transport::server::TcpConnectInfo>
 > (stream: &tokio_rustls::server::TlsStream<RawStream>)
     -> Option<TonicTlsConnectInfo>
@@ -185,10 +207,10 @@ fn get_tonic_tls_connect_info <
     use tonic::transport::server::Connected;
     use tokio_rustls::server::TlsStream;
 
-    let _con_info: TonicTlsConnectInfo = <TlsStream<RawStream>
+    let con_info: TonicTlsConnectInfo = <TlsStream<RawStream>
         as Connected>::connect_info(stream);
 
-    None
+    Some(con_info)
 }
 
 
@@ -367,13 +389,13 @@ generate_empty_debug_non_exhaustive! { ServiceWrapperRustlsAcceptor<A: Clone> }
 
 
 impl ServiceWrapperRustlsAcceptor {
-    // axum_server::tls_rustls::RustlsAcceptor API
+    /// axum_server::tls_rustls::RustlsAcceptor API
     pub fn new(config: axum_server::tls_rustls::RustlsConfig) -> Self {
         Self {
             delegate: axum_server::tls_rustls::RustlsAcceptor::new(config),
         }
     }
-    // axum_server::tls_rustls::RustlsAcceptor API
+    /// axum_server::tls_rustls::RustlsAcceptor API
     pub fn handshake_timeout(self, val: core::time::Duration) -> Self {
         Self {
             delegate: self.delegate.handshake_timeout(val),
@@ -382,7 +404,7 @@ impl ServiceWrapperRustlsAcceptor {
 }
 
 impl<A: Clone> ServiceWrapperRustlsAcceptor<A> {
-    // axum_server::tls_rustls::RustlsAcceptor API
+    /// axum_server::tls_rustls::RustlsAcceptor API
     pub fn acceptor<Acceptor: Clone>(self, acceptor: Acceptor) -> ServiceWrapperRustlsAcceptor<Acceptor> {
         ServiceWrapperRustlsAcceptor::<Acceptor> {
             delegate: self.delegate.acceptor(acceptor)
@@ -398,6 +420,7 @@ where
     A::Stream: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
     A::Service: ExtendableByConnectServiceService,
     <A as axum_server::accept::Accept<I, S>>::Service: ExtendableByConnectServiceService,
+    <A as axum_server::accept::Accept<I, S>>::Stream: RawTlStreamSpec
 {
     type Stream = tokio_rustls::server::TlsStream<A::Stream>;
     type Service = A::Service;
@@ -439,6 +462,7 @@ impl<F, I, S> Future for ServiceWrapperRustlsAcceptorFuture<F, I, S>
 where
     F: Future<Output = io::Result<(I, S)>>,
     I: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
+    I: RawTlStreamSpec,
     S: ExtendableByConnectServiceService, // <I>,
 {
     type Output = io::Result<(tokio_rustls::server::TlsStream<I>, S)>;
