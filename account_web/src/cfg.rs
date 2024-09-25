@@ -3,6 +3,7 @@ use mvv_common::{
     net::ConnectionType,
     string::StaticRefOrString,
 };
+use mvv_common::cfg::SslConfValueOptionExt;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -23,6 +24,7 @@ impl AccountWebServerConfig {
         let BaseServerConf {
             server_name, server_env_name, server_port,
             connection_type, server_ssl_key, server_ssl_cert,
+            ..
         } = conf;
 
         let account_soa_cert = load_optional_path_from_env_vars([
@@ -48,4 +50,19 @@ impl ServerConf for AccountWebServerConfig {
     fn server_port(&self) -> u16 { self.server_port }
     fn server_ssl_key(&self) -> Option<&SslConfValue> { self.server_ssl_key.as_ref() }
     fn server_ssl_cert(&self) -> Option<&SslConfValue> { self.server_ssl_cert.as_ref() }
+    fn client_auth_ssl_ca_cert(&self) -> Option<&SslConfValue> {
+        None // No need client cert auth for web application
+    }
+
+    fn preload_values(self) -> anyhow::Result<Self> where Self: Sized {
+        Ok(Self {
+            server_name: self.server_name,
+            server_env_name: self.server_env_name,
+            server_port: self.server_port,
+            connection_type: self.connection_type,
+            server_ssl_key: self.server_ssl_key.preload() ?,
+            server_ssl_cert: self.server_ssl_cert.preload() ?,
+            account_soa_cert: self.account_soa_cert.preload() ?,
+        })
+    }
 }

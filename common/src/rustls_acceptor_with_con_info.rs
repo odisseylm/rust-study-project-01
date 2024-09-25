@@ -53,7 +53,7 @@ pub type TonicTlsConnectInfo = tonic::transport::server::TlsConnectInfo<
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct ConnectionInfo {
-    pub peer_certs: Option<PeerCertificates>, // [client-cert-auth] TODO: also use Arc
+    pub peer_certs: Option<PeerCertificates>,
     #[cfg(feature = "tonic")]
     pub tonic_tls_con_info: Option<Arc<TonicTlsConnectInfo>>,
     #[doc(hidden)]
@@ -63,11 +63,11 @@ pub struct ConnectionInfo {
 
 #[derive(Clone)]
 pub struct PeerCertificates {
-    pub certs: Vec<rustls_pki_types::CertificateDer<'static>>,
+    pub certs: Arc<Vec<rustls_pki_types::CertificateDer<'static>>>,
 }
 generate_empty_debug_non_exhaustive! { PeerCertificates }
 impl PeerCertificates {
-    pub fn new(certs: Vec<rustls_pki_types::CertificateDer<'static>>) -> Self {
+    pub fn new(certs: Arc<Vec<rustls_pki_types::CertificateDer<'static>>>) -> Self {
         Self { certs }
     }
 }
@@ -92,7 +92,9 @@ fn get_connection_stream_extension() -> anyhow::Result<Arc<ConnectionStreamExten
     Ok(ext)
 }
 
-pub fn extract_cert_peers_from_axum_server_task_local() -> anyhow::Result<Option<Vec<rustls_pki_types::CertificateDer<'static>>>> {
+pub fn extract_cert_peers_from_axum_server_task_local()
+    -> anyhow::Result<Option<Arc<Vec<rustls_pki_types::CertificateDer<'static>>>>> {
+
     let ext = get_connection_stream_extension() ?;
     let con_info = ext.get::<ConnectionInfo>();
 
@@ -189,7 +191,7 @@ fn get_peer_certs<RawStream>(stream: &tokio_rustls::server::TlsStream<RawStream>
             if certs.is_empty() {
                 None
             } else {
-                Some(PeerCertificates::new(certs))
+                Some(PeerCertificates::new(Arc::new(certs)))
             }
         }
     };
