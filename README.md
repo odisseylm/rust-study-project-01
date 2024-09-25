@@ -154,5 +154,7 @@ Should public functions be tested in internal or integration tests ??
 
 TODO: investigate
  - string-builder ?? How overloading is done there??
- - try to use SmallVec instead of Vec
  - try to use fixedstr string types
+
+Investigated
+ - try to use SmallVec instead of Vec

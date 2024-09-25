@@ -1,5 +1,6 @@
 use anyhow::anyhow;
 use reqwest::Certificate;
+use smallvec::{SmallVec, smallvec};
 use crate::cfg::{SslConfValue, SslConfValueOptionExt};
 use crate::secure::SecureString;
 use crate::string::StaticRefOrString;
@@ -30,7 +31,7 @@ pub trait DependencyConnectConf: core::fmt::Debug {
     fn base_url(&self) -> &StaticRefOrString {
         self.base_urls().first().unwrap_or_else(||&EMPTY_STATIC_REF_OR_STRING)
     }
-    fn base_urls(&self) -> &Vec<StaticRefOrString>;
+    fn base_urls(&self) -> &SmallVec<[StaticRefOrString; BASE_URL_COUNT]>;
     fn user(&self) -> &Option<StaticRefOrString>;
     fn password(&self) -> &Option<SecureString>;
     fn server_cert(&self) -> &Option<SslConfValue>;
@@ -51,6 +52,9 @@ pub trait DependencyConnectConf: core::fmt::Debug {
 // - DEPENDENCIES_ACCOUNTSOA_REST_BALANCERTYPE=ribbon
 //
 
+/// Max expected to be inlined (kept on stack instead of heap)
+const BASE_URL_COUNT: usize = 5;
+
 #[derive(Debug, Clone)]
 pub struct BaseDependencyConnectConf {
     pub app_name: StaticRefOrString,
@@ -59,7 +63,7 @@ pub struct BaseDependencyConnectConf {
     pub dep_type: DependencyType,
     // In general there may be several URLs with client balancing,
     // but now we use only 1st url
-    pub base_urls: Vec<StaticRefOrString>,
+    pub base_urls: SmallVec<[StaticRefOrString; BASE_URL_COUNT]>,
     pub user: Option<StaticRefOrString>,
     pub password: Option<SecureString>,
     pub server_cert: Option<SslConfValue>,
@@ -108,7 +112,7 @@ impl BaseDependencyConnectConf {
             dep_env_name: dependency_env_name.into(),
             dep_type,
             // now only ONE url is used
-            base_urls: vec!(base_url.into()),
+            base_urls: smallvec!(base_url.into()),
             user: Some(user.into()),
             password: Some(psw.into()),
             server_cert,
@@ -128,7 +132,7 @@ impl DependencyConnectConf for BaseDependencyConnectConf {
     fn dependency_type(&self) -> Option<DependencyType> {
         Some(self.dep_type)
     }
-    fn base_urls(&self) -> &Vec<StaticRefOrString> {
+    fn base_urls(&self) -> &SmallVec<[StaticRefOrString; BASE_URL_COUNT]> {
         &self.base_urls
     }
     fn user(&self) -> &Option<StaticRefOrString> {

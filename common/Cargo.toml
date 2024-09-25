@@ -121,6 +121,7 @@ readonly.workspace = true
 extension-trait.workspace = true
 ambassador = { workspace = true, optional = true }  # Delegation support
 
+smallvec = { workspace = true, features = [] }
 fixedstr.workspace = true
 
 num.workspace = true

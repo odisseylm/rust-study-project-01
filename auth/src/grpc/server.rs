@@ -295,9 +295,6 @@ pub fn grpc_req_enrich<Body>(mut req: http::request::Request<Body>)
     match certs {
         Ok(None) => { }
         Ok(Some(certs)) => {
-            // I cannot use tonic TlsConnectInfo there because it is very-very-very TODO: [client-cert-auth] try again
-            // difficult to create its instance...
-            // Let's live without emulation of tonic behavior.
             req.extensions_mut().insert(PeerCertificates::new(certs));
         }
         Err(_err) => {

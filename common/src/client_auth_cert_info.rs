@@ -21,13 +21,17 @@ pub struct ClientAuthCertInfo {
     // Oid  O/2.5.4.10
     pub organization: String,
 
-    // Email Address attribute for use in signatures.
-    // Oid 1.2.840.113549.1.9.1  OID_PKCS9_EMAIL
-    pub pkcs9_emails: Vec<String>,
+    /// Email Address attribute for use in signatures.
+    /// Oid 1.2.840.113549.1.9.1  OID_PKCS9_EMAIL
+    //
+    // SmallVec is used there as experiment.
+    pub pkcs9_emails: smallvec::SmallVec<[String; 5]>,
 
-    // Oid 2.5.29.17 - Subject Alternative Name
-    // https://www.alvestrand.no/objectid/2.5.29.17.html
-    pub alt_name_ext_emails: Vec<String>,
+    /// Oid 2.5.29.17 - Subject Alternative Name
+    /// https://www.alvestrand.no/objectid/2.5.29.17.html
+    //
+    // SmallVec is used there as experiment.
+    pub alt_name_ext_emails: smallvec::SmallVec<[String; 5]>,
 
     // ExtendedKeyUsage extension, attribute 'clientAuth'
     // https://www.alvestrand.no/objectid/2.5.29.37.html
@@ -64,7 +68,7 @@ pub fn extract_client_auth_cert_info_from_cert(cert_bytes: &[u8])
     let pkcs9_email_attrs = subject.iter_email().collect::<Vec<_>>();
     let pkcs9_emails = pkcs9_email_attrs.into_iter()
         .map(|p| attribute_value_to_string(p.attr_value(), p.attr_type()))
-        .collect::<anyhow::Result<Vec<String>>>() ?;
+        .collect::<anyhow::Result<smallvec::SmallVec<[String; 5]>>>() ?;
 
     let alt_names = &cert.subject_alternative_name() ?;
     let alt_name_ext_emails =
@@ -77,9 +81,9 @@ pub fn extract_client_auth_cert_info_from_cert(cert_bytes: &[u8])
                         None
                     }
                 })
-                .collect::<Vec<String>>()
+                .collect::<smallvec::SmallVec<[String; 5]>>()
         } else {
-            Vec::new()
+            smallvec::SmallVec::<[String; 5]>::new()
         };
 
     let ex_key_usage_ext = &cert.extended_key_usage() ?;

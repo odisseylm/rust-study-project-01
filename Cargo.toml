@@ -160,6 +160,7 @@ readonly = "0.2.12"
 extension-trait = "1.0.2"
 ambassador = { version = "0.4.0" }  # Delegation support
 
+smallvec = { version = "1.13.2", features = [] }
 fixedstr = {  version = "0.5.7", features = ["serde"] }
 
 num = "0.4.3"
