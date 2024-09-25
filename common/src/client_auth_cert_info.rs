@@ -1,9 +1,11 @@
 use anyhow::anyhow;
 use log::debug;
-use x509_parser::der_parser::asn1_rs::Oid;
-use x509_parser::prelude::X509Name;
-use x509_parser::der_parser::asn1_rs::Any;
-
+use x509_parser::{
+    der_parser::asn1_rs::Oid,
+    prelude::X509Name,
+    der_parser::asn1_rs::Any,
+};
+//--------------------------------------------------------------------------------------------------
 
 
 // It contains only currently needed client auth cert attributes.
@@ -25,6 +27,10 @@ pub struct ClientAuthCertInfo {
     // Oid 2.5.29.17 - Subject Alternative Name
     // https://www.alvestrand.no/objectid/2.5.29.17.html
     pub alt_name_ext_emails: Vec<String>,
+
+    // ExtendedKeyUsage extension, attribute 'clientAuth'
+    // https://www.alvestrand.no/objectid/2.5.29.37.html
+    pub is_client_auth_key_usage: bool,
 }
 
 
@@ -72,11 +78,16 @@ pub fn extract_client_auth_cert_info_from_cert(cert_bytes: &[u8])
             Vec::new()
         };
 
+    let ex_key_usage_ext = &cert.extended_key_usage() ?;
+    let is_client_auth_key_usage = ex_key_usage_ext.as_ref().map(|ex_key_usage_ext| ex_key_usage_ext.value.client_auth)
+        .unwrap_or(false);
+
     Ok(ClientAuthCertInfo {
         common_name,
         organization,
         pkcs9_emails,
         alt_name_ext_emails,
+        is_client_auth_key_usage,
     })
 }
 

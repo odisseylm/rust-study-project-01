@@ -12,7 +12,7 @@ use http::{
     HeaderName, HeaderValue,
 };
 use log::{debug, error, warn};
-use tonic::{ // TODO: [client-cert-auth] use 'tonic' feature
+use tonic::{
     Request, Status,
     metadata::KeyAndValueRef,
 };

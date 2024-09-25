@@ -2,7 +2,8 @@ use std::{
     sync::Arc,
 };
 use anyhow::anyhow;
-use log::{error};
+use itertools::{Either, Itertools};
+use log::{error, warn};
 use rustls::{
     DigitallySignedStruct, DistinguishedName,
     client::danger::HandshakeSignatureValid,
@@ -168,14 +169,33 @@ pub fn get_http_current_client_auth_cert_from_req_parts(req: &http::request::Par
 
 pub fn get_current_client_auth_cert(peer_certs: &Vec<CertificateDer<'static>>) -> anyhow::Result<Option<ClientAuthCertInfo>> {
 
-    // TODO: [client-cert-auth] use filter/validate/find authClient certificate
-    let auth_client_cert = peer_certs.first()
-        // Or we can return None... but I think if we are there
-        // it is unexpected situation, and it is error/bug
-        .ok_or_else(||anyhow!("No auth cert")) ?;
-    let client_auth_cert_info = extract_client_auth_cert_info_from_cert(
-        auth_client_cert.as_bytes()) ?;
-    Ok(Some(client_auth_cert_info))
+    let (parsed_certs, mut failed): (Vec<ClientAuthCertInfo>, Vec<_>) = peer_certs.iter()
+        .map(|cert| extract_client_auth_cert_info_from_cert(cert.as_bytes()))
+        .partition_map(|el| match el {
+            Ok(val) => Either::Left(val),
+            Err(err) => Either::Right(err),
+        });
+
+    if let Some(err) = failed.pop() {
+        if parsed_certs.is_empty() {
+            return Err(anyhow!("Client certificate process error (all certs failed) ({err:?})."));
+        }
+    }
+
+    let mut all_client_auth_certs = parsed_certs.into_iter()
+        .filter(|cert| cert.is_client_auth_key_usage)
+        .collect::<Vec<_>>();
+
+    let all_client_auth_certs_count = all_client_auth_certs.len();
+    if all_client_auth_certs_count > 1 {
+        // Probably some additional filtering should be used if we have such situation.
+        let cert_names = all_client_auth_certs.iter()
+            .map(|cert|&cert.common_name)
+            .join(", ");
+        warn!("There are several ({all_client_auth_certs_count}) client auth certs [{cert_names}]. Last one will be used.");
+    }
+
+    Ok(all_client_auth_certs.pop())
 }
 
 #[derive(Debug)]

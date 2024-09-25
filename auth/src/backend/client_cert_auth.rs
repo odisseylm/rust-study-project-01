@@ -7,6 +7,7 @@ use mvv_common::{
     client_auth_cert_info::ClientAuthCertInfo,
     client_cert_auth::{get_http_current_client_auth_cert_from_req, get_http_current_client_auth_cert_from_req_parts},
 };
+use mvv_common::string::{remove_optional_prefix, remove_optional_suffix};
 use crate::{
     AuthnBackendAttributes, AuthUserProvider,
     backend::{
@@ -102,12 +103,15 @@ impl <
                 let user_principal_id: String = extract_username_from_cert_user(
                     creds.client_cert.common_name) ?;
 
-                // TODO: [client-cert-auth] log wrong username
-                let user_principal_id: <Usr as axum_login::AuthUser>::Id = user_principal_id.try_into()
+                // It would be nice to avoid 'clone', but because rust does not support
+                // trait impl 'specialization' (in stable) it would be impossible.
+                // Logging incorrect user is more preferable.
+                //
+                let user_principal_id: <Usr as axum_login::AuthUser>::Id = user_principal_id.clone().try_into()
                         .map_err(|err|AuthBackendError::ExtractUserFromReqError(anyhow!(
-                            // "Error converting user [{user_principal_id}] from string to principal ID"
-                            "Error converting user from string to principal ID ({err:?})"
+                            "Error converting user [{user_principal_id}] from string to principal ID ({err:?})"
                         ))) ?;
+
                 let user = self.users_provider
                     .get_user_by_principal_identity(&user_principal_id).await ?;
                 Ok(user)
@@ -263,7 +267,6 @@ fn get_credentials_from_req_parts(req_parts: &http::request::Parts) -> Result<Op
 
 fn extract_username_from_cert_user(user: String) -> Result<String, AuthBackendError> {
     let user = user.to_lowercase(); // T O D O: why not COW?
-    let user = user.as_str();
 
     let is_proper_user_cert_name_format =
         user.starts_with("user-") || user.ends_with("-cn-user") || user.ends_with("-user");
@@ -271,10 +274,14 @@ fn extract_username_from_cert_user(user: String) -> Result<String, AuthBackendEr
         return Err(AuthBackendError::ExtractUserFromReqError(anyhow!(
                         "Unexpected client certificate username format [{user}]")));
     }
-    let user = user.strip_prefix("user-").unwrap_or(user);
-    let user = user.strip_suffix("-cn-user").unwrap_or(user); // TODO: [client-cert-auth] ???
-    let user = user.strip_suffix("-user").unwrap_or(user);
 
-    let user_principal_id: String = user.to_owned(); // TODO: [client-cert-auth] try to avoid it
+    let user_principal_id: String =
+        if user.starts_with("user-") {
+            remove_optional_prefix(user, "user-")
+        } else {
+            let user = remove_optional_suffix(user, "-cn-user");
+            remove_optional_suffix(user, "-user")
+        };
+
     Ok(user_principal_id)
 }

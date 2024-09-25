@@ -132,6 +132,7 @@ pub impl StringOps for String {
 */
 
 
+/// Removes suffix and returns String (not just &str) without additional heap allocation
 pub fn remove_suffix(mut str: String, suffix: &str) -> Result<String, String> {
     if str.ends_with(suffix) {
         str.truncate(str.len() - suffix.len());
@@ -141,11 +142,25 @@ pub fn remove_suffix(mut str: String, suffix: &str) -> Result<String, String> {
     }
 }
 
+/// Removes suffix and returns String (not just &str) without additional heap allocation
 pub fn remove_optional_suffix(mut str: String, suffix: &str) -> String {
     if str.ends_with(suffix) {
         str.truncate(str.len() - suffix.len());
     }
     str
+}
+
+/// Removes (should in the future :-) ) prefix and returns String (not just &str) without additional heap allocation
+pub fn remove_optional_prefix(str: String, suffix: &str) -> String {
+    str.strip_prefix(suffix).unwrap_or(str.as_str()).to_owned()
+
+    // T O D O: try to impl it, if it is possible without using unsafe.
+    /*
+    if str.starts_with(suffix) {
+        ...
+    }
+    str
+     */
 }
 
 

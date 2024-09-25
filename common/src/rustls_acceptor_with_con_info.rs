@@ -79,8 +79,10 @@ fn get_connection_stream_extension() -> anyhow::Result<Arc<ConnectionStreamExten
             // if server is not configured properly
             // return Ok(None),
 
-            // TODO: [client-cert-auth] add details to error message how to fix
-            anyhow::bail!("Seems server is not configured to capture SSL/TLS stream info.")
+            anyhow::bail!("Seems server is not configured to capture SSL/TLS stream info.\n \
+                Make sure ServiceWrapper is used (by ServiceWrapperExt.into_make_service_with_con_info() \
+                instead of standard axum into_make_service())
+            ")
     };
     Ok(ext)
 }
