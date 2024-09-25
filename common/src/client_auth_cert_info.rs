@@ -11,6 +11,7 @@ use x509_parser::{
 // It contains only currently needed client auth cert attributes.
 // Feel free to extend it.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub struct ClientAuthCertInfo {
     // The common name attribute type specifies an identifier of an object.
     // Oid CN/2.5.4.3  https://www.alvestrand.no/objectid/2.5.4.3.html
@@ -31,6 +32,9 @@ pub struct ClientAuthCertInfo {
     // ExtendedKeyUsage extension, attribute 'clientAuth'
     // https://www.alvestrand.no/objectid/2.5.29.37.html
     pub is_client_auth_key_usage: bool,
+
+    #[doc(hidden)]
+    __non_exhaustive: (),
 }
 
 
@@ -88,6 +92,7 @@ pub fn extract_client_auth_cert_info_from_cert(cert_bytes: &[u8])
         pkcs9_emails,
         alt_name_ext_emails,
         is_client_auth_key_usage,
+        __non_exhaustive: (),
     })
 }
 

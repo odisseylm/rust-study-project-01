@@ -89,10 +89,9 @@ fn get_connection_stream_extension() -> anyhow::Result<Arc<ConnectionStreamExten
 
 pub fn extract_cert_peers_from_axum_server_task_local() -> anyhow::Result<Option<Vec<rustls_pki_types::CertificateDer<'static>>>> {
     let ext = get_connection_stream_extension() ?;
-
     let con_info = ext.get::<ConnectionInfo>();
-    println!("### con_info: ${con_info:?}");
 
+    // ? What looks better: match or flat_map/map
     let peer_certs = match con_info {
         None => None,
         Some(con_info) => {
@@ -105,6 +104,19 @@ pub fn extract_cert_peers_from_axum_server_task_local() -> anyhow::Result<Option
     };
 
     Ok(peer_certs)
+}
+
+pub fn extract_tonic_tls_connect_info_from_axum_server_task_local()
+    -> anyhow::Result<Option<tonic::transport::server::TlsConnectInfo<
+        tonic::transport::server::TcpConnectInfo>>> {
+
+    let ext = get_connection_stream_extension() ?;
+    let con_info = ext.get::<ConnectionInfo>();
+
+    // ? What looks better: match or flat_map/map
+    Ok(con_info.and_then(|con_info|
+        con_info.tonic_tls_con_info.as_ref()
+            .map(|tls_con_info| tls_con_info.as_ref().clone())))
 }
 
 

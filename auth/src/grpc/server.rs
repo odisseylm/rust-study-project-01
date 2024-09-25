@@ -23,6 +23,7 @@ use mvv_common::{
     rustls_acceptor_with_con_info::{extract_cert_peers_from_axum_server_task_local, PeerCertificates},
     string::StaticRefOrString,
 };
+use mvv_common::rustls_acceptor_with_con_info::extract_tonic_tls_connect_info_from_axum_server_task_local;
 use crate::{
     backend::{RequestAuthenticated, authz_backend::AuthorizeBackend, UserContext},
     permission::PermissionSet,
@@ -275,6 +276,19 @@ pub fn grpc_req_enrich<Body>(mut req: http::request::Request<Body>)
     if ext_uri.is_none() {
         let uri = req.uri().clone();
         req.extensions_mut().insert(::axum::extract::OriginalUri(uri));
+    }
+
+    // Currently it is not really taken in my axum_server customized code
+    // (due to unneeded coupling with tonic)
+    let tonic_tls_info = extract_tonic_tls_connect_info_from_axum_server_task_local();
+    match tonic_tls_info {
+        Ok(None) => { }
+        Ok(Some(tonic_tls_info)) => {
+            req.extensions_mut().insert(tonic_tls_info);
+        }
+        Err(err) => {
+            warn!("Error of getting tonic TlsConnectInfo ({err:?})")
+        }
     }
 
     let certs = extract_cert_peers_from_axum_server_task_local();
