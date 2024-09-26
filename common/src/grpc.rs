@@ -1,4 +1,5 @@
 pub mod server;
+pub mod model;
 
 use core::fmt::Debug;
 use log::error;

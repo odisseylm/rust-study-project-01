@@ -221,6 +221,9 @@ prost-types.workspace = true
 [dev-dependencies]
 test-case.workspace = true
 assertables.workspace = true
+assert-text.workspace = true
+pretty_assertions.workspace = true
+#similar-asserts = "1.6.0"
 
 #assert_json.workspace = true
 assert-json-diff.workspace = true

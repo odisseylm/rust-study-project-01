@@ -51,9 +51,22 @@ message Client {
   string last_name = 8;
   google.type.Date birthday = 9;
   bool active = 10;
-  // TODO: use enum
-  bool business_user = 11;
-  bool super_business_user = 12;
+
+  // T O D O: use enum
+  // bool business_user = 11;
+  // bool super_business_user = 12;
+
+  reserved 11, 12;
+  ClientType client_type = 13;
+
+  enum ClientType {
+    // we have to use undefined/unknown/etc shit placeholder since 0 is default value :-(
+    UNSPECIFIED = 0;
+
+    GENERAL_CLIENT = 1;
+    BUSINESS_CLIENT = 2;
+    SUPER_BUSINESS_CLIENT = 3;
+  }
 }
 
 message PhoneNumber {
@@ -68,6 +81,7 @@ message PhoneNumber {
     MOBILE = 1;
     HOME = 2;
     WORK = 3;
+    BUSINESS = 4;
   }
 }
 

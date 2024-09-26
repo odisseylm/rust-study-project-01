@@ -317,6 +317,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "assert-text"
+version = "0.2.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a79800c0506e727ac19ce78c4ca1f912a8939705433adf9c51e47857d2d3b52"
+dependencies = [
+ "difference",
+ "regex",
+]
+
+[[package]]
 name = "assertables"
 version = "8.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1428,6 +1438,18 @@ checksum = "209c735641a413bc68c4923a9d6ad4bcb3ca306b794edaa7eb0b3228a99ffb25"
 dependencies = [
  "syn 2.0.72",
 ]
+
+[[package]]
+name = "diff"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56254986775e3233ffa9c4d7d3faaf6d36a2c09d30b20687e9f88bc8bafc16c8"
+
+[[package]]
+name = "difference"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
 
 [[package]]
 name = "digest"
@@ -2909,6 +2931,7 @@ dependencies = [
  "askama",
  "askama_axum",
  "assert-json-diff",
+ "assert-text",
  "assertables",
  "associative-cache",
  "async-trait",
@@ -2971,6 +2994,7 @@ dependencies = [
  "openapiv3",
  "password-auth",
  "place_macro",
+ "pretty_assertions",
  "prettyplease",
  "progenitor",
  "progenitor-client",
@@ -3106,6 +3130,7 @@ dependencies = [
  "dotenv",
  "env_logger",
  "extension-trait",
+ "fixedstr",
  "futures-util",
  "googleapis-tonic-google-type",
  "http 1.1.0",
@@ -3216,6 +3241,7 @@ dependencies = [
  "place_macro",
  "progenitor",
  "progenitor-client",
+ "prost",
  "ptr_cell",
  "quick_cache",
  "readonly",
@@ -4019,6 +4045,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a24ff9e4cf6945c988f0db7005d87747bf72864965c3529d259ad155ac41d584"
 dependencies = [
  "vcpkg",
+]
+
+[[package]]
+name = "pretty_assertions"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ae130e2f271fbc2ac3a40fb1d07180839cdbbe443c7a27e1e3c13c5cac0116d"
+dependencies = [
+ "diff",
+ "yansi",
 ]
 
 [[package]]
@@ -7308,6 +7344,12 @@ dependencies = [
  "encoding_rs",
  "hashlink 0.8.4",
 ]
+
+[[package]]
+name = "yansi"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
 
 [[package]]
 name = "zerocopy"

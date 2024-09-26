@@ -13,6 +13,7 @@ diesel::table! {
         first_name -> Varchar,
         last_name -> Varchar,
         phone -> Varchar,
+        phone_type -> Char,
         birthday -> Date,
         active -> Bool,
         business_user -> Bool,

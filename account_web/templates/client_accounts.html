@@ -16,8 +16,7 @@
                 <tr><td> Email </td><td> {{client.email|display_some}} </td></tr>
                 <tr><td> Phones </td><td> {% for phone in client.phones %} {{phone}} {% endfor %} </td></tr>
                 <tr><td> Birthday </td><td> {{client.birthday|display_some}} </td></tr>
-                <tr><td> Is business user </td><td> {{client.business_user}} </td></tr>
-                <tr><td> Is super business user </td><td> {{client.super_business_user}} </td></tr>
+                <tr><td> Client type </td><td> {{client.client_type}} </td></tr>
             </table>
         </div>
     {% else %}

@@ -51,7 +51,7 @@ pub type RolePermissionsSet = BitsPermissionSet<u32, Role, PermissionProcessErro
 // Currently table 'USERS' // TODO: change to SOA_USERS
 pub struct AuthUser {      // TODO: use diesel to avoid 2 database engines
     #[sqlx(rename = "id")]
-        #[allow(dead_code)]
+    #[allow(dead_code)]
     pub id: i64,
     #[sqlx(rename = "name")]
     pub username: String,

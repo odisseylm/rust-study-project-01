@@ -22,11 +22,20 @@ create domain CLIENT_ID as UUID;
 create domain IBAN as VARCHAR(34)
     check (length(value) >= 16 and length(value) <= 34);
 
-create domain EMAIL as VARCHAR(320) -- TODO: analyze predefined.  CITEXT is not accessible there???
+create domain EMAIL as VARCHAR(320) -- TODO: [postgres] analyze predefined.  CITEXT is not accessible there???
     check (length(value) >= 3 and length(value) <= 320);
 
-create domain PHONE as VARCHAR(15)  -- TODO: analyze predefined.  CITEXT is not accessible there???
+create domain PHONE as VARCHAR(15)  -- TODO: [postgres] analyze predefined.  CITEXT is not accessible there???
     check (length(value) >= 4 and length(value) <= 15);
+
+--create domain PHONE_TYPE as CHAR(1)
+--    check (length(value) >= 4 and length(value) <= 15);
+create type PHONE_TYPE as enum (
+    'H' -- Home
+  , 'W' -- Work
+  , 'M' -- Mobile
+  , 'B' -- Business
+);
 
 create domain ACCOUNT_ID as UUID;
 

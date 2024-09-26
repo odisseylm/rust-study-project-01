@@ -113,7 +113,8 @@ pub fn do_copy(copy: &Vec<Copy>, base_from_dir: &Path, to_dir: &Path) -> anyhow:
                 .. Default::default()
             }) ?;
         } else {
-            fs_extra::file::copy(&from, &to, &fs_extra::file::CopyOptions::default()) ?;
+            fs_extra::file::copy(&from, &to, &fs_extra::file::CopyOptions::default())
+                .map_err(|err|anyhow!("Error copy file from [{from:?}] to [{to:?}] ({err:?})"))?;
         }
     }
 

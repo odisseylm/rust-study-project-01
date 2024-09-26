@@ -11,8 +11,11 @@ use crate::{
     },
     service::account_service::AccountService,
 };
-use crate::service::account_service::AccountServiceImpl;
-use crate::service::client_search_service::{ClientInfo, ClientSearchService};
+use crate::service::{
+    account_service::AccountServiceImpl,
+    client_search_model::ClientInfo,
+    client_search_service::ClientSearchService,
+};
 //--------------------------------------------------------------------------------------------------
 
 

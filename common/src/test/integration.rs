@@ -229,6 +229,10 @@ pub fn prepare_docker_compose(sub_project_dir: &Path, cfg: &PrepareDockerCompose
     let last_leaf_dir_name = format!("{}-{tests_session_id}", name);
     let test_res_dir = test_res_dir.join(&last_leaf_dir_name);
 
+    if test_res_dir.exists() {
+        std::fs::remove_dir_all(&test_res_dir) ?
+    }
+
     std::fs::create_dir_all(&test_res_dir) ?;
 
     let standard_docker_files_to_copy = cfg.docker_files.iter()

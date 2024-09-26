@@ -131,8 +131,8 @@ impl ClientSearchService {
             .load(&mut con) ?;
 
         let clients: Vec<Client> = results.into_iter()
-            .map(|client|client.into())
-            .collect::<Vec<Client>>();
+            .map(|client|client.try_into())
+            .collect::<Result<Vec<Client>, _>>() ?;
 
         Ok(clients)
     }
@@ -152,8 +152,8 @@ impl ClientSearchService {
             .filter(client_id.eq(client_id_uuid))
             .first(&mut con)
             .optional()
-            .map(|client_opt|client_opt.map(|client|{ let cl: Client = client.into(); cl }))
-            ?;
+            .map(|client_opt|client_opt.map(|client|client.try_into_grpc())) ?
+            .transpose() ?;
 
         Ok(client)
     }

@@ -355,6 +355,8 @@ prost-types = { version = "0.13.1" , features = ["default", "std"] }
 #test-case = "2.2.2"
 test-case = "*"
 assertables = "8.3.0"
+assert-text = "0.2.10"
+pretty_assertions = "1.4.1"
 
 #assert_json = "0.1.0"
 assert-json-diff = "2.0.2"

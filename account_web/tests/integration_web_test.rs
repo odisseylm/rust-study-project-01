@@ -13,7 +13,10 @@ use rustainers::compose::{
 };
 use rustainers::{ExposedPort, Port, WaitStrategy};
 use mvv_common::test::integration::{AutoDockerComposeDown, is_integration_tests_enabled, prepare_docker_compose, PrepareDockerComposeCfg, wait_containers, };
-use mvv_common::test::{current_project_target_dir, current_sub_project_dir, TestOptionUnwrap, TestResultUnwrap};
+use mvv_common::test::{
+    current_project_target_dir, current_sub_project_dir,
+    TestDisplayStringOps, TestOptionUnwrap, TestResultUnwrap,
+};
 use serde_json::json;
 use mvv_common::fn_name;
 use mvv_common::string::remove_repeated_spaces;
@@ -87,7 +90,8 @@ impl ToRunnableComposeContainers for AccountWebTestContainers {
 
 async fn launch_account_web_docker_compose() -> anyhow::Result<(PathBuf, ComposeContainers<AccountWebTestContainers>)> {
 
-    let tests_session_id = chrono::Local::now().timestamp();
+    // let tests_session_id = chrono::Local::now().timestamp();
+    let tests_session_id = 0; // mvv_common::test::build_id() ?;
     let sub_project_dir = current_sub_project_dir().test_unwrap();
 
     let cfg = PrepareDockerComposeCfg {
@@ -135,7 +139,8 @@ async fn integration_test_run_account_web_docker_compose() {
         return;
     }
 
-    let (temp_docker_compose_dir, compose_containers) = launch_account_web_docker_compose().await.test_unwrap();
+    let (temp_docker_compose_dir, compose_containers) =
+        launch_account_web_docker_compose().await.test_unwrap();
     let auto_docker_compose_down = AutoDockerComposeDown {
         docker_compose_file_dir: temp_docker_compose_dir.to_path_buf(),
         log_message: Some("### Cleaning..."),
@@ -238,13 +243,21 @@ async fn test_web_get_all_client_accounts(port: u16) {
         First name 	Cheburan \
         Last name 	Vovan \
         Email 	cheburan@ukr.net \
-        Phones 	+380671234567 (123) \
+        Phones 	+380671234567 (Mobile) \
         Birthday 	2000-02-28 \
-        Is business user 	false \
-        Is super business user 	false ";
+        Client type 	General";
     let expected_client_info_part: String = normalize_test_substr(expected_client_info_part);
 
+    let start_index = as_text.find("Active true");
+    if let Some(start_index) = start_index {
+        let client_info_part_start = as_text.to_test_string().split_off(start_index);
+        assert_text::assert_text_starts_with!(client_info_part_start, expected_client_info_part.as_str());
+        // pretty_assertions::assert_eq!(client_info_part_start, expected_client_info_part);
+    }
+
     // Temp easy solution! Probably makes sense to use more complicated solution.
+    // pretty_assertions::assert_matches!()
+    assert_contains!(&as_text, &expected_client_info_part);
     assert_contains!(&as_text, &expected_client_info_part);
 
     info!("test_web_get_all_client_accounts SUCCEEDED");

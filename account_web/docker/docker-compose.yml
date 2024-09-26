@@ -156,7 +156,7 @@ services:
       - rust-account-soa-net
     hostname: database # required only for fabricio8 plugin
     # -l - enable SSL connections
-    # TODO: how disable plain TCP connection; `-c listen_addresses=''` blocks everything.
+    # T O D O: how disable plain TCP connection; `-c listen_addresses=''` blocks everything.
     # entrypoint: docker-entrypoint.sh postgres -l -c ssl=on -c ssl_cert_file=/certs/database.crt.pem -c ssl_key_file=/certs/database.key.pem -c listen_addresses=''
     command: sh -c "
          cp /certs/database.key.pem /usr/lib/ssl/database-test.key.pem &&

@@ -109,9 +109,11 @@ fn pg_db_auto_type_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, a
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
         impl sqlx::Type<sqlx_postgres::Postgres> for $Type {
+            #[inline]
             fn type_info() -> <sqlx_postgres::Postgres as sqlx::Database>::TypeInfo {
                 <$DelegateType as sqlx::Type<sqlx_postgres::Postgres>>::type_info()
             }
+            #[inline]
             fn compatible(ty: &<sqlx_postgres::Postgres as sqlx::Database>::TypeInfo) -> bool {
                 <$DelegateType as sqlx::Type<sqlx_postgres::Postgres> >::compatible(ty)
             }
@@ -127,9 +129,11 @@ fn pg_db_auto_type_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, a
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
         impl<'a> sqlx::Type<sqlx_postgres::Postgres> for $Type<'a> {
+            #[inline]
             fn type_info() -> <sqlx_postgres::Postgres as sqlx::Database>::TypeInfo {
                 <$DelegateType as sqlx::Type<sqlx_postgres::Postgres>>::type_info()
             }
+            #[inline]
             fn compatible(ty: &<sqlx_postgres::Postgres as sqlx::Database>::TypeInfo) -> bool {
                 <$DelegateType as sqlx::Type<sqlx_postgres::Postgres> >::compatible(ty)
             }
@@ -145,6 +149,7 @@ fn pg_db_auto_type_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, a
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
         impl<'r> sqlx::Encode<'r, sqlx_postgres::Postgres> for $Type {
+            #[inline]
             fn encode_by_ref(
                 &self,
                 // for sql 0.7 TODO: how to have build for different versions
@@ -166,6 +171,7 @@ fn pg_db_auto_type_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, a
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
         impl<'r,'a> sqlx::Encode<'r, sqlx_postgres::Postgres> for $Type<'a> {
+            #[inline]
             fn encode_by_ref(
                 &self,
                 // for sqlx 0.7
@@ -188,6 +194,7 @@ fn pg_db_auto_type_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, a
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
         impl<'r> sqlx::Decode<'r, sqlx_postgres::Postgres> for $Type {
+            #[inline]
             fn decode(
                 // value: <sqlx_postgres::Postgres as sqlx::database::HasValueRef<'r>>::ValueRef
                 value: <sqlx_postgres::Postgres as sqlx::Database>::ValueRef<'r>
@@ -207,6 +214,7 @@ fn pg_db_auto_type_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, a
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
         impl<'r> sqlx::Decode<'r, sqlx_postgres::Postgres> for $Type {
+            #[inline]
             fn decode(
                 // for sqlx 0.7
                 // value: <sqlx_postgres::Postgres as sqlx::database::HasValueRef<'r>>::ValueRef
@@ -227,12 +235,29 @@ fn pg_db_auto_type_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, a
         #[allow(unused_imports)]
         #[allow(unused_qualifications)]
         impl<'r> sqlx::Decode<'r, sqlx_postgres::Postgres> for $Type {
+            #[inline]
             fn decode(
                 // value: <sqlx_postgres::Postgres as sqlx::database::HasValueRef<'r>>::ValueRef
                 value: <sqlx_postgres::Postgres as sqlx::Database>::ValueRef<'r>
             ) -> Result<Self, sqlx::error::BoxDynError> {
                 let as_str: &str = <&str as sqlx::Decode<'r, sqlx_postgres::Postgres>>::decode(value) ?;
                 Ok( <$Type as core::str::FromStr>::from_str(as_str) ?)
+            }
+        }
+
+    };
+    ($Type:ty, $from_db_str_fn:ident) => {
+
+        #[allow(unused_imports)]
+        #[allow(unused_qualifications)]
+        impl<'r> sqlx::Decode<'r, sqlx_postgres::Postgres> for $Type {
+            #[inline]
+            fn decode(
+                // value: <sqlx_postgres::Postgres as sqlx::database::HasValueRef<'r>>::ValueRef
+                value: <sqlx_postgres::Postgres as sqlx::Database>::ValueRef<'r>
+            ) -> Result<Self, sqlx::error::BoxDynError> {
+                let as_str: &str = <&str as sqlx::Decode<'r, sqlx_postgres::Postgres>>::decode(value) ?;
+                Ok( <$Type as core::str::FromStr>::$from_db_str_fn(as_str) ?)
             }
         }
 
@@ -255,7 +280,22 @@ fn pg_db_auto_type_connection(app_name: &str) -> Result<sqlx_postgres::PgPool, a
                 <&str as sqlx::Encode<sqlx_postgres::Postgres>>::encode(str, buf)
             }
         }
-    }
+    };
+    ($Type:ident, $as_str_fn:ident) => { // ($Type:ty) => {
+
+        #[allow(unused_imports)]
+        #[allow(unused_qualifications)]
+        // impl<'r,'a> sqlx::Encode<'r, sqlx_postgres::Postgres> for $Type {
+        impl<'q> sqlx::Encode<'q, sqlx_postgres::Postgres> for $Type {
+            // For sqlx 0.7
+            // fn encode_by_ref(&self, buf: &mut <Postgres as sqlx::database::HasArguments<'q>>::ArgumentBuffer) -> IsNull {
+            // For sqlx 0.8
+            fn encode_by_ref(&self, buf: &mut <sqlx_postgres::Postgres as sqlx::Database>::ArgumentBuffer<'q>) -> Result<sqlx::encode::IsNull, sqlx::error::BoxDynError> {
+                let str: &str = self.$as_str_fn();
+                <&str as sqlx::Encode<sqlx_postgres::Postgres>>::encode(str, buf)
+            }
+        }
+    };
 }
 
 /*

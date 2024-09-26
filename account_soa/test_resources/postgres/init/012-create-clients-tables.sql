@@ -1,16 +1,17 @@
 
 
 create table CLIENTS (
-    CLIENT_ID  CLIENT_ID     primary key,
+    CLIENT_ID  CLIENT_ID       primary key,
     -- Should it be unique? Ot is it allowed to one physical person have several client ids&&
-    EMAIL      EMAIL         collate ENGLISH_CI not null unique,
+    EMAIL      EMAIL           collate ENGLISH_CI not null unique,
     -- main phone
-    -- TODO: use strict format to avoid duplicates due to different format
-    PHONE         PHONE      collate ENGLISH_CI not null unique,
-    ACTIVE        BOOL       not null default 'n',
-    BUSINESS_USER BOOL       not null default 'n',
-    SUPER_BUSINESS_USER BOOL not null default 'n',
-    BIRTHDAY      DATE       not null,
+    -- TODO: [postgres] use strict format to avoid duplicates due to different format
+    PHONE         PHONE        collate ENGLISH_CI not null unique,
+    PHONE_TYPE    PHONE_TYPE   not null default 'M',
+    ACTIVE        BOOL         not null default 'n',
+    BUSINESS_USER BOOL         not null default 'n',
+    SUPER_BUSINESS_USER BOOL   not null default 'n',
+    BIRTHDAY      DATE         not null,
     FIRST_NAME    VARCHAR(100) not null,
     LAST_NAME     VARCHAR(100) not null
 );
