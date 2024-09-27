@@ -855,15 +855,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "428d9aa8fbc0670b7b8d6030a7fadd0f86151cae55e4dbbece15f3780a3dfaf3"
 
 [[package]]
-name = "camino"
-version = "1.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0ec6b951b160caa93cc0c7b209e5a3bff7aae9062213451ac99493cd844c239"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "card-validate"
 version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -871,29 +862,6 @@ checksum = "655fa70596e2a38372c0c0c4449ec0166ad9cc43d91558bbecc1a6f38bf9eb91"
 dependencies = [
  "lazy_static",
  "regex",
-]
-
-[[package]]
-name = "cargo-platform"
-version = "0.1.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24b1f0365a6c6bb4020cd05806fd0d33c44d38046b8bd7f0e40814b9763cabfc"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "cargo_metadata"
-version = "0.18.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d886547e41f740c616ae73108f6eb70afe6d940c7bc697cb30f13daec073037"
-dependencies = [
- "camino",
- "cargo-platform",
- "semver",
- "serde",
- "serde_json",
- "thiserror",
 ]
 
 [[package]]
@@ -2838,7 +2806,6 @@ dependencies = [
  "axum_static",
  "bigdecimal",
  "by_address",
- "cargo_metadata",
  "chrono",
  "chrono-tz",
  "const-str",
@@ -2947,7 +2914,6 @@ dependencies = [
  "base64 0.22.1",
  "bigdecimal",
  "by_address",
- "cargo_metadata",
  "chrono",
  "chrono-tz",
  "const-str",
@@ -3180,6 +3146,7 @@ dependencies = [
  "askama",
  "askama_axum",
  "assert-json-diff",
+ "assert-text",
  "assertables",
  "associative-cache",
  "async-trait",
@@ -3195,7 +3162,6 @@ dependencies = [
  "bigdecimal",
  "by_address",
  "bytes",
- "cargo_metadata",
  "chrono",
  "chrono-tz",
  "const-str",
@@ -3239,6 +3205,7 @@ dependencies = [
  "password-auth",
  "pin-project-lite",
  "place_macro",
+ "pretty_assertions",
  "progenitor",
  "progenitor-client",
  "prost",

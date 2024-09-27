@@ -1,30 +1,45 @@
-use core::fmt::{Debug};
+use core::fmt::{self, Debug, Display};
+use std::cmp::min;
 use crate::backtrace::{backtrace, BacktraceCell};
 use crate::string::StaticRefOrString;
+
 
 pub mod pg;
 pub mod diesel2;
 
+
 //--------------------------------------------------------------------------------------------------
-#[derive(Debug, thiserror::Error)]
-pub enum DbMappingError<T: Debug = ()> {
+#[derive(thiserror::Error)]
+#[derive(educe::Educe)] #[educe(Debug)]
+pub enum DbMappingError<T: Display = EmptyDisplayStub> {
     #[error("UnexpectDbValue")]
     UnexpectDbValue {
-        value: T, // TODO: in Debug use only restricted number of chars
-        column: StaticRefOrString,
+        #[educe(Debug(method(print_only_part)))]
+        value: T,
         table: StaticRefOrString,
+        column: StaticRefOrString,
         backtrace: BacktraceCell,
     },
     #[error("IncorrectUt8DbValue")]
-    IncorrectUt8DbValue {
-        value: T, // TODO: in Debug use only restricted number of chars
-        column: StaticRefOrString,
+    IncorrectUtf8DbValue {
+        #[educe(Debug(method(print_only_part)))]
+        value: T,
         table: StaticRefOrString,
+        column: StaticRefOrString,
         backtrace: BacktraceCell,
     },
 }
 
-impl<T: Debug> DbMappingError<T> {
+#[derive(Debug)]
+pub struct EmptyDisplayStub;
+impl Display for EmptyDisplayStub {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        <str as Display>::fmt("No data", f)
+    }
+}
+
+
+impl<T: Display> DbMappingError<T> {
     pub fn unexpect_db_value(value: T, table: &'static str, column: &'static str) -> DbMappingError<T> {
         DbMappingError::<T>::UnexpectDbValue {
             value,
@@ -48,5 +63,50 @@ impl DbMappingError<fixedstr::str32> {
             column: column.into(),
             backtrace: backtrace(),
         }
+    }
+}
+
+impl DbMappingError<String> {
+    pub fn incorrect_utf_8_db_value(bytes: &[u8], table: &'static str, column: &'static str)
+    -> DbMappingError<String> {
+        const MAX_REPORT_BYTES_LEN: usize = 10;
+        let report_bytes_len = min(bytes.len(), MAX_REPORT_BYTES_LEN);
+        let as_lossy_str_prt = String::from_utf8_lossy(&bytes[0..report_bytes_len])
+            .into_owned();
+
+        DbMappingError::IncorrectUtf8DbValue {
+            value: as_lossy_str_prt,
+            table: table.into(),
+            column: column.into(),
+            backtrace: backtrace(),
+        }
+    }
+}
+
+
+fn print_only_part<T: Display>(value: &T, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    write!(f, "{value:.10}...")
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use crate::test::TestDebugStringOps;
+    use super::DbMappingError;
+
+    #[test]
+    fn print_only_part_of_data() {
+        let err = DbMappingError::unexpect_db_value(
+            "1234567890123456789LongLongLongLongLongLongLongLong",
+            "TABLE1",
+            "COLUMN1",
+        );
+
+        let debug_str = err.to_test_debug_string();
+        // pretty_assertions::assert_eq!(debug_str, "dfdf");
+        assert_text::assert_text_starts_with!(
+            debug_str,
+            r#"UnexpectDbValue { value: 1234567890..., table: Ref("TABLE1"), column: Ref("COLUMN1"), backtrace:"#);
     }
 }

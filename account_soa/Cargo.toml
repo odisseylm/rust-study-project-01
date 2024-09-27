@@ -32,7 +32,7 @@ default = [ "ambassador", "serde_json_raw_value" ]
 # integration_tests = []
 
 [build-dependencies]
-cargo_metadata.workspace = true
+#cargo_metadata.workspace = true
 
 
 [dependencies]

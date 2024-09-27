@@ -34,17 +34,10 @@
             fn from_sql(pg_bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
                 let bytes = pg_bytes.as_bytes();
                 let str = std::str::from_utf8(bytes)
-                        .map_err(|_utf8err|{
-                            const MAX_REPORT_BYTES_LEN: usize = 10;
-                            let report_bytes_len = min(bytes.len(), MAX_REPORT_BYTES_LEN);
-                            $crate::db::DbMappingError::IncorrectUt8DbValue {
-                                //value: &bytes[0..report_bytes_len].clone(),
-                                value: Vec::from(&bytes[0..report_bytes_len]),
-                                table: $table.into(),
-                                column: $column.into(),
-                                backtrace: backtrace(),
-                            }
-                        }) ?;
+                        .map_err(|_utf8err|
+                            $crate::db::DbMappingError::incorrect_utf_8_db_value(
+                                bytes, $table.into(), $column.into())
+                        ) ?;
                 let str = str.as_ref();
                 let value = <$Type>::$from_db_str_fn(str) ?;
                 Ok(value)

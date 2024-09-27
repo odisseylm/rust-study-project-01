@@ -64,7 +64,7 @@ strip = true
 
 [workspace.dependencies]
 # build-dependencies
-cargo_metadata = "0.18.1"
+#cargo_metadata = "0.18.1"
 syn = "2.0.72"
 prettyplease = "0.2.20"
 

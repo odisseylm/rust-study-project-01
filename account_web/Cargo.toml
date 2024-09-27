@@ -12,7 +12,7 @@ edition = "2021"
 
 
 [build-dependencies]
-cargo_metadata.workspace = true
+#cargo_metadata.workspace = true
 syn.workspace = true
 prettyplease.workspace = true
 
