@@ -3,11 +3,13 @@ use mvv_common::{
     entity::amount::Amount,
     generate_from_str_new_type_delegate,
     generate_into_inner_delegate,
-    generate_pg_decode_from_str,
-    generate_pg_delegate_decode,
-    generate_pg_delegate_encode,
-    generate_pg_delegate_type_info,
-    generate_pg_encode_from_as_str,
+    generate_pg08_decode_from_str,
+    generate_pg08_encode_from_as_str,
+    generate_pg08_decode_from_str as generate_pg_decode_from_str,
+    generate_pg08_delegate_decode as generate_pg_delegate_decode,
+    generate_pg08_delegate_encode as generate_pg_delegate_encode,
+    generate_pg08_delegate_type_info as generate_pg_delegate_type_info,
+    generate_pg08_encode_from_as_str as generate_pg_encode_from_as_str,
 };
 use mvv_common::{
     backtrace::{backtrace, BacktraceCell},
@@ -99,7 +101,6 @@ generate_pg_delegate_type_info! { AccountName, str }
 generate_pg_encode_from_as_str! { AccountName }
 // Maybe not optimized approach (or maybe optimized :-)... hz)
 generate_pg_decode_from_str! { AccountName }
-// gener
 
 
 #[derive(Debug)]

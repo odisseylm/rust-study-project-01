@@ -6,7 +6,8 @@ use crate::string::StaticRefOrString;
 
 pub mod pg;
 pub mod diesel2;
-
+pub mod pg07;
+pub mod pg08;
 
 //--------------------------------------------------------------------------------------------------
 #[derive(thiserror::Error)]

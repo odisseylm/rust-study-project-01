@@ -111,7 +111,7 @@ pub fn do_copy(copy: &Vec<Copy>, base_from_dir: &Path, to_dir: &Path) -> anyhow:
                 copy_inside: true,
                 depth: 16,
                 .. Default::default()
-            }) ?;
+            }).map_err(|err|anyhow!("Error copy items/files from [{from:?}] to [{to:?}] ({err:?})"))?;
         } else {
             fs_extra::file::copy(&from, &to, &fs_extra::file::CopyOptions::default())
                 .map_err(|err|anyhow!("Error copy file from [{from:?}] to [{to:?}] ({err:?})"))?;

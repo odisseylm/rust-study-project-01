@@ -1,6 +1,8 @@
 use crate::{
-    generate_from_str_new_type_delegate, generate_pg_delegate_decode,
-    generate_pg_delegate_encode, generate_pg_delegate_type_info,
+    generate_from_str_new_type_delegate,
+    generate_pg08_delegate_decode as generate_pg_delegate_decode,
+    generate_pg08_delegate_encode as generate_pg_delegate_encode,
+    generate_pg08_delegate_type_info as generate_pg_delegate_type_info,
     generate_simple_debug, generate_simple_display,
 };
 //--------------------------------------------------------------------------------------------------

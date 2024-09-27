@@ -191,9 +191,6 @@ impl Default for PrepareDockerComposeCfg {
 pub fn prepare_docker_compose(sub_project_dir: &Path, cfg: &PrepareDockerComposeCfg)
     -> Result<PathBuf, anyhow::Error> {
 
-    // let vars =  std::env::vars().map(|(k,v)|format!("{k:?} = {v:?}")).sorted().join("\n");
-    // println!("vars: {vars}");
-
     let target_dir_ = find_target_dir(sub_project_dir) ?;
     let target_dir_: &Path = &target_dir_;
     let test_res_dir = target_dir_.join("temp/docker_compose_tests");
@@ -227,11 +224,11 @@ pub fn prepare_docker_compose(sub_project_dir: &Path, cfg: &PrepareDockerCompose
     let name = change_name_by_policy(&base_name, &cfg.docker_compose_project_name_policy, tests_session_id) ?;
 
     let last_leaf_dir_name = format!("{}-{tests_session_id}", name);
-    let test_res_dir = test_res_dir.join(&last_leaf_dir_name);
 
     if test_res_dir.exists() {
         std::fs::remove_dir_all(&test_res_dir) ?
     }
+    let test_res_dir = test_res_dir.join(&last_leaf_dir_name);
 
     std::fs::create_dir_all(&test_res_dir) ?;
 

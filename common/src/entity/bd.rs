@@ -7,7 +7,10 @@ use sqlx::types::BigDecimal as SqlxBigDecimal;
 use sqlx::{ error::BoxDynError };
 use sqlx::encode::IsNull;
 use sqlx_postgres::Postgres;
-use crate::{ generate_pg_delegate_type_info, generate_pg_ref_delegate_type_info };
+use crate::{
+    generate_pg08_delegate_type_info as generate_pg_delegate_type_info,
+    generate_pg08_ref_delegate_type_info as generate_pg_ref_delegate_type_info,
+};
 //--------------------------------------------------------------------------------------------------
 
 
