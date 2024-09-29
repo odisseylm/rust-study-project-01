@@ -69,9 +69,12 @@ implicit-clone.workspace = true
 num.workspace = true
 uuid.workspace = true
 
+# risky dep
 axum.workspace = true
 
+# risky dep
 tonic = { workspace = true, optional = true }
+# risky dep TODO: make sure it is not visible outside
 tonic-async-interceptor = { workspace = true, optional = true }
 tower-layer = { workspace = true, optional = true }
 
@@ -79,10 +82,12 @@ tower.workspace = true
 tower-http.workspace = true
 tower-async-http.workspace = true
 
+# risky dep TODO: make sure it is not visible outside
 axum-login.workspace = true
 oauth2.workspace = true
 # support for Argon2, PBKDF2, and scrypt password hashing algorithms
 #password-auth.workspace = true
+# risky dep TODO: make sure it is not visible outside
 password-hash.workspace = true
 argon2.workspace = true
 pbkdf2.workspace = true
@@ -92,6 +97,7 @@ rand.workspace = true
 rand_hc.workspace = true
 rand_chacha.workspace = true
 
+# risky dep TODO: make sure it is not visible outside
 rustls-pki-types.workspace = true
 
 #axum-auth.workspace = true
@@ -99,6 +105,7 @@ axum-extra.workspace = true
 axum-ctx.workspace = true
 axum-typed-routing.workspace = true
 axum_session_auth.workspace = true
+# risky dep TODO: make sure it is not visible outside
 jsonwebtoken.workspace = true
 
 async-trait.workspace = true
@@ -107,11 +114,14 @@ tokio-test.workspace = true
 
 http.workspace = true
 hyper.workspace = true
+# risky dep TODO: make sure it is not visible outside
 reqwest.workspace = true
 url.workspace = true
 
-sqlx.workspace = true
-sqlx-postgres.workspace = true
+# risky dep TODO: make sure it is not visible outside
+#sqlx.workspace = true
+# risky dep TODO: make sure it is not visible outside
+#sqlx-postgres.workspace = true
 
 askama.workspace = true
 askama_axum.workspace = true

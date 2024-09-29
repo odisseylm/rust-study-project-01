@@ -7,7 +7,6 @@ use mvv_auth::{
     AuthUserProvider, AuthUserProviderError,
     backend::OAuth2UserStore,
     permission::{ PermissionSet, PermissionProcessError, PermissionProvider },
-    util::sql::set_role_from_bool_column as set_role_from_col,
 };
 use mvv_common::{
     backtrace::backtrace,
@@ -44,6 +43,7 @@ impl SqlClientAuthUserProvider {
         })))
     }
 
+    //noinspection DuplicatedCode
     #[allow(dead_code)]
     async fn get_cached(&self, user_id: &String) -> Result<Option<Option<AuthUser>>,AuthUserProviderError> {
         if let Some(ref cache) = self.0.cache {
@@ -75,10 +75,8 @@ impl SqlClientAuthUserProvider {
             .await
             .map_err(|err_to_log|{
                 log::error!("### SQLX error: {:?}", err_to_log);
-                err_to_log
-            })
-            // .map_err(Self::Error::Sqlx)?)
-            .map_err(From::<sqlx::Error>::from);
+                AuthUserProviderError::sqlx_err(err_to_log)
+            });
 
         res
     }
@@ -90,6 +88,7 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for crate::auth::ClientAuthUser {
     fn from_row(row: &sqlx_postgres::PgRow) -> sqlx::Result<Self> {
         use sqlx::Row;
         use mvv_common::pg_column_name as col_name;
+        use set_role_from_bool_column as set_role_from_col;
 
         let client_id: uuid::Uuid = row.try_get(col_name!("CLIENT_ID")) ?;
         let email: String = row.try_get(col_name!("EMAIL") ) ?;
@@ -121,6 +120,7 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for crate::auth::ClientAuthUser {
 impl AuthUserProvider for SqlClientAuthUserProvider {
     type User = AuthUser;
 
+    //noinspection DuplicatedCode
     async fn get_user_by_principal_identity(&self, user_id: &<AuthUser as axum_login::AuthUser>::Id) -> Result<Option<Self::User>, AuthUserProviderError> {
 
         if let Some(ref cache) = self.0.cache {
@@ -187,7 +187,7 @@ impl PermissionProvider for SqlClientAuthUserProvider {
         let user: Option<AuthUser> = self.get_user_by_principal_identity(&user_principal_id).await ?;
         match user {
             None =>
-                Err(PermissionProcessError::NoUser(user_principal_id.into(), backtrace())),
+                Err(PermissionProcessError::no_user_err(user_principal_id)),
             Some(ref user) =>
                 Ok(user.client_features.implicit_clone()),
         }
@@ -203,4 +203,23 @@ impl PermissionProvider for SqlClientAuthUserProvider {
         -> Result<Self::PermissionSet, PermissionProcessError> {
         Ok(ClientFeatureSet::new())
     }
+}
+
+
+//noinspection DuplicatedCode
+fn set_role_from_bool_column<'r,
+    DbRow: sqlx::Row,
+    Perm, PermSet: PermissionSet<Permission = Perm>,
+    I,
+> (roles: &mut PermSet, role: Perm, row: &'r DbRow, column: I)
+-> Result<(), sqlx::Error>
+where
+    I: sqlx::ColumnIndex<DbRow>,
+    bool: sqlx::Decode<'r, DbRow::Database> + sqlx::Type<DbRow::Database>,
+{
+    let db_role: Option<bool> = row.try_get::<'r, Option<bool>, I>(column) ?;
+    if db_role.unwrap_or(false) {
+        roles.merge_with_mut(PermSet::from_permission(role));
+    }
+    Ok(())
 }

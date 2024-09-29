@@ -1,0 +1,27 @@
+[package]
+name = "sqlx_08"
+version = "0.8.2"
+edition = "2021"
+
+[lib]
+
+[features]
+
+#default = ["sqlx/default"]
+runtime-tokio = ["sqlx/runtime-tokio"]
+postgres = ["sqlx/postgres"]
+sqlx-postgres = ["sqlx/sqlx-postgres"]
+bigdecimal = ["sqlx/bigdecimal"]
+
+# It causes eeror "failed to select a version for `libsqlite3-sys`"
+# Choose these features using sqlx-postgres (07/08) crate.
+#
+#default = ["sqlx/default"]
+#uuid = ["sqlx/uuid"]
+#chrono = ["sqlx/chrono"]
+default = []
+chrono = []
+uuid = []
+
+[dependencies]
+sqlx = { version = "0.8.2", default-features = false, features = [] }

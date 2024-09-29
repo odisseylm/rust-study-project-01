@@ -13,7 +13,7 @@ use anyhow::anyhow;
 use axum::response::Response;
 use http::StatusCode;
 use log::error;
-use mvv_common::backtrace::BacktraceCell;
+use mvv_common::backtrace::{backtrace, BacktraceCell};
 use crate::{AuthUserProviderError, UserId };
 // -------------------------------------------------------------------------------------------------
 
@@ -42,10 +42,39 @@ pub enum PermissionProcessError {
     #[error("__NonExhaustive")]
     __NonExhaustive
 }
+impl PermissionProcessError {
+    #[inline]
+    #[track_caller]
+    pub fn convert_err(err: anyhow::Error) -> Self {
+        Self::ConvertError(err)
+    }
+    #[inline]
+    #[track_caller]
+    pub fn no_user_err<T>(user_id: T) -> Self where UserId: From<T> {
+        Self::NoUser(user_id.into(), backtrace())
+    }
+    #[inline]
+    #[track_caller]
+    pub fn get_user_err(err: anyhow::Error) -> Self {
+        Self::GetUserError(err)
+    }
+    #[inline]
+    #[track_caller]
+    pub fn cache_err(err: anyhow::Error) -> Self {
+        Self::CacheError(err)
+    }
+    #[inline]
+    #[track_caller]
+    pub fn unknown_err(err: anyhow::Error) -> Self {
+        Self::UnknownError(err)
+    }
+}
+
 
 impl From<Infallible> for PermissionProcessError {
+    #[inline]
     fn from(_value: Infallible) -> Self {
-        PermissionProcessError::ConvertError(anyhow!("Internal error: Infallible"))
+        PermissionProcessError::convert_err(anyhow!("Internal error: Infallible"))
     }
 }
 
@@ -54,7 +83,7 @@ impl From<AuthUserProviderError> for PermissionProcessError {
         match value {
             AuthUserProviderError::UserNotFound(user, backtrace) =>
                 PermissionProcessError::NoUser(user, backtrace),
-            vr @ AuthUserProviderError::Sqlx(..) =>
+            vr @ AuthUserProviderError::DatabaseError(..) =>
                 PermissionProcessError::GetUserError(vr.into()),
             vr @ AuthUserProviderError::LockedResourceError(..) =>
                 PermissionProcessError::GetUserError(vr.into()),

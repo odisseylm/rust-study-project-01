@@ -1,6 +1,6 @@
 use core::str::FromStr;
 use bigdecimal::BigDecimal;
-use crate::entity::{ amount::Amount, currency::Currency };
+use crate::{ amount::Amount, currency::Currency };
 //--------------------------------------------------------------------------------------------------
 
 
@@ -35,9 +35,9 @@ pub fn parse_amount(s: &str) -> Result<Amount, AmountFormatError> {
 //pub mod parse_amount {
 
 use bigdecimal::ParseBigDecimalError;
-use crate::backtrace::BacktraceCell;
-use crate::entity::currency::parse::CurrencyFormatError;
-use crate::entity::error::DataFormatError;
+use mvv_common::backtrace::BacktraceCell;
+use crate::currency::parse::CurrencyFormatError;
+use crate::error::DataFormatError;
 
 // Duplicated since copy of this code (in amount_parse_old.rs) is also used for testing StructError
 // noinspection DuplicatedCode

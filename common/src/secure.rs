@@ -1,9 +1,18 @@
 use crate::{
     generate_from_str_new_type_delegate,
-    generate_pg08_delegate_decode as generate_pg_delegate_decode,
-    generate_pg08_delegate_encode as generate_pg_delegate_encode,
-    generate_pg08_delegate_type_info as generate_pg_delegate_type_info,
     generate_simple_debug, generate_simple_display,
+};
+#[cfg(feature = "sqlx_07")]
+use crate::{
+    generate_pg07_delegate_decode,
+    generate_pg07_delegate_encode,
+    generate_pg07_delegate_type_info,
+};
+#[cfg(feature = "sqlx_08")]
+use crate::{
+    generate_pg08_delegate_decode,
+    generate_pg08_delegate_encode,
+    generate_pg08_delegate_type_info,
 };
 //--------------------------------------------------------------------------------------------------
 
@@ -65,9 +74,20 @@ impl From<&str> for SecureString {
 //     }
 // }
 generate_from_str_new_type_delegate! { SecureString, String, core::convert::Infallible }
-generate_pg_delegate_type_info!      { SecureString, String }
-generate_pg_delegate_encode!         { SecureString, String }
-generate_pg_delegate_decode!         { SecureString, String }
+
+#[cfg(feature = "sqlx_07")]
+generate_pg07_delegate_type_info!      { SecureString, String }
+#[cfg(feature = "sqlx_07")]
+generate_pg07_delegate_encode!         { SecureString, String }
+#[cfg(feature = "sqlx_07")]
+generate_pg07_delegate_decode!         { SecureString, String }
+
+#[cfg(feature = "sqlx_08")]
+generate_pg08_delegate_type_info!      { SecureString, String }
+#[cfg(feature = "sqlx_08")]
+generate_pg08_delegate_encode!         { SecureString, String }
+#[cfg(feature = "sqlx_08")]
+generate_pg08_delegate_decode!         { SecureString, String }
 
 
 

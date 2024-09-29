@@ -30,8 +30,12 @@ tonic = [ "dep:tonic", "dep:prost" ]
 ambassador = [ "dep:ambassador" ]
 default = [ "ambassador", "serde_json_raw_value" ]
 
-#sqlx_07 = [ "dep:sqlx-07", "dep:sqlx-postgres-07", "dep:sqlx-sqlite-07", "dep:libsqlite3-sys-07" ]
-#sqlx_08 = [ "dep:sqlx-08", "dep:sqlx-postgres-08", "dep:sqlx-sqlite-08", "dep:libsqlite3-sys-08" ]
+# Currently in this project I use both 07/08 sqlx version as investigation
+# how to use different version in lib crates.
+# I'm not sure that it is good practice, but like example.
+#
+sqlx_07 = [ "dep:sqlx_07", "dep:sqlx_postgres_07" ]
+sqlx_08 = [ "dep:sqlx_08", "dep:sqlx_postgres_08" ]
 
 #['cfg(feature = "a")'.lib]
 #crate-type = ["staticlib"]
@@ -51,6 +55,34 @@ rustc_version.workspace = true
 mvv_error_macro = { version = "0.1.0", path = "../error_macro" }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
+
+
+# Currently in this project I use both 07/08 sqlx version as investigation
+# how to use different version in lib crates.
+# I'm not sure that it is good practice, but like example.
+#
+sqlx_07 = { version = "0.7.4", default-features = false, features = [
+    #"runtime-tokio", "postgres", "sqlx-postgres", "bigdecimal"
+    ], path = "../diff_ver_crates/sqlx_07", optional = true }
+sqlx_postgres_07 = { version = "0.7.4", features = [
+    "bigdecimal", "chrono", "uuid"
+    ], path = "../diff_ver_crates/sqlx_postgres_07", optional = true }
+
+sqlx_08 = { version = "0.8.2", default-features = false, features = [
+    #"runtime-tokio", "postgres", "sqlx-postgres", "bigdecimal"
+    ], path = "../diff_ver_crates/sqlx_08", optional = true }
+sqlx_postgres_08 = { version = "0.8.2", features = [
+    "bigdecimal", "chrono", "uuid"
+    ], path = "../diff_ver_crates/sqlx_postgres_08", optional = true }
+
+
+# This approach is good for using in 'bin' module (or in lib but when it is not visible outside)
+# For lib module is better (I think) to use 'implicit modules' (see below)
+#
+#sqlx_07 = { package = "sqlx", version = "0.7.4", default-features = false, features = [
+#    "runtime-tokio", "postgres", "sqlx-postgres", "bigdecimal"], optional = true }
+#sqlx_postgres_07 = { package = "sqlx-postgres", version = "0.7.4", default-features  = false, features = [
+#    "bigdecimal", "chrono", "uuid"], optional = true }
 
 # -------------------------------------------------------------------------
 rustc_version.workspace = true
@@ -212,27 +244,20 @@ hyper.workspace = true
 reqwest = { workspace = true, features = ["json"] }
 url.workspace = true
 
-sqlx = { workspace = true, features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal"] }
-# Hm... Why I had to duplicate all options?
-sqlx-postgres = { workspace = true, features = ["bigdecimal", "chrono", "uuid"] }
-
-
-#sqlx-07 = { package = "sqlx", version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal"], optional = true }
+#sqlx = { workspace = true, default-features = false, features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal"] }
 ## Hm... Why I had to duplicate all options?
-#sqlx-postgres-07 = { package = "sqlx", version = "0.7.4", features = ["bigdecimal", "chrono", "uuid"], optional = true }
-#sqlx-sqlite-07 = { package = "sqlx-sqlite", version = "0.7.4", features = ["chrono", "uuid", "serde", ], optional = true }
-#libsqlite3-sys-07 = { package = "libsqlite3-sys", version = "0.27.0", features = ["buildtime_bindgen"], optional = true }
+#sqlx-postgres = { workspace = true, features = ["bigdecimal", "chrono", "uuid"] }
+
+# "chrono", "time" - it causes including sqlite
+#sqlx_08 = { package = "sqlx", version = "0.8.2", default-features = false, features = [
+#    "runtime-tokio", "postgres", "sqlx-postgres", "bigdecimal"], optional = true }
+#sqlx_postgres_08 = { package = "sqlx-postgres", version = "0.8.2", features = [
+#    "bigdecimal", "chrono", "uuid"], optional = true }
 #
-#sqlx-08 = { package = "sqlx", version = "0.8.2", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal"], optional = true }
-#sqlx-postgres-08 = { package = "sqlx", version = "0.8.2", features = ["bigdecimal", "chrono", "uuid"], optional = true }
-#sqlx-sqlite-08 = { package = "sqlx-sqlite", version = "0.8.2", features = ["chrono", "uuid", "serde", ], optional = true }
-#libsqlite3-sys-08 = { package = "libsqlite3-sys", version = "0.30.1", features = ["buildtime_bindgen"], optional = true }
-#
-##sqlx-sqlite = { version = "0.7.4", features = ["chrono", "uuid", "serde", ]}
-##sqlx-sqlite = { version = "0.8.2", features = ["chrono", "uuid", "serde"]}
-##libsqlite3-sys = { version = "0.30.1", features = ["default"]}
-##sqlx-sqlite
-##libsqlite3-sys = { version = "0.27.0", features = [], optional = true }
+#sqlx_07 = { package = "sqlx", version = "0.7.4", default-features = false, features = [
+#    "runtime-tokio", "postgres", "sqlx-postgres", "bigdecimal"], optional = true }
+#sqlx_postgres_07 = { package = "sqlx-postgres", version = "0.7.4", default-features  = false, features = [
+#    "bigdecimal", "chrono", "uuid"], optional = true }
 
 
 quick_cache.workspace = true

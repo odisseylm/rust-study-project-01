@@ -4,10 +4,21 @@ use crate::backtrace::{backtrace, BacktraceCell};
 use crate::string::StaticRefOrString;
 
 
-pub mod pg;
-pub mod diesel2;
+#[cfg(any(feature = "sqlx_07", feature = "sqlx_08"))]
+mod pg;
+
+#[cfg(feature = "sqlx_07")]
 pub mod pg07;
+#[cfg(feature = "sqlx_07")]
+pub mod pg07_macro;
+
+#[cfg(feature = "sqlx_08")]
 pub mod pg08;
+#[cfg(feature = "sqlx_08")]
+pub mod pg08_macro;
+
+pub mod diesel2;
+
 
 //--------------------------------------------------------------------------------------------------
 #[derive(thiserror::Error)]

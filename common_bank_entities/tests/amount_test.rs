@@ -2,9 +2,11 @@ use core::fmt::write;
 use core::str::FromStr;
 use bigdecimal::BigDecimal;
 
-use mvv_common::entity::amount::{ Amount, amount, parse::AmountFormatError, parse };
-use mvv_common::entity::currency::{ predefined::{ EUR, USD }, make_currency };
-use mvv_common::make_currency;
+use mvv_common_bank_entities::{
+    amount::{ Amount, amount, parse::AmountFormatError, parse },
+    currency::{ predefined::{ EUR, USD }, make_currency },
+    make_currency,
+};
 use mvv_common::test::{TestOptionUnwrap, TestResultUnwrap, TestDisplayStringOps, TestDebugStringOps};
 
 use assertables::{ assert_contains, assert_contains_as_result };
@@ -445,7 +447,7 @@ fn test_std_error() {
 
 #[test]
 fn test_parse_amount_error() {
-    use mvv_common::entity::amount::parse::*;
+    use mvv_common_bank_entities::amount::parse::*;
 
     let err = AmountFormatError::new(ErrorKind::IncorrectAmount);
     println!("err: {:?}", err)

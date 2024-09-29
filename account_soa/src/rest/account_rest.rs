@@ -131,7 +131,7 @@ struct TransferAmountRequest {
     to_account: String,
 
     #[serde(with = "mvv_common::json::serde_json_bd::bd_with")]
-    #[educe(Debug(method(mvv_common::entity::bd::bd_dbg_fmt)))]
+    #[educe(Debug(method(mvv_common_bank_entities::bd::bd_dbg_fmt)))]
     #[schema(value_type = f64, example = "12.34")]
     amount: BigDecimal,
 
@@ -310,7 +310,7 @@ impl<AS: AccountService> AccountRest<AS> {
 
 fn map_account_to_rest(account: entity::Account) -> dto::Account {
     use crate::entity::account::AccountParts;
-    use mvv_common::entity::amount::AmountParts;
+    use mvv_common_bank_entities::amount::AmountParts;
 
     let AccountParts { id, iban, client_id, name, amount, created_at, updated_at } = account.into_parts();
     let AmountParts { value: amount_value, currency } = amount.into_parts();
@@ -344,7 +344,7 @@ async fn call_rest_input_validate_by_validator <
 }
 use validator::Validate;
 use mvv_common::backtrace::backtrace;
-use mvv_common::entity::InnerCurStr;
+use mvv_common_bank_entities::InnerCurStr;
 
 #[derive(Debug, validator::Validate)]
 #[derive(serde::Serialize, serde::Deserialize)]

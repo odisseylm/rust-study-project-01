@@ -38,7 +38,8 @@ default = [ "ambassador", "serde_json_raw_value" ]
 [dependencies]
 mvv_error_macro = { version = "0.1.0", path = "../error_macro" }
 mvv_proc_macro = { version = "0.1.0", path = "../proc_macro" }
-mvv_common = { version = "0.1.0", path = "../common" }
+mvv_common = { version = "0.1.0", path = "../common", features = ["default", "sqlx_07"] }
+mvv_common_bank_entities = { version = "0.1.0", path = "../common_bank_entities", features = ["default", "sqlx_07"] }
 mvv_auth = { version = "0.1.0", path = "../auth" }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
@@ -189,8 +190,28 @@ hyper.workspace = true
 reqwest.workspace = true
 url.workspace = true
 
-sqlx.workspace = true
-sqlx-postgres.workspace = true
+#sqlx.workspace = true
+#sqlx-postgres.workspace = true
+
+# To reuse code/macros which designed especially for sqlx 07
+sqlx_07 = { version = "0.7.4", default-features = false, features = [
+    "runtime-tokio", "postgres", "sqlx-postgres",
+    # Using such features there can pick up sqlite (with compilation error)
+    # "bigdecimal", "chrono", "uuid",
+], path = "../diff_ver_crates/sqlx_07" }
+sqlx_postgres_07 = { version = "0.7.4", features = [
+    "bigdecimal", "chrono", "uuid",
+], path = "../diff_ver_crates/sqlx_postgres_07" }
+
+sqlx = { version = "0.7.4", default-features = false, features = [
+    "runtime-tokio",
+    "postgres", "sqlx-postgres",
+    "macros", # required for #[derive(sqlx::FromRow)]
+    "runtime-tokio-rustls"
+    # Using such features there can pick up sqlite (with compilation error)
+    # "bigdecimal", "chrono", "uuid",
+] }
+sqlx-postgres = { version = "0.7.4", features = ["bigdecimal", "chrono", "uuid"] }
 
 quick_cache.workspace = true
 lru.workspace = true

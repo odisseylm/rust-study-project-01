@@ -1,5 +1,5 @@
 use mvv_common::backtrace::{backtrace, BacktraceCell};
-use mvv_common::entity::{Amount, AmountFormatError};
+use mvv_common_bank_entities::{Amount, AmountFormatError};
 use mvv_common::test::{TestDisplayStringOps, TestOptionUnwrap};
 //--------------------------------------------------------------------------------------------------
 
@@ -92,8 +92,8 @@ enum ThisError1 {
     #[error("ThisError1::ErrorFromAmountFormatError")]
     ErrorFromAmountFormatError( #[from] AmountFormatError),
 
-    #[error("ThisError1::SqlxError")]
-    SqlxError { #[source] #[from_bt] error: sqlx::Error, backtrace: BacktraceCell, },
+    // #[error("ThisError1::SqlxError")]
+    // SqlxError { #[source] #[from_bt] error: sqlx::Error, backtrace: BacktraceCell, },
 }
 
 

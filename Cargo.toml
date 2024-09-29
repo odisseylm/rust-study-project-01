@@ -2,11 +2,16 @@
 [workspace]
 members = [
     "xtask",
+    "diff_ver_crates/sqlx_07",
+    "diff_ver_crates/sqlx_08",
+    "diff_ver_crates/sqlx_postgres_07",
+    "diff_ver_crates/sqlx_postgres_08",
     "tuple_heter_iter_macro",
     "tuple_heter_iter",
     "proc_macro",
     "error_macro",
     "common",
+    "common_bank_entities",
     "auth",
     "health_check",
     "account_soa",
@@ -287,11 +292,22 @@ hyper = { version = "1.4.1", features = ["default", "server"] }
 reqwest = { version = "0.12.4", features = ["default", "json", "stream", "blocking"] }
 url = "2.5.1"
 
-#sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "tls-rustls", "runtime-tokio-rustls"] }
-#sqlx = { version = "0.7.4", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "runtime-tokio-rustls"] }
-sqlx = { version = "0.8.2", features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "tls-rustls"] }
+
+# Currently in this project I use both 07/08 sqlx version as investigation
+# how to use different version in lib crates.
+# I'm not sure that it is good practice, but like example.
+#
+#sqlx = { version = "0.7.4", default-features = false, features = [
+#    "runtime-tokio",
+#    "postgres", "sqlx-postgres",
+#    #"bigdecimal",
+#    "runtime-tokio-rustls",
+#] }
+#sqlx-postgres = { version = "0.7.4", features = ["bigdecimal", "chrono", "uuid"] }
+
+#sqlx = { version = "0.8.2", default-features = false, features = ["runtime-tokio", "sqlite", "postgres", "sqlx-postgres", "chrono", "time", "bigdecimal", "tls-rustls"] }
 # Hm... Why I had to duplicate all options?
-sqlx-postgres = { version = "0.8.2", features = ["bigdecimal", "chrono", "uuid"] }
+#sqlx-postgres = { version = "0.8.2", features = ["bigdecimal", "chrono", "uuid"] }
 
 diesel = { version = "2.2.3", features = ["default", "chrono", "uuid", "postgres", "r2d2"] }
 diesel-async = { version = "0.5.0", features = ["default", "deadpool", "postgres", "r2d2"] }

@@ -1,9 +1,7 @@
-use std::cmp::min;
 use std::io::Write;
 use chrono::Datelike;
 use mvv_common::{
     generate_diesel2_pg_from_sql_from_str, generate_diesel2_pg_to_sql_from_as_str,
-    backtrace::backtrace,
     db::DbMappingError,
 };
 use crate::grpc::{

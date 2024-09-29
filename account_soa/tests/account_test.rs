@@ -5,8 +5,8 @@ use mvv_account_soa::entity::{
     account::{ self, Account },
     ClientId,
 };
+use mvv_common_bank_entities::amount::Amount;
 use mvv_common::{
-    entity::amount::Amount,
     test::{ TestResultUnwrap },
 };
 //--------------------------------------------------------------------------------------------------

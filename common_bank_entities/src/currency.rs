@@ -1,15 +1,20 @@
 use core::char;
-use crate::{
-    // TODO: temp
-    generate_pg08_encode_from_as_str,
-    generate_pg08_decode_from_str,
-    generate_pg08_decode_from_str as generate_pg_decode_from_str,
-    generate_pg08_delegate_type_info as generate_pg_delegate_type_info,
-    generate_pg08_encode_from_as_str as generate_pg_encode_from_as_str,
-    //
+use mvv_common::{
     json_str_ser_deser_impl,
 };
-use crate::string::DisplayValueExample;
+#[cfg(feature = "sqlx_07")]
+use mvv_common::{
+    generate_pg07_decode_from_str,
+    generate_pg07_delegate_type_info,
+    generate_pg07_encode_from_as_str,
+};
+#[cfg(feature = "sqlx_08")]
+use mvv_common::{
+    generate_pg08_decode_from_str,
+    generate_pg08_delegate_type_info,
+    generate_pg08_encode_from_as_str,
+};
+use mvv_common::string::DisplayValueExample;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -24,9 +29,20 @@ pub type InnerCurStr = fixedstr::str4;
 pub struct Currency(InnerCurStr); // ([u8;3]);
 
 json_str_ser_deser_impl! { Currency }
-generate_pg_delegate_type_info! { Currency, str }
-generate_pg_encode_from_as_str! { Currency }
-generate_pg_decode_from_str!    { Currency }
+
+#[cfg(feature = "sqlx_07")]
+generate_pg07_delegate_type_info! { Currency, str }
+#[cfg(feature = "sqlx_07")]
+generate_pg07_encode_from_as_str! { Currency }
+#[cfg(feature = "sqlx_07")]
+generate_pg07_decode_from_str!    { Currency }
+
+#[cfg(feature = "sqlx_08")]
+generate_pg08_delegate_type_info! { Currency, str }
+#[cfg(feature = "sqlx_08")]
+generate_pg08_encode_from_as_str! { Currency }
+#[cfg(feature = "sqlx_08")]
+generate_pg08_decode_from_str!    { Currency }
 
 
 pub type CurrencyFormatError = parse::CurrencyFormatError;
@@ -134,13 +150,13 @@ const fn is_valid_currency_ascii(cur: &[u8]) -> bool {
 ///
 /// # Examples
 /// ```
-/// use mvv_common::entity::currency::{ Currency, make_currency };
+/// use mvv_common_bank_entities::currency::{ Currency, make_currency };
 /// const PLN: Currency = make_currency("PLN");
 /// assert_eq!(PLN.as_str(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
-/// use mvv_common::entity::currency::{ Currency, make_currency };
+/// use mvv_common_bank_entities::currency::{ Currency, make_currency };
 ///
 /// // lowercase - error, in case of 'const' there will be compilation error.
 /// // The best approach!!! (but not for tests)
@@ -162,13 +178,13 @@ pub const fn make_currency(currency_code: & 'static str) -> Currency {
 ///
 /// # Examples
 /// ```
-/// use mvv_common::entity::currency::{ Currency, make_currency_b };
+/// use mvv_common_bank_entities::currency::{ Currency, make_currency_b };
 /// const PLN: Currency = make_currency_b(b"PLN");
 /// assert_eq!(PLN.as_str(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
-/// use mvv_common::entity::currency::{ Currency, make_currency_b };
+/// use mvv_common_bank_entities::currency::{ Currency, make_currency_b };
 /// // lowercase - error, in case of 'const' there will be compilation error.
 /// // The best approach!!! (but not for tests)
 /// // const PLN: Currency = make_currency_b(b"pln");
@@ -194,18 +210,18 @@ pub const fn make_currency_b(cur: & 'static [u8;3]) -> Currency {
 ///
 /// # Examples
 /// ```
-/// use mvv_common::entity::currency::Currency;
-/// use mvv_common::make_currency; // macro
-/// use mvv_common::entity::currency::make_currency; // required inline function
+/// use mvv_common_bank_entities::currency::Currency;
+/// use mvv_common_bank_entities::make_currency; // macro
+/// use mvv_common_bank_entities::currency::make_currency; // required inline function
 ///
 /// const PLN: Currency = make_currency!("PLN");
 /// assert_eq!(PLN.as_str(), "PLN");
 /// assert_eq!(PLN.code_as_ascii_bytes(), *b"PLN");
 /// ```
 /// ```rust,should_panic
-/// use mvv_common::entity::currency::Currency;
-/// use mvv_common::make_currency; // macro
-/// use mvv_common::entity::currency::make_currency; // required inline function
+/// use mvv_common_bank_entities::currency::Currency;
+/// use mvv_common_bank_entities::make_currency; // macro
+/// use mvv_common_bank_entities::currency::make_currency; // required inline function
 ///
 /// // lowercase - error, in case of 'const' there will be compilation error.
 /// // The best approach!!! (but not for tests)
@@ -279,8 +295,8 @@ pub mod predefined {
 // As workaround, I decided to use sub-namespace.
 //
 pub mod parse {
-    use crate::backtrace::BacktraceCell;
-    use crate::entity::error::DataFormatError;
+    use mvv_common::backtrace::BacktraceCell;
+    use crate::error::DataFormatError;
 
     #[derive(Debug, thiserror::Error, PartialEq)]
     #[derive(Copy, Clone)]
@@ -313,7 +329,7 @@ pub mod parse {
 //
 #[cfg(test)]
 mod tests {
-    use crate::test::{ TestDisplayStringOps, TestDebugStringOps };
+    use mvv_common::test::{TestDisplayStringOps, TestDebugStringOps };
     use super::*;
     use super::predefined::*;
 

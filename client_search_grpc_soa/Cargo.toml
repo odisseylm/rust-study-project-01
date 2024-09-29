@@ -12,7 +12,7 @@ edition = "2021"
 
 
 [dependencies]
-mvv_common = { version = "0.1.0", path = "../common", features = ["default", "tonic"] }
+mvv_common = { version = "0.1.0", path = "../common", features = ["default", "tonic", "sqlx_08"] }
 mvv_auth = { version = "0.1.0", path = "../auth", features = ["default", "tonic"] }
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
@@ -85,8 +85,30 @@ tower-service.workspace = true
 hyper.workspace = true
 tower-layer.workspace = true
 
-sqlx.workspace = true
-sqlx-postgres.workspace = true
+
+# Currently in this project I use both 07/08 sqlx version as investigation
+# how to use different version in lib crates.
+# I'm not sure that it is good practice, but like example.
+#
+# To reuse code/macros which designed especially for sqlx 08
+sqlx_08 = { version = "0.8.2", default-features = false, features = [
+    "runtime-tokio", "postgres", "sqlx-postgres",
+    # Using such features there can pick up sqlite (with compilation error)
+    # "bigdecimal", "chrono", "uuid",
+], path = "../diff_ver_crates/sqlx_08" }
+sqlx_postgres_08 = { version = "0.8.2", features = [
+    "bigdecimal", "chrono", "uuid" ], path = "../diff_ver_crates/sqlx_postgres_08" }
+sqlx = { version = "0.8.2", default-features = false, features = [
+    "runtime-tokio",
+    "postgres", "sqlx-postgres",
+    "macros", # required for #[derive(sqlx::FromRow)]
+    "runtime-tokio-rustls",
+    # Using such features there can pick up sqlite (with compilation error)
+    # "bigdecimal", "chrono", "uuid",
+] }
+sqlx-postgres = { version = "0.8.2", features = [ "bigdecimal", "chrono", "uuid"] }
+
+
 associative-cache.workspace = true
 
 strum_macros.workspace = true

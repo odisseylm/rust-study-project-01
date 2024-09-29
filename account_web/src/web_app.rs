@@ -9,7 +9,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use mvv_auth::PswHashComparator;
 
 use mvv_common::{
-    db::pg::pg_db_connection,
+    db::pg07::pg07_db_connection as pg_db_connection,
     env::process_env_load_res,
     exe::{current_exe_name, current_exe_dir},
     rest::health_check_router,

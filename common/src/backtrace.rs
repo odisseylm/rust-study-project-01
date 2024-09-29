@@ -29,10 +29,12 @@ pub fn backtrace() -> BacktraceCell {
 
 impl BacktraceCell {
     #[inline]
+    #[track_caller]
     pub fn new() -> Self {
         Self::capture_backtrace()
     }
 
+    #[track_caller]
     pub fn inherit_or_capture<Src: BacktraceSource>(src: &Src) -> Self {
         if src.contains_backtrace() {
             if src.is_taking_backtrace_supported() {
@@ -50,6 +52,7 @@ impl BacktraceCell {
         }
     }
 
+    #[track_caller]
     pub fn with_optional_backtrace(backtrace: Option<std::backtrace::Backtrace>) -> Self {
         match backtrace {
             None => Self::empty(),
@@ -57,6 +60,7 @@ impl BacktraceCell {
         }
     }
 
+    #[track_caller]
     pub fn capture_backtrace() -> Self {
         Self::with_backtrace(std::backtrace::Backtrace::capture())
     }

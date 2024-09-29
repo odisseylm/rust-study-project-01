@@ -33,8 +33,10 @@ pub struct Dependencies {
 
 
 pub fn create_dependencies() -> anyhow::Result<Dependencies> {
+    use mvv_common::db::pg08::pg08_db_connection as pg_db_connection;
+
     let diesel_db_pool = Arc::new(create_diesel_pooled_connection() ?);
-    let sqlx_db_pool = Arc::new(mvv_common::db::pg::pg_db_connection("client_search_soa", ConnectionType::Ssl) ?);
+    let sqlx_db_pool = Arc::new(pg_db_connection("client_search_soa", ConnectionType::Ssl) ?);
     let user_provider = Arc::new(crate::auth::AuthUserProvider::with_cache(sqlx_db_pool.clone()) ?);
 
     Ok(Dependencies {

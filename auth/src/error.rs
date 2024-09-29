@@ -1,7 +1,7 @@
 use axum::response::{ IntoResponse, Response };
 use http::StatusCode;
 use log::error;
-use mvv_common::backtrace::BacktraceCell;
+use mvv_common::backtrace::{backtrace, BacktraceCell};
 use crate::backend::Oauth2ConfigError;
 
 use crate::user_provider::AuthUserProviderError;
@@ -11,6 +11,7 @@ use crate::permission::PermissionProcessError;
 
 // This enum contains ALL possible errors for ANY auth Backend.
 // Initially every impl had each own error enum... but I tired to convert them :-)
+//noinspection RsUnnecessaryQualifications
 #[derive(
     Debug,
     thiserror::Error,
@@ -34,13 +35,14 @@ pub enum AuthBackendError {
     //                            Internal errors
     //
     #[error("ExtractUserFromReqError")]
-    ExtractUserFromReqError(#[from] anyhow::Error),
+    ExtractUserFromReqError(#[source] anyhow::Error),
 
     #[error("User Provider error")]
     UserProviderError(#[from] AuthUserProviderError),
 
     #[error("Sqlx error")]
-    Sqlx(#[source] #[from_with_bt] sqlx::Error, BacktraceCell),
+    // Sqlx(#[source] #[from_with_bt] sqlx::Error, BacktraceCell),
+    DatabaseError(#[source] Box<dyn std::error::Error + Send + Sync>, BacktraceCell),
 
     #[error("Reqwest error")]
     Reqwest(#[source] #[from_with_bt] reqwest::Error, BacktraceCell),
@@ -78,6 +80,97 @@ pub enum AuthBackendError {
     #[doc(hidden)]
     #[error("__NonExhaustive")]
     __NonExhaustive
+}
+// It is needed to avoid feeling third-party fields by client code
+// to avoid unneeded problems with future migration
+//
+//noinspection RsUnnecessaryQualifications
+impl AuthBackendError {
+    #[inline]
+    #[track_caller]
+    pub fn extract_user_from_req_err(err: anyhow::Error) -> Self {
+        Self::ExtractUserFromReqError(err)
+    }
+    #[inline]
+    #[track_caller]
+    pub fn user_provider_err(err: AuthUserProviderError) -> Self {
+        Self::UserProviderError(err)
+    }
+    #[inline]
+    //noinspection DuplicatedCode
+    #[track_caller]
+    pub fn database_err<E: std::error::Error + Send + Sync + 'static>(err: E) -> Self {
+        Self::DatabaseError(Box::new(err), backtrace())
+    }
+    // now can be used only for breakpoint
+    #[inline]
+    //noinspection DuplicatedCode
+    #[track_caller]
+    pub fn sqlx_err<E: std::error::Error + Send + Sync + 'static>(err: E) -> Self {
+        Self::database_err(err)
+    }
+    // now can be used only for breakpoint
+    #[inline]
+    //noinspection DuplicatedCode
+    #[track_caller]
+    pub fn diesel_err<E: std::error::Error + Send + Sync + 'static>(err: E) -> Self {
+        Self::database_err(err)
+    }
+    #[inline]
+    #[track_caller]
+    pub fn reqwest_err(err: reqwest::Error) -> Self {
+        Self::Reqwest(err, backtrace())
+    }
+    #[inline]
+    #[track_caller]
+    pub fn oauth2_err(err: oauth2::basic::BasicRequestTokenError<oauth2::reqwest::AsyncHttpClientError>) -> Self {
+        Self::OAuth2(err, backtrace())
+    }
+    #[inline]
+    #[track_caller]
+    pub fn oauth2_cfg_err(err: Oauth2ConfigError) -> Self {
+        Self::OAuth2ConfigError(err)
+    }
+    #[inline]
+    #[track_caller]
+    pub fn no_requested_backend_err() -> Self {
+        Self::NoRequestedBackend(backtrace())
+    }
+    #[inline]
+    #[track_caller]
+    pub fn no_user_provider_err() -> Self {
+        Self::NoUserProvider(backtrace())
+    }
+    #[inline]
+    #[track_caller]
+    pub fn no_permission_provider_err() -> Self {
+        Self::NoPermissionProvider(backtrace())
+    }
+    #[inline]
+    #[track_caller]
+    pub fn diff_user_providers_err() -> Self {
+        Self::DifferentUserProviders(backtrace())
+    }
+    #[inline]
+    #[track_caller]
+    pub fn diff_perm_providers_err() -> Self {
+        Self::DifferentPermissionProviders(backtrace())
+    }
+    #[inline]
+    #[track_caller]
+    pub fn task_join_err(err: tokio::task::JoinError) -> Self {
+        Self::TaskJoin(err, backtrace())
+    }
+    #[inline]
+    #[track_caller]
+    pub fn cfg_err(err: anyhow::Error) -> Self {
+        Self::ConfigError(err)
+    }
+    #[inline]
+    #[track_caller]
+    pub fn role_err(err: PermissionProcessError) -> Self {
+        Self::RoleError(err, backtrace())
+    }
 }
 
 /*

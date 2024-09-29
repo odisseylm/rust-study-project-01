@@ -6,7 +6,6 @@ use mvv_auth::{
     AuthUserProvider, AuthUserProviderError,
     permission::{ PermissionSet, PermissionProcessError, PermissionProvider },
     user_provider::InMemAuthUserProvider,
-    // util::sql::set_role_from_bool_column as set_role,
 };
 use mvv_common::{
     cache::{ AsyncCache, TtlMode, },
@@ -67,7 +66,7 @@ impl SqlUserProvider {
     //noinspection DuplicatedCode
     async fn get_cached(&self, user_id: &String) -> Result<Option<Option<AuthUser>>,AuthUserProviderError> {
         if let Some(ref cache) = self.0.cache {
-            // Can we use 'read' there
+            // Can we use 'read' there?
             let mut cache_guarded = cache.write().await;
             let cached = (*cache_guarded).get(user_id).await ?;
 
@@ -96,10 +95,8 @@ impl SqlUserProvider {
             .await
             .map_err(|err_to_log|{
                 log::error!("### SQLX error: {:?}", err_to_log);
-                err_to_log
-            })
-            // .map_err(Self::Error::Sqlx)?)
-            .map_err(From::<sqlx::Error>::from);
+                AuthUserProviderError::sqlx_err(err_to_log)
+            });
 
         res
     }
@@ -149,7 +146,7 @@ impl PermissionProvider for SqlUserProvider {
         -> Result<Self::PermissionSet, PermissionProcessError> {
         let user: Option<AuthUser> = self.get_user_by_principal_identity(&user_principal_id).await ?;
         match user {
-            None => Err(PermissionProcessError::NoUser(user_principal_id.into(), backtrace())),
+            None => Err(PermissionProcessError::no_user_err(user_principal_id)),
             Some(ref user) => Ok(user.permissions()),
         }
     }

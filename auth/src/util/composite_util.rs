@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use mvv_common::backtrace::backtrace;
 use crate::{
     error::AuthBackendError,
     backend::{ AuthnBackendAttributes, authz_backend::PermissionProviderSource },
@@ -115,8 +114,8 @@ pub fn get_unique_user_provider_ref <'a,Usr, const N: usize>(
 ) -> Result<&Arc<dyn AuthUserProvider<User=Usr> + Sync + Send>, AuthBackendError> {
     get_unique_prov_ref_impl(
         possible_user_providers,
-        AuthBackendError::NoUserProvider(backtrace()),
-        AuthBackendError::DifferentUserProviders(backtrace()),
+        AuthBackendError::no_user_provider_err(),
+        AuthBackendError::diff_user_providers_err(),
     )
 }
 
@@ -126,8 +125,8 @@ pub fn get_unique_permission_provider_ref <'a,Usr, Perm, PermSet, const N: usize
 ) -> Result<&Arc<dyn PermissionProvider<User=Usr,Permission=Perm,PermissionSet=PermSet> + Sync + Send>, AuthBackendError> {
     get_unique_prov_ref_impl(
         possible_perm_providers,
-        AuthBackendError::NoPermissionProvider(backtrace()),
-        AuthBackendError::DifferentPermissionProviders(backtrace()),
+        AuthBackendError::no_permission_provider_err(),
+        AuthBackendError::diff_perm_providers_err(),
     )
 }
 

@@ -20,7 +20,6 @@ use mvv_auth::{
     //     get_unique_user_provider_ref, get_unique_permission_provider_ref,
     // },
 };
-use mvv_common::backtrace::backtrace;
 use super::user::{AuthUser, Role, RolePermissionsSet };
 // -------------------------------------------------------------------------------------------------
 
@@ -206,7 +205,7 @@ impl axum_login::AuthnBackend for CompositeAuthBackend {
                 // method with the same credentials type.
                 //
                 match self.http_basic_auth_backend {
-                    None => Err(AuthBackendError::NoRequestedBackend(backtrace())),
+                    None => Err(AuthBackendError::no_requested_backend_err()),
                     Some(ref backend) => backend.authenticate(creds).await.map_err(AuthBackendError::from)
                 },
         }

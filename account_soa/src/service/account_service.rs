@@ -5,10 +5,10 @@ use log::{ debug, info };
 use sqlx::Transaction;
 use sqlx_postgres::Postgres;
 use mvv_common::{
-    entity::{
-        amount::Amount, bd::{BigDecimalWrapper }, amount::ops::AmountOpsError, AmountParts,
-    },
     backtrace::{backtrace, BacktraceCell},
+};
+use mvv_common_bank_entities::{
+    amount::Amount, bd::{BigDecimalWrapper }, amount::ops::AmountOpsError, AmountParts,
 };
 use crate::entity::{
     account::{ self },

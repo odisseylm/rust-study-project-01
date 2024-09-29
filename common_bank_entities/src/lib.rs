@@ -1,3 +1,4 @@
+pub mod entity;
 pub mod currency;
 pub mod amount;
 pub mod id;

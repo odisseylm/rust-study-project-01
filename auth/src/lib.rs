@@ -21,6 +21,7 @@ pub mod psw_hash;
 #[cfg(feature = "tonic")]
 pub mod grpc;
 pub mod client;
+mod thirdparty;
 
 pub use user_id::UserId;
 

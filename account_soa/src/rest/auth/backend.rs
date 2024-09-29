@@ -23,7 +23,6 @@ use mvv_auth::{
     //     get_unique_user_provider_ref, get_unique_permission_provider_ref,
     // },
 };
-use mvv_common::backtrace::backtrace;
 use super::user::{AuthUser, Role, RolePermissionsSet };
 // -------------------------------------------------------------------------------------------------
 
@@ -145,7 +144,7 @@ impl CompositeAuthBackend {
     #[allow(unused_qualifications)]
     pub fn authorize_url(&self) -> Result<(oauth2::url::Url, oauth2::CsrfToken), AuthBackendError> {
         match self.oauth2_backend {
-            None => Err(AuthBackendError::NoRequestedBackend(backtrace())),
+            None => Err(AuthBackendError::no_requested_backend_err()),
             Some(ref oauth2_backend) => Ok(oauth2_backend.authorize_url()),
         }
     }
@@ -232,12 +231,12 @@ impl axum_login::AuthnBackend for CompositeAuthBackend {
                 // method with the same credentials type.
                 //
                 match self.login_form_auth_backend {
-                    None => Err(AuthBackendError::NoRequestedBackend(backtrace())),
+                    None => Err(AuthBackendError::no_requested_backend_err()),
                     Some(ref backend) => backend.authenticate(creds).await.map_err(AuthBackendError::from)
                 },
             CompositeAuthCredentials::OAuth(creds) =>
                 match self.oauth2_backend {
-                    None => Err(AuthBackendError::NoRequestedBackend(backtrace())),
+                    None => Err(AuthBackendError::no_requested_backend_err()),
                     Some(ref backend) => backend.authenticate(creds).await.map_err(AuthBackendError::from)
                 },
         }

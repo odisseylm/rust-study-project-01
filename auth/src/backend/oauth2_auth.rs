@@ -143,7 +143,7 @@ impl <
             .exchange_code(oauth2::AuthorizationCode::new(creds.code))
             .request_async(async_http_client)
             .await
-            .map_err(|err|Self::Error::OAuth2(err, backtrace())) ?;
+            .map_err(Self::Error::oauth2_err) ?;
 
         // Use access token to request user info.
         let config = &self.state.config;
@@ -154,10 +154,10 @@ impl <
             .header(AUTHORIZATION.as_str(), format!("Bearer {}", token_res.access_token().secret()))
             .send()
             .await
-            .map_err(|err|Self::Error::Reqwest(err, backtrace())) ?
+            .map_err(Self::Error::reqwest_err) ?
             .json::<UserInfo>()
             .await
-            .map_err(|err|Self::Error::Reqwest(err, backtrace())) ?;
+            .map_err(Self::Error::reqwest_err) ?;
 
         let user_res = self.state.oauth2_user_store.update_user_access_token(
             user_info.login.clone(), token_res.access_token().secret().as_str())
@@ -194,9 +194,9 @@ pub fn create_basic_client(config: &OAuth2Config) -> Result<BasicClient, AuthBac
     let client_id = ClientId::new(config.client_id);
     let client_secret = ClientSecret::new(config.client_secret);
     let auth_url = AuthUrl::new(config.auth_url)
-        .map_err(|_|AuthBackendError::ConfigError(anyhow::anyhow!("Incorrect auth_url [{}]", orig_config.auth_url))) ?;
+        .map_err(|_|AuthBackendError::cfg_err(anyhow::anyhow!("Incorrect auth_url [{}]", orig_config.auth_url))) ?;
     let token_url = TokenUrl::new(config.token_url)
-        .map_err(|_|AuthBackendError::ConfigError(anyhow::anyhow!("Incorrect token_url [{}]", orig_config.token_url))) ?;
+        .map_err(|_|AuthBackendError::cfg_err(anyhow::anyhow!("Incorrect token_url [{}]", orig_config.token_url))) ?;
 
     Ok(BasicClient::new(client_id, Some(client_secret), auth_url, Some(token_url)))
 }

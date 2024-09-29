@@ -1,0 +1,21 @@
+[package]
+name = "sqlx_postgres_07"
+version = "0.7.4"
+edition = "2021"
+
+[lib]
+
+[features]
+
+bigdecimal = ["sqlx-postgres/bigdecimal", "dep:bigdecimal"]
+chrono = ["sqlx-postgres/chrono", "dep:chrono"]
+uuid = ["sqlx-postgres/uuid", "dep:uuid"]
+#
+# Add others needed for you
+
+[dependencies]
+sqlx-postgres = { version = "0.7.4", features = [] }
+
+chrono = { version = "0.4.38", optional = true } # version compatible with sqlx-postgres:0.7.x
+bigdecimal = {  version = "0.3.1", optional = true } # version compatible with sqlx-postgres:0.7.x
+uuid = { version = "1.10.0", optional = true } # version compatible with sqlx-postgres:0.7.x

@@ -47,6 +47,17 @@ RUN    mkdir ./src                                                 \
     && mkdir ./auth/src                                            \
     && mkdir ./common                                              \
     && mkdir ./common/src                                          \
+    && mkdir ./common_bank_entities                                \
+    && mkdir ./common_bank_entities/src                            \
+    && mkdir ./diff_ver_crates                                     \
+    && mkdir ./diff_ver_crates/sqlx_07                             \
+    && mkdir ./diff_ver_crates/sqlx_07/src                         \
+    && mkdir ./diff_ver_crates/sqlx_08                             \
+    && mkdir ./diff_ver_crates/sqlx_08/src                         \
+    && mkdir ./diff_ver_crates/sqlx_postgres_07                    \
+    && mkdir ./diff_ver_crates/sqlx_postgres_07/src                \
+    && mkdir ./diff_ver_crates/sqlx_postgres_08                    \
+    && mkdir ./diff_ver_crates/sqlx_postgres_08/src                \
     && mkdir ./client_search_grpc_soa                              \
     && mkdir ./client_search_grpc_soa/src                          \
     && mkdir ./client_search_grpc_soa/src/bin                      \
@@ -70,6 +81,11 @@ RUN    mkdir ./src                                                 \
     && echo "fn main() { }" > ./client_search_grpc_soa/src/bin/main.rs \
     && echo "// dummy file" > ./client_search_grpc_soa/src/lib.rs  \
     && echo "// dummy file" > ./common/src/lib.rs                  \
+    && echo "// dummy file" > ./common_bank_entities/src/lib.rs    \
+    && echo "// dummy file" > ./diff_ver_crates/sqlx_07/src/lib.rs \
+    && echo "// dummy file" > ./diff_ver_crates/sqlx_08/src/lib.rs \
+    && echo "// dummy file" > ./diff_ver_crates/sqlx_postgres_07/src/lib.rs \
+    && echo "// dummy file" > ./diff_ver_crates/sqlx_postgres_08/src/lib.rs \
     && echo "// dummy file" > ./proc_macro/src/lib.rs              \
     && echo "// dummy file" > ./error_macro/src/lib.rs             \
     && echo "// dummy file" > ./health_check/src/lib.rs            \
@@ -89,6 +105,11 @@ COPY account_web/Cargo.toml             ./account_web/
 COPY auth/Cargo.toml                    ./auth/
 COPY client_search_grpc_soa/Cargo.toml  ./client_search_grpc_soa/
 COPY common/Cargo.toml                  ./common/
+COPY common_bank_entities/Cargo.toml    ./common_bank_entities/
+COPY diff_ver_crates/sqlx_07/Cargo.toml ./diff_ver_crates/sqlx_07/
+COPY diff_ver_crates/sqlx_08/Cargo.toml ./diff_ver_crates/sqlx_08/
+COPY diff_ver_crates/sqlx_postgres_07/Cargo.toml ./diff_ver_crates/sqlx_postgres_07/
+COPY diff_ver_crates/sqlx_postgres_08/Cargo.toml ./diff_ver_crates/sqlx_postgres_08/
 COPY proc_macro/Cargo.toml              ./proc_macro/
 COPY error_macro/Cargo.toml             ./error_macro/
 COPY health_check/Cargo.toml            ./health_check/
@@ -113,6 +134,11 @@ RUN    rm ./account_soa/src/*.rs                  \
     && rm ./client_search_grpc_soa/src/*.rs       \
     && rm ./client_search_grpc_soa/src/bin/*.rs   \
     && rm ./common/src/*.rs                       \
+    && rm ./common_bank_entities/src/*.rs         \
+    && rm ./diff_ver_crates/sqlx_07/src/*.rs      \
+    && rm ./diff_ver_crates/sqlx_08/src/*.rs      \
+    && rm ./diff_ver_crates/sqlx_postgres_07/src/*.rs  \
+    && rm ./diff_ver_crates/sqlx_postgres_08/src/*.rs  \
     && rm ./proc_macro/src/*.rs                   \
     && rm ./error_macro/src/*.rs                  \
     && rm ./health_check/src/*.rs                 \
@@ -133,6 +159,11 @@ COPY client_search_grpc_soa/build.rs  ./client_search_grpc_soa/
 COPY client_search_grpc_soa/src/      ./client_search_grpc_soa/src/
 COPY client_search_grpc_soa/proto/    ./client_search_grpc_soa/proto/
 COPY common/src/                  ./common/src/
+COPY common_bank_entities/src/    ./common_bank_entities/src/
+COPY diff_ver_crates/sqlx_07/src/ ./diff_ver_crates/sqlx_07/src/
+COPY diff_ver_crates/sqlx_08/src/ ./diff_ver_crates/sqlx_08/src/
+COPY diff_ver_crates/sqlx_postgres_07/src/    ./diff_ver_crates/sqlx_postgres_07/src/
+COPY diff_ver_crates/sqlx_postgres_08/src/    ./diff_ver_crates/sqlx_postgres_08/src/
 COPY proc_macro/src/              ./proc_macro/src/
 COPY error_macro/src/             ./error_macro/src/
 COPY health_check/src/            ./health_check/src/
@@ -145,6 +176,11 @@ RUN    touch ./account_soa/src/lib.rs             \
     && touch ./auth/src/lib.rs                    \
     && touch ./client_search_grpc_soa/src/lib.rs  \
     && touch ./common/src/lib.rs                  \
+    && touch ./common_bank_entities/src/lib.rs    \
+    && touch ./diff_ver_crates/sqlx_07/src/lib.rs \
+    && touch ./diff_ver_crates/sqlx_08/src/lib.rs \
+    && touch ./diff_ver_crates/sqlx_postgres_07/src/lib.rs \
+    && touch ./diff_ver_crates/sqlx_postgres_08/src/lib.rs \
     && touch ./proc_macro/src/lib.rs              \
     && touch ./error_macro/src/lib.rs             \
     && touch ./health_check/src/lib.rs            \
@@ -242,6 +278,9 @@ FROM debian:bullseye-slim AS mvv_rust_client_search_soa
 
 ARG RUN_RUST_BACKTRACE=full
 
+RUN apt-get -qq update &&        \
+    apt-get -qq install libpq5
+
 EXPOSE 80 8080 443 8443 8000 2735
 
 RUN adduser                   \
@@ -262,9 +301,10 @@ COPY thirdparty/grpcurl/grpcurl_1.9.1_linux_x86_64/grpcurl  /bin/
 #CMD ["/bin/server"]
 
 ENV RUST_BACKTRACE=$RUN_RUST_BACKTRACE
-ENTRYPOINT ["/bin/mvv_account_web", "arg1", "arg2"]
+ENTRYPOINT ["/bin/mvv_client_search_soa", "arg1", "arg2"]
 
 #HEALTHCHECK --interval=5s --timeout=3s CMD wget --quiet --no-check-certificate --tries=1 --spider https://localhost:${SERVER_PORT}/healthcheck || exit 1
 # good param  --start-interval=2s is unstable ?!
 # HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD health_checker https://localhost:${SERVER_PORT}/healthcheck || exit 1
-HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD grpcurl -d '{ "service": "" }' -plaintext localhost:${SERVER_PORT} grpc.health.v1.Health/Check || exit 1
+#HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD grpcurl -d '{ "service": "" }' -plaintext localhost:${SERVER_PORT} grpc.health.v1.Health/Check || exit 1
+HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD grpcurl -d '{ "service": "" }' -cacert /certs/ca.crt.pem localhost:${SERVER_PORT} grpc.health.v1.Health/Check || exit 1

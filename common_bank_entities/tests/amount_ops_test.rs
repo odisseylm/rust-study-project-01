@@ -1,7 +1,7 @@
 use core::str::FromStr;
 use assertables:: { assert_starts_with, assert_starts_with_as_result };
 use bigdecimal::BigDecimal;
-use mvv_common::entity::amount::{Amount, ops::AmountOpsError, ops::ErrorKind as OpsErrorKind };
+use mvv_common_bank_entities::amount::{Amount, ops::AmountOpsError, ops::ErrorKind as OpsErrorKind };
 // use project01::entity::amount::ops;
 use mvv_common::test::{ TestOptionUnwrap, TestResultUnwrap, TestDisplayStringOps };
 

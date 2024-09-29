@@ -7,6 +7,8 @@ pub mod fmt;
 pub mod test_unwrap;
 
 
+// Due to incompatibility between sqlx 07/08/etc it is risky to have (and export) this code there.
+/*
 pub mod sql {
     use crate::permission::PermissionSet;
 
@@ -28,3 +30,4 @@ pub mod sql {
     }
 
 }
+*/

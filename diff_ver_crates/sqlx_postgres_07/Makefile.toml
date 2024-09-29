@@ -1,0 +1,4 @@
+extend = { path = "../../build/common-makefile.toml" }
+
+[env]
+PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/diff_ver_crates/sqlx_postgres_07"

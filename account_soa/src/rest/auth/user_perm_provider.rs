@@ -8,12 +8,10 @@ use mvv_auth::{
     backend::OAuth2UserStore,
     permission::{ PermissionSet, PermissionProcessError, PermissionProvider },
     user_provider::InMemAuthUserProvider,
-    util::sql::set_role_from_bool_column as set_role,
 };
 use mvv_common::{
     cache::{ AsyncCache, TtlMode, },
 };
-use mvv_common::backtrace::backtrace;
 use super::user::{AuthUser, Role, RolePermissionsSet, UserRolesExtractor };
 // -------------------------------------------------------------------------------------------------
 
@@ -23,6 +21,7 @@ pub type PswComparator = mvv_auth::PlainPasswordComparator;
 
 pub fn in_memory_test_users()
     -> Result<InMemAuthUserProvider<AuthUser,Role,RolePermissionsSet,UserRolesExtractor>, AuthUserProviderError> {
+    //noinspection DuplicatedCode
     InMemAuthUserProvider::with_users([
         AuthUser::new(1, "vovan", "qwerty"),
         AuthUser::with_role(2, "vovan-read", "qwerty", Role::Read),
@@ -53,6 +52,7 @@ impl SqlUserProvider {
     pub fn new(db: Arc<sqlx_postgres::PgPool>) -> Result<SqlUserProvider, anyhow::Error> {
         Ok(SqlUserProvider(Arc::new(SqlUserProviderState { db, cache: None })))
     }
+    //noinspection DuplicatedCode
     pub fn with_cache(db: Arc<sqlx_postgres::PgPool>) -> Result<SqlUserProvider, anyhow::Error> {
         // use crate::util::cache::CacheFactory;
         Ok(SqlUserProvider(Arc::new(SqlUserProviderState { db, cache: Some(RwLock::new(
@@ -106,10 +106,8 @@ impl SqlUserProvider {
             .await
             .map_err(|err_to_log|{
                 log::error!("### SQLX error: {:?}", err_to_log);
-                err_to_log
-            })
-            // .map_err(Self::Error::Sqlx)?)
-            .map_err(From::<sqlx::Error>::from);
+                AuthUserProviderError::sqlx_err(err_to_log)
+            });
 
         res
     }
@@ -125,6 +123,7 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for AuthUser {
     fn from_row(row: &sqlx_postgres::PgRow) -> sqlx::Result<Self> {
         use sqlx::Row;
         use mvv_common::pg_column_name as col_name;
+        use set_role_from_bool_column as set_role;
 
         let user_id: i64 = row.try_get(col_name!("ID")) ?;
         let username: String = row.try_get(col_name!("NAME") ) ?;
@@ -150,6 +149,7 @@ impl sqlx::FromRow<'_, sqlx_postgres::PgRow> for AuthUser {
 
 
 #[axum::async_trait]
+//noinspection DuplicatedCode
 impl AuthUserProvider for SqlUserProvider {
     type User = AuthUser;
 
@@ -229,7 +229,7 @@ impl PermissionProvider for SqlUserProvider {
         -> Result<Self::PermissionSet, PermissionProcessError> {
         let user: Option<AuthUser> = self.get_user_by_principal_identity(&user_principal_id).await ?;
         match user {
-            None => Err(PermissionProcessError::NoUser(user_principal_id.into(), backtrace())),
+            None => Err(PermissionProcessError::no_user_err(user_principal_id)),
             Some(ref user) => Ok(user.permissions.implicit_clone()),
         }
     }
@@ -239,9 +239,29 @@ impl PermissionProvider for SqlUserProvider {
         Ok(RolePermissionsSet::new())
     }
 
+    //noinspection DuplicatedCode
     async fn get_group_permissions_by_principal_identity(
         &self, _user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
         -> Result<Self::PermissionSet, PermissionProcessError> {
         Ok(RolePermissionsSet::new())
     }
+}
+
+
+//noinspection DuplicatedCode
+fn set_role_from_bool_column<'r,
+    DbRow: sqlx::Row,
+    Perm, PermSet: PermissionSet<Permission = Perm>,
+    I,
+> (roles: &mut PermSet, role: Perm, row: &'r DbRow, column: I)
+-> Result<(), sqlx::Error>
+where
+    I: sqlx::ColumnIndex<DbRow>,
+    bool: sqlx::Decode<'r, DbRow::Database> + sqlx::Type<DbRow::Database>,
+{
+    let db_role: Option<bool> = row.try_get::<'r, Option<bool>, I>(column) ?;
+    if db_role.unwrap_or(false) {
+        roles.merge_with_mut(PermSet::from_permission(role));
+    }
+    Ok(())
 }

@@ -1,5 +1,5 @@
 use bigdecimal::BigDecimal;
-use crate::entity::currency::Currency;
+use crate::currency::Currency;
 
 pub mod parse;
 pub mod ops;
@@ -11,12 +11,12 @@ pub mod ops;
 #[display("{} {}", value, currency)]
 #[readonly::make]
 pub struct Amount {
-    #[educe(Debug(method(crate::entity::bd::bd_dbg_fmt)))]
+    #[educe(Debug(method(crate::bd::bd_dbg_fmt)))]
     pub value: BigDecimal,
     pub currency: Currency,
 }
 
-impl crate::string::DisplayValueExample for Amount {
+impl mvv_common::string::DisplayValueExample for Amount {
     fn display_value_example() -> &'static str { r#""1234.5678 EUR""# }
 }
 
@@ -43,7 +43,7 @@ impl<'de> serde::Deserialize<'de> for Amount {
 
 fn serialize_amount_as_struct<S>(amount: &Amount, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
     use serde::ser::SerializeStruct;
-    use crate::entity::serde_json_bd::BDRefSerdeWrapper;
+    use crate::serde_json_bd::BDRefSerdeWrapper;
 
     // let bd_wrapper = BDRefSerdeWrapper(&amount.value);
     // let currency = amount.currency.to_test_string();
@@ -81,8 +81,8 @@ fn deserialize_amount_as_string<'de, D>(deserializer: D) -> Result<Amount, D::Er
 fn deserialize_amount_as_struct<'de, D>(deserializer: D) -> Result<Amount, D::Error>
     where D: serde::Deserializer<'de> {
 
-    use crate::entity::serde_json_bd::BDSerdeWrapper;
-    use crate::entity::currency::CurrencyFormatError;
+    use crate::serde_json_bd::BDSerdeWrapper;
+    use crate::currency::CurrencyFormatError;
     use bigdecimal::ParseBigDecimalError;
     use serde::de::{ Visitor, MapAccess, Error };
 
@@ -165,7 +165,7 @@ impl Amount {
     }
 
     pub fn with_str_amount_unchecked(amount: &str, currency: Currency) -> Self {
-        use crate::unchecked::UncheckedResultUnwrap;
+        use mvv_common::unchecked::UncheckedResultUnwrap;
         Amount::with_str_amount(amount, currency).unchecked_unwrap()
     }
 

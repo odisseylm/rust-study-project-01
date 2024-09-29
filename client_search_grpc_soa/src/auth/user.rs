@@ -35,7 +35,7 @@ impl TryFrom<u32> for Role {
     #[inline]
     fn try_from(value: u32) -> Result<Self, Self::Error> {
         let as_role: Option<Role> = Role::from_repr(value);
-        as_role.ok_or_else(||PermissionProcessError::ConvertError(
+        as_role.ok_or_else(||Self::Error::convert_err(
             anyhow!("Conversion role error: No Role for [{}]", value)))
     }
 }

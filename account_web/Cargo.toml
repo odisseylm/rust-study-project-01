@@ -189,8 +189,20 @@ hyper.workspace = true
 reqwest.workspace = true
 url.workspace = true
 
-sqlx.workspace = true
-sqlx-postgres.workspace = true
+# Currently in this project I use both 07/08 sqlx version as investigation
+# how to use different version in lib crates.
+# I'm not sure that it is good practice, but like example.
+#
+#sqlx.workspace = true
+#sqlx-postgres.workspace = true
+sqlx = { version = "0.7.4", default-features = false, features = [
+    "runtime-tokio",
+    "postgres", "sqlx-postgres",
+    #"bigdecimal",
+    "runtime-tokio-rustls",
+] }
+sqlx-postgres = { version = "0.7.4", features = ["bigdecimal", "chrono", "uuid"] }
+
 
 quick_cache.workspace = true
 lru.workspace = true

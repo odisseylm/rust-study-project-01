@@ -11,8 +11,10 @@
 // -------------------------------------------------------------------------------------------------
 
 use assertables::{ assert_contains, assert_contains_as_result, };
-use mvv_common::entity::amount::parse::AmountFormatError;
-use mvv_common::entity::currency::{ CurrencyFormatError, parse::ErrorKind as CurErrorKind };
+use mvv_common_bank_entities::{
+    amount::parse::AmountFormatError,
+    currency::{ CurrencyFormatError, parse::ErrorKind as CurErrorKind },
+};
 // use mvv_common::backtrace::{BacktraceCopyProvider}; // , NewBacktracePolicy};
 use mvv_common::backtrace::{ BacktraceSource };
 use mvv_common::test::{ TestDisplayStringOps, TestOptionDisplayStringOps };
@@ -47,7 +49,7 @@ fn test_currency_format_error_new() {
 
 #[test]
 fn test_currency_format_error_with_backtrace() {
-    use mvv_common::entity::currency::parse::{CurrencyFormatError, ErrorKind };
+    use mvv_common_bank_entities::currency::parse::{CurrencyFormatError, ErrorKind };
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::IncorrectCurrencyFormat); //); // , NewBacktracePolicy::Default);
 
@@ -88,7 +90,7 @@ fn test_currency_format_error_other() {
     use thiserror::__private::AsDynError;
     use core::any::Any;
     use std::error::Error;
-    use mvv_common::entity::currency::parse::{CurrencyFormatError, ErrorKind };
+    use mvv_common_bank_entities::currency::parse::{CurrencyFormatError, ErrorKind };
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency); // , NewBacktracePolicy::Default);
 
@@ -112,7 +114,7 @@ fn test_currency_format_error_other() {
 // -------------------------------------------------------------------------------------------------
 #[test]
 fn test_amount_format_error_new() {
-    use mvv_common::entity::amount::parse::{ ErrorKind };
+    use mvv_common_bank_entities::amount::parse::{ ErrorKind };
 
     let err = AmountFormatError::new(ErrorKind::NoCurrency);
     if cfg!(debug_assertions) {
@@ -132,7 +134,7 @@ fn test_amount_format_error_new() {
 
 #[test]
 fn test_amount_format_error_with_backtrace() {
-    use mvv_common::entity::amount::parse::{ ErrorKind };
+    use mvv_common_bank_entities::amount::parse::{ ErrorKind };
 
     let err = AmountFormatError::with_backtrace(ErrorKind::IncorrectCurrency); // , NewBacktracePolicy::Default);
     if cfg!(debug_assertions) {
@@ -165,8 +167,8 @@ fn test_amount_format_error_with_backtrace() {
 
 #[test]
 fn test_amount_format_error_with_source() {
-    use mvv_common::entity::currency::{self, parse::CurrencyFormatError };
-    use mvv_common::entity::amount::parse::{ErrorKind, ErrorSource };
+    use mvv_common_bank_entities::currency::{self, parse::CurrencyFormatError };
+    use mvv_common_bank_entities::amount::parse::{ErrorKind, ErrorSource };
 
     let err = AmountFormatError::with_source(ErrorKind::NoCurrency, ErrorSource::NoSource);
     assert_eq!(err.kind, ErrorKind::NoCurrency);
@@ -248,8 +250,8 @@ fn test_amount_format_error_with_source() {
 
 #[test]
 fn test_amount_format_error_src() {
-    use mvv_common::entity::currency::parse::{CurrencyFormatError, ErrorKind };
-    use mvv_common::entity::amount::parse::{ ErrorSource };
+    use mvv_common_bank_entities::currency::parse::{CurrencyFormatError, ErrorKind };
+    use mvv_common_bank_entities::amount::parse::{ ErrorSource };
 
     let err = CurrencyFormatError::with_backtrace(ErrorKind::NoCurrency); // , NewBacktracePolicy::Default);
     if cfg!(debug_assertions) {

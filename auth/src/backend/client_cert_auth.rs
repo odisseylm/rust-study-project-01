@@ -108,7 +108,7 @@ impl <
                 // Logging incorrect user is more preferable.
                 //
                 let user_principal_id: <Usr as axum_login::AuthUser>::Id = user_principal_id.clone().try_into()
-                        .map_err(|err|AuthBackendError::ExtractUserFromReqError(anyhow!(
+                        .map_err(|err|AuthBackendError::extract_user_from_req_err(anyhow!(
                             "Error converting user [{user_principal_id}] from string to principal ID ({err:?})"
                         ))) ?;
 
@@ -255,12 +255,12 @@ impl <
 
 fn get_credentials_from_req(req: &Request) -> Result<Option<ClientCertAuthCredentials>, AuthBackendError> {
     let client_auth_cert = get_http_current_client_auth_cert_from_req(&req)
-        .map_err(AuthBackendError::ExtractUserFromReqError) ?;
+        .map_err(AuthBackendError::extract_user_from_req_err) ?;
     Ok(client_auth_cert.map(|client_cert| ClientCertAuthCredentials { client_cert }))
 }
 fn get_credentials_from_req_parts(req_parts: &http::request::Parts) -> Result<Option<ClientCertAuthCredentials>, AuthBackendError> {
     let client_auth_cert = get_http_current_client_auth_cert_from_req_parts(&req_parts)
-        .map_err(AuthBackendError::ExtractUserFromReqError) ?;
+        .map_err(AuthBackendError::extract_user_from_req_err) ?;
     Ok(client_auth_cert.map(|client_cert| ClientCertAuthCredentials { client_cert }))
 }
 
@@ -271,7 +271,7 @@ fn extract_username_from_cert_user(user: String) -> Result<String, AuthBackendEr
     let is_proper_user_cert_name_format =
         user.starts_with("user-") || user.ends_with("-cn-user") || user.ends_with("-user");
     if !is_proper_user_cert_name_format {
-        return Err(AuthBackendError::ExtractUserFromReqError(anyhow!(
+        return Err(AuthBackendError::extract_user_from_req_err(anyhow!(
                         "Unexpected client certificate username format [{user}]")));
     }
 

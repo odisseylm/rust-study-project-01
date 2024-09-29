@@ -7,9 +7,11 @@ use core::fmt;
 use std::env;
 use std::fmt::write;
 use std::io::Write;
-use mvv_common::{ make_currency, make_currency_b };
-use mvv_common::entity::currency::{Currency, make_currency_b, make_currency, CurrencyFormatError };
-use mvv_common::entity::currency::predefined::{EUR, USD, };
+use mvv_common_bank_entities::{
+    make_currency, make_currency_b,
+    currency::{Currency, make_currency_b, make_currency, CurrencyFormatError},
+    currency::predefined::{EUR, USD,}
+};
 use mvv_common::result::{ as_printable, as_printable_ptr };
 // use mvv_common::unchecked::UncheckedResultUnwrap;
 use mvv_common::result::PrintableResult;

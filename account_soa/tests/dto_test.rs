@@ -3,9 +3,9 @@ use indoc::indoc;
 use bigdecimal::BigDecimal;
 use chrono::{ Utc, FixedOffset };
 use mvv_common::{
-    entity::currency::InnerCurStr,
     test::{ TestDisplayStringOps, TestDebugStringOps, TestOptionUnwrap, TestResultUnwrap },
 };
+use mvv_common_bank_entities::currency::InnerCurStr;
 use mvv_account_soa::rest::dto::{ Account, Amount };
 //--------------------------------------------------------------------------------------------------
 

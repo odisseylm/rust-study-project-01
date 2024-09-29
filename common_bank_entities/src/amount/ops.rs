@@ -1,7 +1,9 @@
 use bigdecimal::{BigDecimal, Zero};
-use crate::entity::amount::{ Amount, amount };
-use crate::backtrace::BacktraceCell;
-use crate::entity::currency::Currency;
+use mvv_common::backtrace::BacktraceCell;
+use crate::{
+    amount::{ Amount, amount },
+    currency::Currency,
+};
 //--------------------------------------------------------------------------------------------------
 
 

@@ -1,0 +1,187 @@
+[package]
+name = "mvv_common_bank_entities"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[features]
+#tonic = [ "dep:tonic", "dep:prost" ]
+default = [ ]
+
+
+# Currently in this project I use both 07/08 sqlx version as investigation
+# how to use different version in lib crates.
+# I'm not sure that it is good practice, but like example.
+#
+sqlx_07 = [ "dep:sqlx_07", "dep:sqlx_postgres_07", "mvv_common/sqlx_07" ]
+sqlx_08 = [ "dep:sqlx_08", "dep:sqlx_postgres_08", "mvv_common/sqlx_08" ]
+
+#['cfg(feature = "a")'.lib]
+#crate-type = ["staticlib"]
+#
+#['cfg(feature = "b")'.lib]
+#crate-type = ["rlib"]
+
+
+
+[build-dependencies]
+#cargo_metadata.workspace = true
+version_check.workspace = true
+rustc_version.workspace = true
+
+
+[dependencies]
+mvv_error_macro = { version = "0.1.0", path = "../error_macro" }
+mvv_common = { version = "0.1.0", path = "../common" }
+
+
+# Currently in this project I use both 07/08 sqlx version as investigation
+# how to use different version in lib crates.
+# I'm not sure that it is good practice, but like example.
+#
+sqlx_07 = { version = "0.7.4", default-features = false, features = [
+    "runtime-tokio", "postgres", "sqlx-postgres", "bigdecimal"
+    ], path = "../diff_ver_crates/sqlx_07", optional = true }
+sqlx_postgres_07 = { version = "0.7.4", features = [
+    "bigdecimal", "chrono", "uuid"
+    ], path = "../diff_ver_crates/sqlx_postgres_07", optional = true }
+
+sqlx_08 = { version = "0.8.2", default-features = false, features = [
+    "runtime-tokio", "postgres", "sqlx-postgres", "bigdecimal"
+    ], path = "../diff_ver_crates/sqlx_08", optional = true }
+sqlx_postgres_08 = { version = "0.8.2", features = [
+    "bigdecimal", "chrono", "uuid"
+    ], path = "../diff_ver_crates/sqlx_postgres_08", optional = true }
+
+# -------------------------------------------------------------------------
+rustc_version.workspace = true
+
+if_chain.workspace = true
+
+static_assertions.workspace = true # 4 years gao
+static_assertions_next.workspace = true # probably successor of 'static_assertions' ??
+
+const_format.workspace = true
+const-str.workspace = true
+place_macro.workspace = true
+
+seq-macro.workspace = true
+forr.workspace = true
+
+bigdecimal.workspace = true
+
+# Can be optional
+uuid.workspace = true
+iban.workspace = true
+
+serde = { workspace = true, features = ["derive", "std", "rc", "serde_derive" ] }
+serde_json = { workspace = true, features = [ "default", ] }
+serde_with.workspace = true
+#serde_as.workspace = true
+#serde_with_macros.workspace = true
+#display_json.workspace = true
+
+anyhow.workspace = true #, features = ["backtrace"] } // it means third-party "backtrace"
+thiserror.workspace = true
+#snafu.workspace = true
+
+indoc.workspace = true  # for creating multiline string
+
+derivative.workspace = true
+derive_more.workspace = true  # (Struct) Display, and so on easy impl
+educe.workspace = true
+strum.workspace = true    # Enum Display, and so on easy impl
+strum_macros.workspace = true
+
+# # Seems it does not work.
+# color-backtrace.workspace = true
+
+# static (mutable) varibales support
+ctor.workspace = true
+once_cell.workspace = true
+lazy_static.workspace = true # required for nutype
+static_init.workspace = true
+ptr_cell.workspace = true
+
+regex.workspace = true # required for nutype
+
+log.workspace = true
+env_logger.workspace = true
+log4rs.workspace = true
+#tracing.workspace = true
+tracing = { workspace = true, features = ["attributes", "log", ] }
+tracing-subscriber.workspace = true
+tracing-futures.workspace = true
+tracing-timing.workspace = true
+
+dotenv.workspace = true  # Loading env vars from .env file
+
+inherent.workspace = true
+readonly.workspace = true
+extension-trait.workspace = true
+ambassador = { workspace = true, optional = true }  # Delegation support
+
+smallvec = { workspace = true, features = [] }
+fixedstr.workspace = true
+
+num.workspace = true
+nutype = { workspace = true, features = ["default", "regex", "serde", ] }
+nonzero_lit.workspace = true
+
+implicit-clone = { workspace = true, features = ["default", "derive", "implicit-clone-derive"] }
+
+chrono = { workspace = true, features = ["default", "serde"] }
+chrono-tz.workspace = true
+time.workspace = true
+
+type-rules.workspace = true
+
+#async-trait.workspace = true
+#trait-variant.workspace = true # similaer to 'async-trait'
+#bytes.workspace = true
+
+#indexmap.workspace = true
+
+#url.workspace = true
+
+## "chrono", "time" - it causes including sqlite
+#sqlx_08 = { package = "sqlx", version = "0.8.2", default-features = false, features = [
+#    "runtime-tokio", "postgres", "sqlx-postgres", "bigdecimal"], optional = true }
+## Hm... Why I had to duplicate all options?
+#sqlx_postgres_08 = { package = "sqlx-postgres", version = "0.8.2", features = [
+#    "bigdecimal", "chrono", "uuid"], optional = true }
+#
+#sqlx_07 = { package = "sqlx", version = "0.7.4", default-features = false, features = [
+#    "runtime-tokio", "postgres", "sqlx-postgres", "bigdecimal"], optional = true }
+### Hm... Why I had to duplicate all options?
+#sqlx_postgres_07 = { package = "sqlx-postgres", version = "0.7.4", default-features  = false, features = [
+#    "bigdecimal", "chrono", "uuid"], optional = true }
+
+
+itertools.workspace = true
+#by_address.workspace = true
+
+#tuple_len.workspace = true
+#tuple_length.workspace = true
+
+#tonic = { workspace = true, features = ["default", "transport", "tls"], optional = true }
+#prost = { workspace = true, features = ["default"], optional = true }
+
+fs_extra.workspace = true
+rust-embed.workspace = true
+
+
+[dev-dependencies]
+#mockall.workspace = true
+test-case.workspace = true
+assertables.workspace = true
+pretty_assertions.workspace = true
+assert-text.workspace = true
+
+#assert_json.workspace = true
+assert-json-diff.workspace = true
+#jsondiff.workspace = true
+
+macro_rules_attribute.workspace = true

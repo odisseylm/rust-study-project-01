@@ -10,7 +10,6 @@ use std::{
 };
 
 use tokio::sync::RwLock;
-use mvv_common::backtrace::backtrace;
 use crate::{
     user_provider::{ AuthUserProvider, AuthUserProviderError },
     backend::oauth2_auth::{ OAuth2UserStore, OAuth2User },
@@ -196,10 +195,10 @@ impl <
         &self, user_principal_id: <<Self as PermissionProvider>::User as axum_login::AuthUser>::Id)
         -> Result<Self::PermissionSet, PermissionProcessError> {
         let user_opt = self.get_user_by_principal_identity(&user_principal_id).await
-            .map_err(|err|PermissionProcessError::GetUserError(anyhow::Error::new(err)))?;
+            .map_err(|err|PermissionProcessError::get_user_err(anyhow::Error::new(err)))?;
         let user = user_opt.ok_or_else(||
             // in theory, it should not happen
-            PermissionProcessError::NoUser(user_principal_id.into(), backtrace())) ?;
+            PermissionProcessError::no_user_err(user_principal_id)) ?;
         self.get_user_permissions(&user).await
     }
 
