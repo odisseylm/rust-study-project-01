@@ -153,7 +153,14 @@ mod tests {
         let debug_str = err.to_test_debug_string();
         println!("## EnvVarError (debug): {debug_str}");
         assert_contains!(debug_str, r#"EnvVarError { var_name: Ref("var_name_1"), source: NotPresent, backtrace:"#);
-        assert_contains!(debug_str, "mvv_common::env::EnvVarError::new");
+
+        assert!(
+            // for standard dev/debug configuration
+            debug_str.contains("mvv_common::env::EnvVarError::new")
+            // for 'code coverage' configuration
+            || debug_str.contains("<mvv_common::env::EnvVarError>::new")
+        );
+        // assert_contains!(debug_str, "mvv_common::env::EnvVarError::new");
         assert_contains!(debug_str, "env.rs:");
 
         // assert!(false, "To see output");

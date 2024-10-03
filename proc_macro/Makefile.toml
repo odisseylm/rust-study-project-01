@@ -3,3 +3,8 @@ extend = { path = "../build/common-makefile.toml" }
 
 [env]
 PROJECT_DIR = "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/proc_macro"
+
+[tasks.test]
+command = "true" # I cannot just use `extend = "cargo-test"`. It does not work.
+args = []
+dependencies = [ "cargo-test" ]

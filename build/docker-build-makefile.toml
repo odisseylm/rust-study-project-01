@@ -135,7 +135,7 @@ dependencies = [
     "build-docker-debug-local", # will be called only for dev/debug profile
 ]
 
-# Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
 [tasks.build-docker-member]
 alias = "build-docker"
 
@@ -183,7 +183,7 @@ dependencies = [
     "private_docker_build_prepare_labels",
 ]
 
-# Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
 [tasks.build-docker-debug-local-member]
 alias = "build-docker-debug-local"
 

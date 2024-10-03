@@ -152,6 +152,30 @@ Should public functions be tested in internal or integration tests ??
  - https://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/book/second-edition/ch11-03-test-organization.html
 
 
+# Code coverage configuration
+
+## Installation
+ - ??? `cargo install rustfilt`
+ - llvm
+   - Docs
+     - https://doc.rust-lang.org/rustc/instrument-coverage.html
+     - https://llvm.org/docs/CommandGuide/llvm-profdata.html#profdata-merge
+     - https://github.com/llvm/llvm-project/
+   - Install
+     - Required LLVM version use `rustc --verbose --version`
+     - LLVM https://github.com/llvm/llvm-project/releases
+ - grcov - to see covered code as html
+   - `cargo install grcov`
+   - https://crates.io/crates/grcov/
+   - https://github.com/mozilla/grcov
+
+Useful links
+ - https://blog.rng0.io/how-to-do-code-coverage-in-rust/
+ - https://github.com/rusty-ferris-club/rust-starter
+ - https://trane-project.github.io/blog/100_code_coverage.html
+ - ?? https://medium.com/@gnanaganesh/rust-code-coverage-internals-what-happens-under-the-hood-when-you-compile-your-rust-code-for-c8fe5c38b237
+ - 
+
 TODO: investigate
  - string-builder ?? How overloading is done there??
 

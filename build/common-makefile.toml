@@ -1,4 +1,8 @@
 
+extend = [
+    { path = "code-coverage.toml" },
+]
+
 [env]
 RUST_BACKTRACE = "1"
 
@@ -98,6 +102,32 @@ command = "printenv"
 
 
 [tasks.install-all-toolchains]
+condition_script = '''
+    # Optimization: to do (slow) install only once at some period.
+
+    # Idea is taken from https://www.baeldung.com/linux/find-check-success
+    # See also better ideas at https://www.linuxquestions.org/questions/programming-9/find-command-return-true-if-a-file-was-found-881400/
+
+    # `-mtime -1` means modified in the last 24 hours
+    #
+    # VAR_1=$( find "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}" -maxdepth 1 -name "tool-chains-installed-timestamp" -type f -daystart -mtime -1 -printf "%f" )
+
+    # See also examples on
+    # * https://www.baeldung.com/linux/recently-changed-files
+    # * https://stackoverflow.com/questions/44377111/find-command-with-daystart-and-mmin
+    #
+
+    VAR_1=$( find "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}" -maxdepth 1 -name "tool-chains-installed-timestamp" -type f -mmin -120 -printf "%f" )
+
+    if [ "$VAR_1" = "tool-chains-installed-timestamp" ]; then
+        # If tool-chains-installed-timestamp exists and it is fresh enough (24h)
+        # we skip rust toolchain install/update
+        exit 1
+    else
+        # Let's install/update
+        exit 0
+    fi
+'''
 script = '''
     rustup install 1.79.0  1>/dev/null 2>/dev/null  && \
     rustup install 1.80.0  1>/dev/null 2>/dev/null  && \
@@ -106,6 +136,8 @@ script = '''
     rustup install stable  1>/dev/null 2>/dev/null  && \
     rustup install nightly 1>/dev/null 2>/dev/null  && \
     echo "All supported toolchains are installed"
+    touch "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/tool-chains-installed-timestamp"
+    date "+%Y-%m-%d %H:%M:%S" > "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/tool-chains-installed-timestamp"
 '''
 
 
@@ -150,9 +182,19 @@ dependencies = [
     "post-build",
 ]
 
-# Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
 [tasks.build-member]
 alias = "build"
+
+
+[tasks.build-with-coverage]
+dependencies = [
+    "init-code-coverage",
+    "build",
+]
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
+[tasks.build-member-with-coverage]
+alias = "build-with-coverage"
 
 
 
@@ -184,9 +226,22 @@ dependencies = [ # seems dependencies are not inherited in current 'cargo make' 
     "build",
 ]
 
-# Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
 [tasks.test-member]
 alias = "test"
+
+
+[tasks.test-with-coverage]
+extend = "cargo-test"
+condition = { env_not_set = [ "CARGO_SKIP_TEST", "CARGO_SKIP_TESTS", "CARGO_MAKE_SKIP_TEST", "CARGO_MAKE_SKIP_TESTS" ] }
+dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
+    "init-code-coverage",
+    "build",
+]
+
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
+[tasks.test-member-with-coverage]
+alias = "test-with-coverage"
 
 
 
@@ -288,7 +343,7 @@ dependencies = [
 ]
 
 
-# Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
 [tasks.integration-tests-member]
 alias = "integration-tests"
 
@@ -302,7 +357,7 @@ dependencies = [
     "test",
 ]
 
-# Aliase for calling from root/workspace makefile (I do not know why it does not work without when we use 'integration-tests')
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
 [tasks.package-member]
 alias = "package"
 

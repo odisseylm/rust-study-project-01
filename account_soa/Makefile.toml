@@ -34,10 +34,9 @@ dependencies = [
 
 
 [tasks.test]
-extend = "cargo-test"
-dependencies = [
-    "build",
-]
+command = "true" # I cannot just use `extend = "cargo-test"`. It does not work.
+args = []
+dependencies = [ "cargo-test" ]
 
 
 

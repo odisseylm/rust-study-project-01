@@ -1,0 +1,72 @@
+
+[env]
+
+#LLVM_HOME_BIN_DIR_WITH_SEP = ""
+#LLVM_HOME = "${HOME}/tools/clang+llvm-18.1.7-x86_64-linux-gnu-ubuntu-18.04"
+#LLVM_HOME_BIN_DIR_WITH_SEP = "${LLVM_HOME}/bin/"
+
+
+# See https://doc.rust-lang.org/rustc/instrument-coverage.html
+#
+#CARGO_INCREMENTAL = 0
+#RUSTFLAGS = "-Cinstrument-coverage"
+#RUSTFLAGS = "-C instrument-coverage"
+#LLVM_PROFILE_FILE = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw/cargo-test-%p-%m.profraw"
+
+
+[tasks.init-code-coverage]
+script = '''
+    #!@duckscript
+
+    if ${LLVM_HOME}
+        set_env LLVM_HOME_BIN_DIR_WITH_SEP "${LLVM_HOME}/bin/"
+    else
+        set_env LLVM_HOME_BIN_DIR_WITH_SEP ""
+    end
+
+    # See https://doc.rust-lang.org/rustc/instrument-coverage.html
+    #
+    if ${RUSTFLAGS}
+        set_env RUSTFLAGS "${RUSTFLAGS} -C instrument-coverage"
+    else
+        set_env RUSTFLAGS "-C instrument-coverage"
+    end
+
+    set_env LLVM_PROFILE_FILE "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw/cargo-test-%p-%m.profraw"
+'''
+
+
+
+[tasks.process-code-coverage]
+workspace = false
+script = '''
+    echo "Merging .profraw files to .prodata"
+    "${LLVM_HOME_BIN_DIR_WITH_SEP}llvm-profdata" merge -sparse                 \
+      -o "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage-merged.profdata"  \
+      ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw/cargo-test-*.profraw
+
+    echo "Showing .prodata"
+    "${LLVM_HOME_BIN_DIR_WITH_SEP}llvm-profdata" show                          \
+      --show-format=text                                                       \
+      --output="${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage-result.txt" \
+      "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage-merged.profdata"
+
+    echo "Preparing HTML covered code by grcov"
+    grcov "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw/"                 \
+      --binary-path "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/debug/deps/"         \
+      --llvm-path "${LLVM_HOME_BIN_DIR_WITH_SEP}"                              \
+      --source-dir "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"                 \
+      --output-type html                                                       \
+      --branch                                                                 \
+      --ignore-not-existing --ignore '../*' --ignore "/*"                      \
+      --output-path "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage/html"
+
+    #llvm-cov show -Xdemangler=rustfilt target/debug/examples/formatjson5 \
+    #    -instr-profile=code-coverage-merged.profdata \
+    #    -show-line-counts-or-regions        \
+    #    -show-instantiations                \
+    #    -name=add_quoted_string
+'''
+dependencies = [
+    "init-code-coverage",
+]

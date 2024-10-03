@@ -1,5 +1,8 @@
 
-extend = { path = "build/ssl-certs-makefile.toml" }
+extend = [
+    { path = "build/ssl-certs-makefile.toml" },
+    { path = "build/code-coverage.toml" },
+]
 
 [config]
 init_task = "init"
@@ -133,6 +136,103 @@ condition_script = [" 0 "]
 #dependencies = ["test"]
 
 
+
+#----------------------------------------------------------------------------------------------------
+#                                        Custom clean
+#----------------------------------------------------------------------------------------------------
+#
+# Custom clean task to avoid deleting patch-override-sub-dep subdir
+#
+[tasks.clean]
+workspace = false
+command = "echo" # I do not know how unset 'command' (command={unset=true} does not work)
+args = ["Cleaning ..."]
+dependencies = [ "clean-impl" ]
+
+
+[tasks.clean-impl]
+workspace = false
+script = '''
+    echo Cleaning ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}
+
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage"
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage"
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/debug"
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/externals"
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/generated-test-resources"
+    echo 'skip patch-override-sub-dep' # rm -r ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/patch-override-sub-dep
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/proto"
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/release"
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/temp"
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/tmp"
+
+    rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/.rustc_info.json"
+    rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/buildId"
+    rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage-result.txt"
+    rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/*.profdata" # Does it work?
+    rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage-merged.profdata"
+    rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/merged.profdata"
+    rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/*-openapi.json" # Does it work?
+    rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/mvv_account_soa-openapi.json"
+'''
+
+
+
+[tasks.clean-modules]
+workspace = false
+script = '''
+    echo Cleaning only modules
+
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage"
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage"
+    rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage-result.txt"
+
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/generated-test-resources"
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/proto"
+
+    rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/mvv_account_soa-openapi.json"
+
+    cd "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/debug"
+    rm -f *.lib *.so *.rlib *.d
+    rm -r -f health_checker http_health_checker
+    rm -r -f mvv_account_soa mvv_account_web mvv_client_search_soa
+    # rm -r -f xtask
+
+    cd "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/debug/build"
+    rm -r -f *account_soa*  *account_web*  mvv_auth*
+    rm -r -f *client_search_soa*  *client_search_grpc_soa*
+    rm -r -f *mvv_common*  *common_bank_entities*  *error_macro*
+    rm -r -f *health_check*  *proc_macro*  *tuple_heter_iter*
+    rm -r -f *tuple_heter_iter_macro*  *xtask*
+
+    cd "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/debug/deps"
+    rm -r -f *account_soa*  *account_web*  mvv_auth*
+    rm -r -f *client_search_soa*  *client_search_grpc_soa*
+    rm -r -f *mvv_common*  *common_bank_entities*  *error_macro*
+    rm -r -f *health_check*  *proc_macro*  *tuple_heter_iter*
+    rm -r -f *tuple_heter_iter_macro*  *xtask*
+    rm -r -f *_test_*  *_test*  *test_*
+
+    cd "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/debug/incremental"
+    rm -r -f *account_soa*  *account_web*  mvv_auth*
+    rm -r -f *client_search_soa*  *client_search_grpc_soa*
+    rm -r -f *mvv_common*  *common_bank_entities*  *error_macro*
+    rm -r -f *health_check*  *proc_macro*  *tuple_heter_iter*
+    rm -r -f *tuple_heter_iter_macro*  *xtask*
+    rm -r -f *_test_*  *_test*  *test_*
+
+    cd "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/debug/.fingerprint"
+    rm -r -f *account_soa*  *account_web*  mvv_auth*
+    rm -r -f *client_search_soa*  *client_search_grpc_soa*
+    rm -r -f *mvv_common*  *common_bank_entities*  *error_macro*
+    rm -r -f *health_check*  *proc_macro*  *tuple_heter_iter*
+    rm -r -f *tuple_heter_iter_macro*  *xtask*
+'''
+
+
+#----------------------------------------------------------------------------------------------------
+#                                        Build & Test members
+#----------------------------------------------------------------------------------------------------
 [tasks.build-members]
 workspace = false
 private = true
@@ -142,14 +242,67 @@ private = true
 run_task = { name = "build-member", fork = true }
 
 
+[tasks.build]
+command = "true" # Do nothing. Override default command ('cargo make' does not allow just unset it)
+args = []
+dependencies = [ "build-members" ]
+
+
 [tasks.test-members]
+workspace = false
+private = true
+# overriding/disabling predefined build command
+# 'test' member defined build tasks are really used
+#command = {unset = true}
+run_task = { name = "test-member", fork = true }
+
+
+[tasks.test]
+command = "true" # Do nothing. Override default command ('cargo make' does not allow just unset it)
+args = []
+dependencies = [
+    "build-members",
+    "test-members",
+]
+
+
+#----------------------------------------------------------------------------------------------------
+#                                        Code coverage
+#----------------------------------------------------------------------------------------------------
+[tasks.build-members-with-coverage]
 workspace = false
 private = true
 # overriding/disabling predefined build command
 # member defined build tasks are really used
 #command = {unset = true}
-run_task = { name = "test-member", fork = true }
+run_task = { name = "build-member-with-coverage", fork = true }
 
+
+[tasks.build-with-coverage]
+workspace = false
+command = "true" # Do nothing. Override default command ('cargo make' does not allow just unset it)
+args = []
+dependencies = [ "build-members-with-coverage" ]
+
+
+[tasks.test-members-with-coverage]
+workspace = false
+private = true
+# overriding/disabling predefined build command
+# 'test' member defined build tasks are really used
+#command = {unset = true}
+run_task = { name = "test-member-with-coverage", fork = true }
+
+
+[tasks.test-with-coverage]
+workspace = false
+command = "true" # Do nothing. Override default command ('cargo make' does not allow just unset it)
+args = []
+dependencies = [
+    "build-members-with-coverage",
+    "test-members-with-coverage",
+    "process-code-coverage",
+]
 
 
 #-----------------------------------------------------------------------------------------------------------------------

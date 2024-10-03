@@ -248,8 +248,18 @@ fn test_result_error_stacktrace_of_anyhow() {
             assert_contains!(output, "7: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_05\n             at ./tests/errors/mod.rs:");
 
             assert_contains!(output, "8: investigation_error_test::test_result_error_stacktrace_of_anyhow\n             at ./tests/investigation_error_test.rs:");
+
             // it is risky/dependant
-            assert_contains!(output, "9: investigation_error_test::test_result_error_stacktrace_of_anyhow::{{closure}}\n             at ./tests/investigation_error_test.rs");
+            // assert_contains!(output, "9: investigation_error_test::test_result_error_stacktrace_of_anyhow::{{closure}}\n             at ./tests/investigation_error_test.rs");
+            assert_contains!(output, "9: investigation_error_test::test_result_error_stacktrace_of_anyhow::");
+            assert_contains!(output, "9: investigation_error_test::test_result_error_stacktrace_of_anyhow::{");
+            assert!(
+                // standard dev/debug config
+                output.contains("9: investigation_error_test::test_result_error_stacktrace_of_anyhow::{{closure}}\n             at ./tests/investigation_error_test.rs")
+                // code coverage configuration
+                // || output.contains("9: investigation_error_test::test_result_error_stacktrace_of_anyhow::{closure#0}\n             at ./tests/investigation_error_test.rs:225:44")
+                || output.contains("9: investigation_error_test::test_result_error_stacktrace_of_anyhow::{closure#0}\n             at ./tests/investigation_error_test.rs")
+            );
         } else {
             // only one method call accessible :-(
             assert_contains!(output, "0: investigation_error_test::errors::fn_wrap_by_my_error_using_map_err_and_with_context_05")
