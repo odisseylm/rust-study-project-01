@@ -12,15 +12,16 @@ use rustainers::compose::{
     ToRunnableComposeContainers,
 };
 use rustainers::{ExposedPort, Port, WaitStrategy};
-use mvv_common::test::integration::{AutoDockerComposeDown, is_integration_tests_enabled, prepare_docker_compose, PrepareDockerComposeCfg, wait_containers, };
 use mvv_common::test::{
     current_project_target_dir, current_sub_project_dir,
     TestDisplayStringOps, TestOptionUnwrap, TestResultUnwrap,
+    integration::{AutoDockerComposeDown, PrepareDockerComposeCfg},
+    integration::{is_integration_tests_enabled, prepare_docker_compose, wait_containers},
+    docker_compose::{docker_compose_down, get_docker_compose_file, preload_docker_compose_images},
 };
 use serde_json::json;
 use mvv_common::fn_name;
 use mvv_common::string::remove_repeated_spaces;
-use mvv_common::test::docker_compose::{docker_compose_down, get_docker_compose, load_images};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -101,7 +102,7 @@ async fn launch_account_web_docker_compose() -> anyhow::Result<(PathBuf, Compose
 
     let temp_docker_compose_dir = prepare_docker_compose(&sub_project_dir, &cfg) ?;
 
-    load_images(&get_docker_compose(&temp_docker_compose_dir) ?) ?;
+    preload_docker_compose_images(&get_docker_compose_file(&temp_docker_compose_dir) ?) ?;
 
     let option: ComposeRunOption = ComposeRunOption::builder()
         // Wait interval for service health check

@@ -3,10 +3,49 @@ xtask = "run --package xtask --"
 #xtask = "run --manifest-path ./xtask/Cargo.toml --"
 
 
-#
-# Code coverage
-#
+# ------------------------------------------------------------------------------
+#                                  Code coverage
+# ------------------------------------------------------------------------------
+
+# Similar to the "compiler" profile, but also enables debug assertions in LLVM.
+# These assertions can detect malformed coverage mappings in some cases.
+#profile = "codegen"
+
 
 # Build the profiler runtime (required when compiling with options that depend
 # on this runtime, such as `-C profile-generate` or `-C instrument-coverage`).
 profiler = true
+
+
+#[rust]
+## Enable debug assertions in the compiler.
+#debug-assertions = true
+
+
+# Tempoarily uncomment it to avoid continuous rebuilds under IDE (Idea/RustRover)
+# (after manual build/tests using cargo/cargo-make tasks with 'coverage')
+# if you focusing (currently) on code-coveraging
+#
+# Do NOT commit it!
+#
+
+[build]
+
+# Use it during debug covergae under IDE to avoid frequent recompilation
+# by IDE (after manual build using cargo/cargo-make)
+
+# TODO: Do not commit it!!!
+rustflags = [
+    "-Cinstrument-coverage",
+    # "--ignore-filename-regex='/.cargo/registry'",
+    # -C incremental=val
+    # -C llvm-args=val -- a list of arguments to pass to LLVM (space separated)
+]
+incremental = false
+
+[env]
+LLVM_PROFILE_FILE = { value = "target/coverage-raw/rust-cover-%p-%m.profraw", relative = true, force = true }
+
+LLVM_HOME_BIN_DIR_WITH_SEP = ""
+CARGO_INCREMENTAL = "0"
+RUSTFLAGS = "-Cinstrument-coverage"

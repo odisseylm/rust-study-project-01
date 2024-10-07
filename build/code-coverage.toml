@@ -10,13 +10,16 @@
 #
 #CARGO_INCREMENTAL = 0
 #RUSTFLAGS = "-Cinstrument-coverage"
-#RUSTFLAGS = "-C instrument-coverage"
 #LLVM_PROFILE_FILE = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw/cargo-test-%p-%m.profraw"
 
 
 [tasks.init-code-coverage]
 script = '''
     #!@duckscript
+
+    # It is better to disable incremental build otherwise `grcow` will work toooo-toooo-toooo slow.
+    # Even without it grcov works enough slow (2 mins).
+    set_env CARGO_INCREMENTAL "0"
 
     if ${LLVM_HOME}
         set_env LLVM_HOME_BIN_DIR_WITH_SEP "${LLVM_HOME}/bin/"
@@ -27,12 +30,30 @@ script = '''
     # See https://doc.rust-lang.org/rustc/instrument-coverage.html
     #
     if ${RUSTFLAGS}
-        set_env RUSTFLAGS "${RUSTFLAGS} -C instrument-coverage"
+        # Big IF does not work for me... hz...
+        #
+        var_already_contains_1 = contains ${RUSTFLAGS} "-C instrument-coverage"
+        var_already_contains_2 = contains ${RUSTFLAGS} "-Cinstrument-coverage"
+        #
+        if not ${var_already_contains_1} and not ${var_already_contains_2}
+            echo "Adding 'instrument-coverage' to RUSTFLAGS"
+            RUSTFLAGS = set "${RUSTFLAGS} -Cinstrument-coverage"
+            set_env RUSTFLAGS ${RUSTFLAGS}
+        else
+            echo "RUSTFLAGS already contains 'instrument-coverage' flag"
+        end
     else
-        set_env RUSTFLAGS "-C instrument-coverage"
+        echo "Setting 'instrument-coverage' in RUSTFLAGS"
+        RUSTFLAGS = set "-Cinstrument-coverage"
+        set_env RUSTFLAGS ${RUSTFLAGS}
     end
 
-    set_env LLVM_PROFILE_FILE "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw/cargo-test-%p-%m.profraw"
+    # echo "### RUSTFLAGS: ${RUSTFLAGS}"
+
+    set_env LLVM_PROFILE_FILE "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw/rust-coverage-%p-%m.profraw"
+
+    mkdir "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw"
+    mkdir "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw/coverage-disabled-raw"
 '''
 
 
@@ -40,26 +61,35 @@ script = '''
 [tasks.process-code-coverage]
 workspace = false
 script = '''
-    echo "Merging .profraw files to .prodata"
-    "${LLVM_HOME_BIN_DIR_WITH_SEP}llvm-profdata" merge -sparse                 \
-      -o "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage-merged.profdata"  \
-      ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw/cargo-test-*.profraw
+    TARGET_DIR=${CARGO_MAKE_CRATE_TARGET_DIRECTORY}
 
-    echo "Showing .prodata"
-    "${LLVM_HOME_BIN_DIR_WITH_SEP}llvm-profdata" show                          \
-      --show-format=text                                                       \
-      --output="${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage-result.txt" \
-      "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage-merged.profdata"
+    echo "Merging .profraw files to .prodata"
+    "${LLVM_HOME_BIN_DIR_WITH_SEP}llvm-profdata" merge -sparse  \
+      -o "${TARGET_DIR}/code-coverage-merged.profdata"          \
+      ${TARGET_DIR}/coverage-raw/*.profraw
+
+    echo "Showing .profdata"
+    "${LLVM_HOME_BIN_DIR_WITH_SEP}llvm-profdata" show         \
+      --show-format=text                                      \
+      --output="${TARGET_DIR}/code-coverage-result.txt"       \
+      "${TARGET_DIR}/code-coverage-merged.profdata"
 
     echo "Preparing HTML covered code by grcov"
-    grcov "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw/"                 \
-      --binary-path "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/debug/deps/"         \
-      --llvm-path "${LLVM_HOME_BIN_DIR_WITH_SEP}"                              \
-      --source-dir "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"                 \
-      --output-type html                                                       \
-      --branch                                                                 \
-      --ignore-not-existing --ignore '../*' --ignore "/*"                      \
-      --output-path "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage/html"
+
+    # We need to remove existing dir othervise new dir will be created inside existent dir...
+    rm -r -f "${TARGET_DIR}/coverage"
+
+    grcov "${TARGET_DIR}/coverage-raw/"                         \
+      --binary-path "${TARGET_DIR}/debug/deps/"                 \
+      --llvm-path "${LLVM_HOME_BIN_DIR_WITH_SEP}"               \
+      --source-dir "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}"  \
+      --output-type html                                        \
+      --branch                                                  \
+      --ignore-not-existing                                     \
+      --ignore '../*' --ignore "/*" --ignore "/.cargo/registry" \
+      --output-path "${TARGET_DIR}/coverage/html"
+
+    # --ignore-filename-regex='/.cargo/registry'          \
 
     #llvm-cov show -Xdemangler=rustfilt target/debug/examples/formatjson5 \
     #    -instr-profile=code-coverage-merged.profdata \

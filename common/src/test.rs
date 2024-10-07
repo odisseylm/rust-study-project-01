@@ -2,7 +2,7 @@ pub mod integration;
 pub mod files;
 pub mod docker_compose;
 pub mod docker_compose_util;
-
+mod build_env;
 
 use core::fmt::Debug;
 use std::ffi::OsString;
@@ -17,6 +17,7 @@ use crate::{
 //--------------------------------------------------------------------------------------------------
 
 
+pub use build_env::BuildEnv;
 // Actually this code is designed for unit test only,
 // but in that case due to strange rust project tests build approach
 // it causes showing 'unused code'.

@@ -188,6 +188,51 @@ dependencies = [
 alias = "build-docker-debug-local"
 
 
+#------------------------------------------------------------------------------------------------
+
+[tasks.build-docker-debug-local-with-coverage]
+condition = { profiles = [ "dev", "development", "debug" ] }
+command = "docker"
+cwd = "${ROOT_PROJECT_DIR}"
+args = [
+    "build",
+    "--file", "${PROJECT_DIR}/docker/Dockerfile-local",
+    "--tag", "${DOCKER_IMAGE_TAG}-debug-local",
+
+    "--build-arg", "UBUNTU_VERSION=${UBUNTU_VERSION}",
+    "--build-arg", "RUN_RUST_BACKTRACE=${RUST_BACKTRACE}",
+
+    # ?? How to reuse it?
+    #${DOCKER_IMAGE_LABELS},
+
+    "--label", "PROJECT_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PACKAGE_NAME=${CARGO_MAKE_PROJECT_NAME}",
+    "--label", "PROJECT_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "PACKAGE_VERSION=${CARGO_MAKE_CRATE_VERSION}",
+    "--label", "GIT_BRANCH=${CARGO_MAKE_GIT_BRANCH}",
+    "--label", "GIT_USER_NAME=${CARGO_MAKE_GIT_USER_NAME}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH}",
+    "--label", "GIT_HEAD_LAST_COMMIT_HASH_PREFIX=${CARGO_MAKE_GIT_HEAD_LAST_COMMIT_HASH_PREFIX}",
+    ".",]
+workspace = false
+dependencies = [
+    "init-code-coverage",
+    "init_docker_vars",
+    "init_docker_vars",
+    "get-ubuntu-info-vars",
+    "build-with-coverage",
+    # Disabled now to avoid 'test' phase when 'docker-build is called directly'.
+    # 'package'/'install' tasks have 'test' task.
+    # "test",
+    "private_docker_build_prepare_labels",
+]
+
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
+[tasks.build-docker-debug-local-with-coverage-member]
+alias = "build-docker-debug-local-with-coverage"
+
+
+
 
 ########################################################################################################################
 #                                         Optional aliases                                                             #

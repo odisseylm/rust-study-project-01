@@ -1,22 +1,28 @@
-use std::ffi::OsString;
-use std::fmt::Debug;
-use std::future::Future;
-use std::path::{Path, PathBuf};
-use std::time::Duration;
+use core::{
+    fmt::Debug,
+    future::Future,
+    time::Duration,
+};
+use std::{
+    ffi::OsString,
+    path::{Path, PathBuf},
+};
 use anyhow::anyhow;
 use itertools::Itertools;
 use log::{error, info, warn};
 use yaml_rust2::{Yaml, YamlEmitter, YamlLoader};
-use crate::io::find_existent_buf;
-use crate::string::str_vec;
-use crate::test::docker_compose::{
-    docker_compose_down, docker_compose_down_silent, get_docker_compose,
+use crate::{
+    io::find_existent_buf,
+    string::str_vec,
 };
-use crate::test::docker_compose_util::{
-    change_network, gather_host_volumes_src, remove_host_ports, set_docker_image_profile_suffix_var,
+use crate::test::{
+    BuildEnv,
+    docker_compose::{docker_compose_down, docker_compose_down_silent, get_docker_compose_file},
+    docker_compose_util::{change_network, gather_host_volumes_src, remove_host_ports},
+    docker_compose_util::{set_docker_image_profile_suffix_var},
+    files::{do_copy, do_replacements, Copy, CopyCfg, Replace}
 };
-use crate::test::files::{do_copy, do_replacements, Copy, CopyCfg, Replace};
-use super::{ change_name_by_policy, current_sub_project_dir, find_target_dir};
+use super::{ change_name_by_policy, current_sub_project_dir};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -141,9 +147,9 @@ impl Default for PrepareDockerComposeCfg {
                 let docker_dir = sub_project_dir.join("docker");
 
                 docker_files_dir =
-                    if get_docker_compose(&docker_dir).is_ok() {
+                    if get_docker_compose_file(&docker_dir).is_ok() {
                         docker_dir
-                    } else if get_docker_compose(&sub_project_dir).is_ok() {
+                    } else if get_docker_compose_file(&sub_project_dir).is_ok() {
                         sub_project_dir.to_path_buf()
                     } else {
                         warn!("docker compose directory is not found");
@@ -188,11 +194,15 @@ impl Default for PrepareDockerComposeCfg {
 }
 
 
-pub fn prepare_docker_compose(sub_project_dir: &Path, cfg: &PrepareDockerComposeCfg)
+pub fn prepare_docker_compose(_sub_project_dir: &Path, cfg: &PrepareDockerComposeCfg)
     -> Result<PathBuf, anyhow::Error> {
 
-    let target_dir_ = find_target_dir(sub_project_dir) ?;
-    let target_dir_: &Path = &target_dir_;
+    let build_env = BuildEnv::try_new() ?;
+    let target_dir_: &Path = &build_env.target_dir;
+
+    // let target_dir_ = find_target_dir(sub_project_dir) ?;
+    // let target_dir_: &Path = &target_dir_;
+
     let test_res_dir = target_dir_.join("temp/docker_compose_tests");
 
     let tests_session_id = cfg.tests_session_id;
@@ -230,7 +240,8 @@ pub fn prepare_docker_compose(sub_project_dir: &Path, cfg: &PrepareDockerCompose
     }
     let test_res_dir = test_res_dir.join(&last_leaf_dir_name);
 
-    std::fs::create_dir_all(&test_res_dir) ?;
+    std::fs::create_dir_all(&test_res_dir)
+        .map_err(|err|anyhow!("Error of creating dirs [{test_res_dir:?}] ({err:?})")) ?;
 
     let standard_docker_files_to_copy = cfg.docker_files.iter()
         .filter_map(|f|{
@@ -247,7 +258,7 @@ pub fn prepare_docker_compose(sub_project_dir: &Path, cfg: &PrepareDockerCompose
 
     do_replacements(&cfg.replace, &test_res_dir) ?;
 
-    let new_docker_compose_file = get_docker_compose(&test_res_dir) ?;
+    let new_docker_compose_file = get_docker_compose_file(&test_res_dir) ?;
 
     if cfg.replace_docker_image_profile_suffix {
         set_docker_image_profile_suffix_var(&new_docker_compose_file, &test_res_dir) ?;

@@ -155,6 +155,7 @@ workspace = false
 script = '''
     echo Cleaning ${CARGO_MAKE_CRATE_TARGET_DIRECTORY}
 
+    rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw"
     rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage"
     rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage"
     rm -r -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/debug"
@@ -168,12 +169,17 @@ script = '''
 
     rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/.rustc_info.json"
     rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/buildId"
+    rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/CACHEDIR.TAG"
     rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage-result.txt"
     rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/*.profdata" # Does it work?
     rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/code-coverage-merged.profdata"
     rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/merged.profdata"
     rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/*-openapi.json" # Does it work?
     rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/mvv_account_soa-openapi.json"
+
+    # Why do we have such files? Maybe by RustRover??
+    rm -f "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/default_*.profraw" # Seems it does not work??
+    find  "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}" -maxdepth 1 -name default_*.profraw -delete
 '''
 
 
@@ -266,45 +272,6 @@ dependencies = [
 ]
 
 
-#----------------------------------------------------------------------------------------------------
-#                                        Code coverage
-#----------------------------------------------------------------------------------------------------
-[tasks.build-members-with-coverage]
-workspace = false
-private = true
-# overriding/disabling predefined build command
-# member defined build tasks are really used
-#command = {unset = true}
-run_task = { name = "build-member-with-coverage", fork = true }
-
-
-[tasks.build-with-coverage]
-workspace = false
-command = "true" # Do nothing. Override default command ('cargo make' does not allow just unset it)
-args = []
-dependencies = [ "build-members-with-coverage" ]
-
-
-[tasks.test-members-with-coverage]
-workspace = false
-private = true
-# overriding/disabling predefined build command
-# 'test' member defined build tasks are really used
-#command = {unset = true}
-run_task = { name = "test-member-with-coverage", fork = true }
-
-
-[tasks.test-with-coverage]
-workspace = false
-command = "true" # Do nothing. Override default command ('cargo make' does not allow just unset it)
-args = []
-dependencies = [
-    "build-members-with-coverage",
-    "test-members-with-coverage",
-    "process-code-coverage",
-]
-
-
 #-----------------------------------------------------------------------------------------------------------------------
 
 [tasks.build-docker]
@@ -315,7 +282,6 @@ env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
 run_task = { name = "build-docker-member", fork = true }
 
 
-
 [tasks.integration-tests]
 category = "Test"
 workspace = false
@@ -324,11 +290,77 @@ env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
 run_task = { name = "integration-tests-member", fork = true }
 
 
-
 [tasks.package]
-workspace = true
+workspace = false
 # I do not understand why, but member-subtask should have another name?! For this purpose suffix '-member' is used.
 run_task = { name = "package-member", fork = true }
+
+
+#----------------------------------------------------------------------------------------------------
+#                                        Code coverage
+#----------------------------------------------------------------------------------------------------
+[tasks.build-members-with-coverage]
+workspace = false
+private = true
+# overriding/disabling predefined build command
+# member defined build tasks are really used
+#command = {unset = true}
+run_task = { name = "build-member-with-coverage", fork = true }
+dependencies = [ "init-code-coverage" ]
+
+
+[tasks.build-with-coverage]
+workspace = false
+command = "true" # Do nothing. Override default command ('cargo make' does not allow just unset it)
+args = []
+dependencies = [ "init-code-coverage", "build-members-with-coverage" ]
+
+
+[tasks.test-members-with-coverage]
+workspace = false
+private = true
+# overriding/disabling predefined build command
+# 'test' member defined build tasks are really used
+#command = {unset = true}
+run_task = { name = "test-member-with-coverage", fork = true }
+dependencies = [ "init-code-coverage" ]
+
+
+[tasks.test-with-coverage]
+workspace = false
+command = "true" # Do nothing. Override default command ('cargo make' does not allow just unset it)
+args = []
+dependencies = [
+    "init-code-coverage",
+    "build-members-with-coverage",
+    "test-members-with-coverage",
+    "process-code-coverage",
+]
+
+
+[tasks.build-docker-with-coverage]
+category = "Docker"
+workspace = false
+env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
+# I do not understand why, but member-subtask should have another name?! For this purpose suffix '-member' is used.
+run_task = { name = "build-docker-debug-local-with-coverage-member", fork = true }
+dependencies = [ "init-code-coverage" ]
+
+
+[tasks.integration-tests-with-coverage]
+category = "Test"
+workspace = false
+env = { CARGO_MAKE_WORKSPACE_INCLUDE_MEMBERS = "${DOCKER_MODULES}" }
+# I do not understand why, but member-subtask should have another name?! For this purpose suffix '-member' is used.
+run_task = { name = "integration-tests-with-coverage-member", fork = true }
+dependencies = [ "init-code-coverage" ]
+
+
+[tasks.package-with-coverage]
+workspace = false
+# I do not understand why, but member-subtask should have another name?! For this purpose suffix '-member' is used.
+run_task = { name = "package-with-coverage-member", fork = true }
+dependencies = [ "init-code-coverage" ]
 
 
 
@@ -338,3 +370,29 @@ run_task = { name = "package-member", fork = true }
 
 [tasks.integration-test]
 alias = "integration-tests"
+[tasks.it-tests]
+alias = "integration-tests"
+
+#-----------------------------------------------------------------------------------------------------------------------
+
+[tasks.build-cov]
+alias = "build-with-coverage"
+[tasks.build-covered]
+alias = "build-with-coverage"
+
+[tasks.build-docker-cov]
+alias = "build-docker-with-coverage"
+[tasks.build-docker-covered]
+alias = "build-docker-with-coverage"
+
+[tasks.package-cov]
+alias = "package-with-coverage"
+[tasks.package-covered]
+alias = "package-with-coverage"
+
+[tasks.it-tests-cov]
+alias = "integration-tests-with-coverage"
+[tasks.it-tests-covered]
+alias = "integration-tests-with-coverage"
+[tasks.it-tests-with-coverage]
+alias = "integration-tests-with-coverage"

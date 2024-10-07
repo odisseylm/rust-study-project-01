@@ -155,7 +155,27 @@ args = [
     "@@remove-empty(RELEASE_PARAM_0)",
     # "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
     # "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
+]
+dependencies = [
+    "pre-build",
+]
 
+
+[tasks.rs-test-compile]
+description = "Runs the rust compiler."
+category = "Build"
+command = "cargo"
+env = { RUST_BACKTRACE = "${RUST_BACKTRACE}" }
+args = [
+    "@@remove-empty(CARGO_VERB_P_0)",
+    "test",
+    "--no-run",
+    "@@remove-empty(CARGO_BUILD_VERB_P)",
+    "@@remove-empty(CARGO_FEATURES_P1)",
+    "@@remove-empty(CARGO_FEATURES_P2)",
+    "@@remove-empty(RELEASE_PARAM_0)",
+    # "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
+    # "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
 ]
 dependencies = [
     "pre-build",
@@ -182,6 +202,13 @@ dependencies = [
     "post-build",
 ]
 
+[tasks.build-tests]
+dependencies = [
+    "build",
+    "cargo-build-test",
+]
+
+
 # Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
 [tasks.build-member]
 alias = "build"
@@ -191,6 +218,7 @@ alias = "build"
 dependencies = [
     "init-code-coverage",
     "build",
+    "build-tests",
 ]
 # Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
 [tasks.build-member-with-coverage]
@@ -219,6 +247,30 @@ dependencies = [
 ]
 
 
+# T O D O: How to reuse cargo-test without using setting (global) env var
+[tasks.cargo-build-test]
+category = "Test"
+condition = { env_not_set = [ "CARGO_SKIP_TEST", "CARGO_SKIP_TESTS", "CARGO_MAKE_SKIP_TEST", "CARGO_MAKE_SKIP_TESTS" ] }
+# toolchain = "${CARGO_MAKE_RUST_DEFAULT_TOOLCHAIN}"
+env = { RUST_BACKTRACE = "${RUST_BACKTRACE}" }
+command = "cargo"
+args = [
+    "@@remove-empty(CARGO_VERB_P_0)",
+    "test",
+    "@@remove-empty(CARGO_TEST_VERB_P)",
+    "@@remove-empty(CARGO_FEATURES_P1)",
+    "@@remove-empty(CARGO_FEATURES_P2)",
+    "@@remove-empty(RELEASE_PARAM_0)",
+    # "@@remove-empty(CARGO_MAKE_CARGO_VERBOSE_FLAGS)",
+    # "@@split(CARGO_MAKE_CARGO_BUILD_TEST_FLAGS, )",
+    #
+    "--no-run",
+]
+dependencies = [
+    # "build",
+]
+
+
 [tasks.test]
 extend = "cargo-test"
 condition = { env_not_set = [ "CARGO_SKIP_TEST", "CARGO_SKIP_TESTS", "CARGO_MAKE_SKIP_TEST", "CARGO_MAKE_SKIP_TESTS" ] }
@@ -233,6 +285,7 @@ alias = "test"
 
 [tasks.test-with-coverage]
 extend = "cargo-test"
+#env = { LLVM_PROFILE_FILE = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw/cargo-test-%p-%m.profraw" }
 condition = { env_not_set = [ "CARGO_SKIP_TEST", "CARGO_SKIP_TESTS", "CARGO_MAKE_SKIP_TEST", "CARGO_MAKE_SKIP_TESTS" ] }
 dependencies = [ # seems dependencies are not inherited in current 'cargo make' version
     "init-code-coverage",
@@ -363,6 +416,52 @@ alias = "package"
 
 
 
+#-----------------------------------------------------------------------------------------------------------------------
+
+
+[tasks.integration-tests-debug-with-coverage]
+extend = "integration-tests-impl"
+#env = { LLVM_PROFILE_FILE = "${CARGO_MAKE_CRATE_TARGET_DIRECTORY}/coverage-raw/cargo-it-test-%p-%m.profraw" }
+condition = { profiles = ["dev", "develop", "development", "debug"], env_not_set = [
+    "CARGO_SKIP_ITTEST", "CARGO_SKIP_ITTESTS", "CARGO_MAKE_SKIP_ITTEST", "CARGO_MAKE_SKIP_ITTESTS" ] }
+dependencies = [ # dependencies are not inherited (bug or feature)
+    "init-code-coverage",
+    "pre-build",
+    "init-integration-tests",
+    # "build-with-coverage", TODO: uncomment or remove??
+    # "build-docker-debug-local",
+]
+
+
+[tasks.integration-tests-with-coverage]
+dependencies = [
+    "init-code-coverage",
+    "init-integration-tests",
+    "integration-tests-debug-with-coverage",
+]
+
+
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
+[tasks.integration-tests-with-coverage-member]
+alias = "integration-tests-with-coverage"
+
+
+[tasks.package-with-coverage] # It is named just according to 'java/maven'
+command = "echo" # overriding/disabling predefined build command
+args = [ "package flow" ]
+dependencies = [
+    "init-code-coverage",
+    "build-with-coverage",
+    "test-with-coverage",
+]
+
+
+# Aliase for calling from root/workspace makefile (I do not know why it does not work without that when we call from root)
+[tasks.package-with-coverage-member]
+alias = "package-with-coverage"
+
+
+
 ########################################################################################################################
 #                                         Optional aliases                                                             #
 ########################################################################################################################
@@ -371,3 +470,11 @@ alias = "package"
 alias = "test"
 [tasks.integration-test]
 alias = "integration-tests"
+[tasks.it-tests]
+alias = "integration-tests"
+[tasks.integration-test-with-coverage]
+alias = "integration-tests-with-coverage"
+[tasks.it-tests-with-coverage]
+alias = "integration-tests-with-coverage"
+[tasks.it-tests-covered]
+alias = "integration-tests-with-coverage"

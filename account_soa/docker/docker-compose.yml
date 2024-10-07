@@ -31,8 +31,13 @@ services:
 
       - SERVER_SSL_KEY_PATH=/certs/rust-account-soa.key.pem
       - SERVER_SSL_CERT_PATH=/certs/rust-account-soa.crt.pem
+
+      #- LLVM_PROFILE_FILE=/appuser/coverage-raw/account-soa-%p-%m.profraw
+      # Disabled by default
+      - LLVM_PROFILE_FILE=${LLVM_PROFILE_FILE:-/appuser/coverage-disabled-raw/account-soa-%p-%m.profraw}
     volumes:
       - ../target/generated-test-resources/ssl/:/certs/:ro
+      - ../target/coverage-raw/coverage-disabled-raw/:/appuser/coverage-disabled-raw/:ro
     ports:
       # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:
       - 8101:8443
@@ -42,6 +47,14 @@ services:
       - database:db_postgres
     depends_on:
       - database
+    # This is almost copy-paste from Dockerfile BUT WITH '--start-interval=1s'
+    # makes restarting container (for collecting code-coverage) much faster (1s instead of 5s).
+    #healthcheck:
+    #  start_period: 1s
+    #  start_interval: 1s
+    #  interval: 1s
+    #  retries: 10
+    #  test: ["CMD", "health_checker", "https://localhost:8443/healthcheck"]
     deploy:
       #replicas: ${DOCKER_COMPOSE_SCALE_REPLICA_COUNT}
       replicas: 1

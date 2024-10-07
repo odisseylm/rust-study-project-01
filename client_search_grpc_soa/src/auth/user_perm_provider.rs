@@ -10,7 +10,6 @@ use mvv_auth::{
 use mvv_common::{
     cache::{ AsyncCache, TtlMode, },
 };
-use mvv_common::backtrace::backtrace;
 use super::user::{AuthUser, Role, RolePermissionsSet, UserRolesExtractor };
 // -------------------------------------------------------------------------------------------------
 

@@ -6,6 +6,7 @@ extend = [
     { path = "../build/docker-compose-makefile.toml" },
 ]
 
+
 [env]
 SOA_EXECUTABLE = "mvv_account_soa"
 DOCKER_IMAGE_TAG = "mvv_rust_account_soa"
@@ -48,6 +49,44 @@ dependencies = [
     "test",
     "build-docker",
     "integration-tests",
+]
+
+#------------------------------------------------------------------------------------------
+
+# Overriding 'build' to add 'generate-open-api' to build flow.
+[tasks.build-with-coverage]
+command = "echo" # overriding/disabling predefined build command
+args = [ "build flow" ]
+dependencies = [
+    "init-code-coverage",
+    "pre-build",
+    "rs-compile",
+    "rs-test-compile",
+    "generate-ssl-certs",
+    "generate-open-api",
+    "post-build",
+]
+
+
+[tasks.test-with-coverage]
+command = "true" # I cannot just use `extend = "cargo-test"`. It does not work.
+args = []
+dependencies = [
+    "init-code-coverage",
+    "cargo-test",
+]
+
+
+[tasks.package-with-coverage] # It is named just according to 'java'
+command = "echo" # overriding/disabling predefined build command
+args = [ "package flow" ]
+dependencies = [
+    "init-code-coverage",
+    "build-with-coverage",
+    "test-with-coverage",
+    # "build-docker-with-coverage",
+    "build-docker-debug-local-with-coverage",
+    "integration-tests-with-coverage",
 ]
 
 

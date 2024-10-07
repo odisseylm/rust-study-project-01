@@ -9,7 +9,6 @@ use mvv_auth::{
     permission::{ PermissionSet, PermissionProcessError, PermissionProvider },
 };
 use mvv_common::{
-    backtrace::backtrace,
     cache::{AsyncCache, TtlMode, },
 };
 use crate::auth::{ ClientAuthUser as AuthUser, ClientFeatureSet, ClientFeature };

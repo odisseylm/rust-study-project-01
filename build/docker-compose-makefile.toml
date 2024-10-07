@@ -82,6 +82,46 @@ dependencies = [
 
 
 
+[tasks.docker-compose-start]
+command = "docker-compose"
+args = [
+    "--file", "${PROJECT_DIR}/docker/docker-compose.yml",      # ${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose.env",  # "${docker-env-file}",
+    "--project-directory", "${PROJECT_DIR}",
+    "--project-name", "${DOCKER_COMPOSE_PROJECT_NAME}",        # "${project.artifactId}",
+    "start",
+    #"rust-account-soa", # "${docker-compose-service-up}",
+]
+workspace = false
+dependencies = [
+    "init_docker_vars",
+    "init-docker-compose-env-vars",
+    #    "build",
+    #    "test",
+    #    "private_docker_build_prepare_labels",
+]
+
+[tasks.docker-compose-stop]
+command = "docker-compose"
+args = [
+    "--file", "${PROJECT_DIR}/docker/docker-compose.yml",      # ${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose.env",  # "${docker-env-file}",
+    "--project-directory", "${PROJECT_DIR}",
+    "--project-name", "${DOCKER_COMPOSE_PROJECT_NAME}",        # "${project.artifactId}",
+    "stop",
+    #"rust-account-soa", # "${docker-compose-service-up}",
+]
+workspace = false
+dependencies = [
+    "init_docker_vars",
+    "init-docker-compose-env-vars",
+    #    "build",
+    #    "test",
+    #    "private_docker_build_prepare_labels",
+]
+
+
+
 [tasks.docker-compose-ps]
 command = "docker-compose"
 args = [
@@ -92,13 +132,42 @@ args = [
     "ps",
 ]
 workspace = false
-dependencies = [
-    "init_docker_vars",
-    "init-docker-compose-env-vars",
+dependencies = [ "init_docker_vars", "init-docker-compose-env-vars", ]
+
+
+
+[tasks.docker-compose-ps-json]
+command = "docker-compose"
+args = [
+    "--file", "${PROJECT_DIR}/docker/docker-compose.yml",      # "${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose.env",  # "${docker-env-file}",
+    "--project-directory", "${PROJECT_DIR}",
+    "--project-name", "${DOCKER_COMPOSE_PROJECT_NAME}",        # "${project.artifactId}",
+    "ps",
+    "--format",
+    "json"
 ]
+workspace = false
+dependencies = [ "init_docker_vars", "init-docker-compose-env-vars", ]
 
 
 
+[tasks.docker-compose-ids]
+command = "docker-compose"
+args = [
+    "--file", "${PROJECT_DIR}/docker/docker-compose.yml",      # "${docker-compose-file}",
+    "--env-file", "${PROJECT_DIR}/docker/docker-compose.env",  # "${docker-env-file}",
+    "--project-directory", "${PROJECT_DIR}",
+    "--project-name", "${DOCKER_COMPOSE_PROJECT_NAME}",        # "${project.artifactId}",
+    "ps",
+    "--quiet",
+]
+workspace = false
+dependencies = [ "init_docker_vars", "init-docker-compose-env-vars", ]
+
+
+
+#--------------------------------------------------------------------------------------------------
 [tasks.docker-compose-rerun]
 workspace = false
 dependencies = [
