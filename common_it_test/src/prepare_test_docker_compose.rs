@@ -1,66 +1,22 @@
-use core::{
-    fmt::Debug,
-    future::Future,
-    time::Duration,
-};
+use core::fmt::Debug;
 use std::{
-    ffi::OsString,
     path::{Path, PathBuf},
 };
 use anyhow::anyhow;
-use itertools::Itertools;
-use log::{error, info, warn};
-use yaml_rust2::{Yaml, YamlEmitter, YamlLoader};
-use crate::{
+use log::{info, warn};
+use mvv_common::{
     io::find_existent_buf,
     string::str_vec,
+    test::{BuildEnv, current_sub_project_dir},
 };
-use crate::test::{
-    BuildEnv,
-    docker_compose::{docker_compose_down, docker_compose_down_silent, get_docker_compose_file},
+use crate::{
+    docker_compose::{get_docker_compose_file},
     docker_compose_util::{change_network, gather_host_volumes_src, remove_host_ports},
-    docker_compose_util::{set_docker_image_profile_suffix_var},
-    files::{do_copy, do_replacements, Copy, CopyCfg, Replace}
+    docker_compose_util::{change_network_name_by_policy, set_docker_image_profile_suffix_var},
+    files::{Copy, CopyCfg, do_copy, do_replacements, Replace},
 };
-use super::{ change_name_by_policy, current_sub_project_dir};
 //--------------------------------------------------------------------------------------------------
 
-
-
-pub async fn wait_containers<C>(
-    res_docker_compose_dir: PathBuf,
-    docker_compose_display_name: &str,
-    fut: impl Future<Output=Result<rustainers::compose::ComposeContainers<C>, rustainers::runner::RunnerError>>,
-    pause_duration: Duration,
-) -> anyhow::Result<(PathBuf, rustainers::compose::ComposeContainers<C>)>
-where
-    C: rustainers::compose::ToRunnableComposeContainers + Debug,
-    rustainers::compose::ComposeContainers<C>: Debug,
-{
-    let compose_containers_res = tokio::time::timeout(pause_duration, fut).await;
-
-    match compose_containers_res {
-        Ok(res) => {
-            match res {
-                Ok(res) => {
-                    info!("SUCCESS of [{docker_compose_display_name}] launch => {res:?}");
-                    Ok( (res_docker_compose_dir, res) )
-                },
-                Err(err) => {
-                    error!("FAILURE of [{docker_compose_display_name}] launch => Error {{ {err:?} }}");
-                    let _ = docker_compose_down(&res_docker_compose_dir);
-                    Err(anyhow!(err))
-                },
-            }
-        },
-        Err(err) => {
-            error!("FAILURE of [{docker_compose_display_name}] launch => Error {{ {err:?} }}");
-            info!("Shut down docker compose manually...");
-            let _ = docker_compose_down(&res_docker_compose_dir);
-            Err(anyhow!(err))
-        },
-    }
-}
 
 
 #[derive(Clone, Debug)]
@@ -73,6 +29,7 @@ pub enum NamePolicy {
     WithBuildIdSuffix,
     WithStringAndBuildIdSuffix(String),
 }
+
 
 #[derive(Debug)]
 pub struct PrepareDockerComposeCfg {
@@ -195,7 +152,7 @@ impl Default for PrepareDockerComposeCfg {
 
 
 pub fn prepare_docker_compose(_sub_project_dir: &Path, cfg: &PrepareDockerComposeCfg)
-    -> Result<PathBuf, anyhow::Error> {
+                              -> Result<PathBuf, anyhow::Error> {
 
     let build_env = BuildEnv::try_new() ?;
     let target_dir_: &Path = &build_env.target_dir;
@@ -231,7 +188,7 @@ pub fn prepare_docker_compose(_sub_project_dir: &Path, cfg: &PrepareDockerCompos
     // See https://github.com/compose-spec/compose-spec/blob/main/spec.md
     //
     let base_name = base_name.to_lowercase();
-    let name = change_name_by_policy(&base_name, &cfg.docker_compose_project_name_policy, tests_session_id) ?;
+    let name = change_network_name_by_policy(&base_name, &cfg.docker_compose_project_name_policy, tests_session_id) ?;
 
     let last_leaf_dir_name = format!("{}-{tests_session_id}", name);
 
@@ -290,70 +247,4 @@ fn copy_volume_src_data(docker_compose_file: &Path, docker_compose_project_dir: 
     do_copy(&as_copy_params, docker_compose_project_dir, test_target_dir) ?;
 
     Ok(())
-}
-
-
-pub struct AutoDockerComposeDown {
-    pub docker_compose_file_dir: PathBuf,
-    pub log_message: Option<&'static str>,
-}
-impl Drop for AutoDockerComposeDown {
-    fn drop(&mut self) {
-        if let Some(log_message) = self.log_message {
-            info!("{}", log_message);
-        }
-        docker_compose_down_silent(&self.docker_compose_file_dir)
-    }
-}
-
-
-pub fn is_integration_tests_enabled() -> bool {
-
-    let is_it_1 = std::env::var("INTEGRATION_TEST").is_ok();
-    let is_it_2 = std::env::var("INTEGRATION_TESTS").is_ok();
-    let is_exact = std::env::args_os().contains(&OsString::from("--exact"));
-
-    let test_enabled = is_it_1 || is_it_2 || is_exact;
-
-    test_enabled
-}
-
-
-pub fn add_yaml_to_string(yaml: &Yaml, out_str: &mut String) -> anyhow::Result<()> {
-    {
-        let mut emitter = YamlEmitter::new(out_str);
-        emitter.dump(yaml) ?; // dump the YAML object to a String
-    } // in {} block according to official example
-    Ok(())
-}
-
-
-pub fn yaml_to_string(yaml: &Yaml) -> anyhow::Result<String> {
-    let mut out_str = String::new();
-    add_yaml_to_string(yaml, &mut out_str) ?;
-    Ok(out_str)
-}
-
-
-pub fn save_yaml(yaml_docs: &Vec<Yaml>, to_file: &Path) -> anyhow::Result<()> {
-    let mut out_str = String::new();
-    for ref yaml in yaml_docs {
-        add_yaml_to_string(yaml, &mut out_str) ?;
-        out_str.push('\n');
-    }
-
-    out_str.push_str("\n\n");
-    let _ = std::fs::write(to_file, out_str) ?;
-    Ok(())
-}
-
-
-pub fn load_yaml(yaml_file: &Path) -> anyhow::Result<Vec<Yaml>> {
-
-    let yaml_str = std::fs::read_to_string(yaml_file)
-        .map_err(|err| anyhow!("Error of opening [{yaml_file:?}] ({err:?})")) ?;
-
-    // Multi document support, doc is a yaml::Yaml
-    let yaml_docs = YamlLoader::load_from_str(&yaml_str) ?;
-    Ok(yaml_docs)
 }

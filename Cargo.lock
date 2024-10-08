@@ -2852,6 +2852,7 @@ dependencies = [
  "mvv_auth",
  "mvv_common",
  "mvv_common_bank_entities",
+ "mvv_common_it_test",
  "mvv_error_macro",
  "mvv_health_check",
  "mvv_proc_macro",
@@ -2963,6 +2964,7 @@ dependencies = [
  "mvv_account_soa",
  "mvv_auth",
  "mvv_common",
+ "mvv_common_it_test",
  "mvv_error_macro",
  "mvv_health_check",
  "mvv_proc_macro",
@@ -3121,6 +3123,7 @@ dependencies = [
  "log",
  "mvv_auth",
  "mvv_common",
+ "mvv_common_it_test",
  "mvv_tuple_heter_iter",
  "mvv_tuple_heter_iter_macro",
  "pin-project-lite",
@@ -3351,6 +3354,28 @@ dependencies = [
  "type-rules",
  "uuid",
  "version_check",
+]
+
+[[package]]
+name = "mvv_common_it_test"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "elf",
+ "fs_extra",
+ "indexmap 2.6.0",
+ "indoc",
+ "itertools 0.13.0",
+ "log",
+ "mvv_common",
+ "rustainers",
+ "serde",
+ "serde_json",
+ "strum 0.26.3",
+ "tokio",
+ "x509-parser",
+ "yaml-rust2",
 ]
 
 [[package]]

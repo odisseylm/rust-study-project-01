@@ -1,14 +1,14 @@
 use indoc::indoc;
 use yaml_rust2::YamlLoader;
-use mvv_common::test::{
-    docker_compose_util::remove_host_ports_in_docker_compose_yaml,
-    integration::yaml_to_string,
-    TestResultUnwrap,
-};
+use mvv_common_it_test::docker_compose_util::remove_host_ports_in_docker_compose_yaml;
+use mvv_common_it_test::yaml::yaml_to_string;
+use mvv_common::test::TestResultUnwrap;
+//--------------------------------------------------------------------------------------------------
+
+
 
 /// It is not real INTEGRATION test, it is just test of module 'integration'.
-
-
+//--------------------------------------------------------------------------------------------------
 
 #[test]
 fn remove_host_ports_in_docker_compose_yaml_01_test() {

@@ -47,6 +47,8 @@ RUN    mkdir ./src                                                 \
     && mkdir ./auth/src                                            \
     && mkdir ./common                                              \
     && mkdir ./common/src                                          \
+    && mkdir ./common_it_test                                      \
+    && mkdir ./common_it_test/src                                  \
     && mkdir ./common_bank_entities                                \
     && mkdir ./common_bank_entities/src                            \
     && mkdir ./diff_ver_crates                                     \
@@ -81,6 +83,7 @@ RUN    mkdir ./src                                                 \
     && echo "fn main() { }" > ./client_search_grpc_soa/src/bin/main.rs \
     && echo "// dummy file" > ./client_search_grpc_soa/src/lib.rs  \
     && echo "// dummy file" > ./common/src/lib.rs                  \
+    && echo "// dummy file" > ./common_it_test/src/lib.rs          \
     && echo "// dummy file" > ./common_bank_entities/src/lib.rs    \
     && echo "// dummy file" > ./diff_ver_crates/sqlx_07/src/lib.rs \
     && echo "// dummy file" > ./diff_ver_crates/sqlx_08/src/lib.rs \
@@ -105,6 +108,7 @@ COPY account_web/Cargo.toml             ./account_web/
 COPY auth/Cargo.toml                    ./auth/
 COPY client_search_grpc_soa/Cargo.toml  ./client_search_grpc_soa/
 COPY common/Cargo.toml                  ./common/
+COPY common_it_test/Cargo.toml          ./common_it_test/
 COPY common_bank_entities/Cargo.toml    ./common_bank_entities/
 COPY diff_ver_crates/sqlx_07/Cargo.toml ./diff_ver_crates/sqlx_07/
 COPY diff_ver_crates/sqlx_08/Cargo.toml ./diff_ver_crates/sqlx_08/
@@ -134,6 +138,7 @@ RUN    rm ./account_soa/src/*.rs                  \
     && rm ./client_search_grpc_soa/src/*.rs       \
     && rm ./client_search_grpc_soa/src/bin/*.rs   \
     && rm ./common/src/*.rs                       \
+    && rm ./common_it_test/src/*.rs               \
     && rm ./common_bank_entities/src/*.rs         \
     && rm ./diff_ver_crates/sqlx_07/src/*.rs      \
     && rm ./diff_ver_crates/sqlx_08/src/*.rs      \
@@ -159,6 +164,7 @@ COPY client_search_grpc_soa/build.rs  ./client_search_grpc_soa/
 COPY client_search_grpc_soa/src/      ./client_search_grpc_soa/src/
 COPY client_search_grpc_soa/proto/    ./client_search_grpc_soa/proto/
 COPY common/src/                  ./common/src/
+COPY common_it_test/src/          ./common_it_test/src/
 COPY common_bank_entities/src/    ./common_bank_entities/src/
 COPY diff_ver_crates/sqlx_07/src/ ./diff_ver_crates/sqlx_07/src/
 COPY diff_ver_crates/sqlx_08/src/ ./diff_ver_crates/sqlx_08/src/
@@ -176,6 +182,7 @@ RUN    touch ./account_soa/src/lib.rs             \
     && touch ./auth/src/lib.rs                    \
     && touch ./client_search_grpc_soa/src/lib.rs  \
     && touch ./common/src/lib.rs                  \
+    && touch ./common_it_test/src/lib.rs          \
     && touch ./common_bank_entities/src/lib.rs    \
     && touch ./diff_ver_crates/sqlx_07/src/lib.rs \
     && touch ./diff_ver_crates/sqlx_08/src/lib.rs \

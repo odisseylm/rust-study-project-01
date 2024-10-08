@@ -1,36 +1,38 @@
 use core::fmt::Debug;
 use std::{
     path::{Path, PathBuf},
-    time::Duration,
     process::Command,
+    time::Duration,
 };
 use anyhow::anyhow;
-use assert_json_diff::{assert_json_eq};
+use assert_json_diff::assert_json_eq;
 use assertables::{assert_ge, assert_ge_as_result};
 use log::{debug, info};
 use reqwest::{Certificate, Response};
 use rustainers::{
-    ExposedPort, Port, WaitStrategy,
     compose::{
         ComposeContainers, ComposeError, ComposeRunOption,
         RunnableComposeContainers, RunnableComposeContainersBuilder,
         ToRunnableComposeContainers,
-    }
+    },
+    ExposedPort, Port, WaitStrategy,
 };
 use serde_json::json;
+use mvv_common_it_test::{
+    PrepareDockerComposeCfg, prepare_docker_compose, is_integration_tests_enabled,
+    files::CopyCfg,
+    integration::{wait_rustainers},
+};
+use mvv_common_it_test::docker_compose::{AutoDockerComposeDown};
+use mvv_common_it_test::docker_compose::{docker_compose_ps, wait_for_healthy_except};
+use mvv_common_it_test::docker_compose::{docker_compose_down, docker_compose_start_except, docker_compose_stop_except};
+use mvv_common_it_test::docker_compose::{get_docker_compose_file, preload_docker_compose_images};
 use mvv_common::test::{
     {current_project_target_dir, current_sub_project_dir, TestOptionUnwrap},
     BuildEnv,
-    docker_compose::{get_docker_compose_file, preload_docker_compose_images},
-    docker_compose::{
-        docker_compose_down, docker_compose_ps, docker_compose_start_except, docker_compose_stop_except,
-    },
-    docker_compose::{wait_for_healthy_except,},
-    files::CopyCfg,
-    integration::{AutoDockerComposeDown, PrepareDockerComposeCfg},
-    integration::{is_integration_tests_enabled, prepare_docker_compose, wait_containers},
 };
 use mvv_common::fn_name;
+use mvv_common_it_test::coverage::{copy_code_coverage_files_for_all_containers, is_code_coverage_enabled_for};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -186,7 +188,7 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<ComposeContainers
         option,
     );
 
-    let (docker_compose_dir, compose_containers) = wait_containers(
+    let (docker_compose_dir, compose_containers) = wait_rustainers(
         temp_docker_compose_dir, &cur_sub_prj_name, compose_containers_fut, Duration::from_secs(15))
         .await ?;
 
@@ -198,31 +200,6 @@ async fn launch_account_soa_docker_compose() -> anyhow::Result<ComposeContainers
     })
 }
 
-
-fn is_code_coverage_enabled_for(path: &Path) -> anyhow::Result<bool> {
-
-    use elf::ElfBytes;
-    use elf::endian::AnyEndian;
-
-    // I didn't find (working) ELF lib, which does not load the whole file to memory :-(
-    let file_data = std::fs::read(path) ?;
-    let file_data = file_data.as_slice();
-    let elf_bytes = ElfBytes::<AnyEndian>::minimal_parse(file_data) ?;
-
-    let some_llvm_sections = ["__llvm_prf_names", "__llvm_prf_cnts", "__llvm_prf_data",];
-    let has_llvm_section =some_llvm_sections.iter()
-        .any(|some_llvm_section|{
-            let section = elf_bytes
-                .section_header_by_name(some_llvm_section);
-            if let Ok(Some(ref _section)) = section {
-                true
-            } else {
-                false
-            }
-        });
-
-    Ok(has_llvm_section)
-}
 
 
 #[tokio::test]
@@ -282,89 +259,6 @@ async fn integration_test_run_account_soa_docker_compose() -> anyhow::Result<()>
     info!("### Test is completed");
 
     Ok(())
-}
-
-fn copy_code_coverage_files_for_all_containers(docker_compose_dir: &Path, container_name_label: &str)
-    -> anyhow::Result<()> {
-
-    let build_env = BuildEnv::try_new() ?;
-    let coverage_raw_dir = build_env.target_dir.join("coverage-raw");
-
-    let containers = docker_compose_ps(docker_compose_dir) ?;
-
-    let to_ignore_services = ["database", "postgres"];
-    restart_containers(docker_compose_dir, &to_ignore_services) ?;
-
-    for ref container in containers {
-
-        if to_ignore_services.contains(&container.service.as_str()) {
-            continue;
-        }
-
-        let copy_coverage_res = copy_code_coverage_files(
-            &container.id, container_name_label, docker_compose_dir, &coverage_raw_dir);
-        if copy_coverage_res.is_err() {
-            info!("Error of copy code coverage data.");
-        }
-    }
-
-    Ok(())
-}
-
-fn restart_containers(docker_compose_dir: &Path, ignore_services: &[&str])
-    -> anyhow::Result<()> {
-
-    // Restart to surely flush code-coverage.
-    info!("### Stopping docker compose services (except {ignore_services:?})");
-    docker_compose_stop_except(docker_compose_dir, ignore_services) ?;
-
-    info!("### Starting again docker compose services");
-    docker_compose_start_except(docker_compose_dir, ignore_services) ?;
-
-    wait_for_healthy_except(docker_compose_dir, ignore_services, Duration::from_secs(15)) ?;
-    Ok(())
-}
-
-fn copy_code_coverage_files(container_id: &str, container_name_label: &str,
-                            docker_compose_dir: &Path, coverage_dir: &Path) -> anyhow::Result<()> {
-
-    let container_code_coverage_raw_dir = format!("{container_id}:/appuser/code-coverage/");
-    let project_code_coverage_raw_dir = coverage_dir.join(container_name_label);
-    let project_code_coverage_raw_dir_str = project_code_coverage_raw_dir.to_string_lossy();
-
-    let cmd = Command::new("docker")
-        .current_dir(docker_compose_dir.to_path_buf())
-        .args(["cp", &container_code_coverage_raw_dir, &project_code_coverage_raw_dir_str].into_iter())
-        .status() ?;
-
-    if cmd.success() {
-        // This sub-dir is created by 'docker cp' if base target dir already exists.
-        let possible_coverage_sub_dir = project_code_coverage_raw_dir.join("code-coverage");
-        if possible_coverage_sub_dir.exists() {
-            use fs_extra::dir;
-            use fs_extra::dir::DirOptions;
-
-            let files = dir::get_dir_content2(
-                &possible_coverage_sub_dir,
-                &DirOptions {
-                    depth: 1,
-                    .. Default::default()
-                }) ?.files;
-
-            let files = files.iter().map(|f|PathBuf::from(f)).collect::<Vec<_>>();
-
-            fs_extra::move_items(
-                &files,
-                &project_code_coverage_raw_dir,
-                &dir::CopyOptions {
-                    copy_inside: true,
-                    ..Default::default()
-                }) ?;
-        }
-        Ok(())
-    } else {
-        Err(anyhow!("Copying code coverage files failed for container."))
-    }
 }
 
 async fn test_get_all_client_accounts(account_soa_port: u16) -> anyhow::Result<()> {

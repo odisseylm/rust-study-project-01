@@ -1,15 +1,17 @@
-use std::collections::HashSet;
-use std::path::Path;
-use std::str::FromStr;
+use core::str::FromStr;
+use std::{
+    collections::HashSet,
+    path::Path,
+};
 use anyhow::anyhow;
 use yaml_rust2::Yaml;
-use crate::test::{
-    change_name_by_policy,
+use mvv_common::test::build_id;
+use crate::{
+    NamePolicy,
     docker_compose::get_docker_image_profile,
     files::{do_replacements, Replace},
-    integration::{save_yaml, NamePolicy},
+    yaml::{load_yaml, save_yaml},
 };
-use crate::test::integration::load_yaml;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -116,7 +118,7 @@ pub fn change_network_in_docker_compose_yaml(yaml: &mut Yaml, network_name_polic
             let net_name = &mut net_doc["name"];
             match net_name {
                 Yaml::String(ref mut net_name) => {
-                    *net_name = change_name_by_policy(net_name, network_name_policy, test_session_id) ?;
+                    *net_name = change_network_name_by_policy(net_name, network_name_policy, test_session_id) ?;
                     changed = true;
                 }
                 _ => {}
@@ -208,4 +210,30 @@ pub fn gather_volumes_in_docker_compose_yaml(yaml: &Yaml) -> anyhow::Result<Vec<
     };
 
     Ok(all_volumes)
+}
+
+
+pub fn change_network_name_by_policy(base_name: &str, network_name_policy: &NamePolicy, test_session_id: i64) -> anyhow::Result<String> {
+    match network_name_policy {
+        NamePolicy::Original =>
+            Ok(base_name.to_owned()),
+        NamePolicy::Custom(ref new_network_name) =>
+            Ok(new_network_name.to_string()),
+        NamePolicy::WithSuffix(ref suffix) =>
+            Ok(format!("{base_name}{suffix}")),
+        NamePolicy::WithRandomSuffix => {
+            let rnd: i64 = chrono::Local::now().timestamp();
+            Ok(format!("{base_name}-{rnd}"))
+        }
+        NamePolicy::WithBuildIdSuffix => {
+            let build_id: i64 = build_id() ?;
+            Ok(format!("{base_name}-{build_id}"))
+        }
+        NamePolicy::WithTestSessionIdSuffix =>
+            Ok(format!("{base_name}-{test_session_id}")),
+        NamePolicy::WithStringAndBuildIdSuffix(ref suffix) => {
+            let build_id: i64 = build_id() ?;
+            Ok(format!("{base_name}{suffix}-{build_id}"))
+        }
+    }
 }

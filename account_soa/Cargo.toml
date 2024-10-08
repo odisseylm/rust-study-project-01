@@ -39,6 +39,7 @@ default = [ "ambassador", "serde_json_raw_value" ]
 mvv_error_macro = { version = "0.1.0", path = "../error_macro" }
 mvv_proc_macro = { version = "0.1.0", path = "../proc_macro" }
 mvv_common = { version = "0.1.0", path = "../common", features = ["default", "sqlx_07"] }
+mvv_common_it_test = { version = "0.1.0", path = "../common_it_test", features = [] }
 mvv_common_bank_entities = { version = "0.1.0", path = "../common_bank_entities", features = ["default", "sqlx_07"] }
 mvv_auth = { version = "0.1.0", path = "../auth" }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }

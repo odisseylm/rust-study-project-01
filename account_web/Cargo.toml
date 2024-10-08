@@ -28,6 +28,7 @@ prost-build.workspace = true
 mvv_error_macro = { version = "0.1.0", path = "../error_macro" }
 mvv_proc_macro = { version = "0.1.0", path = "../proc_macro" }
 mvv_common = { version = "0.1.0", path = "../common", features = ["default", "tonic"] }
+mvv_common_it_test = { version = "0.1.0", path = "../common_it_test", features = [] }
 mvv_auth = { version = "0.1.0", path = "../auth", features = ["default", "tonic"] }
 mvv_tuple_heter_iter_macro = { version = "0.1.0", path = "../tuple_heter_iter_macro" }
 mvv_tuple_heter_iter = { version = "0.1.0", path = "../tuple_heter_iter" }

@@ -11,6 +11,7 @@ members = [
     "proc_macro",
     "error_macro",
     "common",
+    "common_it_test",
     "common_bank_entities",
     "auth",
     "health_check",

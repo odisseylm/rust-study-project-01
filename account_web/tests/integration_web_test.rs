@@ -1,8 +1,10 @@
-use std::fmt::Debug;
-use std::path::{Path, PathBuf};
-use std::time::Duration;
+use core::fmt::Debug;
+use std::{
+    path::{Path, PathBuf},
+    time::Duration,
+};
 use anyhow::anyhow;
-use assert_json_diff::{assert_json_eq};
+use assert_json_diff::assert_json_eq;
 use assertables::{assert_contains, assert_contains_as_result};
 use log::{debug, info};
 use reqwest::{Certificate, Response};
@@ -14,14 +16,23 @@ use rustainers::compose::{
 use rustainers::{ExposedPort, Port, WaitStrategy};
 use mvv_common::test::{
     current_project_target_dir, current_sub_project_dir,
-    TestDisplayStringOps, TestOptionUnwrap, TestResultUnwrap,
-    integration::{AutoDockerComposeDown, PrepareDockerComposeCfg},
-    integration::{is_integration_tests_enabled, prepare_docker_compose, wait_containers},
-    docker_compose::{docker_compose_down, get_docker_compose_file, preload_docker_compose_images},
+    TestDisplayStringOps,
+    TestOptionUnwrap,
+    TestResultUnwrap,
 };
 use serde_json::json;
-use mvv_common::fn_name;
-use mvv_common::string::remove_repeated_spaces;
+use mvv_common_it_test::{
+    PrepareDockerComposeCfg,
+    {is_integration_tests_enabled, prepare_docker_compose},
+    docker_compose::{
+        AutoDockerComposeDown,
+        {docker_compose_down, get_docker_compose_file, preload_docker_compose_images},
+    },
+    integration::{wait_rustainers},
+};
+use mvv_common::{
+    fn_name, string::remove_repeated_spaces
+};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -124,7 +135,7 @@ async fn launch_account_web_docker_compose() -> anyhow::Result<(PathBuf, Compose
         option,
     );
 
-    wait_containers(temp_docker_compose_dir, "Account WEB", compose_containers_fut, Duration::from_secs(15)).await
+    wait_rustainers(temp_docker_compose_dir, "Account WEB", compose_containers_fut, Duration::from_secs(15)).await
 }
 
 

@@ -1,24 +1,28 @@
-use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
-use std::time::{Duration, Instant};
+use core::time::Duration;
+use std::{
+    path::{Path, PathBuf},
+    process::{Command, Stdio},
+    time::Instant,
+};
 use anyhow::anyhow;
 use itertools::{Either, Itertools};
 use log::{debug, info, warn};
 use x509_parser::nom::AsBytes;
 use yaml_rust2::Yaml;
-use crate::test::{
+use mvv_common::test::{
     is_CI_build, is_manually_launched_task,
-    integration::load_yaml,
 };
+use crate::yaml::load_yaml;
 //--------------------------------------------------------------------------------------------------
 
 
 
 fn call_docker_compose_cmd(docker_compose_file_dir: &Path, cmd: &str) -> anyhow::Result<()> {
-    call_docker_compose_cmd_2(docker_compose_file_dir, cmd, &[])
+    call_docker_compose_cmd_with_args(docker_compose_file_dir, cmd, &[])
 }
 
-fn call_docker_compose_cmd_2(docker_compose_file_dir: &Path, cmd: &str, args: &[&str]) -> anyhow::Result<()> {
+fn call_docker_compose_cmd_with_args(docker_compose_file_dir: &Path, cmd: &str, args: &[&str])
+    -> anyhow::Result<()> {
 
     let docker_compose_file = get_docker_compose_file(docker_compose_file_dir) ?;
     if !docker_compose_file.exists() {
@@ -78,21 +82,26 @@ pub fn docker_compose_stop_except(docker_compose_file_dir: &Path, ignore_service
         .collect::<Vec<_>>();
     let services_to_stop = services_to_stop.iter().map(|s|s.as_str()).collect::<Vec<_>>();
 
-    call_docker_compose_cmd_2(docker_compose_file_dir, "stop", services_to_stop.as_slice())
+    call_docker_compose_cmd_with_args(docker_compose_file_dir, "stop", services_to_stop.as_slice())
 }
 
 
-pub fn docker_compose_start_except(docker_compose_file_dir: &Path, ignore_services: &[&str]) -> anyhow::Result<()> {
+pub fn docker_compose_start_except(docker_compose_file_dir: &Path, ignore_services: &[&str])
+    -> anyhow::Result<()> {
 
     let containers = docker_compose_ps(docker_compose_file_dir) ?;
-    let services = containers.into_iter().map(|c|c.service).collect::<Vec<_>>();
+    let services = containers.into_iter()
+        .map(|c|c.service)
+        .collect::<Vec<_>>();
 
     let services_to_stop = services.into_iter()
         .filter(|s| !ignore_services.contains(&s.as_str()))
         .collect::<Vec<_>>();
-    let services_to_stop = services_to_stop.iter().map(|s|s.as_str()).collect::<Vec<_>>();
+    let services_to_stop = services_to_stop.iter()
+        .map(|s|s.as_str())
+        .collect::<Vec<_>>();
 
-    call_docker_compose_cmd_2(docker_compose_file_dir, "start", services_to_stop.as_slice())
+    call_docker_compose_cmd_with_args(docker_compose_file_dir, "start", services_to_stop.as_slice())
 }
 
 
@@ -100,9 +109,10 @@ pub fn docker_compose_start_except(docker_compose_file_dir: &Path, ignore_servic
 pub fn get_docker_compose_file(docker_compose_file_dir: &Path) -> anyhow::Result<PathBuf> {
     let new_docker_compose_file_1 = docker_compose_file_dir.join("docker-compose.yml");
     let new_docker_compose_file_2 = docker_compose_file_dir.join("docker-compose.yaml");
+
     let docker_compose_file = [new_docker_compose_file_1, new_docker_compose_file_2]
-        .into_iter().find(|f|f.exists())
-        .ok_or_else(||anyhow!("No compose-file in [{docker_compose_file_dir:?}]")) ?;
+        .into_iter().find(|f| f.exists())
+        .ok_or_else(|| anyhow!("No compose-file in [{docker_compose_file_dir:?}]")) ?;
     Ok(docker_compose_file)
 }
 
@@ -126,7 +136,7 @@ impl DockerImageProfile {
 
 pub fn get_docker_image_profile() -> DockerImageProfile {
 
-    let profile_suffix_from_env = crate::env::env_var_static("DOCKER_IMAGE_PROFILE_SUFFIX")
+    let profile_suffix_from_env = mvv_common::env::env_var_static("DOCKER_IMAGE_PROFILE_SUFFIX")
         .unwrap_or_else(|_|Some(String::new())).unwrap_or_else(||String::new());
 
     // If it is already directly set in makefile.toml, we just inherit it.
@@ -135,8 +145,8 @@ pub fn get_docker_image_profile() -> DockerImageProfile {
 
         let image_profile_from_env = DockerImageProfile::iter()
             .find(|el|{
-                let s: &'static str = el.as_docker_tag_suffix();
-                s == profile_suffix_from_env
+                let docker_tag_suffix = el.as_docker_tag_suffix();
+                docker_tag_suffix == profile_suffix_from_env
             });
 
         if let Some(image_profile) = image_profile_from_env {
@@ -401,5 +411,19 @@ pub fn wait_for_healthy_except(docker_compose_file_dir: &Path, ignore_services: 
             }
         }
         std::thread::sleep(Duration::from_millis(500));
+    }
+}
+
+
+pub struct AutoDockerComposeDown {
+    pub docker_compose_file_dir: PathBuf,
+    pub log_message: Option<&'static str>,
+}
+impl Drop for AutoDockerComposeDown {
+    fn drop(&mut self) {
+        if let Some(log_message) = self.log_message {
+            info!("{}", log_message);
+        }
+        docker_compose_down_silent(&self.docker_compose_file_dir)
     }
 }

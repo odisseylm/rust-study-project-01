@@ -1,7 +1,3 @@
-pub mod integration;
-pub mod files;
-pub mod docker_compose;
-pub mod docker_compose_util;
 mod build_env;
 
 use core::fmt::Debug;
@@ -10,10 +6,7 @@ use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use anyhow::anyhow;
 use itertools::Itertools;
-use crate::{
-    string::is_os_str_true,
-    test::integration::NamePolicy,
-};
+use crate::string::is_os_str_true;
 //--------------------------------------------------------------------------------------------------
 
 
@@ -262,32 +255,6 @@ pub fn find_target_dir(dir: &Path) -> anyhow::Result<PathBuf> {
         iter_count += 1;
         if iter_count > 20 {
             anyhow::bail!("Too many recursion in finding 'target' dir for [{orig_dir:?}]")
-        }
-    }
-}
-
-
-fn change_name_by_policy(base_name: &str, network_name_policy: &NamePolicy, test_session_id: i64) -> anyhow::Result<String> {
-    match network_name_policy {
-        NamePolicy::Original =>
-            Ok(base_name.to_owned()),
-        NamePolicy::Custom(ref new_network_name) =>
-            Ok(new_network_name.to_string()),
-        NamePolicy::WithSuffix(ref suffix) =>
-            Ok(format!("{base_name}{suffix}")),
-        NamePolicy::WithRandomSuffix => {
-            let rnd: i64 = chrono::Local::now().timestamp();
-            Ok(format!("{base_name}-{rnd}"))
-        }
-        NamePolicy::WithBuildIdSuffix => {
-            let build_id: i64 = build_id() ?;
-            Ok(format!("{base_name}-{build_id}"))
-        }
-        NamePolicy::WithTestSessionIdSuffix =>
-            Ok(format!("{base_name}-{test_session_id}")),
-        NamePolicy::WithStringAndBuildIdSuffix(ref suffix) => {
-            let build_id: i64 = build_id() ?;
-            Ok(format!("{base_name}{suffix}-{build_id}"))
         }
     }
 }
