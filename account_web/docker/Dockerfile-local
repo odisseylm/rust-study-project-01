@@ -12,20 +12,14 @@ EXPOSE 80 8080 443 8443 8000 2735
 
 LABEL rust-test-label-03=value-3
 
-RUN apt-get -qq update &&                       \
-    # apt-get -qq install openssl               \
-    # apt-get -qq install iputils-ping &&       \
-    # apt-get -qq install curl &&               \
-    apt-get -qq update && apt-get -qq install libssl-dev
+# Can also add: openssl, curl, iputils-ping
+RUN apt-get -qq update &&           \
+    apt-get -qq install libssl-dev
 
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "10001" \
-    appuser
+# '--no-create-home' (and `--home "/nonexistent" --shell "/sbin/nologin"`) are not used
+# to store code-coverage data in user home dir.
+#
+RUN adduser --gecos "" --home "/appuser" --uid "10001"  appuser
 USER appuser
 
 
@@ -37,4 +31,4 @@ ENV RUST_BACKTRACE=$RUN_RUST_BACKTRACE
 ENTRYPOINT ["/bin/mvv_account_web", "arg1", "arg2"]
 
 # good param  --start-interval=2s is unstable ?!
-HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD health_checker https://localhost:${SERVER_PORT}/healthcheck || exit 1
+HEALTHCHECK  --start-period=1s --start-interval=1s --interval=1s --timeout=3s --retries=10 CMD health_checker https://localhost:${SERVER_PORT}/healthcheck || exit 1

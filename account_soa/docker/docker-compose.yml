@@ -34,9 +34,11 @@ services:
 
       #- LLVM_PROFILE_FILE=/appuser/coverage-raw/account-soa-%p-%m.profraw
       # Disabled by default
-      - LLVM_PROFILE_FILE=${LLVM_PROFILE_FILE:-/appuser/coverage-disabled-raw/account-soa-%p-%m.profraw}
+      # Source env name should start from service name (but in upper case) (for auto setting in it tests)
+      - LLVM_PROFILE_FILE=${RUST_ACCOUNT_SOA_LLVM_PROFILE_FILE:-/appuser/coverage-disabled-raw/account-soa-%p-%m.profraw}
     volumes:
       - ../target/generated-test-resources/ssl/:/certs/:ro
+      # Collecting code-coverage data is disabled by default to avoid disk space consuming
       - ../target/coverage-raw/coverage-disabled-raw/:/appuser/coverage-disabled-raw/:ro
     ports:
       # DOCKER_HOST_ACCOUNT_SOA_PORT_WITH_COLON=8095:

@@ -248,6 +248,11 @@ assert-json-diff.workspace = true
 
 macro_rules_attribute.workspace = true
 
-rustainers.workspace = true
+# Now it is explicitly imorted from mvv_common_it_test
+#rustainers.workspace = true
+
 #html2text.workspace = true    # heavy dependency, better no to use it for simple scenarious
 nanohtml2text.workspace = true
+
+# Now it is explicitly imorted from mvv_common_it_test
+#rustainers.workspace = true

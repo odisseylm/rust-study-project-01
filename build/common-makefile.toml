@@ -472,9 +472,22 @@ alias = "test"
 alias = "integration-tests"
 [tasks.it-tests]
 alias = "integration-tests"
+
+[tasks.build-cov]
+alias = "build-with-coverage"
+[tasks.build-covered]
+alias = "build-with-coverage"
+
+[tasks.package-cov]
+alias = "package-with-coverage"
+[tasks.package-covered]
+alias = "package-with-coverage"
+
 [tasks.integration-test-with-coverage]
 alias = "integration-tests-with-coverage"
 [tasks.it-tests-with-coverage]
+alias = "integration-tests-with-coverage"
+[tasks.it-tests-cov]
 alias = "integration-tests-with-coverage"
 [tasks.it-tests-covered]
 alias = "integration-tests-with-coverage"

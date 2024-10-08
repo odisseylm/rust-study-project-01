@@ -1,38 +1,31 @@
 use core::fmt::Debug;
 use std::{
-    path::{Path, PathBuf},
-    process::Command,
-    time::Duration,
+    path::PathBuf,
 };
 use anyhow::anyhow;
 use assert_json_diff::assert_json_eq;
 use assertables::{assert_ge, assert_ge_as_result};
 use log::{debug, info};
 use reqwest::{Certificate, Response};
-use rustainers::{
+use mvv_common_it_test::thirdparty::rustainers::{
     compose::{
-        ComposeContainers, ComposeError, ComposeRunOption,
+        ComposeError,
         RunnableComposeContainers, RunnableComposeContainersBuilder,
         ToRunnableComposeContainers,
     },
     ExposedPort, Port, WaitStrategy,
 };
 use serde_json::json;
+use mvv_common::{
+    fn_name,
+    test::{BuildEnv, current_project_target_dir, TestOptionUnwrap},
+};
 use mvv_common_it_test::{
-    PrepareDockerComposeCfg, prepare_docker_compose, is_integration_tests_enabled,
-    files::CopyCfg,
-    integration::{wait_rustainers},
+    is_integration_tests_enabled,
+    coverage::{copy_code_coverage_files_for_all_containers},
+    docker_compose::AutoDockerComposeDown,
+    integration::{ComposeContainersState, launch_soa_docker_compose, LaunchSoaDockerComposeParams},
 };
-use mvv_common_it_test::docker_compose::{AutoDockerComposeDown};
-use mvv_common_it_test::docker_compose::{docker_compose_ps, wait_for_healthy_except};
-use mvv_common_it_test::docker_compose::{docker_compose_down, docker_compose_start_except, docker_compose_stop_except};
-use mvv_common_it_test::docker_compose::{get_docker_compose_file, preload_docker_compose_images};
-use mvv_common::test::{
-    {current_project_target_dir, current_sub_project_dir, TestOptionUnwrap},
-    BuildEnv,
-};
-use mvv_common::fn_name;
-use mvv_common_it_test::coverage::{copy_code_coverage_files_for_all_containers, is_code_coverage_enabled_for};
 //--------------------------------------------------------------------------------------------------
 
 
@@ -54,10 +47,14 @@ struct AccountSoaTestContainers {
 }
 
 
-impl AccountSoaTestContainers {
-    pub async fn new(dir: &Path) -> Result<Self, ComposeError> {
+// Not the best solution, it would be more properly to use some new trait-factory...,
+// but let's live with this :-)
+//
+impl TryFrom<PathBuf> for AccountSoaTestContainers {
+    type Error = ComposeError;
+    fn try_from(dir: PathBuf) -> Result<Self, Self::Error> {
         Ok(Self {
-            dir: dir.to_path_buf(),
+            dir,
             account_soa_http_port: ExposedPort::new(ACCOUNT_SOA_HTTP_PORT.clone()),
             postgres_port: ExposedPort::new(POSTGRES_PORT.clone()),
         })
@@ -92,115 +89,6 @@ impl ToRunnableComposeContainers for AccountSoaTestContainers {
     }
 }
 
-#[derive(Debug)]
-pub struct ComposeContainersState<Cfg: ToRunnableComposeContainers>
-    where
-        Cfg: Debug,
-        <Cfg as ToRunnableComposeContainers>::AsPath: Debug,
-{
-    docker_compose_dir: PathBuf,
-    compose_containers: ComposeContainers<Cfg>, //AccountSoaTestContainers>,
-    // It some name similar to subproject or docker-compose service
-    // It is used only as comment/label/description.
-    container_name_label: String,
-    is_code_coverage_enabled: bool,
-}
-
-
-async fn launch_account_soa_docker_compose() -> anyhow::Result<ComposeContainersState<AccountSoaTestContainers>> {
-
-    let build_env = BuildEnv::try_new() ?;
-
-    let exe_file = build_env.target_profile_dir.join("mvv_account_soa");
-    let is_code_coverage_enabled = is_code_coverage_enabled_for(&exe_file) ?;
-
-    let tests_session_id = chrono::Local::now().timestamp();
-    let sub_project_dir = current_sub_project_dir() ?;
-
-    let cfg = PrepareDockerComposeCfg {
-        tests_session_id,
-        copy: CopyCfg {
-            base_from_dir: "".into(), // sub_project_dir.clone(),
-            copy: vec!(
-                /*
-                Copy { from: p("docker/docker-compose.env"), to: p("docker-compose.env") },
-                Copy { from: p("docker/docker-compose.yml"), to: p("docker-compose.yml") },
-                Copy { from: p("test_resources/postgres"), to: p("test_resources/postgres") },
-                Copy { from: p("../target/generated-test-resources/ssl"), to: p("generated-test-resources/ssl") },
-                */
-            ),
-        },
-        replace: vec!(
-            /*
-            // It is mainly example. Just exactly this substitution is done automatically.
-            Replace::by_str(
-                p("docker-compose.yml"),
-                ["${DOCKER_IMAGE_PROFILE_SUFFIX}"], [docker_image_profile_suffix],
-            ),
-            */
-        ),
-        ..Default::default()
-    };
-
-    let temp_docker_compose_dir = prepare_docker_compose(&sub_project_dir, &cfg) ?;
-
-    // Preload external images to avoid unexpected pause (and tests failure due to timeout)
-    preload_docker_compose_images(&get_docker_compose_file(&temp_docker_compose_dir) ?) ?;
-
-    let cur_sub_prj_dir = current_sub_project_dir() ?;
-
-    // Instead of hardcoding for every module
-    // Or from env vars:
-    //  CARGO_PKG_NAME: mvv_account_soa
-    //  CARGO_MAKE_PROJECT_NAME: mvv_account_soa
-    //
-    let cur_sub_prj_name = cur_sub_prj_dir.file_name()
-        .expect(&format!("[{cur_sub_prj_dir:?}] should be project dir"))
-        .to_string_lossy().to_string();
-
-    let mut envs = indexmap::IndexMap::<String, String>::new();
-    if is_code_coverage_enabled {
-        let now_timestamp = chrono::Local::now().timestamp();
-        envs.insert(
-            "LLVM_PROFILE_FILE".to_owned(),
-            format!("/appuser/code-coverage/{cur_sub_prj_name}-{now_timestamp}-%p-%m.profraw"),
-        );
-    }
-
-    let option: ComposeRunOption = ComposeRunOption::builder()
-        // Wait interval for service health check
-        .with_wait_interval(Duration::from_secs(1))
-        // Wait interval for service to exist
-        .with_wait_services_interval(Duration::from_secs(2))
-        .with_env(envs)
-        .build();
-
-    let runner = rustainers::runner::Runner::docker() ?;
-
-    info!("### Attempt to run docker compose for [${cur_sub_prj_name}]", );
-
-    // to make sure - clean up previous session
-    info!("### Clean previous docker compose session");
-    let _ = docker_compose_down(&temp_docker_compose_dir);
-
-    let compose_containers_fut = runner.compose_start_with_options(
-        AccountSoaTestContainers::new(&temp_docker_compose_dir).await ?,
-        option,
-    );
-
-    let (docker_compose_dir, compose_containers) = wait_rustainers(
-        temp_docker_compose_dir, &cur_sub_prj_name, compose_containers_fut, Duration::from_secs(15))
-        .await ?;
-
-    Ok(ComposeContainersState {
-        docker_compose_dir,
-        compose_containers,
-        is_code_coverage_enabled,
-        container_name_label: cur_sub_prj_name,
-    })
-}
-
-
 
 #[tokio::test]
 async fn integration_test_run_account_soa_docker_compose() -> anyhow::Result<()> {
@@ -217,13 +105,21 @@ async fn integration_test_run_account_soa_docker_compose() -> anyhow::Result<()>
         return Ok(());
     }
 
+    let build_env = BuildEnv::try_new() ?;
+    let exe_file = build_env.target_profile_dir.join("mvv_account_soa");
+
+    let params = LaunchSoaDockerComposeParams {
+        exe_file: Some(exe_file),
+        .. Default::default()
+    };
+
     let ComposeContainersState {
         docker_compose_dir,
         compose_containers,
         is_code_coverage_enabled,
         container_name_label,
         ..
-    } = launch_account_soa_docker_compose().await ?;
+    } = launch_soa_docker_compose::<AccountSoaTestContainers>(&params).await ?;
     let docker_compose_dir = docker_compose_dir.as_path();
 
     let auto_docker_compose_down = AutoDockerComposeDown {
@@ -231,32 +127,33 @@ async fn integration_test_run_account_soa_docker_compose() -> anyhow::Result<()>
         log_message: Some("### Cleaning..."),
     };
 
-    // THERE should be real REST tests.
-    tokio::time::sleep(Duration::from_secs(2)).await; // just in case
-
     let port = compose_containers.account_soa_http_port.host_port().await;
-
     let port: u16 = port ?.into();
 
-    // TODO: use unwind
+    //----------------------------------------------------------------------------------------------
+    //                             Real tests
+    //
     test_get_all_client_accounts(port).await ?;
+    //----------------------------------------------------------------------------------------------
 
     if is_code_coverage_enabled {
-        copy_code_coverage_files_for_all_containers(docker_compose_dir, &container_name_label) ?;
+        copy_code_coverage_files_for_all_containers(docker_compose_dir, &container_name_label, &[]) ?;
     }
 
+    // Uncomment it for docker state analysis.
+    //
     // let pause_timeout = Duration::from_secs(5);
     // info!("### Pause for {}s...", pause_timeout.as_secs());
     // tokio::time::sleep(pause_timeout).await;
 
-    let _ = compose_containers;
+    let _ = compose_containers; // do it gracefully before 'down'
     info!("### Stopping containers...");
 
     // to make sure to 'remove containers, networks'
     info!("### Cleaning...");
-    let _ = auto_docker_compose_down;
+    let _ = auto_docker_compose_down; // optional, just to have nice predictable output
 
-    info!("### Test is completed");
+    info!("### Test [integration_test_run_account_soa_docker_compose] is completed SUCCESSFULLY");
 
     Ok(())
 }

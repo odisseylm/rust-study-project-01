@@ -10,7 +10,7 @@ use crate::docker_compose::{docker_compose_ps, docker_compose_start_except, dock
 
 
 pub fn copy_code_coverage_files_for_all_containers(
-    docker_compose_dir: &Path, container_name_label: &str)
+    docker_compose_dir: &Path, container_name_label: &str, to_ignore_services: &[&str])
     -> anyhow::Result<()> {
 
     let build_env = BuildEnv::try_new() ?;
@@ -18,7 +18,9 @@ pub fn copy_code_coverage_files_for_all_containers(
 
     let containers = docker_compose_ps(docker_compose_dir) ?;
 
-    let to_ignore_services = ["database", "postgres"];
+    let mut to_ignore_services = Vec::from(to_ignore_services);
+    to_ignore_services.extend(["database", "postgres"]);
+
     restart_containers(docker_compose_dir, &to_ignore_services) ?;
 
     for ref container in containers {
@@ -27,10 +29,17 @@ pub fn copy_code_coverage_files_for_all_containers(
             continue;
         }
 
+        // T O D O: It would be nice to make "/appuser/code-coverage/"...
+        // but it would be over-complicated because we need to do it separately
+        // for every docker image. Let's leave it hardcoded.
+        //
+        let container_coverage_data_dir = "/appuser/code-coverage";
+
         let copy_coverage_res = copy_code_coverage_files(
-            &container.id, container_name_label, docker_compose_dir, &coverage_raw_dir);
+            &container.id, container_name_label, docker_compose_dir,
+            container_coverage_data_dir, &coverage_raw_dir);
         if copy_coverage_res.is_err() {
-            info!("Error of copy code coverage data.");
+            info!("Error of copy code coverage data from [{}].", container.service);
         }
     }
 
@@ -40,10 +49,17 @@ pub fn copy_code_coverage_files_for_all_containers(
 
 
 fn copy_code_coverage_files(container_id: &str, container_name_label: &str,
-                            docker_compose_dir: &Path, coverage_dir: &Path) -> anyhow::Result<()> {
+                            docker_compose_dir: &Path,
+                            container_coverage_dir: &str,
+                            local_coverage_dir: &Path,
+    ) -> anyhow::Result<()> {
 
-    let container_code_coverage_raw_dir = format!("{container_id}:/appuser/code-coverage/");
-    let project_code_coverage_raw_dir = coverage_dir.join(container_name_label);
+    // T O D O: It would be nice to make "/appuser/code-coverage/"...
+    // but it would be over-complicated because we need to do it separately
+    // for every docker image. Let's leave it hardcoded.
+    //
+    let container_code_coverage_raw_dir = format!("{container_id}:/{container_coverage_dir}/");
+    let project_code_coverage_raw_dir = local_coverage_dir.join(container_name_label);
     let project_code_coverage_raw_dir_str = project_code_coverage_raw_dir.to_string_lossy();
 
     let cmd = Command::new("docker")

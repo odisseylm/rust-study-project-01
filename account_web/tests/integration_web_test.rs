@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 use std::{
-    path::{Path, PathBuf},
+    path::PathBuf,
     time::Duration,
 };
 use anyhow::anyhow;
@@ -8,30 +8,27 @@ use assert_json_diff::assert_json_eq;
 use assertables::{assert_contains, assert_contains_as_result};
 use log::{debug, info};
 use reqwest::{Certificate, Response};
-use rustainers::compose::{
-    ComposeContainers, ComposeError, ComposeRunOption,
-    RunnableComposeContainers, RunnableComposeContainersBuilder,
-    ToRunnableComposeContainers,
-};
-use rustainers::{ExposedPort, Port, WaitStrategy};
-use mvv_common::test::{
-    current_project_target_dir, current_sub_project_dir,
-    TestDisplayStringOps,
-    TestOptionUnwrap,
-    TestResultUnwrap,
+use mvv_common_it_test::thirdparty::rustainers::{
+    ExposedPort, Port, WaitStrategy,
+    compose::{
+        ComposeError,
+        RunnableComposeContainers, RunnableComposeContainersBuilder,
+        ToRunnableComposeContainers,
+    },
 };
 use serde_json::json;
-use mvv_common_it_test::{
-    PrepareDockerComposeCfg,
-    {is_integration_tests_enabled, prepare_docker_compose},
-    docker_compose::{
-        AutoDockerComposeDown,
-        {docker_compose_down, get_docker_compose_file, preload_docker_compose_images},
-    },
-    integration::{wait_rustainers},
-};
 use mvv_common::{
-    fn_name, string::remove_repeated_spaces
+    fn_name, string::remove_repeated_spaces,
+    test::{
+        BuildEnv,TestDisplayStringOps, TestOptionUnwrap,
+        current_project_target_dir,
+    },
+};
+use mvv_common_it_test::{
+    is_integration_tests_enabled,
+    docker_compose::AutoDockerComposeDown,
+    coverage::copy_code_coverage_files_for_all_containers,
+    integration::{ComposeContainersState, launch_soa_docker_compose, LaunchSoaDockerComposeParams},
 };
 //--------------------------------------------------------------------------------------------------
 
@@ -62,10 +59,14 @@ struct AccountWebTestContainers {
 }
 
 
-impl AccountWebTestContainers {
-    pub async fn new(dir: &Path) -> Result<Self, ComposeError> {
+// Not the best solution, it would be more properly to use some new trait-factory...,
+// but let's live with this :-)
+//
+impl TryFrom<PathBuf> for AccountWebTestContainers {
+    type Error = ComposeError;
+    fn try_from(dir: PathBuf) -> Result<Self, Self::Error> {
         Ok(Self {
-            dir: dir.to_path_buf(),
+            dir,
             account_soa_http_port: ExposedPort::new(ACCOUNT_SOA_HTTP_PORT.clone()),
             client_search_soa_http_port: ExposedPort::new(CLIENT_SEARCH_SOA_HTTP_PORT.clone()),
             account_web_http_port: ExposedPort::new(ACCOUNT_WEB_HTTP_PORT.clone()),
@@ -100,6 +101,7 @@ impl ToRunnableComposeContainers for AccountWebTestContainers {
 }
 
 
+/*
 async fn launch_account_web_docker_compose() -> anyhow::Result<(PathBuf, ComposeContainers<AccountWebTestContainers>)> {
 
     // let tests_session_id = chrono::Local::now().timestamp();
@@ -137,10 +139,11 @@ async fn launch_account_web_docker_compose() -> anyhow::Result<(PathBuf, Compose
 
     wait_rustainers(temp_docker_compose_dir, "Account WEB", compose_containers_fut, Duration::from_secs(15)).await
 }
+*/
 
 
 #[tokio::test]
-async fn integration_test_run_account_web_docker_compose() {
+async fn integration_test_run_account_web_docker_compose() -> anyhow::Result<()> {
 
     env_logger::builder()
         .filter(None, log::LevelFilter::Info)
@@ -148,13 +151,29 @@ async fn integration_test_run_account_web_docker_compose() {
 
     if !is_integration_tests_enabled() {
         info!("Integration test [{}] is SKIPPED/IGNORED", fn_name!());
-        return;
+        return Ok(());
     }
 
-    let (temp_docker_compose_dir, compose_containers) =
-        launch_account_web_docker_compose().await.test_unwrap();
+    let build_env = BuildEnv::try_new() ?;
+    let exe_file = build_env.target_profile_dir.join("mvv_account_web");
+
+    let params = LaunchSoaDockerComposeParams {
+        exe_file: Some(exe_file),
+        .. Default::default()
+    };
+
+    let ComposeContainersState {
+        docker_compose_dir,
+        compose_containers,
+        is_code_coverage_enabled,
+        container_name_label,
+        ..
+        // } = launch_account_soa_docker_compose().await ?;
+    } = launch_soa_docker_compose::<AccountWebTestContainers>(&params).await ?;
+    let docker_compose_dir = docker_compose_dir.as_path();
+
     let auto_docker_compose_down = AutoDockerComposeDown {
-        docker_compose_file_dir: temp_docker_compose_dir.to_path_buf(),
+        docker_compose_file_dir: docker_compose_dir.to_path_buf(),
         log_message: Some("### Cleaning..."),
     };
 
@@ -162,58 +181,62 @@ async fn integration_test_run_account_web_docker_compose() {
     tokio::time::sleep(Duration::from_secs(2)).await; // just in case
 
     let soa_port = compose_containers.account_soa_http_port.host_port().await;
-    // let soa_port = ExposedPort::new(ACCOUNT_SOA_HTTP_PORT.clone()).host_port().await;
-    let soa_port: u16 = soa_port.test_unwrap().into();
-    test_soa_get_all_client_accounts(soa_port).await;
+    let soa_port: u16 = soa_port ?.into();
+    test_soa_get_all_client_accounts(soa_port).await ?;
 
     let web_port = compose_containers.account_web_http_port.host_port().await;
-    // let web_port = ExposedPort::new(ACCOUNT_WEB_HTTP_PORT.clone()).host_port().await;
-    let web_port: u16 = web_port.test_unwrap().into();
-    test_web_get_all_client_accounts(web_port).await;
+    let web_port: u16 = web_port ?.into();
+    test_web_get_all_client_accounts(web_port).await ?;
+
+    if is_code_coverage_enabled {
+        copy_code_coverage_files_for_all_containers(docker_compose_dir, &container_name_label, &[]) ?;
+    }
 
     // let pause_timeout = Duration::from_secs(5);
     // info!("### Pause for {}s...", pause_timeout.as_secs());
     // tokio::time::sleep(pause_timeout).await;
 
-    let _ = compose_containers;
+    let _ = compose_containers; // do it gracefully before 'down'
     info!("### Stopping containers...");
 
     // to make sure to 'remove containers, networks'
     info!("### Cleaning...");
-    let _ = auto_docker_compose_down;
+    let _ = auto_docker_compose_down; // optional, just to have nice predictable output
 
-    info!("### Test is completed");
+    info!("### Test [integration_test_run_account_web_docker_compose] is completed SUCCESSFULLY");
+
+    Ok(())
 }
 
 
 // Duplicate from account SOA test
-async fn test_web_get_all_client_accounts(port: u16) {
+async fn test_web_get_all_client_accounts(port: u16) -> anyhow::Result<()> {
     let base_url = format!("https://localhost:{port}");
     let url = format!("{base_url}/ui/current_client_accounts");
 
-    let build_target_dir = current_project_target_dir().test_unwrap();
+    let build_target_dir = current_project_target_dir() ?;
     let cert_path = build_target_dir.join("generated-test-resources/ssl/ca.crt.pem");
 
     let pem: String = std::fs::read_to_string(&cert_path)
-        .map_err(|err| anyhow!("Error of reading from [{cert_path:?}] ({err:?})")).test_unwrap();
+        .map_err(|err| anyhow!("Error of reading from [{cert_path:?}] ({err:?})")) ?;
 
     let client = reqwest::Client::builder()
         // .danger_accept_invalid_certs(true)
-        .add_root_certificate(Certificate::from_pem(pem.as_bytes()).test_unwrap())
-        .build().test_unwrap();
+        .add_root_certificate(Certificate::from_pem(pem.as_bytes()) ?)
+        .build() ?;
 
     let resp: Response = client.get(url)
         .basic_auth("cheburan@ukr.net", Some("qwerty"))
         .send()
-        .await
-        .test_unwrap();
+        .await ?;
 
     assert_eq!(resp.status().as_u16(), 200);
 
-    let content_type = resp.headers().get("Content-Type").test_unwrap();
+    let content_type = resp.headers().get("Content-Type")
+        .ok_or_else(|| anyhow!("No header [Content-Type]")) ?;
     assert_eq!(content_type, "text/html; charset=utf-8");
 
-    let body_as_str: String = resp.text().await.test_unwrap();
+    let body_as_str: String = resp.text().await ?;
 
     assert_contains!(body_as_str, "<title>Client accounts</title>");
     assert_contains!(body_as_str, "<p>Client 00000000-0000-0000-0000-000000000001</p>");
@@ -273,6 +296,8 @@ async fn test_web_get_all_client_accounts(port: u16) {
     assert_contains!(&as_text, &expected_client_info_part);
 
     info!("test_web_get_all_client_accounts SUCCEEDED");
+
+    Ok(())
 }
 
 fn normalize_test_substr(str: &str) -> String {
@@ -281,34 +306,33 @@ fn normalize_test_substr(str: &str) -> String {
 
 
 // Duplicate from account SOA test
-async fn test_soa_get_all_client_accounts(account_soa_port: u16) {
+async fn test_soa_get_all_client_accounts(account_soa_port: u16) -> anyhow::Result<()> {
 
     let base_url = format!("https://localhost:{account_soa_port}");
     let url = format!("{base_url}/api/client/00000000-0000-0000-0000-000000000001/account/all");
 
-    let build_target_dir = current_project_target_dir().test_unwrap();
+    let build_target_dir = current_project_target_dir() ?;
     let cert_path = build_target_dir.join("generated-test-resources/ssl/ca.crt.pem");
 
     let pem: String = std::fs::read_to_string(&cert_path)
-        .map_err(|err| anyhow!("Error of reading from [{cert_path:?}] ({err:?})")).test_unwrap();
+        .map_err(|err| anyhow!("Error of reading from [{cert_path:?}] ({err:?})")) ?;
 
     let client = reqwest::Client::builder()
         // .danger_accept_invalid_certs(true)
-        .add_root_certificate(Certificate::from_pem(pem.as_bytes()).test_unwrap())
-        .build().test_unwrap();
+        .add_root_certificate(Certificate::from_pem(pem.as_bytes()) ?)
+        .build() ?;
 
     let resp: Response = client.get(url)
         .basic_auth("vovan-read", Some("qwerty"))
         .send()
-        .await
-        .test_unwrap();
+        .await ?;
 
     assert_eq!(resp.status().as_u16(), 200);
 
     use core::str::FromStr;
-    let body_as_str: String = resp.text().await.test_unwrap();
+    let body_as_str: String = resp.text().await ?;
 
-    let actual = serde_json::Value::from_str(&body_as_str).test_unwrap();
+    let actual = serde_json::Value::from_str(&body_as_str) ?;
     debug!("### response: {actual}");
 
     let accounts: serde_json::Value = actual;
@@ -331,4 +355,6 @@ async fn test_soa_get_all_client_accounts(account_soa_port: u16) {
             }
         )
     );
+
+    Ok(())
 }

@@ -246,7 +246,9 @@ macro_rules_attribute.workspace = true
 test-with = { version = "0.13.0", features = ["default", "runtime", "executable"] }
 libtest-with = { version = "0.7.0-1", features = ["net", "resource", "user", "executable"] }
 
-rustainers.workspace = true
-indexmap.workspace = true
-elf.workspace = true
-fs_extra.workspace = true
+# Now it is explicitly imorted from mvv_common_it_test
+#
+#rustainers.workspace = true
+#indexmap.workspace = true
+#elf.workspace = true
+#fs_extra.workspace = true

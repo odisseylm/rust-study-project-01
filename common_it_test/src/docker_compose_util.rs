@@ -237,3 +237,29 @@ pub fn change_network_name_by_policy(base_name: &str, network_name_policy: &Name
         }
     }
 }
+
+
+pub fn get_docker_compose_services(docker_compose_file: &Path) -> anyhow::Result<Vec<String>> {
+
+    let yaml_docs = load_yaml(docker_compose_file) ?;
+
+    let services = yaml_docs.into_iter()
+        .flat_map(|yaml| {
+            let services = &yaml["services"];
+            match services {
+                Yaml::Hash(ref services) =>
+                    services.iter()
+                        .filter_map(|(serv_name, _serv_doc)|
+                            match serv_name {
+                                Yaml::String(serv_name) => Some(serv_name.to_string()),
+                                _ => None,
+                            }
+                        )
+                        .collect::<Vec<String>>(),
+                _ => Vec::new(),
+            }
+        })
+        .collect::<Vec<String>>();
+
+    Ok(services)
+}

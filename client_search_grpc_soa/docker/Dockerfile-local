@@ -12,23 +12,16 @@ EXPOSE 80 8080 443 8443 8000 2735
 
 LABEL rust-test-label-03=value-3
 
-
+# Can also add: openssl, curl, postgresql-dev
 RUN apt-get -qq update &&                         \
-    # apt-get -qq install openssl                 \
-    # apt-get -qq install curl &&                 \
-    # apt-get -qq install postgresql-dev &&       \
     apt-get -qq install libpq5 &&                 \
     apt-get -qq update && apt-get -qq install libssl-dev
 
 
-RUN adduser \
-    --disabled-password \
-    --gecos "" \
-    --home "/nonexistent" \
-    --shell "/sbin/nologin" \
-    --no-create-home \
-    --uid "10001" \
-    appuser
+# '--no-create-home' (and `--home "/nonexistent" --shell "/sbin/nologin"`) are not used
+# to store code-coverage data in user home dir.
+#
+RUN adduser --gecos "" --home "/appuser" --uid "10001"  appuser
 USER appuser
 
 
@@ -42,5 +35,4 @@ ENTRYPOINT ["/bin/mvv_client_search_soa", "arg1", "arg2"]
 
 # good param  --start-interval=2s is unstable ?!
 #HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD health_checker http://localhost:${SERVER_PORT}/healthcheck || exit 1
-#HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD grpcurl -d '{ "service": "" }' -plaintext localhost:${SERVER_PORT} grpc.health.v1.Health/Check || exit 1
-HEALTHCHECK --start-period=5s --interval=5s --timeout=3s --retries=6 CMD grpcurl -d '{ "service": "" }' -cacert /certs/ca.crt.pem localhost:${SERVER_PORT} grpc.health.v1.Health/Check || exit 1
+HEALTHCHECK  --start-period=1s --start-interval=1s --interval=1s --timeout=3s --retries=10 CMD grpcurl -d '{ "service": "" }' -cacert /certs/ca.crt.pem localhost:${SERVER_PORT} grpc.health.v1.Health/Check || exit 1
